@@ -1,0 +1,38 @@
+<ion-content>
+  <div class="screen">
+    <div class="top-bar">
+      <h1>DOPE</h1>
+      <span class="spacer"></span>
+      <span class="chip">{{ session.cartridge().name }}</span>
+    </div>
+    <div class="label conditions">
+      zero {{ zeroM }} м · {{ session.playerAtmosphere().temperatureC }} °C · {{ session.playerAtmosphere().pressureHpa }} гПа · {{ session.scope().units }}
+    </div>
+
+    <div class="card table-card">
+      <table class="mono" data-test="dope-table">
+        <thead>
+          <tr>
+            <th>ДИСТ</th>
+            <th>ЭЛЕВ</th>
+            @for (speed of windSpeeds; track speed) {
+              <th>{{ speed }} м/с</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.distanceM) {
+            <tr [class.transonic]="row.isTransonic" [attr.data-test]="'dope-row-' + row.distanceM">
+              <td>{{ row.distanceM }}</td>
+              <td class="accent-text">{{ row.elevation }}</td>
+              @for (wind of row.winds; track $index) {
+                <td>{{ wind }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="legend"><span class="bar"></span> трансзвук · ветер — полный, с 3 или 9 часов</div>
+    </div>
+  </div>
+</ion-content>

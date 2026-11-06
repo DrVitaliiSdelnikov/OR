@@ -1,0 +1,215 @@
+@let state = view();
+<ion-content>
+  <div class="scope-screen">
+    <div class="row top">
+      <button class="button" (click)="leave()" data-test="scope-back">← Расчёт</button>
+      <button class="button" (click)="toHub()" data-test="scope-hub">Хаб</button>
+      <span class="mono hud-left">↑ {{ state.elevationText }} · → {{ state.windText }}</span>
+      <span class="spacer"></span>
+      <span class="mono hud-right">{{ game.target().distanceM }} м · {{ state.focal }}@if (state.trueAt) { · {{ state.trueAt }} }</span>
+    </div>
+
+    <div class="optic">
+      <div
+        class="drum top-drum"
+        (pointerdown)="drumDown($event, 'elevation')"
+        (pointermove)="drumMove($event)"
+        (pointerup)="drumUp()"
+        (pointercancel)="drumUp()"
+        role="slider"
+        aria-label="Барабан высоты"
+        [attr.aria-valuenow]="state.elevationClicks"
+        data-test="drum-elevation"
+      >
+        <button class="drum-step" (pointerdown)="$event.stopPropagation()" (click)="turn('elevation', -1)" aria-label="Высота минус клик" data-test="elevation-minus">◂</button>
+        <span class="mono drum-value">{{ state.elevationText }} <small>{{ state.elevationClicks }} кл</small></span>
+        <button class="drum-step" (pointerdown)="$event.stopPropagation()" (click)="turn('elevation', 1)" aria-label="Высота плюс клик" data-test="elevation-plus">▸</button>
+      </div>
+      <div class="glass-row">
+        <div class="glass-ring">
+          <canvas
+            #glass
+            class="glass"
+            (pointerdown)="glassDown($event)"
+            (pointermove)="glassMove($event)"
+            (pointerup)="glassUp()"
+            (pointercancel)="glassUp()"
+            data-test="glass"
+          ></canvas>
+          @if (stopBadge(); as badge) {
+            <span class="stop-badge" data-test="stop-badge">{{ badge }}</span>
+          }
+        </div>
+        <div
+          class="drum side-drum"
+          (pointerdown)="drumDown($event, 'windage')"
+          (pointermove)="drumMove($event)"
+          (pointerup)="drumUp()"
+          (pointercancel)="drumUp()"
+          role="slider"
+          aria-label="Барабан ветра"
+          [attr.aria-valuenow]="state.windClicks"
+          data-test="drum-windage"
+        >
+          <button class="drum-step" (pointerdown)="$event.stopPropagation()" (click)="turn('windage', 1)" aria-label="Ветер влево клик" data-test="windage-left">▴ L</button>
+          <span class="mono drum-value">{{ state.windText }}<small>{{ state.windClicks }} кл</small></span>
+          <button class="drum-step" (pointerdown)="$event.stopPropagation()" (click)="turn('windage', -1)" aria-label="Ветер вправо клик" data-test="windage-right">▾ R</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="strip mono" data-test="strip">
+      <div><span class="label">Расчёт</span><b>{{ state.calcText }}</b></div>
+      <div><span class="label">Накручено</span><b>{{ state.dialText }}</b></div>
+      <div>
+        <span class="label">Удержание</span>
+        <b [class.ok-text]="state.isHoldSettled" [class.warn-text]="!state.isHoldSettled" data-test="hold-value">{{ state.holdText }}</b>
+      </div>
+    </div>
+
+    @if (message(); as text) {
+      <div class="message warn-text" data-test="scope-message">{{ text }}</div>
+    }
+
+    @switch (panel()) {
+      @case ('controls') {
+        <div class="panel controls">
+          @if (game.isFreeMode()) {
+            <div class="row chips">
+              @for (scope of scopes; track scope.id) {
+                <button class="chip" [class.selected]="scope.id === game.scopeId()" (click)="selectScope(scope.id)">{{ scope.name }}</button>
+              }
+            </div>
+            <div class="row chips">
+              @for (target of targets; track target.distanceM; let index = $index) {
+                <button class="chip" [class.selected]="index === game.targetIndex()" (click)="selectTarget(index)">{{ target.distanceM }} м</button>
+              }
+              <button class="chip" (click)="resetAim()">Сброс</button>
+            </div>
+          }
+          <div class="row">
+            <button class="button" (click)="zoom(-1)" aria-label="Уменьшить кратность" data-test="zoom-out">−</button>
+            <span class="mono zoom" data-test="magnification">{{ state.magnification }}×</span>
+            <button class="button" (click)="zoom(1)" aria-label="Увеличить кратность" data-test="zoom-in">+</button>
+            <span class="spacer"></span>
+            <span class="mono pulse">♥ {{ state.bpm }}</span>
+            <span class="mono shots" data-test="shots-left">{{ state.shotsLeft }} выстр.</span>
+          </div>
+          <div class="row actions sticky-actions">
+            <button
+              class="breath"
+              [class.holding]="state.breathState === 'holding'"
+              (pointerdown)="breathDown()"
+              (pointerup)="breathUp()"
+              (pointerleave)="breathUp()"
+              data-test="breath"
+            >
+              <svg viewBox="0 0 80 80" width="72" height="72" aria-hidden="true">
+                <circle cx="40" cy="40" r="34" class="breath-track" />
+                <circle cx="40" cy="40" r="34" class="breath-ring" [attr.stroke-dashoffset]="(state.breathHeldS / 8) * 214" />
+              </svg>
+              <span>{{ state.breathState === 'holding' ? 'ДЕРЖУ' : state.breathState === 'cooldown' ? 'ВЫДОХ' : 'ДЕРЖАТЬ' }}</span>
+            </button>
+            <span class="spacer"></span>
+            <button class="fire" (click)="openTrigger()" data-test="fire">ОГОНЬ</button>
+          </div>
+        </div>
+      }
+      @case ('trigger') {
+        <div class="panel trigger">
+          <div class="row">
+            <span class="mono pulse">♥ {{ state.bpm }}</span>
+            <span class="label" [class.ok-text]="state.isMarkerInside" [class.error-text]="!state.isMarkerInside">
+              {{ state.isMarkerInside ? 'в круге' : 'вне круга' }}
+            </span>
+            <span class="spacer"></span>
+            <button class="button" (click)="cancelTrigger()" data-test="trigger-cancel">Отмена</button>
+          </div>
+          <div class="row pad-row">
+            <button
+              class="breath small"
+              [class.holding]="state.breathState === 'holding'"
+              (pointerdown)="breathDown()"
+              (pointerup)="breathUp()"
+              (pointerleave)="breathUp()"
+              aria-label="Задержать дыхание"
+            >{{ state.breathState === 'holding' ? 'ДЕРЖУ' : 'ДЫХ' }}</button>
+            <canvas
+              #pad
+              class="pad"
+              (pointerdown)="padDown($event)"
+              (pointermove)="padMove($event)"
+              (pointerup)="padUp()"
+              (pointercancel)="padUp()"
+              data-test="trigger-pad"
+            ></canvas>
+          </div>
+          <div class="pressure" aria-label="Нажатие на спуск"><i [style.width.%]="state.pressurePercent"></i></div>
+          <div class="row label"><span>Нажатие на спуск</span><span class="spacer"></span><span data-test="pressure">{{ state.pressurePercent }} %</span></div>
+        </div>
+      }
+      @case ('bolt') {
+        <div class="panel bolt">
+          <div class="row steps">
+            @for (step of boltSteps; track step; let index = $index) {
+              <span class="step" [class.current]="step === state.boltStep" [class.done]="isBoltStepDone(index)">{{ boltStepLabel(step, index) }}</span>
+            }
+          </div>
+          <svg class="rifle" viewBox="0 -40 360 130" width="100%" aria-label="Затвор">
+            <rect x="0" y="34" width="70" height="40" rx="8" class="stock" />
+            <rect x="70" y="30" width="200" height="26" rx="4" class="receiver" />
+            <rect x="146" y="32" width="100" height="20" class="port" />
+            <rect x="270" y="38" width="90" height="10" class="barrel" />
+            <line [attr.x1]="state.boltBall.x" [attr.y1]="state.boltBall.y" [attr.x2]="state.boltBall.x" y2="43" class="stalk" />
+            <circle
+              [attr.cx]="state.boltBall.x"
+              [attr.cy]="state.boltBall.y"
+              r="16"
+              class="ball"
+              (pointerdown)="boltDown($event)"
+              (pointermove)="boltMove($event)"
+              (pointerup)="boltUp()"
+              (pointercancel)="boltUp()"
+              data-test="bolt-ball"
+            />
+          </svg>
+          <div class="row">
+            <span class="mono" data-test="magazine">{{ state.rounds }} в магазине · {{ chamberText(state.chamber) }}</span>
+            <span class="spacer"></span>
+            @if (state.averageCycleS !== null) {
+              <span class="mono cycle">цикл {{ state.averageCycleS.toFixed(1) }} с</span>
+            }
+          </div>
+          @if (state.rounds === 0) {
+            <button class="button" (click)="insertMagazine()" data-test="new-magazine">Новый магазин</button>
+          }
+        </div>
+      }
+      @case ('finished') {
+        @if (taskResult(); as result) {
+          <div class="panel finished card" data-test="task-result">
+            <div class="stars accent-text">{{ starsText(result.stars) }}</div>
+            <div class="mono score">{{ result.score }}<small>/{{ result.maxScore }}</small></div>
+            <p>{{ result.stars >= 1 ? 'Задача пройдена' : 'Нужно ещё раз' }}</p>
+            <div class="row">
+              <button class="button primary" (click)="toHub()" data-test="finished-hub">К задачам</button>
+              <button class="button" (click)="retry()" data-test="finished-retry">Ещё раз</button>
+            </div>
+          </div>
+        }
+      }
+    }
+  </div>
+
+  <ion-modal [isOpen]="debriefShot() !== null" [initialBreakpoint]="0.92" [breakpoints]="[0, 0.92]" (didDismiss)="closeDebrief()">
+    <ng-template>
+      <ion-content>
+        <div class="screen">
+          @if (debriefShot(); as shot) {
+            <or-debrief-view [shot]="shot" (toDope)="toDope()" (proceed)="closeDebrief()" />
+          }
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>

@@ -1,0 +1,50 @@
+<ion-content>
+  <div class="screen">
+    <div class="top-bar">
+      <a class="button" routerLink="/tabs/hub" aria-label="К задачам" data-test="quiz-back">←</a>
+      <h1>{{ task().title }}</h1>
+    </div>
+
+    @if (result(); as finished) {
+      <div class="card verdict" data-test="quiz-result">
+        <div class="stars accent-text">{{ starsText(finished.stars) }}</div>
+        <div class="mono score">{{ score() }}<small>/{{ finished.maxScore }}</small></div>
+        <p>{{ finished.stars >= 1 ? 'Задача пройдена' : 'Нужно ещё раз' }}</p>
+      </div>
+      <a class="button primary" routerLink="/tabs/hub" data-test="quiz-to-hub">К ЗАДАЧАМ</a>
+      <button class="button" (click)="restart()">ЕЩЁ РАЗ</button>
+    } @else {
+      <p class="blurb">{{ task().blurb }}</p>
+      <div class="card">
+        <div class="label">Вопрос {{ questionIndex() + 1 }} из {{ task().questions.length }}</div>
+        <p class="question" data-test="quiz-question">{{ question().question }}</p>
+        <div class="row">
+          <input
+            class="answer mono"
+            inputmode="decimal"
+            [value]="answerText()"
+            (input)="answerText.set($any($event.target).value)"
+            [disabled]="answerState() !== 'pending'"
+            aria-label="Ответ"
+            data-test="quiz-answer"
+          />
+          <span class="unit">{{ question().unit }}</span>
+        </div>
+        @if (isInputInvalid()) {
+          <p class="error-text">Введите число</p>
+        }
+      </div>
+      @if (answerState() !== 'pending') {
+        <div class="card" data-test="quiz-feedback">
+          <b [class.ok-text]="answerState() === 'correct'" [class.error-text]="answerState() === 'wrong'">
+            {{ answerState() === 'correct' ? '✓ Верно, +10' : '✕ Не совпало' }}
+          </b>
+          <p>Ответ: {{ formatAnswer(question().answer) }} {{ question().unit }}. {{ question().explanation }}</p>
+        </div>
+        <button class="button primary large" (click)="next()" data-test="quiz-next">{{ isLastQuestion() ? 'ЗАВЕРШИТЬ' : 'ДАЛЬШЕ' }}</button>
+      } @else {
+        <button class="button primary large" (click)="check()" data-test="quiz-check">ПРОВЕРИТЬ</button>
+      }
+    }
+  </div>
+</ion-content>

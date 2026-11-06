@@ -1,0 +1,214 @@
+@use '@ionic/angular/css/core.css';
+@use '@ionic/angular/css/normalize.css';
+@use '@ionic/angular/css/structure.css';
+@use '@ionic/angular/css/typography.css';
+
+:root,
+:root[data-theme='field'] {
+  --hub-bg: #0e1012;
+  --hub-surface: #1a1d21;
+  --hub-surface-2: #24282d;
+  --hub-text: #e6e8ea;
+  --hub-text-2: #9aa1a9;
+  --hub-accent: #f2b233;
+  --hub-on-accent: #1b1405;
+  --hub-ok: #4cc38a;
+  --hub-error: #ee5a5e;
+  --hub-warn: #f5a524;
+  --hub-line: #30353b;
+  --hub-metal-light: #4a4e55;
+  --hub-metal-dark: #0b0c0e;
+  --hub-chip: #24282d;
+  --hub-primary-from: #f7c451;
+  --hub-primary-to: #e09d14;
+  --hub-button-from: #2c3036;
+  --hub-button-to: #20242a;
+  --hub-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 6px 14px rgba(0, 0, 0, 0.35);
+  --hub-drum-index: #f2b233;
+  color-scheme: dark;
+}
+
+:root[data-theme='day'] {
+  --hub-bg: #d9d3c3;
+  --hub-surface: #efeadb;
+  --hub-surface-2: #e3dcc9;
+  --hub-text: #1f1d18;
+  --hub-text-2: #58544a;
+  --hub-accent: #7f4a00;
+  --hub-on-accent: #ffffff;
+  --hub-ok: #1b6a40;
+  --hub-error: #b3261e;
+  --hub-warn: #7f5400;
+  --hub-line: #bdb5a0;
+  --hub-metal-light: #eceef0;
+  --hub-metal-dark: #8b8e95;
+  --hub-chip: #e3dcc9;
+  --hub-primary-from: #a05c00;
+  --hub-primary-to: #7a4600;
+  --hub-button-from: #f7f3e6;
+  --hub-button-to: #e0d9c4;
+  --hub-card-shadow: 0 1px 0 #fff inset, 0 2px 4px rgba(60, 50, 30, 0.18);
+  --hub-drum-index: #b3261e;
+  color-scheme: light;
+}
+
+:root {
+  --font-sans: 'Roboto', system-ui, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, monospace;
+  --font-hand: 'Caveat', cursive;
+  --touch-min: 44px;
+  --touch-action: 64px;
+  --fire-gap: 24px;
+  --radius-card: 16px;
+  --radius-chip: 999px;
+  --ion-background-color: var(--hub-bg);
+  --ion-text-color: var(--hub-text);
+  --ion-font-family: var(--font-sans);
+  --ion-color-primary: var(--hub-accent);
+  --ion-color-primary-contrast: var(--hub-on-accent);
+  --ion-tab-bar-background: var(--hub-surface);
+  --ion-tab-bar-border-color: var(--hub-line);
+  --ion-tab-bar-color: var(--hub-text-2);
+  --ion-tab-bar-color-selected: var(--hub-accent);
+}
+
+body {
+  background: var(--hub-bg);
+  color: var(--hub-text);
+  font: 400 15px/20px var(--font-sans);
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 6px 16px 24px;
+}
+
+.card {
+  background: var(--hub-surface);
+  border: 1px solid var(--hub-line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--hub-card-shadow);
+  padding: 14px 16px;
+}
+
+.label {
+  font: 500 13px/16px var(--font-sans);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--hub-text-2);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid var(--hub-line);
+  background: linear-gradient(var(--hub-button-from), var(--hub-button-to));
+  color: var(--hub-text);
+  font: 700 15px/20px var(--font-sans);
+  letter-spacing: 0.03em;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  &.primary {
+    border-color: transparent;
+    background: linear-gradient(var(--hub-primary-from), var(--hub-primary-to));
+    color: var(--hub-on-accent);
+  }
+
+  &.large {
+    min-height: 72px;
+    border-radius: 18px;
+    font-size: 18px;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--touch-min);
+  padding: 0 14px;
+  border-radius: var(--radius-chip);
+  background: var(--hub-chip);
+  border: 1px solid var(--hub-line);
+  color: var(--hub-text);
+  font: 500 14px/16px var(--font-sans);
+  cursor: pointer;
+
+  &.selected {
+    background: var(--hub-accent);
+    color: var(--hub-on-accent);
+    border-color: transparent;
+  }
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch-min);
+
+  h1 {
+    margin: 0;
+    font: 700 20px/24px var(--font-sans);
+  }
+}
+
+.ok-text {
+  color: var(--hub-ok);
+}
+
+.error-text {
+  color: var(--hub-error);
+}
+
+.warn-text {
+  color: var(--hub-warn);
+}
+
+.accent-text {
+  color: var(--hub-accent);
+}
+
+$phone-frame-width: 430px;
+
+@media (min-width: 600px) {
+  html,
+  body {
+    background: #050607;
+  }
+
+  ion-app {
+    max-width: $phone-frame-width;
+    margin: 0 auto;
+    border-left: 1px solid var(--hub-line);
+    border-right: 1px solid var(--hub-line);
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+  }
+}
