@@ -6,9 +6,9 @@ const engine = new BallisticsEngine();
 const cartridgeB = cartridgeById('B');
 
 describe('BallisticsEngine.trajectory', () => {
-  it('returns samples every 100 m out to 700 m', async () => {
+  it('returns samples every 100 m out to 1000 m', async () => {
     const points = await engine.trajectory(cartridgeB, null, null);
-    expect(points.map(point => point.distanceM)).toEqual([0, 100, 200, 300, 400, 500, 600, 700]);
+    expect(points.map(point => point.distanceM)).toEqual([0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]);
   });
 
   it('is zeroed at 100 m', async () => {
@@ -18,10 +18,11 @@ describe('BallisticsEngine.trajectory', () => {
 
   it('needs more elevation the farther the target', async () => {
     const points = await engine.trajectory(cartridgeB, null, null);
-    const elevations = [300, 500, 700].map(distanceM => BallisticsEngine.required(points, distanceM).upMrad);
+    const elevations = [300, 400, 500, 600, 700, 800, 900, 1000].map(distanceM => BallisticsEngine.required(points, distanceM).upMrad);
     expect(elevations[0]).toBeGreaterThan(0);
-    expect(elevations[1]).toBeGreaterThan(elevations[0]);
-    expect(elevations[2]).toBeGreaterThan(elevations[1]);
+    for (let index = 1; index < elevations.length; index++) {
+      expect(elevations[index]).toBeGreaterThan(elevations[index - 1]);
+    }
   });
 
   it('matches the reference drop table within 0.05 mrad', async () => {

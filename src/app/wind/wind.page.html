@@ -26,7 +26,7 @@
           />
         }
       </svg>
-      <div class="mono clock">{{ clockText() }} · доля {{ share() }}</div>
+      <div class="mono clock">{{ clockText() }} · доля <span data-test="wind-share">{{ share().toFixed(2) }}</span></div>
     </div>
 
     <div class="label">Скорость, м/с</div>
@@ -41,7 +41,7 @@
     <div class="card results">
       <div class="row"><span>Боковой ветер</span><span class="spacer"></span><b class="mono" data-test="crosswind">{{ crosswind().toFixed(1) }} м/с</b></div>
       <div class="row"><span>Поправка, {{ session.distanceM() }} м</span><span class="spacer"></span><b class="mono accent-text">{{ correctionText() }}</b></div>
-      <small>доля полного ветра на {{ clockText() }} ≈ {{ share() }} · шаг 15°</small>
+      <small>доля полного ветра на {{ clockText() }} ≈ {{ share().toFixed(2) }}</small>
     </div>
 
     <button class="button primary large" (click)="apply()" data-test="apply-wind">ПРИМЕНИТЬ К РАСЧЁТУ</button>

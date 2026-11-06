@@ -1,5 +1,5 @@
 import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
-import { cartridgeById, STANDARD_PRESSURE_HPA, TARGETS } from '../../core/content';
+import { cartridgeById, MAX_TRAJECTORY_M, STANDARD_PRESSURE_HPA, TARGETS } from '../../core/content';
 import { BallisticsEngine } from '../../core/engine';
 import { isTransonic } from '../../core/field';
 import { daySeed } from '../../core/rng';
@@ -30,7 +30,7 @@ const WIND_FROM_LEFT_DEG = 90;
 
 export const DISTANCE_STEP_M = 25;
 export const MIN_DISTANCE_M = 100;
-export const MAX_DISTANCE_M = 700;
+export const MAX_DISTANCE_M = MAX_TRAJECTORY_M;
 const DEFAULT_RELATIVE_HUMIDITY = 0.5;
 
 @Injectable({ providedIn: 'root' })

@@ -1,22 +1,12 @@
-import { degFromClock, normalizeDeg } from './scenario';
-
-const FULL_VALUE_TOLERANCE_DEG = 15;
 const SPEED_OF_SOUND_BASE_MPS = 331.3;
 const SPEED_OF_SOUND_PER_DEGREE = 0.606;
+const DEGREES_PER_CLOCK_HOUR = 30;
+const SHARE_DECIMALS_FACTOR = 100;
 export const TRANSONIC_MACH = 1.2;
 
-export type WindValueShare = 0 | 0.5 | 1;
-
-export function windClockShare(clockHours: number): WindValueShare {
-  const fromDeg = normalizeDeg(degFromClock(clockHours));
-  const offsetFromSideDeg = Math.abs(Math.abs(fromDeg - 180) - 90);
-  if (offsetFromSideDeg <= FULL_VALUE_TOLERANCE_DEG) {
-    return 1;
-  }
-  if (90 - offsetFromSideDeg <= FULL_VALUE_TOLERANCE_DEG) {
-    return 0;
-  }
-  return 0.5;
+export function windClockShare(clockHours: number): number {
+  const angleFromLineOfFireRad = (clockHours * DEGREES_PER_CLOCK_HOUR * Math.PI) / 180;
+  return Math.round(Math.abs(Math.sin(angleFromLineOfFireRad)) * SHARE_DECIMALS_FACTOR) / SHARE_DECIMALS_FACTOR;
 }
 
 export function crosswindByClockRule(speedMps: number, clockHours: number): number {

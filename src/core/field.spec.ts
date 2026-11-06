@@ -4,30 +4,30 @@ import { BallisticsEngine } from './engine';
 import { crosswindByClockRule, densityAltitudeM, formatClock, impactSoundDelayS, isTransonic, speedOfSoundMps, windClockShare } from './field';
 
 describe('wind clock rule', () => {
-  it('3 and 9 o’clock give full value', () => {
-    expect(windClockShare(3)).toBe(1);
-    expect(windClockShare(9)).toBe(1);
+  it('follows the sine table: 12 and 6 → 0, 1/5/7/11 → 0.5, 2/4/8/10 → 0.87, 3 and 9 → 1', () => {
+    const expectedByHour: [number, number][] = [
+      [12, 0], [1, 0.5], [2, 0.87], [3, 1], [4, 0.87], [5, 0.5],
+      [6, 0], [7, 0.5], [8, 0.87], [9, 1], [10, 0.87], [11, 0.5],
+    ];
+    for (const [clockHours, share] of expectedByHour) {
+      expect(windClockShare(clockHours)).toBe(share);
+    }
   });
 
-  it('within one 15° step of 3 or 9 o’clock still counts as full value', () => {
-    expect(windClockShare(3.5)).toBe(1);
-    expect(windClockShare(8.5)).toBe(1);
-    expect(windClockShare(2)).toBe(0.5);
+  it('half hours follow the sine too', () => {
+    expect(windClockShare(1.5)).toBe(0.71);
+    expect(windClockShare(10.5)).toBe(0.71);
+    expect(windClockShare(2.5)).toBe(0.97);
   });
 
-  it('12 and 6 o’clock give no crosswind', () => {
-    expect(windClockShare(12)).toBe(0);
-    expect(windClockShare(6)).toBe(0);
+  it('normalises hours outside 0–12', () => {
+    expect(windClockShare(15)).toBe(windClockShare(3));
+    expect(windClockShare(-3)).toBe(windClockShare(9));
+    expect(windClockShare(0)).toBe(windClockShare(12));
   });
 
-  it('diagonals give half (10:30 ≈ 0.5 as in the design)', () => {
-    expect(windClockShare(10.5)).toBe(0.5);
-    expect(windClockShare(1)).toBe(0.5);
-    expect(windClockShare(8)).toBe(0.5);
-  });
-
-  it('4 m/s from 10:30 gives 2 m/s crosswind', () => {
-    expect(crosswindByClockRule(4, 10.5)).toBe(2);
+  it('4 m/s from 10:30 gives 2.84 m/s crosswind', () => {
+    expect(crosswindByClockRule(4, 10.5)).toBeCloseTo(2.84, 6);
   });
 
   it('formats half hours', () => {
@@ -75,6 +75,7 @@ describe('BallisticsEngine.interpolated', () => {
 
   it('rejects distances beyond the trajectory', async () => {
     const points = await new BallisticsEngine().trajectory(cartridgeById('B'), null, null);
-    expect(() => BallisticsEngine.interpolated(points, 750)).toThrow();
+    expect(() => BallisticsEngine.interpolated(points, 1100)).toThrow();
+    expect(() => BallisticsEngine.interpolated(points, 1000)).not.toThrow();
   });
 });

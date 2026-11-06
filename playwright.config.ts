@@ -18,7 +18,10 @@ export default defineConfig({
     testIdAttribute: 'data-test',
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'mobile-chromium', use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 }, testIdAttribute: 'data-test' } }],
+  projects: [
+    { name: 'mobile-chromium', use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 }, testIdAttribute: 'data-test' } },
+    { name: 'mobile-webkit', use: { ...devices['iPhone 14'], viewport: { width: 390, height: 844 }, testIdAttribute: 'data-test' } },
+  ],
   webServer: {
     command: `npx ng serve --port ${PORT}`,
     url: `http://localhost:${PORT}`,

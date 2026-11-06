@@ -35,14 +35,15 @@ test.describe('метеостанция, HUD, часы ветра, DOPE', () => 
     await expect(page.getByTestId('hud-correction')).toContainText('кл.');
   });
 
-  test('часы ветра: 4 м/с с 10:30 дают 2 м/с бокового и поправку влево', async ({ page }) => {
+  test('часы ветра: 4 м/с с 10:30 дают долю 0,71, 2,8 м/с бокового и поправку влево', async ({ page }) => {
     await startShootTask(page, 's-wind300');
     await page.getByTestId('take-reading').click();
     await page.getByTestId('weather-done').click();
     await page.getByTestId('open-wind').click();
     await page.getByTestId('clock-10.5').dispatchEvent('click');
     await page.getByTestId('speed-4').click();
-    await expect(page.getByTestId('crosswind')).toHaveText('2.0 м/с');
+    await expect(page.getByTestId('wind-share')).toHaveText('0.71');
+    await expect(page.getByTestId('crosswind')).toHaveText('2.8 м/с');
     await page.getByTestId('apply-wind').click();
     await expect(page).toHaveURL(/tabs\/calc$/);
     await expect(page.getByTestId('open-wind')).toHaveText('10:30');
@@ -51,10 +52,30 @@ test.describe('метеостанция, HUD, часы ветра, DOPE', () => 
     await expect(page.getByTestId('hud-correction')).toContainText('L');
   });
 
-  test('DOPE: семь строк от 100 до 700 м', async ({ page }) => {
+  test('DOPE: десять строк от 100 до 1000 м', async ({ page }) => {
     await page.goto('/tabs/dope');
-    await expect(page.getByTestId('dope-table').locator('tbody tr')).toHaveCount(7);
-    await expect(page.getByTestId('dope-row-700')).toBeVisible();
+    await expect(page.getByTestId('dope-table').locator('tbody tr')).toHaveCount(10);
+    await expect(page.getByTestId('dope-row-1000')).toBeVisible();
+  });
+
+  test('часы ветра: 4 м/с с 2 ч — доля 0,87 и 3,5 м/с бокового', async ({ page }) => {
+    await startShootTask(page, 's-wind300');
+    await page.getByTestId('take-reading').click();
+    await page.getByTestId('weather-done').click();
+    await page.getByTestId('open-wind').click();
+    await page.getByTestId('clock-2').dispatchEvent('click');
+    await page.getByTestId('speed-4').click();
+    await expect(page.getByTestId('wind-share')).toHaveText('0.87');
+    await expect(page.getByTestId('crosswind')).toHaveText('3.5 м/с');
+  });
+
+  test('часы ветра: с 1:30 доля 0,71', async ({ page }) => {
+    await startShootTask(page, 's-wind300');
+    await page.getByTestId('take-reading').click();
+    await page.getByTestId('weather-done').click();
+    await page.getByTestId('open-wind').click();
+    await page.getByTestId('clock-1.5').dispatchEvent('click');
+    await expect(page.getByTestId('wind-share')).toHaveText('0.71');
   });
 
   test('настройки: тема B переключает палитру', async ({ page }) => {

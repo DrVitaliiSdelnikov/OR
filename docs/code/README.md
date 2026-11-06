@@ -53,4 +53,4 @@
 
 | Модуль | Файл | Статус |
 | --- | --- | --- |
-| core/game-formulas + правило часов + дальность 1000 м | [specs/core-game-formulas.md](specs/core-game-formulas.md) | черновик |
+| core/game-formulas + правило часов + дальность 1000 м | [specs/core-game-formulas.md](specs/core-game-formulas.md) | реализовано, ветка `feat/core-game-formulas` |

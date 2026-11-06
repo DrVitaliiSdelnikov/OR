@@ -1,12 +1,15 @@
 import { Component, effect, inject, signal, untracked } from '@angular/core';
 import { IonContent } from '@ionic/angular/standalone';
-import { RIFLE } from '../../core/content';
+import { MAX_TRAJECTORY_M, RIFLE, TRAJECTORY_STEP_M } from '../../core/content';
 import { BallisticsEngine } from '../../core/engine';
 import { isTransonic } from '../../core/field';
 import { formatScopeValue } from '../../sim/scope-model';
 import { GameSession } from '../services/game-session';
 
-export const DOPE_DISTANCES_M = [100, 200, 300, 400, 500, 600, 700] as const;
+export const DOPE_DISTANCES_M: readonly number[] = Array.from(
+  { length: MAX_TRAJECTORY_M / TRAJECTORY_STEP_M },
+  (_, index) => (index + 1) * TRAJECTORY_STEP_M,
+);
 export const DOPE_WIND_SPEEDS_MPS = [2, 4, 6] as const;
 
 interface DopeRow {

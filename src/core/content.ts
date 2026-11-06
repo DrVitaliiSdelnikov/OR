@@ -20,7 +20,7 @@ export const TARGETS: readonly Target[] = [
   { distanceM: 700, diameterM: 0.7 },
 ];
 
-export const MAX_TRAJECTORY_M = 700;
+export const MAX_TRAJECTORY_M = 1000;
 export const TRAJECTORY_STEP_M = 100;
 export const FLAG_DISTANCES_M = [200, 400, 600] as const;
 export const WIND_ZONE_LIMITS_M = [150, 350, 550, Infinity] as const;
