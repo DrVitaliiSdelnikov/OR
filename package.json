@@ -6,6 +6,7 @@
     "start:lan": "ng serve --host 0.0.0.0",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
+    "docs:dope": "npx tsx scripts/print-dope.mts",
     "test:unit": "vitest run --config vitest.core.config.ts",
     "test:e2e": "playwright test",
     "test": "npm run test:unit && npm run test:e2e"

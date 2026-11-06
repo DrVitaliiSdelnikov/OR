@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   atmosphereCorrectionMil,
-  atmosphereFactor,
   clicksDifference,
   crosswindMps,
   isRangeWithinTolerance,
@@ -81,25 +80,23 @@ describe('clicksDifference', () => {
   });
 });
 
-describe('atmosphere', () => {
-  it('+14 C and 1015 hPa barely change the factor (set А)', () => {
-    expect(atmosphereFactor(14, 1015)).toBeCloseTo(1.004, 6);
-    expect(roundToClicks(atmosphereCorrectionMil(1.2, atmosphereFactor(14, 1015)), CLICK_MIL)).toBe(0);
+describe('atmosphereCorrectionMil', () => {
+  const row = { colderBy10CMil: 0.2, pressureUp10HpaMil: 0.06 };
+
+  it('standard air (+15 C, 1013 hPa) needs no correction', () => {
+    expect(atmosphereCorrectionMil(row, 15, 1013)).toBe(0);
   });
 
-  it('−5 C and 1030 hPa add two clicks up on 3.9 (set Г)', () => {
-    expect(atmosphereFactor(-5, 1030)).toBeCloseTo(1.057, 6);
-    expect(atmosphereCorrectionMil(3.9, atmosphereFactor(-5, 1030))).toBeCloseTo(0.2223, 4);
-    expect(roundToClicks(atmosphereCorrectionMil(3.9, atmosphereFactor(-5, 1030)), CLICK_MIL)).toBe(2);
+  it('20 degrees colder and 20 hPa higher add both columns twice', () => {
+    expect(atmosphereCorrectionMil(row, -5, 1033)).toBeCloseTo(0.52, 6);
   });
 
-  it('+35 C and 1000 hPa take one click down on 1.2 (set Е)', () => {
-    expect(atmosphereFactor(35, 1000)).toBeCloseTo(0.947, 6);
-    expect(roundToClicks(atmosphereCorrectionMil(1.2, atmosphereFactor(35, 1000)), CLICK_MIL)).toBe(-1);
+  it('heat and low pressure take elevation away', () => {
+    expect(atmosphereCorrectionMil(row, 35, 1000)).toBeCloseTo(-0.478, 6);
   });
 
-  it('cold with low pressure nearly cancels out', () => {
-    expect(atmosphereFactor(0, 990)).toBeCloseTo(1.007, 6);
+  it('cold with low pressure partly cancels out', () => {
+    expect(atmosphereCorrectionMil(row, 5, 1003)).toBeCloseTo(0.14, 6);
   });
 });
 

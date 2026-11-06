@@ -27,6 +27,8 @@ export const WIND_ZONE_LIMITS_M = [150, 350, 550, Infinity] as const;
 export const FLAG_DEG_PER_MPS = 9;
 export const FLAG_MAX_DEG = 80;
 export const STANDARD_PRESSURE_HPA = 1013;
+export const STANDARD_TEMPERATURE_C = 15;
+export const STANDARD_RELATIVE_HUMIDITY = 0.5;
 
 export function cartridgeById(id: CartridgeId): Cartridge {
   return CARTRIDGES.find(cartridge => cartridge.id === id) ?? CARTRIDGES[1];

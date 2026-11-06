@@ -26,8 +26,7 @@
 | `isRangeWithinTolerance(estimatedM, trueM, tolerance)` | м, м, доля (0,05 / 0,10) | boolean | «Дальность», допуски |
 | `crosswindMps(speedMps, clockHours)` | м/с, часы | м/с, без знака | V⊥ = V × доля |
 | `windCorrectionMil(speedMps, clockHours, distanceM, windConstant)` | м/с, часы, м, K | MIL со знаком: ветер слева (7–11 ч) → минус (брать влево), справа (1–5 ч) → плюс, как в ядре | W = V⊥ × D / K |
-| `atmosphereFactor(temperatureC, pressureHpa)` | °C, гПа | K_атм | «Атмосфера» |
-| `atmosphereCorrectionMil(dopeMil, atmosphereFactor)` | MIL, K_атм | MIL | ΔВЕРТ = ДОПЕ × (K − 1) |
+| `atmosphereCorrectionMil(row, temperatureC, pressureHpa)` | строка карточки, °C, гПа | MIL | заменено в C4 ([core-calibration](core-calibration.md)): по колонкам строки вместо K_атм |
 | `leadMil(targetSpeedMps, movementClockHours, timeOfFlightS, distanceM)` | м/с, часы направления движения, с, м | MIL без знака (сторону упреждения выбирает слой app по направлению движения) | «Движущиеся цели» |
 | `roundToClicks(mil, clickMil)` | MIL, цена клика | целое число кликов, половина — от нуля | «Единицы» |
 | `clicksDifference(playerMil, referenceMil, clickMil)` | MIL, MIL | целое ≥ 0 | для проверки расчёта (CHECK-RESULT) |

@@ -1,10 +1,9 @@
+import { STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from './content';
+import type { DopeRow } from './dope-card';
 import { windClockShare } from './field';
 
 const MIL_PER_RADIAN_SCALE = 1000;
-const REFERENCE_TEMPERATURE_C = 15;
-const REFERENCE_PRESSURE_HPA = 1013;
-const TEMPERATURE_FACTOR_PER_DEGREE = 0.002;
-const PRESSURE_FACTOR_PER_HPA = 0.001;
+const ATMOSPHERE_COLUMN_STEP = 10;
 const CLOCK_HOURS_PER_TURN = 12;
 const TAIL_WIND_CLOCK_HOURS = 6;
 const CLICK_ROUNDING_EPSILON = 1e-9;
@@ -32,16 +31,14 @@ export function clicksDifference(playerMil: number, referenceMil: number, clickM
   return Math.abs(roundToClicks(playerMil, clickMil) - roundToClicks(referenceMil, clickMil));
 }
 
-export function atmosphereFactor(temperatureC: number, pressureHpa: number): number {
-  return (
-    1 -
-    TEMPERATURE_FACTOR_PER_DEGREE * (temperatureC - REFERENCE_TEMPERATURE_C) +
-    PRESSURE_FACTOR_PER_HPA * (pressureHpa - REFERENCE_PRESSURE_HPA)
-  );
-}
-
-export function atmosphereCorrectionMil(dopeMil: number, factor: number): number {
-  return dopeMil * (factor - 1);
+export function atmosphereCorrectionMil(
+  row: Pick<DopeRow, 'colderBy10CMil' | 'pressureUp10HpaMil'>,
+  temperatureC: number,
+  pressureHpa: number,
+): number {
+  const tensOfDegreesColder = (STANDARD_TEMPERATURE_C - temperatureC) / ATMOSPHERE_COLUMN_STEP;
+  const tensOfHpaHigher = (pressureHpa - STANDARD_PRESSURE_HPA) / ATMOSPHERE_COLUMN_STEP;
+  return tensOfDegreesColder * row.colderBy10CMil + tensOfHpaHigher * row.pressureUp10HpaMil;
 }
 
 export function rangeByMilling(targetSizeM: number, sizeOnReticleMil: number): number {

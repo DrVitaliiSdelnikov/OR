@@ -54,3 +54,4 @@
 | Модуль | Файл | Статус |
 | --- | --- | --- |
 | core/game-formulas + правило часов + дальность 1000 м | [specs/core-game-formulas.md](specs/core-game-formulas.md) | реализовано, ветка `feat/core-game-formulas` |
+| core/dope-card + калибровка формул по ядру (C4, C5) | [specs/core-calibration.md](specs/core-calibration.md) | реализовано, ветка `feat/core-calibration` |
