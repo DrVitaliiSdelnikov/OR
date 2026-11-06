@@ -1,6 +1,6 @@
 # core/dope-card · калибровка игровых формул по ядру
 
-Статус: реализовано 7.11, ветка `feat/core-calibration`. Юнит-тестов 177, e2e 46 (по 23 на mobile-chromium и mobile-webkit) — все зелёные.
+Статус: реализовано 7.11, слито в `master`. Юнит-тестов 177, e2e 46 (по 23 на mobile-chromium и mobile-webkit) — все зелёные.
 Задачи бэклога: C4 (калибровка), C5 (карточка ДОПЕ). Решения: Б7, Б15, Б32, М1.
 Правила: [FORMULAS.md](../../logic/FORMULAS.md). Ядро — js-ballistics через фасад `core/engine.ts` (G7, ноль 100 м, эталон +15 C / 1013 гПа).
 
