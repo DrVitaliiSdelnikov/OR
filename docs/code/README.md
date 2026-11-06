@@ -11,6 +11,8 @@
 
 Спека — источник правды для модуля. Если в коде решили иначе, сначала правим спеку.
 
+**Кандидаты на удаление (7.11).** Всё, что заменяется новым кодом, сразу помечается `@deprecated` и вносится в [REMOVAL-CANDIDATES.md](REMOVAL-CANDIDATES.md) с задачей, в которой удаляется. Новый код не импортирует помеченное.
+
 ## Матрица устройств
 
 Всё, что делаем, должно корректно работать и проверяться в трёх средах.
@@ -55,4 +57,4 @@
 | --- | --- | --- |
 | core/game-formulas + правило часов + дальность 1000 м | [specs/core-game-formulas.md](specs/core-game-formulas.md) | реализовано, слито в `master` 7.11 |
 | core/dope-card + калибровка формул по ядру (C4, C5) | [specs/core-calibration.md](specs/core-calibration.md) | реализовано, слито в `master` 7.11 |
-| core/exercise-scoring + core/calc-check (C6, C7) | [specs/core-scoring-and-check.md](specs/core-scoring-and-check.md) | черновик |
+| core/exercise-scoring + core/calc-check (C6, C7) | [specs/core-scoring-and-check.md](specs/core-scoring-and-check.md) | реализовано, слито в `master` 7.11 |
