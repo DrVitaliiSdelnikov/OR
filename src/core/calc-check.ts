@@ -1,7 +1,7 @@
 import { roundToClicks } from './game-formulas';
 
 export type CheckVerdict = 'exact' | 'close' | 'error';
-export type CalcStepKind = 'distance' | 'dope' | 'atmosphere' | 'wind' | 'lead';
+export type CalcStepKind = 'distance' | 'dope' | 'atmosphere' | 'zones' | 'wind' | 'lead';
 export type PreparationRowKind = 'reading-speed' | 'reading-direction' | 'factors' | 'turret-elevation' | 'turret-windage';
 export type CheckErrorType = 'units' | 'substitution' | 'side' | 'rounding' | 'arithmetic' | 'lead' | 'reading' | 'factor' | 'turret';
 
