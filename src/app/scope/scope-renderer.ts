@@ -162,7 +162,7 @@ export class ScopeRenderer {
       }
       context.stroke();
     };
-    switch (frame.scope.id) {
+    switch (frame.scope.reticle) {
       case 'tree':
         for (let mil = 1; mil <= 14; mil++) {
           for (const sign of [-1, 1]) {
@@ -183,7 +183,7 @@ export class ScopeRenderer {
           }
         }
         break;
-      case 'moa': {
+      case 'moa-grid': {
         const moaPt = unitPt * MRAD_PER_MOA;
         for (let moa = 1; moa <= 40; moa++) {
           for (const sign of [-1, 1]) {
@@ -197,7 +197,7 @@ export class ScopeRenderer {
         }
         break;
       }
-      case 'dot':
+      case 'mil-dot':
         context.lineWidth = 4;
         for (const sign of [-1, 1]) {
           context.beginPath();
@@ -218,18 +218,6 @@ export class ScopeRenderer {
               context.arc(center + x * unitPt, center + y * unitPt, Math.max(1, 0.1 * unitPt), 0, Math.PI * 2);
               context.fill();
             }
-          }
-        }
-        break;
-      case 'fine':
-        for (let halfMil = 1; halfMil <= 60; halfMil++) {
-          for (const sign of [-1, 1]) {
-            const isWhole = halfMil % 2 === 0;
-            tick(sign * halfMil * 0.5 * unitPt, true, isWhole ? 4 : 2.2);
-            tick(sign * halfMil * 0.5 * unitPt, false, isWhole ? 4 : 2.2);
-          }
-          if (halfMil % 4 === 0) {
-            context.fillText(String(halfMil / 2), center + halfMil * 0.5 * unitPt, center - 7);
           }
         }
         break;

@@ -17,7 +17,7 @@ import { ScenarioOptions } from '../core/scenario';
 import { CartridgeId, Correction, Target } from '../core/types';
 import { FiringPlan } from './firing-line';
 import { PatrolTarget, patrolPlan } from './patrol';
-import { ScopeId } from './scope-model';
+import { FreePlayScopeUnlocks, ScopeId } from './scope-model';
 import { ShotDiagnosis } from './shot-review';
 
 export type ExerciseId = '00' | '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10' | '11' | '12';
@@ -110,10 +110,9 @@ export interface CourseResults {
   bestClasses: Partial<Record<ExerciseId, ExerciseClass>>;
 }
 
-export interface FreePlayUnlocks {
+export interface FreePlayUnlocks extends FreePlayScopeUnlocks {
   unknownDistance: boolean;
   manualEasy: boolean;
-  moaScope: boolean;
   cartridgesAC: boolean;
   gustyWind: boolean;
   manualHard: boolean;
@@ -127,6 +126,7 @@ export interface CourseProgress {
   freePlayUnlocks: FreePlayUnlocks;
 }
 
+const MIL_DOT_FROM_EXERCISE = 6;
 const TWO_SHOTS: ExerciseStage = { cartridgeId: 'B', maxShotsPerTarget: 2, closesOnHit: true };
 const CALM: ScenarioOptions = { windScale: 0, isWindUniform: true };
 const LIGHT_WIND: ScenarioOptions = { isWindUniform: true, windSpeedRangeMps: [2, 2.5] };
@@ -318,6 +318,9 @@ export function courseProgress(results: CourseResults, isEverythingUnlocked = fa
       unknownDistance: isOpenedBy('05'),
       manualEasy: isOpenedBy('06'),
       moaScope: isOpenedBy('06'),
+      milDotScope: isOpenedBy('06'),
+      longRangeScope: isOpenedBy('09'),
+      secondFocalPlaneScope: isOpenedBy('12'),
       cartridgesAC: isOpenedBy('08'),
       gustyWind: isOpenedBy('09'),
       manualHard: isOpenedBy('10'),
@@ -335,7 +338,7 @@ function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | n
     hasKnockedSight: false,
     hasPatrol: false,
     notebookMode: 'auto',
-    scopeId: 'tree',
+    scopeId: Number(id) >= MIL_DOT_FROM_EXERCISE ? 'course-dot' : 'course-tree',
     conditions: {},
     terms: [],
     ...fields,

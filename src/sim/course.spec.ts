@@ -69,6 +69,13 @@ describe('COURSE catalog', () => {
     expect(COURSE.filter(def => def.targets && def.id !== '01').every(def => def.hasColdBore)).toBe(true);
   });
 
+  it('the course shoots the 3–12× tree to 05 and the 3–12× MIL-dot from 06', () => {
+    const treeIds = ['00', '01', '02', '03', '04', '05'];
+    for (const def of COURSE) {
+      expect(def.scopeId).toBe(treeIds.includes(def.id) ? 'course-tree' : 'course-dot');
+    }
+  });
+
   it('the notebook mode follows the course: AUTO to 05, SAM easy from 06, SAM hard in 10', () => {
     expect(['01', '02', '03', '04', '05'].map(id => exercise(id as ExerciseId).notebookMode)).toEqual(['auto', 'auto', 'auto', 'auto', 'auto']);
     expect(exercise('06').notebookMode).toBe('manual-easy');
@@ -441,6 +448,9 @@ describe('course progress', () => {
     expect(courseProgress({ isIntroCompleted: true, bestClasses: firstThree }).rank).toBe('rifleman');
     const allTop: CourseResults['bestClasses'] = Object.fromEntries(ids.map(id => [id, 1]));
     const finished = courseProgress({ isIntroCompleted: true, bestClasses: allTop });
+    expect(finished.freePlayUnlocks.secondFocalPlaneScope).toBe(true);
+    expect(courseProgress({ isIntroCompleted: true, bestClasses: { ...allTop, '12': 0 } }).freePlayUnlocks.secondFocalPlaneScope).toBe(false);
+    expect(courseProgress({ isIntroCompleted: true, bestClasses: { '09': 3 } }).freePlayUnlocks.longRangeScope).toBe(true);
     expect(finished.rank).toBe('sniper-instructor');
     expect(finished.nextExerciseId).toBeNull();
     const oneSecond: CourseResults['bestClasses'] = { ...allTop, '07': 2 };
@@ -448,8 +458,21 @@ describe('course progress', () => {
   });
 
   it('free play unlocks follow the course', () => {
+    const after05 = courseProgress({ isIntroCompleted: true, bestClasses: { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3 } }).freePlayUnlocks;
+    expect(after05.milDotScope).toBe(false);
+    expect(after05.moaScope).toBe(false);
     const after06 = courseProgress({ isIntroCompleted: true, bestClasses: { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3, '06': 3 } }).freePlayUnlocks;
-    expect(after06).toEqual({ unknownDistance: true, manualEasy: true, moaScope: true, cartridgesAC: false, gustyWind: false, manualHard: false });
+    expect(after06).toEqual({
+      unknownDistance: true,
+      manualEasy: true,
+      moaScope: true,
+      milDotScope: true,
+      cartridgesAC: false,
+      gustyWind: false,
+      longRangeScope: false,
+      manualHard: false,
+      secondFocalPlaneScope: false,
+    });
   });
 
   it('"unlock everything" opens every exercise and free play option but leaves the rank', () => {

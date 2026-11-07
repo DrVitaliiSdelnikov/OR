@@ -333,10 +333,10 @@ describe('more cases', () => {
   });
 
   it('wind past the side stop: the rest is held to the same side', () => {
-    const notebook = solve(enterWind(createNotebook(context(), 'manual-easy'), 3.2, 9), 'wind', ['crosswind', 'distance'], [960, 5, 5], -1);
+    const notebook = solve(enterWind(createNotebook(context(), 'manual-easy'), 3.2, 9), 'wind', ['crosswind', 'distance'], [960, 12, 12], -1);
     const result = total(notebook);
     expect(result.holdRightMil).toBeLessThan(0);
-    expect(result.holdRightMil).toBeCloseTo(-5 + result.windageLeft.targetClicks * CLICK_MIL, 9);
+    expect(result.holdRightMil).toBeCloseTo(-12 + result.windageLeft.targetClicks * CLICK_MIL, 9);
   });
 
   it('zones with every wind from the right push the other way', () => {

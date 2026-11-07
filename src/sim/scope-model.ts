@@ -4,12 +4,14 @@ export const EYEPIECE_RADIUS_PT = 138;
 export const PT_PER_MIL_PER_MAGNIFICATION = 3.4;
 export const DRUM_DRAG_PT_PER_CLICK = 9;
 
-export type ScopeId = 'tree' | 'moa' | 'dot' | 'fine';
+export type ScopeId = 'course-tree' | 'course-dot' | 'moa' | 'tree' | 'dot';
 export type ScopeUnits = 'MIL' | 'MOA';
+export type ReticleKind = 'tree' | 'mil-dot' | 'moa-grid';
 
 export interface ScopeModel {
   id: ScopeId;
   name: string;
+  reticle: ReticleKind;
   magnificationMin: number;
   magnificationMax: number;
   isFirstFocalPlane: boolean;
@@ -19,55 +21,80 @@ export interface ScopeModel {
   windageTravelMrad: number;
 }
 
+export interface FreePlayScopeUnlocks {
+  milDotScope: boolean;
+  moaScope: boolean;
+  longRangeScope: boolean;
+  secondFocalPlaneScope: boolean;
+}
+
+const COURSE_BODY = {
+  magnificationMin: 3,
+  magnificationMax: 12,
+  isFirstFocalPlane: true,
+  units: 'MIL',
+  clickMrad: 0.1,
+  elevationTravelMrad: 20,
+  windageTravelMrad: 6,
+} as const;
+
 export const SCOPES: readonly ScopeModel[] = [
-  {
-    id: 'tree',
-    name: 'Ёлка 5–25×',
-    magnificationMin: 5,
-    magnificationMax: 25,
-    isFirstFocalPlane: true,
-    units: 'MIL',
-    clickMrad: 0.1,
-    elevationTravelMrad: 12,
-    windageTravelMrad: 4,
-  },
+  { id: 'course-tree', name: 'Курсовой 3–12× · Ёлка', reticle: 'tree', ...COURSE_BODY },
+  { id: 'course-dot', name: 'Курсовой 3–12× · MIL-dot', reticle: 'mil-dot', ...COURSE_BODY },
   {
     id: 'moa',
     name: 'MOA 6–24×',
+    reticle: 'moa-grid',
     magnificationMin: 6,
     magnificationMax: 24,
     isFirstFocalPlane: true,
     units: 'MOA',
     clickMrad: 0.25 * MRAD_PER_MOA,
-    elevationTravelMrad: 30 * MRAD_PER_MOA,
-    windageTravelMrad: 12 * MRAD_PER_MOA,
+    elevationTravelMrad: 70 * MRAD_PER_MOA,
+    windageTravelMrad: 25 * MRAD_PER_MOA,
+  },
+  {
+    id: 'tree',
+    name: 'Дальний 5–25× · Ёлка',
+    reticle: 'tree',
+    magnificationMin: 5,
+    magnificationMax: 25,
+    isFirstFocalPlane: true,
+    units: 'MIL',
+    clickMrad: 0.1,
+    elevationTravelMrad: 28,
+    windageTravelMrad: 10,
   },
   {
     id: 'dot',
-    name: 'Dot 3–12×',
+    name: 'Старый 3–12× · MIL-dot · 2-я плоскость',
+    reticle: 'mil-dot',
     magnificationMin: 3,
     magnificationMax: 12,
     isFirstFocalPlane: false,
     units: 'MIL',
     clickMrad: 0.1,
-    elevationTravelMrad: 6,
-    windageTravelMrad: 2,
-  },
-  {
-    id: 'fine',
-    name: 'Fine 8–32×',
-    magnificationMin: 8,
-    magnificationMax: 32,
-    isFirstFocalPlane: true,
-    units: 'MIL',
-    clickMrad: 0.1,
-    elevationTravelMrad: 14,
-    windageTravelMrad: 5,
+    elevationTravelMrad: 17,
+    windageTravelMrad: 6,
   },
 ];
 
-export function scopeById(id: ScopeId): ScopeModel {
-  return SCOPES.find(scope => scope.id === id) ?? SCOPES[0];
+const LEGACY_SCOPE_IDS: Readonly<Record<string, ScopeId>> = { fine: 'course-dot' };
+
+export function scopeById(id: string): ScopeModel {
+  const knownId = LEGACY_SCOPE_IDS[id] ?? id;
+  return SCOPES.find(scope => scope.id === knownId) ?? SCOPES[0];
+}
+
+export function freePlayScopes(unlocks: FreePlayScopeUnlocks): ScopeModel[] {
+  const isOpen: Record<ScopeId, boolean> = {
+    'course-tree': true,
+    'course-dot': unlocks.milDotScope,
+    moa: unlocks.moaScope,
+    tree: unlocks.longRangeScope,
+    dot: unlocks.secondFocalPlaneScope,
+  };
+  return SCOPES.filter(scope => isOpen[scope.id]);
 }
 
 export function magnificationStep(scope: ScopeModel): number {
