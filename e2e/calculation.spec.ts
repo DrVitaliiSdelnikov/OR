@@ -77,10 +77,4 @@ test.describe('метеостанция, HUD, часы ветра, DOPE', () => 
     await page.getByTestId('clock-1.5').dispatchEvent('click');
     await expect(page.getByTestId('wind-share')).toHaveText('0.71');
   });
-
-  test('настройки: тема B переключает палитру', async ({ page }) => {
-    await page.goto('/tabs/hub/settings');
-    await page.getByTestId('theme-day').click();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'day');
-  });
 });

@@ -413,7 +413,6 @@ export class ScopePage {
       marks: this.marks,
       flags: hasZoneWind(task) ? scenario.flags.map((flag, index) => ({ distanceM: flag.distanceM, lateralWindMps: lateralWindMps(zones[index + 1]) })) : [],
       timeS: performance.now() / 1000,
-      isDayTheme: this.progress.settings().theme === 'day',
     });
     this.drawPad();
   }

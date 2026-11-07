@@ -5,8 +5,6 @@ import { Correction, MissCause } from '../../core/types';
 
 export const PROGRESS_STORAGE_KEY = 'or.progress.v1';
 
-export type ThemeName = 'field' | 'day';
-
 export interface TaskResult {
   score: number;
   maxScore: number;
@@ -14,7 +12,6 @@ export interface TaskResult {
 }
 
 export interface Settings {
-  theme: ThemeName;
   isSoundOn: boolean;
   isHapticsOn: boolean;
   isTriggerZoneLarger: boolean;
@@ -53,7 +50,6 @@ interface ProgressState {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  theme: 'field',
   isSoundOn: true,
   isHapticsOn: true,
   isTriggerZoneLarger: false,
@@ -84,7 +80,7 @@ export class ProgressStore {
       const stored = JSON.parse(value) as Partial<ProgressState>;
       this.state.set({
         results: stored.results ?? {},
-        settings: { ...DEFAULT_SETTINGS, ...stored.settings },
+        settings: knownSettings(stored.settings),
         shots: stored.shots ?? [],
       });
     } catch {
@@ -121,4 +117,14 @@ export class ProgressStore {
     this.state.update(change);
     void Preferences.set({ key: PROGRESS_STORAGE_KEY, value: JSON.stringify(this.state()) });
   }
+}
+
+function knownSettings(stored: Partial<Settings> | undefined): Settings {
+  const settings: Settings = { ...DEFAULT_SETTINGS };
+  for (const key of Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]) {
+    if (typeof stored?.[key] === 'boolean') {
+      settings[key] = stored[key];
+    }
+  }
+  return settings;
 }

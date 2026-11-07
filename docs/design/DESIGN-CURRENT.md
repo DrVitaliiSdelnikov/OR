@@ -114,7 +114,7 @@ flowchart LR
 
 ### 1. Хаб
 
-![Хаб](screens/01-hub.png) ![Хаб, список задач](screens/02-hub-tasks.png) ![Хаб, тема B](screens/01-hub-day.png)
+![Хаб](screens/01-hub.png) ![Хаб, список задач](screens/02-hub-tasks.png)
 
 Сверху вниз:
 
@@ -143,7 +143,7 @@ flowchart LR
 
 ### 3. HUD расчёта
 
-![HUD](screens/07-calc-hud.png) ![HUD, тема B](screens/07-calc-hud-day.png)
+![HUD](screens/07-calc-hud.png)
 
 - Сегмент `MIL | MOA | клики` с замком «на HUD заблокировано» (подсвечена единица текущего прицела).
 - **Дистанция** 52 pt и **время полёта** справа.
@@ -170,7 +170,7 @@ flowchart LR
 
 ### 5. Прицел (весь экран)
 
-![Прицел](screens/09-scope.png) ![Прицел, тема B](screens/09-scope-day.png) ![ZERO STOP](screens/10-scope-zero-stop.png)
+![Прицел](screens/09-scope.png) ![ZERO STOP](screens/10-scope-zero-stop.png)
 
 - **Верх:** кнопки «← Расчёт» и «Хаб»; моно-строка накрученного `↑ 0.0 · → 0.0`; справа `500 м · FFP · MIL` (для Dot ещё «верно на 12×»).
 - **Верхний барабан (высота):** полоса 276×48 с насечкой, значение и клики в центре, `◂ ▸` по краям по 1 клику. Перетаскивание вбок — 1 клик на 9 pt.

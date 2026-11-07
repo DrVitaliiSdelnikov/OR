@@ -66,3 +66,4 @@
 | sim/notebook (S9) | [specs/sim-notebook.md](specs/sim-notebook.md) | реализовано, слито в `master` 7.11 |
 | sim/patrol (S10) | [specs/sim-patrol.md](specs/sim-patrol.md) | реализовано, слито в `master` 7.11 |
 | sim/scope-model — каталог прицелов (S11) | [specs/sim-scope-catalog.md](specs/sim-scope-catalog.md) | реализовано, слито в `master` 7.11 |
+| app · токены и одна тема (A1) | [specs/app-tokens.md](specs/app-tokens.md) | реализовано, слито в `master` 7.11 |

@@ -17,7 +17,6 @@ export interface SceneFrame {
   marks: Correction[];
   flags: FlagView[];
   timeS: number;
-  isDayTheme: boolean;
 }
 
 const FLAG_SIDE_OFFSET_M = 2.5;
@@ -59,7 +58,7 @@ export class ScopeRenderer {
     const context = this.context;
     const horizonY = targetY - 2.2 * frame.ptPerMil;
     const sky = context.createLinearGradient(0, horizonY - 200, 0, horizonY);
-    sky.addColorStop(0, frame.isDayTheme ? '#b9cbd6' : '#8fa3b0');
+    sky.addColorStop(0, '#8fa3b0');
     sky.addColorStop(1, '#dfe5dc');
     context.fillStyle = sky;
     context.fillRect(0, 0, GLASS_SIZE_PT, GLASS_SIZE_PT);

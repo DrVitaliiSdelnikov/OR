@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import { ProgressStore, Settings } from '../services/progress.store';
 
-type ToggleKey = Exclude<keyof Settings, 'theme'>;
+type ToggleKey = keyof Settings;
 
 @Component({
   selector: 'or-settings',
@@ -14,13 +14,6 @@ type ToggleKey = Exclude<keyof Settings, 'theme'>;
         <div class="top-bar">
           <a class="button" routerLink="/tabs/hub" aria-label="Назад" data-test="settings-back">←</a>
           <h1>Настройки</h1>
-        </div>
-        <div class="card">
-          <div class="label">Тема</div>
-          <div class="row themes">
-            <button class="chip" [class.selected]="progress.settings().theme === 'field'" (click)="progress.updateSettings({ theme: 'field' })" data-test="theme-field">A · Полевой HUD</button>
-            <button class="chip" [class.selected]="progress.settings().theme === 'day'" (click)="progress.updateSettings({ theme: 'day' })" data-test="theme-day">B · Дневное снаряжение</button>
-          </div>
         </div>
         <div class="card toggles">
           @for (toggle of toggles; track toggle.key) {
@@ -38,7 +31,6 @@ type ToggleKey = Exclude<keyof Settings, 'theme'>;
   `,
   styles: `
     a { text-decoration: none; }
-    .themes { flex-wrap: wrap; margin-top: 8px; }
     .toggles { display: flex; flex-direction: column; gap: 4px; }
     ion-toggle { min-height: 48px; }
   `,

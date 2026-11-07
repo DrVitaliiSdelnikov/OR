@@ -18,7 +18,7 @@ export async function unlockEverything(page: Page, settings: object = {}): Promi
   await seedProgress(page, {
     results: {},
     shots: [],
-    settings: { theme: 'field', isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: true, ...settings },
+    settings: { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: true, ...settings },
   });
 }
 

@@ -1,0 +1,63 @@
+// Источник — docs/design/TOKENS.md; значения сверяет src/theme/tokens.spec.ts.
+:root {
+  --device-bg: #0c0e0a;
+  --device-bg-2: #10130e;
+  --device-surface: #161a12;
+  --device-surface-2: #1a1e16;
+  --device-sunken: #12150f;
+  --device-line: #2e3427;
+  --device-line-strong: #3a4034;
+  --device-line-muted: #4a5040;
+  --device-text: #e4e7dc;
+  --device-text-muted: #8f9684;
+  --device-accent: #c8a24a;
+  --device-on-accent: #0c0e0a;
+  --device-ok: #7fb069;
+  --device-error: #d0554f;
+  --device-error-text: #de6a63;
+
+  --paper-bg: #dad5bf;
+  --paper-grid: #b9b398;
+  --paper-ink: #2c2f26;
+  --paper-graphite: #3b3f45;
+  --paper-red-pencil: #923a35;
+  --paper-stamp-gold: #735812;
+  --paper-stamp-green: #40652f;
+  --paper-stamp-silver: #5e6a6e;
+  --paper-stamp-bronze: #6b5d35;
+
+  --font-text: 'Roboto', system-ui, sans-serif;
+  --font-title: 'Roboto Condensed', 'Roboto', system-ui, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, monospace;
+
+  --type-min: 13px;
+  --type-label: 13px;
+  --type-body: 15px;
+  --type-value: 17px;
+  --type-title: 22px;
+  --type-big: 28px;
+  --type-hero: 40px;
+  --tracking-title: 0.05em;
+  --tracking-label: 0.07em;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --gutter: 16px;
+  --touch-min: 44px;
+  --button-main-height: 64px;
+  --fire-size: 100px;
+  --hold-size: 84px;
+  --radius-device: 2px;
+  --radius-paper: 6px;
+  --border-width: 1px;
+  --paper-shadow: 0 4px 10px rgba(60, 45, 20, 0.18);
+
+  --motion-max: 300ms;
+  --motion-sheet: 240ms;
+  --motion-paper: 200ms;
+  --motion-stamp: 120ms;
+  --motion-hint: 160ms;
+}

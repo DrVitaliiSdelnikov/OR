@@ -4,7 +4,7 @@ const BASE_URL = 'http://localhost:4310';
 const OUTPUT_DIR = 'docs/design/screens';
 const PROGRESS_KEY = 'CapacitorStorage.or.progress.v1';
 
-async function seed(page: Page, theme: 'field' | 'day'): Promise<void> {
+async function seed(page: Page): Promise<void> {
   await page.addInitScript(
     ([key, value]) => {
       if (!sessionStorage.getItem('or-seeded')) {
@@ -17,7 +17,7 @@ async function seed(page: Page, theme: 'field' | 'day'): Promise<void> {
       JSON.stringify({
         results: { 'q-mrad': { score: 30, maxScore: 30, stars: 3 }, 'q-range': { score: 20, maxScore: 30, stars: 1 } },
         shots: [],
-        settings: { theme, isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: false, isMarkerDriftOff: true, isEverythingUnlocked: true },
+        settings: { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: false, isMarkerDriftOff: true, isEverythingUnlocked: true },
       }),
     ] as const,
   );
@@ -28,10 +28,10 @@ async function snap(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: `${OUTPUT_DIR}/${name}.png` });
 }
 
-async function captureTheme(theme: 'field' | 'day', suffix: string, isFull: boolean): Promise<void> {
+async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  await seed(page, theme);
+  await seed(page);
   const byTest = (id: string) => page.locator(`[data-test="${id}"]`);
 
   await page.goto(`${BASE_URL}/tabs/hub`);
@@ -106,13 +106,12 @@ async function captureTheme(theme: 'field' | 'day', suffix: string, isFull: bool
   if (isFull) {
     const laptop = await chromium.launch();
     const wide = await laptop.newPage({ viewport: { width: 1280, height: 720 } });
-    await seed(wide, theme);
+    await seed(wide);
     await wide.goto(`${BASE_URL}/tabs/hub`);
     await snap(wide, `20-laptop-frame${suffix}`);
     await laptop.close();
   }
 }
 
-await captureTheme('field', '', true);
-await captureTheme('day', '-day', false);
+await captureScreens('', true);
 console.log('done');
