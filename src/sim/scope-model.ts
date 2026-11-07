@@ -130,8 +130,8 @@ export class Turret {
   private currentClicks = 0;
 
   constructor(
-    private readonly minClicks: number,
-    private readonly maxClicks: number,
+    readonly minClicks: number,
+    readonly maxClicks: number,
     private readonly lowerStop: TurretStop,
     private readonly upperStop: TurretStop,
   ) {}
