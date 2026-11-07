@@ -11,6 +11,7 @@ export class BallisticsEngine {
     atmosphere: Atmosphere | null,
     windZones: readonly WindZone[] | null,
     muzzleVelocityMps = cartridge.muzzleVelocityMps,
+    stepM = TRAJECTORY_STEP_M,
   ): Promise<TrajectoryPoint[]> {
     const weapon = await this.zeroedWeapon(cartridge);
     const shot = new Shot({
@@ -22,7 +23,7 @@ export class BallisticsEngine {
     const result = await this.calculator.fire({
       shot,
       trajectoryRange: UNew.Meter(MAX_TRAJECTORY_M),
-      trajectoryStep: UNew.Meter(TRAJECTORY_STEP_M),
+      trajectoryStep: UNew.Meter(stepM),
     });
     return result.samples.map(sample => ({
       distanceM: Math.round(sample.distance.In(Unit.Meter)),

@@ -11,6 +11,14 @@ describe('BallisticsEngine.trajectory', () => {
     expect(points.map(point => point.distanceM)).toEqual([0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]);
   });
 
+  it('a custom step samples the exact target distance and agrees on shared points', async () => {
+    const coarse = await engine.trajectory(cartridgeB, null, null);
+    const fine = await engine.trajectory(cartridgeB, null, null, cartridgeB.muzzleVelocityMps, 450);
+    expect(fine.map(point => point.distanceM)).toEqual([0, 450, 900]);
+    const at900 = (points: typeof fine) => BallisticsEngine.required(points, 900).upMrad;
+    expect(at900(fine)).toBeCloseTo(at900(coarse), 6);
+  });
+
   it('is zeroed at 100 m', async () => {
     const points = await engine.trajectory(cartridgeB, null, null);
     expect(Math.abs(BallisticsEngine.required(points, RIFLE.zeroM).upMrad)).toBeLessThan(0.02);

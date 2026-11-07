@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { cartridgeById, RIFLE, TARGETS } from './content';
 import { BallisticsEngine } from './engine';
 import { createScenario, windAt } from './scenario';
+import { targetMotionMil } from './moving-target';
 import { explainMiss, MissInputs, resolveShot } from './shot';
 import { Correction } from './types';
 
@@ -81,6 +82,44 @@ describe('resolveShot', () => {
     expect(knocked.impact.upMrad - straight.impact.upMrad).toBeCloseTo(-0.8, 6);
     expect(knocked.impact.rightMrad - straight.impact.rightMrad).toBeCloseTo(0.6, 6);
     expect(knocked.hitProbability).toBeLessThan(straight.hitProbability);
+  });
+
+  it('a target walking right while the bullet flies leaves the impact behind it by its motion', async () => {
+    const standing = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 6);
+    const walking = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 6, { targetLateralVelocityMps: 1.2 });
+    const motionMil = targetMotionMil(1.2, walking.timeOfFlightS, target500.distanceM);
+    expect(standing.targetMotion).toEqual({ upMrad: 0, rightMrad: 0 });
+    expect(walking.targetMotion.upMrad).toBe(0);
+    expect(walking.targetMotion.rightMrad).toBeCloseTo(motionMil, 2);
+    expect(walking.impact.rightMrad - standing.impact.rightMrad).toBeCloseTo(-motionMil, 2);
+    expect(walking.impact.upMrad).toBeCloseTo(standing.impact.upMrad, 6);
+  });
+
+  it('holding the lead puts the bullet where it would hit a standing target', async () => {
+    const standing = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 7);
+    const probe = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 7, { targetLateralVelocityMps: -0.7 });
+    const leadHoldMil = targetMotionMil(-0.7, probe.timeOfFlightS, target500.distanceM);
+    const led = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 7, {
+      targetLateralVelocityMps: -0.7,
+      hold: { upMrad: 0, rightMrad: leadHoldMil },
+    });
+    expect(Math.abs(led.impact.rightMrad - standing.impact.rightMrad)).toBeLessThanOrEqual(0.01);
+  });
+
+  it('the hit chance drops without the lead', async () => {
+    const probe = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 8, { targetLateralVelocityMps: 0.7 });
+    const leadHoldMil = targetMotionMil(0.7, probe.timeOfFlightS, target500.distanceM);
+    const led = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 8, { targetLateralVelocityMps: 0.7, hold: { upMrad: 0, rightMrad: leadHoldMil } });
+    expect(probe.hitProbability).toBeLessThan(led.hitProbability);
+  });
+
+  it('a target between the 100 m rows is solved exactly, not refused', async () => {
+    const target450 = { distanceM: 450, diameterM: 0.5 };
+    const points = await engine.trajectory(cartridge, scenario.atmosphere, windAt(scenario, scenario.startTimeS), cartridge.muzzleVelocityMps, 450);
+    const required = BallisticsEngine.required(points, 450);
+    const result = await resolveShot(engine, scenario, cartridge, target450, { upMrad: required.upMrad, rightMrad: required.rightMrad }, 0);
+    expect(result.decision.upMrad).toBeCloseTo(0, 2);
+    expect(result.decision.rightMrad).toBeCloseTo(0, 2);
   });
 
   it('plate radius is 0.5 mrad at 500 m', async () => {

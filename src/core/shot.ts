@@ -1,5 +1,6 @@
 import { RIFLE, targetRadiusMrad } from './content';
 import { BallisticsEngine } from './engine';
+import { targetMotionMil } from './moving-target';
 import { gaussian, mulberry32 } from './rng';
 import { Scenario, windAt } from './scenario';
 import { Cartridge, Correction, MissCause, Target } from './types';
@@ -9,6 +10,7 @@ export interface ShotOptions {
   hold?: Correction;
   isColdBore?: boolean;
   sightOffset?: Correction;
+  targetLateralVelocityMps?: number;
 }
 
 export interface MissExplanation {
@@ -30,6 +32,7 @@ export interface ShotResult extends MissExplanation {
   hold: Correction;
   coldBore: Correction;
   sightOffset: Correction;
+  targetMotion: Correction;
   windShift: Correction;
   atmosphereUpMrad: number;
   windRightMrad: number;
@@ -75,13 +78,14 @@ export async function resolveShot(
   const groupRightMrad = gaussian(random) * RIFLE.groupSigmaMrad;
   const groupUpMrad = gaussian(random) * RIFLE.groupSigmaMrad;
 
+  const sampleStepM = target.distanceM;
   const [nominal, actual, vacuumLike, atmosphereOnly, fasterBullet, meanWind] = await Promise.all([
-    engine.trajectory(cartridge, scenario.atmosphere, windAtShot),
-    engine.trajectory(cartridge, scenario.atmosphere, windAtShot, actualMuzzleVelocityMps),
-    engine.trajectory(cartridge, null, null),
-    engine.trajectory(cartridge, scenario.atmosphere, null),
-    engine.trajectory(cartridge, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps + cartridge.muzzleVelocitySdMps),
-    engine.trajectory(cartridge, scenario.atmosphere, scenario.zones),
+    engine.trajectory(cartridge, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps, sampleStepM),
+    engine.trajectory(cartridge, scenario.atmosphere, windAtShot, actualMuzzleVelocityMps, sampleStepM),
+    engine.trajectory(cartridge, null, null, cartridge.muzzleVelocityMps, sampleStepM),
+    engine.trajectory(cartridge, scenario.atmosphere, null, cartridge.muzzleVelocityMps, sampleStepM),
+    engine.trajectory(cartridge, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps + cartridge.muzzleVelocitySdMps, sampleStepM),
+    engine.trajectory(cartridge, scenario.atmosphere, scenario.zones, cartridge.muzzleVelocityMps, sampleStepM),
   ]);
   const distanceM = target.distanceM;
   const ideal = BallisticsEngine.required(nominal, distanceM);
@@ -92,11 +96,15 @@ export async function resolveShot(
   const meanWindRequired = BallisticsEngine.required(meanWind, distanceM);
 
   const velocitySpread = subtract(ideal, actualRequired);
+  const targetMotion: Correction = {
+    upMrad: 0,
+    rightMrad: targetMotionMil(options.targetLateralVelocityMps ?? 0, actualRequired.timeS, target.distanceM),
+  };
   const decision = subtract(dial, ideal);
   const group: Correction = { upMrad: groupUpMrad, rightMrad: groupRightMrad };
   const impact: Correction = {
     upMrad: decision.upMrad + velocitySpread.upMrad + group.upMrad + hold.upMrad + coldBore.upMrad + sightOffset.upMrad,
-    rightMrad: decision.rightMrad + velocitySpread.rightMrad + group.rightMrad + hold.rightMrad + coldBore.rightMrad + sightOffset.rightMrad,
+    rightMrad: decision.rightMrad + velocitySpread.rightMrad + group.rightMrad + hold.rightMrad + coldBore.rightMrad + sightOffset.rightMrad - targetMotion.rightMrad,
   };
   const missMrad = Math.hypot(impact.upMrad, impact.rightMrad);
   const radiusMrad = targetRadiusMrad(target);
@@ -121,7 +129,7 @@ export async function resolveShot(
   const decisionProbability = probabilityFrom(decision);
   const hitProbability = probabilityFrom({
     upMrad: decision.upMrad + hold.upMrad + coldBore.upMrad + sightOffset.upMrad,
-    rightMrad: decision.rightMrad + hold.rightMrad + coldBore.rightMrad + sightOffset.rightMrad,
+    rightMrad: decision.rightMrad + hold.rightMrad + coldBore.rightMrad + sightOffset.rightMrad - targetMotion.rightMrad,
   });
 
   const windShift = subtract(ideal, meanWindRequired);
@@ -157,6 +165,7 @@ export async function resolveShot(
     hold: roundCorrection(hold),
     coldBore,
     sightOffset,
+    targetMotion: roundCorrection(targetMotion),
     windShift: roundCorrection(windShift),
     atmosphereUpMrad: round2(atmosphereUpMrad),
     windRightMrad: round2(windRightMrad),
