@@ -62,3 +62,4 @@
 | sim/firing-line + холодный выстрел (S6–S7) | [specs/sim-series.md](specs/sim-series.md) | реализовано, слито в `master` 7.11 |
 | sim/course — курс 00–12 (S8) | [specs/sim-course.md](specs/sim-course.md) | реализовано, слито в `master` 7.11 |
 | core/moving-target (C8) | [specs/core-moving-target.md](specs/core-moving-target.md) | реализовано, слито в `master` 7.11 |
+| core · зоны ветра (C9) | [specs/core-wind-zones.md](specs/core-wind-zones.md) | реализовано, слито в `master` 7.11 |

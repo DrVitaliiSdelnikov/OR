@@ -22,6 +22,13 @@ function correctionSign(clockHours: number): number {
   return normalizedHours > TAIL_WIND_CLOCK_HOURS ? -1 : 1;
 }
 
+export function averageCrosswindMps(zoneCrosswindsMps: readonly number[], zoneWeights: readonly number[]): number {
+  if (zoneCrosswindsMps.length !== zoneWeights.length) {
+    throw new RangeError(`${zoneCrosswindsMps.length} zone winds for ${zoneWeights.length} zone weights`);
+  }
+  return zoneCrosswindsMps.reduce((total, crosswindMps, index) => total + crosswindMps * zoneWeights[index], 0);
+}
+
 export function roundToClicks(mil: number, clickMil: number): number {
   const clicks = Math.floor(Math.abs(mil) / clickMil + 0.5 + CLICK_ROUNDING_EPSILON);
   return clicks === 0 ? 0 : Math.sign(mil) * clicks;

@@ -1,4 +1,4 @@
-import { STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C } from './content';
+import { STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C, WIND_ZONE_LIMITS_M } from './content';
 import { BallisticsEngine } from './engine';
 import { roundToClicks } from './game-formulas';
 import { Atmosphere, Cartridge, CartridgeId, TrajectoryPoint } from './types';
@@ -11,6 +11,7 @@ export interface DopeRow {
   windConstant: number;
   colderBy10CMil: number;
   pressureUp10HpaMil: number;
+  zoneWeights: readonly number[];
 }
 
 export interface DopeCard {
@@ -27,6 +28,7 @@ const ELEVATION_DECIMALS = 10;
 const TIME_DECIMALS = 100;
 const ATMOSPHERE_DECIMALS = 100;
 const WIND_CONSTANT_ROUNDING = 10;
+const ZONE_WEIGHT_PARTS = 20;
 
 const STANDARD_ATMOSPHERE: Atmosphere = {
   temperatureC: STANDARD_TEMPERATURE_C,
@@ -43,6 +45,19 @@ export async function buildDopeCard(engine: BallisticsEngine, cartridge: Cartrid
     engine.trajectory(cartridge, { ...STANDARD_ATMOSPHERE, temperatureC: STANDARD_TEMPERATURE_C - ATMOSPHERE_STEP }, null),
     engine.trajectory(cartridge, { ...STANDARD_ATMOSPHERE, pressureHpa: STANDARD_PRESSURE_HPA + ATMOSPHERE_STEP }, null),
   ]);
+  const singleZonePoints = await Promise.all(
+    WIND_ZONE_LIMITS_M.map((_, windyZone) =>
+      engine.trajectory(
+        cartridge,
+        STANDARD_ATMOSPHERE,
+        WIND_ZONE_LIMITS_M.map((untilM, zoneIndex) => ({
+          untilM,
+          speedMps: zoneIndex === windyZone ? CALIBRATION_CROSSWIND_MPS : 0,
+          fromDeg: CROSSWIND_FROM_LEFT_DEG,
+        })),
+      ),
+    ),
+  );
   const elevationAt = (points: readonly TrajectoryPoint[], distanceM: number): number => BallisticsEngine.required(points, distanceM).upMrad;
   const rows = standardPoints
     .filter(point => point.distanceM >= FIRST_ROW_M)
@@ -60,6 +75,7 @@ export async function buildDopeCard(engine: BallisticsEngine, cartridge: Cartrid
           elevationAt(higherPressurePoints, point.distanceM) - elevationAt(standardPoints, point.distanceM),
           ATMOSPHERE_DECIMALS,
         ),
+        zoneWeights: zoneWeightsAt(singleZonePoints, crosswindPoints, point.distanceM),
       };
     });
   return { cartridgeId: cartridge.id, clickMil, rows };
@@ -87,7 +103,19 @@ export function dopeRowAt(card: DopeCard, distanceM: number): DopeRow {
     windConstant: blend(lower.windConstant, upper.windConstant),
     colderBy10CMil: blend(lower.colderBy10CMil, upper.colderBy10CMil),
     pressureUp10HpaMil: blend(lower.pressureUp10HpaMil, upper.pressureUp10HpaMil),
+    zoneWeights: lower.zoneWeights.map((weight, index) => blend(weight, upper.zoneWeights[index])),
   };
+}
+
+// Доля сноса от каждой зоны в шагах 0,05 методом наибольших остатков: сумма ровно 1, каждая доля — ближе всего к ядру.
+function zoneWeightsAt(singleZonePoints: readonly TrajectoryPoint[][], fullWindPoints: readonly TrajectoryPoint[], distanceM: number): number[] {
+  const totalDriftMil = BallisticsEngine.required(fullWindPoints, distanceM).rightMrad;
+  const exactParts = singleZonePoints.map(points => (BallisticsEngine.required(points, distanceM).rightMrad / totalDriftMil) * ZONE_WEIGHT_PARTS);
+  const parts = exactParts.map(Math.floor);
+  const zonesByRemainder = exactParts.map((exact, zoneIndex) => ({ zoneIndex, remainder: exact - parts[zoneIndex] })).sort((a, b) => b.remainder - a.remainder);
+  const missingParts = ZONE_WEIGHT_PARTS - parts.reduce((total, part) => total + part, 0);
+  zonesByRemainder.slice(0, missingParts).forEach(({ zoneIndex }) => parts[zoneIndex]++);
+  return parts.map(part => part / ZONE_WEIGHT_PARTS);
 }
 
 function roundTo(value: number, decimalsFactor: number): number {

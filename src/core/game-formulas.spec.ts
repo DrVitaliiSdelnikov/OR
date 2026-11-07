@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   atmosphereCorrectionMil,
+  averageCrosswindMps,
   clicksDifference,
   crosswindMps,
   isRangeWithinTolerance,
@@ -136,5 +137,23 @@ describe('leadMil', () => {
 
   it('a target walking at 1 o’clock needs half the lead', () => {
     expect(leadMil(1.2, 1, 0.6, 400)).toBeCloseTo(0.9, 6);
+  });
+});
+
+describe('averageCrosswindMps', () => {
+  it('the same wind in every zone is that wind', () => {
+    expect(averageCrosswindMps([3, 3, 3, 3], [0.3, 0.35, 0.25, 0.1])).toBeCloseTo(3, 9);
+  });
+
+  it('weights each zone: station 2, flags 4 / 1 / 0 → 2.25', () => {
+    expect(averageCrosswindMps([2, 4, 1, 0], [0.3, 0.35, 0.25, 0.1])).toBeCloseTo(2.25, 9);
+  });
+
+  it('a wind from the other side counts against', () => {
+    expect(averageCrosswindMps([2, -2, 0, 0], [0.5, 0.5, 0, 0])).toBeCloseTo(0, 9);
+  });
+
+  it('refuses a different number of winds and weights', () => {
+    expect(() => averageCrosswindMps([2, 4, 1], [0.3, 0.35, 0.25, 0.1])).toThrow(RangeError);
   });
 });

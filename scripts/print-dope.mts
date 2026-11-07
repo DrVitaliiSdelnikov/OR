@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { CARTRIDGES } from '../src/core/content.ts';
 import { buildDopeCard, DopeCard, dopeRowAt } from '../src/core/dope-card.ts';
 import { BallisticsEngine } from '../src/core/engine.ts';
-import { atmosphereCorrectionMil, crosswindMps, leadMil, roundToClicks, windCorrectionMil } from '../src/core/game-formulas.ts';
+import { atmosphereCorrectionMil, averageCrosswindMps, crosswindMps, leadMil, roundToClicks, windCorrectionMil } from '../src/core/game-formulas.ts';
 
 const CLICK_MIL = 0.1;
 const ballisticsVersion = JSON.parse(readFileSync(new URL('../node_modules/js-ballistics/package.json', import.meta.url), 'utf-8')).version;
@@ -25,6 +25,15 @@ for (const cartridge of CARTRIDGES) {
   }
   console.log('');
 }
+
+console.log('**Веса зон ветра** (C9, В29) — доля сноса от зоны, шаг 0,05, сумма 1; зоны: станция 0–150 м · флажок 200 (150–350) · флажок 400 (350–550) · флажок 600 (550+):\n');
+console.log('| ДИСТ, м | ' + CARTRIDGES.map(cartridge => cartridge.name).join(' | ') + ' |');
+console.log('| --- | ' + CARTRIDGES.map(() => '---').join(' | ') + ' |');
+for (const distanceRow of cards.get('B')!.rows) {
+  const cells = CARTRIDGES.map(cartridge => dopeRowAt(cards.get(cartridge.id)!, distanceRow.distanceM).zoneWeights.map(weight => fixed(weight, 2)).join(' · '));
+  console.log(`| ${distanceRow.distanceM} | ${cells.join(' | ')} |`);
+}
+console.log('');
 
 const cardB = cards.get('B')!;
 const row = (distanceM: number) => dopeRowAt(cardB, distanceM);
@@ -66,4 +75,10 @@ console.log('| --- | --- | --- |');
 {
   const r = row(300); const atm = atmosphereCorrectionMil(r, 35, 1000);
   describeSet('Е — жара', '300 м, +35 C, 1000 гПа', `атмосфера = −2 × ${fixed(r.colderBy10CMil, 2)} − 1,3 × ${fixed(r.pressureUp10HpaMil, 2)} = ${fixed(atm, 2)} → ${clicks(atm)} кл.; итог ↑ ${fixed(r.elevationMil + atm, 1)}`);
+}
+{
+  const r = row(600); const zoneWinds = [3, 2, 4, 1]; const average = averageCrosswindMps(zoneWinds, r.zoneWeights); const wind = Math.abs(windCorrectionMil(average, 9, 600, r.windConstant));
+  const terms = zoneWinds.map((windMps, index) => `${fixed(r.zoneWeights[index], 2)} × ${fixed(windMps, 1)}`).join(' + ');
+  describeSet('К — зоны ветра (упр. 09)', '600 м, все ветры слева: станция 3,0 м/с с 9 ч, флажки 200 / 400 / 600 — 2,0 / 4,0 / 1,0 м/с поперёк',
+    `веса строки 600: ${r.zoneWeights.map(weight => fixed(weight, 2)).join(' · ')} · V⊥ср = ${terms} = ${fixed(average, 2)} · W = ${fixed(average, 2)} × 600 / ${r.windConstant} = ← ${fixed(wind, 2)} → ${clicks(wind)} кл. влево`);
 }

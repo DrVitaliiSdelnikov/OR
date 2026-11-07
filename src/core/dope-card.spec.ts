@@ -1,8 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CARTRIDGES, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C } from './content';
+import { CARTRIDGES, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C, WIND_ZONE_LIMITS_M } from './content';
 import { buildDopeCard, DopeCard, dopeRowAt } from './dope-card';
 import { BallisticsEngine } from './engine';
-import { atmosphereCorrectionMil, windCorrectionMil } from './game-formulas';
+import { atmosphereCorrectionMil, averageCrosswindMps, windCorrectionMil } from './game-formulas';
+import { createScenario, lateralWindMps } from './scenario';
 import { Atmosphere, CartridgeId } from './types';
 
 const CLICK_MIL = 0.1;
@@ -141,5 +142,72 @@ describe('game formulas against the engine', () => {
     expect(row.colderBy10CMil).toBeGreaterThan(0);
     expect(row.pressureUp10HpaMil).toBeGreaterThan(0);
     expect(atmosphereCorrectionMil(row, STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA)).toBe(0);
+  });
+});
+
+describe('zone weights', () => {
+  const WEIGHT_STEP = 0.05;
+
+  it('every row has four weights in steps of 0.05 summing to exactly 1', () => {
+    for (const cartridge of CARTRIDGES) {
+      for (const row of card(cartridge.id).rows) {
+        expect(row.zoneWeights).toHaveLength(WIND_ZONE_LIMITS_M.length);
+        for (const weight of row.zoneWeights) {
+          expect(Math.abs(weight / WEIGHT_STEP - Math.round(weight / WEIGHT_STEP))).toBeLessThan(1e-9);
+        }
+        expect(row.zoneWeights.reduce((total, weight) => total + weight, 0)).toBeCloseTo(1, 9);
+      }
+    }
+  });
+
+  it('near zones matter at short range, the far zone at long range', () => {
+    const rowAt = (distanceM: number) => card('B').rows.find(row => row.distanceM === distanceM)!;
+    expect(rowAt(300).zoneWeights.slice(2)).toEqual([0, 0]);
+    expect(rowAt(500).zoneWeights[0]).toBeCloseTo(0.45, 9);
+    const far = rowAt(1000).zoneWeights;
+    expect(far[3]).toBe(Math.max(...far));
+  });
+
+  it('matches the engine within half a rounding step', async () => {
+    const standard = atmosphere(STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA);
+    for (const cartridge of CARTRIDGES) {
+      const zonesWith = (windyZone: number | null) =>
+        WIND_ZONE_LIMITS_M.map((untilM, index) => ({ untilM, speedMps: windyZone === null || windyZone === index ? 1 : 0, fromDeg: FULL_CROSSWIND_FROM_LEFT_DEG }));
+      const full = await engine.trajectory(cartridge, standard, zonesWith(null));
+      const perZone = await Promise.all(WIND_ZONE_LIMITS_M.map((_, index) => engine.trajectory(cartridge, standard, zonesWith(index))));
+      for (const row of card(cartridge.id).rows.filter(candidate => candidate.distanceM >= 200)) {
+        const totalMil = BallisticsEngine.required(full, row.distanceM).rightMrad;
+        perZone.forEach((points, index) => {
+          const engineWeight = BallisticsEngine.required(points, row.distanceM).rightMrad / totalMil;
+          expect(Math.abs(row.zoneWeights[index] - engineWeight)).toBeLessThanOrEqual(WEIGHT_STEP / 2 + 0.01);
+        });
+      }
+    }
+  });
+
+  it('interpolates weights between rows and keeps the sum at 1', () => {
+    for (const distanceM of [450, 650]) {
+      const lower = dopeRowAt(card('B'), distanceM - 50).zoneWeights;
+      const upper = dopeRowAt(card('B'), distanceM + 50).zoneWeights;
+      const between = dopeRowAt(card('B'), distanceM).zoneWeights;
+      between.forEach((weight, index) => expect(weight).toBeCloseTo((lower[index] + upper[index]) / 2, 9));
+      expect(between.reduce((total, weight) => total + weight, 0)).toBeCloseTo(1, 9);
+    }
+  });
+
+  it('the average-wind formula is within one click of the engine in zone exercises', async () => {
+    const standard = atmosphere(STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA);
+    const cartridge = CARTRIDGES.find(candidate => candidate.id === 'B')!;
+    for (let seed = 1; seed <= 20; seed++) {
+      const { zones } = createScenario(seed * 101, { isWindUniform: false });
+      for (const distanceM of [200, 350, 500, 550, 600, 650, 700]) {
+        const points = await engine.trajectory(cartridge, standard, zones, cartridge.muzzleVelocityMps, distanceM);
+        const engineMil = BallisticsEngine.required(points, distanceM).rightMrad;
+        const row = dopeRowAt(card('B'), distanceM);
+        const averageMps = averageCrosswindMps(zones.map(zone => lateralWindMps(zone)), row.zoneWeights);
+        const formulaMil = windCorrectionMil(averageMps, 9, distanceM, row.windConstant);
+        expect(Math.abs(formulaMil - engineMil)).toBeLessThan(CLICK_MIL);
+      }
+    }
   });
 });
