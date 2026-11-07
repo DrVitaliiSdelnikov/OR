@@ -64,3 +64,4 @@
 | core/moving-target (C8) | [specs/core-moving-target.md](specs/core-moving-target.md) | реализовано, слито в `master` 7.11 |
 | core · зоны ветра (C9) | [specs/core-wind-zones.md](specs/core-wind-zones.md) | реализовано, слито в `master` 7.11 |
 | sim/notebook (S9) | [specs/sim-notebook.md](specs/sim-notebook.md) | реализовано, слито в `master` 7.11 |
+| sim/patrol (S10) | [specs/sim-patrol.md](specs/sim-patrol.md) | реализовано, слито в `master` 7.11 |

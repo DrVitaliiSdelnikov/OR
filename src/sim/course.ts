@@ -16,6 +16,7 @@ import { mulberry32, RandomSource } from '../core/rng';
 import { ScenarioOptions } from '../core/scenario';
 import { CartridgeId, Correction, Target } from '../core/types';
 import { FiringPlan } from './firing-line';
+import { PatrolTarget, patrolPlan } from './patrol';
 import { ScopeId } from './scope-model';
 import { ShotDiagnosis } from './shot-review';
 
@@ -46,6 +47,7 @@ export interface ExerciseDef {
   stages: readonly ExerciseStage[];
   hasColdBore: boolean;
   hasKnockedSight: boolean;
+  hasPatrol: boolean;
   notebookMode: NotebookMode | null;
   scopeId: ScopeId;
   conditions: ScenarioOptions;
@@ -57,6 +59,7 @@ export interface ExerciseSetup {
   plan: FiringPlan;
   scenarioOptions: ScenarioOptions;
   sightOffset: Correction;
+  patrol?: PatrolTarget[];
 }
 
 export type CheckRowKind = CalcStepKind | PreparationRowKind;
@@ -190,6 +193,7 @@ export const COURSE: readonly ExerciseDef[] = [
     terms: ['поправка по второму выстрелу', 'своя карточка', 'вызов'],
   }),
   exerciseDef('11', 'Движущийся дозор', { count: 10, distance: { kind: 'known', fromM: 300, toM: 500 } }, {
+    hasPatrol: true,
     notebookMode: 'manual-easy',
     conditions: LIGHT_WIND,
     terms: ['упреждение', 'сопровождение', 'засада', 'время полёта'],
@@ -247,6 +251,7 @@ export function setupExercise(def: ExerciseDef, seed: number): ExerciseSetup {
     },
     scenarioOptions: def.conditions,
     sightOffset: def.hasKnockedSight ? knockedSightOffset(random) : NO_OFFSET,
+    ...(def.hasPatrol ? { patrol: patrolPlan(seed) } : {}),
   };
 }
 
@@ -328,6 +333,7 @@ function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | n
     stages: [TWO_SHOTS],
     hasColdBore: true,
     hasKnockedSight: false,
+    hasPatrol: false,
     notebookMode: 'auto',
     scopeId: 'tree',
     conditions: {},
