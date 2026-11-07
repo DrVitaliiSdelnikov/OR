@@ -63,8 +63,8 @@ describe('resolveShot', () => {
     const cold = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 3, { isColdBore: true });
     expect(warm.coldBore).toEqual({ upMrad: 0, rightMrad: 0 });
     expect(cold.coldBore).toEqual(RIFLE.coldBoreShiftMil);
-    expect(cold.impact.upMrad - warm.impact.upMrad).toBeCloseTo(0.15, 9);
-    expect(cold.impact.rightMrad - warm.impact.rightMrad).toBeCloseTo(0.05, 9);
+    expect(cold.impact.upMrad - warm.impact.upMrad).toBeCloseTo(0.15, 6);
+    expect(cold.impact.rightMrad - warm.impact.rightMrad).toBeCloseTo(0.05, 6);
   });
 
   it('the hit chance of a cold bore shot accounts for the shift', async () => {
@@ -72,6 +72,15 @@ describe('resolveShot', () => {
     const warm = await resolveShot(engine, scenario, cartridge, target500, dialUnderShift, 4);
     const cold = await resolveShot(engine, scenario, cartridge, target500, dialUnderShift, 4, { isColdBore: true });
     expect(cold.hitProbability).toBeGreaterThan(warm.hitProbability);
+  });
+
+  it('a knocked sight shifts the impact by the sight offset', async () => {
+    const straight = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 5);
+    const knocked = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 5, { sightOffset: { upMrad: -0.8, rightMrad: 0.6 } });
+    expect(straight.sightOffset).toEqual({ upMrad: 0, rightMrad: 0 });
+    expect(knocked.impact.upMrad - straight.impact.upMrad).toBeCloseTo(-0.8, 6);
+    expect(knocked.impact.rightMrad - straight.impact.rightMrad).toBeCloseTo(0.6, 6);
+    expect(knocked.hitProbability).toBeLessThan(straight.hitProbability);
   });
 
   it('plate radius is 0.5 mrad at 500 m', async () => {

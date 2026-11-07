@@ -43,9 +43,15 @@ export interface Scenario {
   flags: FlagReading[];
 }
 
+export type ValueRange = readonly [min: number, max: number];
+
 export interface ScenarioOptions {
   windScale?: number;
   isWindUniform?: boolean;
+  temperatureRangeC?: ValueRange;
+  pressureRangeHpa?: ValueRange;
+  windSpeedRangeMps?: ValueRange;
+  windClocks?: readonly number[];
 }
 
 const GUST_TIMELINE_S = 1500;
@@ -72,6 +78,12 @@ export function createScenario(seed: number, options: ScenarioOptions = {}): Sce
     pressureHpa: Math.round(985 + random() * 40),
     relativeHumidity: Math.round((0.3 + random() * 0.5) * 100) / 100,
   };
+  if (options.temperatureRangeC) {
+    atmosphere.temperatureC = Math.round(valueInRange(options.temperatureRangeC, random()) * 10) / 10;
+  }
+  if (options.pressureRangeHpa) {
+    atmosphere.pressureHpa = Math.round(valueInRange(options.pressureRangeHpa, random()));
+  }
   const baseSpeedMps = 1 + random() * 5;
   const baseFromDeg = (random() < 0.5 ? 90 : 270) + (random() - 0.5) * 80;
   let zones: WindZone[] = WIND_ZONE_LIMITS_M.map(untilM => ({
@@ -111,6 +123,15 @@ export function createScenario(seed: number, options: ScenarioOptions = {}): Sce
   if (isWindUniform) {
     zones = zones.map(zone => ({ ...zone, speedMps: zones[0].speedMps, fromDeg: zones[0].fromDeg }));
   }
+  if (options.windSpeedRangeMps) {
+    const speedMps = Math.round(valueInRange(options.windSpeedRangeMps, random()) * 10) / 10;
+    zones = zones.map(zone => ({ ...zone, speedMps }));
+  }
+  if (options.windClocks) {
+    const fromDeg = degFromClock(options.windClocks[Math.floor(random() * options.windClocks.length)]);
+    zones = zones.map(zone => ({ ...zone, fromDeg }));
+    gauge.windClock = clockFromDeg(fromDeg);
+  }
   gauge.windSpeedMps = Math.round(zones[0].speedMps * 10) / 10;
 
   return {
@@ -124,6 +145,10 @@ export function createScenario(seed: number, options: ScenarioOptions = {}): Sce
     gauge,
     flags: flagReadings(zones),
   };
+}
+
+function valueInRange([min, max]: ValueRange, share: number): number {
+  return min + (max - min) * share;
 }
 
 function flagReadings(zones: readonly WindZone[]): FlagReading[] {

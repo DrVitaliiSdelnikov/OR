@@ -60,3 +60,4 @@
 | core/exercise-scoring + core/calc-check (C6, C7) | [specs/core-scoring-and-check.md](specs/core-scoring-and-check.md) | реализовано, слито в `master` 7.11 |
 | sim/turret-target + sim/shot-review (S1–S5) | [specs/sim-shot-review.md](specs/sim-shot-review.md) | реализовано, слито в `master` 7.11 |
 | sim/firing-line + холодный выстрел (S6–S7) | [specs/sim-series.md](specs/sim-series.md) | реализовано, слито в `master` 7.11 |
+| sim/course — курс 00–12 (S8) | [specs/sim-course.md](specs/sim-course.md) | реализовано, слито в `master` 7.11 |

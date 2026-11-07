@@ -91,3 +91,45 @@ describe('wind clock', () => {
     expect(lateralWindMps({ speedMps: 4, fromDeg: 0 })).toBeCloseTo(0);
   });
 });
+
+describe('createScenario — exercise conditions', () => {
+  it('without conditions nothing changes', () => {
+    const plain = createScenario(4242, { windScale: 1, isWindUniform: true });
+    expect(createScenario(4242, { windScale: 1, isWindUniform: true, windClocks: undefined })).toEqual(plain);
+  });
+
+  it('a cold morning keeps temperature and pressure in range and the gauge follows', () => {
+    for (let seed = 1; seed < 60; seed++) {
+      const scenario = createScenario(seed, { temperatureRangeC: [-5, 0], pressureRangeHpa: [1025, 1035] });
+      expect(scenario.atmosphere.temperatureC).toBeGreaterThanOrEqual(-5);
+      expect(scenario.atmosphere.temperatureC).toBeLessThanOrEqual(0);
+      expect(scenario.atmosphere.pressureHpa).toBeGreaterThanOrEqual(1025);
+      expect(scenario.atmosphere.pressureHpa).toBeLessThanOrEqual(1035);
+      expect(Math.abs(scenario.gauge.temperatureC - scenario.atmosphere.temperatureC)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(scenario.gauge.pressureHpa - scenario.atmosphere.pressureHpa)).toBeLessThanOrEqual(1.5);
+    }
+  });
+
+  it('a fixed standard day is exactly +15 C and 1013 hPa', () => {
+    const { atmosphere } = createScenario(9, { temperatureRangeC: [15, 15], pressureRangeHpa: [1013, 1013] });
+    expect(atmosphere.temperatureC).toBe(15);
+    expect(atmosphere.pressureHpa).toBe(1013);
+  });
+
+  it('a light wind from 3 or 9 o’clock: speed in range, one wind along the range, gauge and flags agree', () => {
+    const clocks = new Set<number>();
+    for (let seed = 1; seed < 60; seed++) {
+      const scenario = createScenario(seed, { isWindUniform: true, windSpeedRangeMps: [2, 2.5], windClocks: [3, 9] });
+      const [shooterZone] = scenario.zones;
+      expect(shooterZone.speedMps).toBeGreaterThanOrEqual(2);
+      expect(shooterZone.speedMps).toBeLessThanOrEqual(2.5);
+      expect(scenario.zones.every(zone => zone.speedMps === shooterZone.speedMps && zone.fromDeg === shooterZone.fromDeg)).toBe(true);
+      expect([3, 9]).toContain(scenario.gauge.windClock);
+      expect(clockFromDeg(shooterZone.fromDeg)).toBe(scenario.gauge.windClock);
+      expect(scenario.gauge.windSpeedMps).toBe(shooterZone.speedMps);
+      expect(scenario.flags[0].lateralWindMps).toBeCloseTo(lateralWindMps(shooterZone), 9);
+      clocks.add(scenario.gauge.windClock);
+    }
+    expect(clocks).toEqual(new Set([3, 9]));
+  });
+});

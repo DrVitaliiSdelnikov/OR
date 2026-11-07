@@ -6,6 +6,7 @@ import { ProgressStore, TaskResult } from '../services/progress.store';
 
 type AnswerState = 'pending' | 'correct' | 'wrong';
 
+/** @deprecated Викторины стали шагами упражнений курса (`sim/course.ts`, COURSE.md), удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 @Component({
   selector: 'or-quiz',
   imports: [IonContent, RouterLink],

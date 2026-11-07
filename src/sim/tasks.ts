@@ -2,6 +2,7 @@ import { createScenario, Scenario } from '../core/scenario';
 import { CartridgeId } from '../core/types';
 import { ScopeId } from './scope-model';
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export interface QuizQuestion {
   question: string;
   answer: number;
@@ -17,11 +18,13 @@ interface TaskBase {
   blurb: string;
 }
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export interface QuizTask extends TaskBase {
   kind: 'quiz';
   questions: QuizQuestion[];
 }
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export interface ShootTask extends TaskBase {
   kind: 'shoot' | 'free';
   seed: number;
@@ -34,11 +37,15 @@ export interface ShootTask extends TaskBase {
   hint?: string;
 }
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export type TaskDef = QuizTask | ShootTask;
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export const UNIFORM_WIND_MAX_LEVEL = 2;
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export const QUIZ_POINTS_PER_ANSWER = 10;
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export const TASKS: readonly TaskDef[] = [
   {
     id: 'q-mrad',
@@ -160,6 +167,7 @@ export const TASKS: readonly TaskDef[] = [
   },
 ];
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export const FREE_TASK: ShootTask = {
   id: 'free',
   kind: 'free',
@@ -175,26 +183,32 @@ export const FREE_TASK: ShootTask = {
   restingBpm: 65,
 };
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export function taskById(id: string): TaskDef | undefined {
   return id === FREE_TASK.id ? FREE_TASK : TASKS.find(task => task.id === id);
 }
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export function maxScore(task: TaskDef): number {
   return task.kind === 'quiz' ? task.questions.length * QUIZ_POINTS_PER_ANSWER : task.shots * 10;
 }
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export function hasZoneWind(task: ShootTask): boolean {
   return task.level > UNIFORM_WIND_MAX_LEVEL && task.windScale > 0;
 }
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export function scenarioForTask(task: ShootTask, seed = task.seed): Scenario {
   return createScenario(seed, { windScale: task.windScale, isWindUniform: !hasZoneWind(task) });
 }
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export function isAnswerCorrect(question: QuizQuestion, value: number): boolean {
   return Math.abs(value - question.answer) <= question.tolerance;
 }
 
+/** @deprecated Заменяется `sim/course.ts`, удалить в A2 (docs/code/REMOVAL-CANDIDATES.md). */
 export function isTaskUnlocked(task: TaskDef, passedIds: ReadonlySet<string>, isEverythingUnlocked: boolean): boolean {
   if (isEverythingUnlocked) {
     return true;

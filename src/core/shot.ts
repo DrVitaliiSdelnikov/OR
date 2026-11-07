@@ -8,6 +8,7 @@ export interface ShotOptions {
   timeS?: number;
   hold?: Correction;
   isColdBore?: boolean;
+  sightOffset?: Correction;
 }
 
 export interface MissExplanation {
@@ -28,6 +29,7 @@ export interface ShotResult extends MissExplanation {
   group: Correction;
   hold: Correction;
   coldBore: Correction;
+  sightOffset: Correction;
   windShift: Correction;
   atmosphereUpMrad: number;
   windRightMrad: number;
@@ -65,6 +67,7 @@ export async function resolveShot(
   const fireTimeS = options.timeS ?? scenario.startTimeS;
   const hold = options.hold ?? NO_OFFSET;
   const coldBore = options.isColdBore ? RIFLE.coldBoreShiftMil : NO_OFFSET;
+  const sightOffset = options.sightOffset ?? NO_OFFSET;
   const windAtShot = windAt(scenario, fireTimeS);
   const random = mulberry32(scenario.seed * 7919 + shotIndex * 104729 + target.distanceM);
   const velocityDeviationMps = gaussian(random) * cartridge.muzzleVelocitySdMps;
@@ -92,8 +95,8 @@ export async function resolveShot(
   const decision = subtract(dial, ideal);
   const group: Correction = { upMrad: groupUpMrad, rightMrad: groupRightMrad };
   const impact: Correction = {
-    upMrad: decision.upMrad + velocitySpread.upMrad + group.upMrad + hold.upMrad + coldBore.upMrad,
-    rightMrad: decision.rightMrad + velocitySpread.rightMrad + group.rightMrad + hold.rightMrad + coldBore.rightMrad,
+    upMrad: decision.upMrad + velocitySpread.upMrad + group.upMrad + hold.upMrad + coldBore.upMrad + sightOffset.upMrad,
+    rightMrad: decision.rightMrad + velocitySpread.rightMrad + group.rightMrad + hold.rightMrad + coldBore.rightMrad + sightOffset.rightMrad,
   };
   const missMrad = Math.hypot(impact.upMrad, impact.rightMrad);
   const radiusMrad = targetRadiusMrad(target);
@@ -117,8 +120,8 @@ export async function resolveShot(
   const optimumProbability = probabilityFrom(NO_OFFSET);
   const decisionProbability = probabilityFrom(decision);
   const hitProbability = probabilityFrom({
-    upMrad: decision.upMrad + hold.upMrad + coldBore.upMrad,
-    rightMrad: decision.rightMrad + hold.rightMrad + coldBore.rightMrad,
+    upMrad: decision.upMrad + hold.upMrad + coldBore.upMrad + sightOffset.upMrad,
+    rightMrad: decision.rightMrad + hold.rightMrad + coldBore.rightMrad + sightOffset.rightMrad,
   });
 
   const windShift = subtract(ideal, meanWindRequired);
@@ -153,6 +156,7 @@ export async function resolveShot(
     group: roundCorrection(group),
     hold: roundCorrection(hold),
     coldBore,
+    sightOffset,
     windShift: roundCorrection(windShift),
     atmosphereUpMrad: round2(atmosphereUpMrad),
     windRightMrad: round2(windRightMrad),

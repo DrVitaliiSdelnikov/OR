@@ -15,7 +15,9 @@
 
 | Что | Почему уходит | Чем заменяется | Удалить в | Помечено в коде |
 | --- | --- | --- | --- | --- |
-| `core/score.ts` (`shotPoints`, `starsFor`, `isPassed`, `STAR_THRESHOLDS`) | очки за центр и край мишени, звёзды — до решения В4 | `core/exercise-scoring.ts` | S8 | да |
+| `core/score.ts` (`shotPoints`, `starsFor`, `isPassed`, `STAR_THRESHOLDS`) | очки за центр и край мишени, звёзды — до решения В4 | `core/exercise-scoring.ts` | A2 (было S8: его держат `scope` и `progress.store`) | да |
+| `sim/tasks.ts` целиком | 9 задач и викторины до курса (В3) | `sim/course.ts` | A2 | да |
+| `app/quiz` | викторины стали шагами упражнений (COURSE, «Что стало со старыми задачами») | упражнения курса | A2 | да |
 | `GameSession.shotsLeft` (`app/services/game-session`) | выстрелы считаются по `task.shots` без целей, магазина и правила «2 на цель» (Б31) | `sim/firing-line.ts` | A3 | да |
 | заряжание `ScopeSession.bolt` фиксированными 4 + 1 | Б31: магазин заряжается по патронам упражнения | `FiringLine.magazineLoaded` → `BoltAction.insertMagazine(rounds)` | A3 | нет: поле `bolt` живое, меняется только начальное заряжание |
 
