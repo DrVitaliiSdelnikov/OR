@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Correction } from '../core/types';
-import { analyseGroup, diagnoseShot, dopeNoteElevationMil, isCallAccurate, secondShotCorrection } from './shot-review';
+import { analyseGroup, diagnoseShot, dopeNoteElevationMil, isCallAccurate, secondShotCorrection, warmImpact } from './shot-review';
 
 const CLICK_MIL = 0.1;
 const AIM_POINT: Correction = { upMrad: 0, rightMrad: 0 };
@@ -69,6 +69,25 @@ describe('dopeNoteElevationMil', () => {
 
   it('an execution error writes nothing', () => {
     expect(dopeNoteElevationMil(2.8, point(1, 0), point(0.9, 0), 'execution')).toBeNull();
+  });
+});
+
+describe('cold bore in the review', () => {
+  const coldShift = point(0.15, 0.05);
+
+  it('a cold bore shot on the call needs no turret correction', () => {
+    const warm = warmImpact(point(0.15, 0.05), coldShift);
+    expect(secondShotCorrection(AIM_POINT, warm, CLICK_MIL, 'clean')).toEqual({ upClicks: 0, rightClicks: 0 });
+  });
+
+  it('a cold bore shot does not change the DOPE note', () => {
+    expect(dopeNoteElevationMil(2.8, AIM_POINT, warmImpact(point(0.15, 0.05), coldShift), 'clean')).toBeCloseTo(2.8, 9);
+  });
+
+  it('only the cold bore shift is removed, the rest of the miss stays', () => {
+    const warm = warmImpact(point(-0.35, 0.35), coldShift);
+    expect(warm.upMrad).toBeCloseTo(-0.5, 9);
+    expect(warm.rightMrad).toBeCloseTo(0.3, 9);
   });
 });
 

@@ -87,6 +87,10 @@ function groupShape(center: Correction, spreadMil: { up: number; right: number }
   return distanceMil(center, ORIGIN) > OFFSET_MIL ? 'offset' : 'tight';
 }
 
+export function warmImpact(impact: Correction, coldBore: Correction): Correction {
+  return { upMrad: impact.upMrad - coldBore.upMrad, rightMrad: impact.rightMrad - coldBore.rightMrad };
+}
+
 function distanceMil(from: Correction, to: Correction): number {
   return Math.hypot(from.upMrad - to.upMrad, from.rightMrad - to.rightMrad);
 }

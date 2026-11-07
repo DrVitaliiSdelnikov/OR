@@ -79,8 +79,8 @@ export class BoltAction {
     return true;
   }
 
-  insertMagazine(): BoltEvent[] {
-    this.magazineRounds = MAGAZINE_CAPACITY;
+  insertMagazine(rounds = MAGAZINE_CAPACITY): BoltEvent[] {
+    this.magazineRounds = rounds;
     return ['magazine'];
   }
 

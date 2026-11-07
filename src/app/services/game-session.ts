@@ -54,6 +54,7 @@ export class GameSession {
   readonly scope = computed(() => scopeById(this.scopeId()));
   readonly isFreeMode = computed(() => this.task().kind === 'free');
   readonly arePressureAndHumidityLocked = computed(() => this.task().level <= UNIFORM_WIND_MAX_LEVEL);
+  /** @deprecated патроны, цели и конец упражнения — `sim/firing-line` (`FiringLine`); удалить в A3. */
   readonly shotsLeft = computed(() => this.task().shots - this.taskShots().length);
   readonly taskScore = computed(() => this.taskShots().reduce((sum, shot) => sum + shot.points, 0));
 

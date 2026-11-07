@@ -6,6 +6,7 @@ export interface Rifle {
   zeroM: number;
   groupSigmaMrad: number;
   bulletDiameterIn: number;
+  coldBoreShiftMil: Correction;
 }
 
 export interface Cartridge {

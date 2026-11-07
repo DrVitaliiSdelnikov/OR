@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { cartridgeById, TARGETS } from './content';
+import { cartridgeById, RIFLE, TARGETS } from './content';
 import { BallisticsEngine } from './engine';
 import { createScenario, windAt } from './scenario';
 import { explainMiss, MissInputs, resolveShot } from './shot';
@@ -56,6 +56,22 @@ describe('resolveShot', () => {
     expect(result.luck).toBeCloseTo((result.isHit ? 1 : 0) - result.hitProbability, 6);
     expect(result.luck).toBeGreaterThanOrEqual(-1);
     expect(result.luck).toBeLessThanOrEqual(1);
+  });
+
+  it('a cold bore shot lands shifted by the rifle cold bore shift', async () => {
+    const warm = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 3);
+    const cold = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 3, { isColdBore: true });
+    expect(warm.coldBore).toEqual({ upMrad: 0, rightMrad: 0 });
+    expect(cold.coldBore).toEqual(RIFLE.coldBoreShiftMil);
+    expect(cold.impact.upMrad - warm.impact.upMrad).toBeCloseTo(0.15, 9);
+    expect(cold.impact.rightMrad - warm.impact.rightMrad).toBeCloseTo(0.05, 9);
+  });
+
+  it('the hit chance of a cold bore shot accounts for the shift', async () => {
+    const dialUnderShift = { upMrad: perfectDial.upMrad - 0.3, rightMrad: perfectDial.rightMrad - 0.1 };
+    const warm = await resolveShot(engine, scenario, cartridge, target500, dialUnderShift, 4);
+    const cold = await resolveShot(engine, scenario, cartridge, target500, dialUnderShift, 4, { isColdBore: true });
+    expect(cold.hitProbability).toBeGreaterThan(warm.hitProbability);
   });
 
   it('plate radius is 0.5 mrad at 500 m', async () => {

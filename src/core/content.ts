@@ -6,6 +6,7 @@ export const RIFLE: Rifle = {
   zeroM: 100,
   groupSigmaMrad: 0.1,
   bulletDiameterIn: 0.308,
+  coldBoreShiftMil: { upMrad: 0.15, rightMrad: 0.05 },
 };
 
 export const CARTRIDGES: readonly Cartridge[] = [

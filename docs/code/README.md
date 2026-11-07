@@ -59,3 +59,4 @@
 | core/dope-card + калибровка формул по ядру (C4, C5) | [specs/core-calibration.md](specs/core-calibration.md) | реализовано, слито в `master` 7.11 |
 | core/exercise-scoring + core/calc-check (C6, C7) | [specs/core-scoring-and-check.md](specs/core-scoring-and-check.md) | реализовано, слито в `master` 7.11 |
 | sim/turret-target + sim/shot-review (S1–S5) | [specs/sim-shot-review.md](specs/sim-shot-review.md) | реализовано, слито в `master` 7.11 |
+| sim/firing-line + холодный выстрел (S6–S7) | [specs/sim-series.md](specs/sim-series.md) | реализовано, слито в `master` 7.11 |

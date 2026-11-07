@@ -62,6 +62,12 @@ describe('BoltAction', () => {
     expect(bolt.rounds).toBe(5);
   });
 
+  it('a magazine can be loaded with fewer rounds when the exercise has fewer left', () => {
+    const bolt = new BoltAction(0);
+    bolt.insertMagazine(1);
+    expect(bolt.rounds).toBe(1);
+  });
+
   it('moving against the step rolls progress back', () => {
     const bolt = new BoltAction();
     bolt.drag(0, -40, 0);

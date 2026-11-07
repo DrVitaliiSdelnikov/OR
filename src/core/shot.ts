@@ -7,6 +7,7 @@ import { Cartridge, Correction, MissCause, Target } from './types';
 export interface ShotOptions {
   timeS?: number;
   hold?: Correction;
+  isColdBore?: boolean;
 }
 
 export interface MissExplanation {
@@ -26,6 +27,7 @@ export interface ShotResult extends MissExplanation {
   velocitySpread: Correction;
   group: Correction;
   hold: Correction;
+  coldBore: Correction;
   windShift: Correction;
   atmosphereUpMrad: number;
   windRightMrad: number;
@@ -39,7 +41,7 @@ export interface ShotResult extends MissExplanation {
 }
 
 const MONTE_CARLO_SAMPLES = 3000;
-const NO_HOLD: Correction = { upMrad: 0, rightMrad: 0 };
+const NO_OFFSET: Correction = { upMrad: 0, rightMrad: 0 };
 
 const round2 = (value: number): number => Math.round(value * 100) / 100;
 const roundCorrection = (correction: Correction): Correction => ({
@@ -61,7 +63,8 @@ export async function resolveShot(
   options: ShotOptions = {},
 ): Promise<ShotResult> {
   const fireTimeS = options.timeS ?? scenario.startTimeS;
-  const hold = options.hold ?? NO_HOLD;
+  const hold = options.hold ?? NO_OFFSET;
+  const coldBore = options.isColdBore ? RIFLE.coldBoreShiftMil : NO_OFFSET;
   const windAtShot = windAt(scenario, fireTimeS);
   const random = mulberry32(scenario.seed * 7919 + shotIndex * 104729 + target.distanceM);
   const velocityDeviationMps = gaussian(random) * cartridge.muzzleVelocitySdMps;
@@ -89,8 +92,8 @@ export async function resolveShot(
   const decision = subtract(dial, ideal);
   const group: Correction = { upMrad: groupUpMrad, rightMrad: groupRightMrad };
   const impact: Correction = {
-    upMrad: decision.upMrad + velocitySpread.upMrad + group.upMrad + hold.upMrad,
-    rightMrad: decision.rightMrad + velocitySpread.rightMrad + group.rightMrad + hold.rightMrad,
+    upMrad: decision.upMrad + velocitySpread.upMrad + group.upMrad + hold.upMrad + coldBore.upMrad,
+    rightMrad: decision.rightMrad + velocitySpread.rightMrad + group.rightMrad + hold.rightMrad + coldBore.rightMrad,
   };
   const missMrad = Math.hypot(impact.upMrad, impact.rightMrad);
   const radiusMrad = targetRadiusMrad(target);
@@ -111,11 +114,11 @@ export async function resolveShot(
     }
     return hits / MONTE_CARLO_SAMPLES;
   };
-  const optimumProbability = probabilityFrom(NO_HOLD);
+  const optimumProbability = probabilityFrom(NO_OFFSET);
   const decisionProbability = probabilityFrom(decision);
   const hitProbability = probabilityFrom({
-    upMrad: decision.upMrad + hold.upMrad,
-    rightMrad: decision.rightMrad + hold.rightMrad,
+    upMrad: decision.upMrad + hold.upMrad + coldBore.upMrad,
+    rightMrad: decision.rightMrad + hold.rightMrad + coldBore.rightMrad,
   });
 
   const windShift = subtract(ideal, meanWindRequired);
@@ -149,6 +152,7 @@ export async function resolveShot(
     velocitySpread: roundCorrection(velocitySpread),
     group: roundCorrection(group),
     hold: roundCorrection(hold),
+    coldBore,
     windShift: roundCorrection(windShift),
     atmosphereUpMrad: round2(atmosphereUpMrad),
     windRightMrad: round2(windRightMrad),
