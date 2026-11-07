@@ -22,23 +22,8 @@ export async function unlockEverything(page: Page, settings: object = {}): Promi
   });
 }
 
-export async function openTaskList(page: Page): Promise<void> {
-  await page.goto('/tabs/hub');
-  await ensureTaskListOpen(page);
-}
-
-export async function ensureTaskListOpen(page: Page): Promise<void> {
-  await page.waitForURL('**/tabs/hub');
-  const card = page.getByTestId('tasks-card');
-  await card.waitFor();
-  if ((await card.getAttribute('aria-expanded')) !== 'true') {
-    await card.click();
-  }
-  await page.getByTestId('task-list').waitFor();
-}
-
-export async function startShootTask(page: Page, taskId: string): Promise<void> {
-  await openTaskList(page);
-  await page.getByTestId(`task-${taskId}`).click();
+export async function startFreePlay(page: Page): Promise<void> {
+  await page.goto('/');
+  await page.getByTestId('tile-free').click();
   await page.waitForURL('**/weather');
 }

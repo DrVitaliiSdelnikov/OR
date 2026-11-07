@@ -15,9 +15,9 @@ async function seed(page: Page): Promise<void> {
     [
       PROGRESS_KEY,
       JSON.stringify({
-        results: { 'q-mrad': { score: 30, maxScore: 30, stars: 3 }, 'q-range': { score: 20, maxScore: 30, stars: 1 } },
+        course: { isIntroCompleted: true, bestClasses: { '01': 1, '02': 2, '03': 3, '04': 0 } },
         shots: [],
-        settings: { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: false, isMarkerDriftOff: true, isEverythingUnlocked: true },
+        settings: { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: false, isMarkerDriftOff: true, isEverythingUnlocked: false },
       }),
     ] as const,
   );
@@ -34,19 +34,22 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
   await seed(page);
   const byTest = (id: string) => page.locator(`[data-test="${id}"]`);
 
-  await page.goto(`${BASE_URL}/tabs/hub`);
-  await snap(page, `01-hub${suffix}`);
-  await byTest('tasks-card').click();
-  await snap(page, `02-hub-tasks${suffix}`);
+  await page.goto(`${BASE_URL}/`);
+  await snap(page, `01-main${suffix}`);
+  await byTest('tile-course').click();
+  await snap(page, `02-course-trail${suffix}`);
+  await byTest('node-02').click();
+  await snap(page, `18-exercise-sheet${suffix}`);
 
-  await byTest('task-s-500').click();
+  await page.goto(`${BASE_URL}/`);
+  await byTest('tile-free').click();
   await page.waitForURL('**/weather');
   await snap(page, `03-weather-empty${suffix}`);
   await byTest('take-reading').click();
   await snap(page, `04-weather-page1${suffix}`);
   if (isFull) {
     await byTest('lcd-page').click();
-    await snap(page, `05-weather-page2-locked${suffix}`);
+    await snap(page, `05-weather-page2${suffix}`);
     await byTest('lcd-page').click();
     await snap(page, `06-weather-page3${suffix}`);
   }
@@ -86,20 +89,14 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
     await page.locator('ion-modal').waitFor({ state: 'hidden' });
     await snap(page, `13-scope-bolt${suffix}`);
 
-    await byTest('scope-hub').click();
-    await page.goto(`${BASE_URL}/tabs/dope`);
+    await page.goto(`${BASE_URL}/dope`);
     await snap(page, `14-dope${suffix}`);
-    await page.goto(`${BASE_URL}/tabs/log`);
+    await page.goto(`${BASE_URL}/journal`);
     await snap(page, `15-log${suffix}`);
     await page.locator('[data-test^="log-"]').first().click();
     await snap(page, `16-debrief-page${suffix}`);
-    await page.goto(`${BASE_URL}/tabs/hub/settings`);
+    await page.goto(`${BASE_URL}/settings`);
     await snap(page, `17-settings${suffix}`);
-    await page.goto(`${BASE_URL}/tabs/hub/tasks/q-clock`);
-    await snap(page, `18-quiz${suffix}`);
-    await byTest('quiz-answer').fill('6');
-    await byTest('quiz-check').click();
-    await snap(page, `19-quiz-answer${suffix}`);
   }
   await browser.close();
 
@@ -107,7 +104,7 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
     const laptop = await chromium.launch();
     const wide = await laptop.newPage({ viewport: { width: 1280, height: 720 } });
     await seed(wide);
-    await wide.goto(`${BASE_URL}/tabs/hub`);
+    await wide.goto(`${BASE_URL}/`);
     await snap(wide, `20-laptop-frame${suffix}`);
     await laptop.close();
   }

@@ -12,13 +12,9 @@
           <div class="lcd-row empty">— — —</div>
         }
         @for (row of rows(); track row.label) {
-          <div class="lcd-row" [class.locked]="row.isLocked" [attr.data-test]="'lcd-' + row.label">
+          <div class="lcd-row" [attr.data-test]="'lcd-' + row.label">
             <span>{{ row.label }}</span>
-            @if (row.isLocked) {
-              <span>— стд. <small>откроется на Lv3</small></span>
-            } @else {
-              <b>{{ row.value }}</b>
-            }
+            <b>{{ row.value }}</b>
           </div>
         }
         @if (takenAt(); as time) {

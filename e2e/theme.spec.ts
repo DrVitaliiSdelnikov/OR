@@ -8,7 +8,7 @@ const MIN_TOUCH_PX = 44;
 test.describe('прибор: токены и одна тема', () => {
   test('фон и текст — цвета прибора', async ({ page }) => {
     await unlockEverything(page);
-    await page.goto('/tabs/hub');
+    await page.goto('/');
     await expect(page.locator('body')).toHaveCSS('background-color', DEVICE_BG);
     await expect(page.locator('body')).toHaveCSS('color', DEVICE_TEXT);
   });
@@ -21,7 +21,7 @@ test.describe('прибор: токены и одна тема', () => {
       }
     });
     await unlockEverything(page);
-    await page.goto('/tabs/hub');
+    await page.goto('/');
     const loadedFamilies = await page.evaluate(async () => {
       await Promise.all([
         document.fonts.load('500 13px "Roboto Mono"'),
@@ -41,7 +41,7 @@ test.describe('прибор: токены и одна тема', () => {
       shots: [],
       settings: { theme: 'day', isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: true },
     });
-    await page.goto('/tabs/hub/settings');
+    await page.goto('/settings');
     await expect(page.getByTestId('theme-day')).toHaveCount(0);
     await expect(page.getByTestId('theme-field')).toHaveCount(0);
     await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.+/);
@@ -51,8 +51,8 @@ test.describe('прибор: токены и одна тема', () => {
   test('кнопки и чипы не ниже 44', async ({ page }) => {
     await unlockEverything(page);
     const expectedOnPage: [string, string][] = [
-      ['/tabs/hub/settings', '.button'],
-      ['/tabs/dope', '.chip'],
+      ['/settings', '.button'],
+      ['/dope', '.chip'],
     ];
     for (const [path, mustHave] of expectedOnPage) {
       await page.goto(path);

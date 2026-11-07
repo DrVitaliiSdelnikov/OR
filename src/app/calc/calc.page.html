@@ -53,12 +53,12 @@
     }
 
     @if (!session.gaugeSnapshot()) {
-      <a class="chip warn-chip" routerLink="/tabs/hub/weather" data-test="need-reading">⚠ нет показаний метеостанции</a>
+      <a class="chip warn-chip" routerLink="/weather" data-test="need-reading">⚠ нет показаний метеостанции</a>
     }
 
     <div class="row inputs">
       <div class="group">
-        <div class="label">Ветер, м/с · <a routerLink="/tabs/calc/wind" class="accent-text" data-test="open-wind">{{ clockText() }}</a></div>
+        <div class="label">Ветер, м/с · <a routerLink="/calc/wind" class="accent-text" data-test="open-wind">{{ clockText() }}</a></div>
         <div class="segmented">
           <button (click)="stepWind(-1)" aria-label="Меньше ветра">◀</button>
           @for (speed of windChips(); track $index) {

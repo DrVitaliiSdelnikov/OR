@@ -3,7 +3,7 @@
   <div class="scope-screen">
     <div class="row top">
       <button class="button" (click)="leave()" data-test="scope-back">← Расчёт</button>
-      <button class="button" (click)="toHub()" data-test="scope-hub">Хаб</button>
+      <button class="button" (click)="toMain()" data-test="scope-main">Меню</button>
       <span class="mono hud-left">↑ {{ state.elevationText }} · → {{ state.windText }}</span>
       <span class="spacer"></span>
       <span class="mono hud-right">{{ game.target().distanceM }} м · {{ state.focal }}@if (state.trueAt) { · {{ state.trueAt }} }</span>
@@ -74,7 +74,7 @@
     @switch (panel()) {
       @case ('controls') {
         <div class="panel controls">
-          @if (game.isFreeMode()) {
+          <div class="chip-rows">
             <div class="row chips">
               @for (scope of scopes; track scope.id) {
                 <button class="chip" [class.selected]="scope.id === game.scopeId()" (click)="selectScope(scope.id)">{{ scope.name }}</button>
@@ -86,14 +86,13 @@
               }
               <button class="chip" (click)="resetAim()">Сброс</button>
             </div>
-          }
+          </div>
           <div class="row">
             <button class="button" (click)="zoom(-1)" aria-label="Уменьшить кратность" data-test="zoom-out">−</button>
             <span class="mono zoom" data-test="magnification">{{ state.magnification }}×</span>
             <button class="button" (click)="zoom(1)" aria-label="Увеличить кратность" data-test="zoom-in">+</button>
             <span class="spacer"></span>
             <span class="mono pulse">♥ {{ state.bpm }}</span>
-            <span class="mono shots" data-test="shots-left">{{ state.shotsLeft }} выстр.</span>
           </div>
           <div class="row actions sticky-actions">
             <button
@@ -184,19 +183,6 @@
             <button class="button" (click)="insertMagazine()" data-test="new-magazine">Новый магазин</button>
           }
         </div>
-      }
-      @case ('finished') {
-        @if (taskResult(); as result) {
-          <div class="panel finished card" data-test="task-result">
-            <div class="stars accent-text">{{ starsText(result.stars) }}</div>
-            <div class="mono score">{{ result.score }}<small>/{{ result.maxScore }}</small></div>
-            <p>{{ result.stars >= 1 ? 'Задача пройдена' : 'Нужно ещё раз' }}</p>
-            <div class="row">
-              <button class="button primary" (click)="toHub()" data-test="finished-hub">К задачам</button>
-              <button class="button" (click)="retry()" data-test="finished-retry">Ещё раз</button>
-            </div>
-          </div>
-        }
       }
     }
   </div>

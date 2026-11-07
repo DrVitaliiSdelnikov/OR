@@ -11,11 +11,11 @@ import { DebriefView } from './debrief-view';
     <ion-content>
       <div class="screen">
         <div class="top-bar">
-          <a class="button" routerLink="/tabs/log" aria-label="Назад">←</a>
+          <a class="button" routerLink="/journal" aria-label="Назад">←</a>
           <h1>Разбор</h1>
         </div>
         @if (shot(); as record) {
-          <or-debrief-view [shot]="record" (toDope)="router.navigate(['/tabs/dope'])" (proceed)="router.navigate(['/tabs/hub'])" />
+          <or-debrief-view [shot]="record" (toDope)="router.navigate(['/dope'])" (proceed)="router.navigate(['/'])" />
         } @else {
           <p>Выстрел не найден.</p>
         }

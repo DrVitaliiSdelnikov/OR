@@ -1,22 +1,24 @@
 import { expect, test } from '@playwright/test';
-import { startShootTask, unlockEverything } from './helpers';
+import { startFreePlay, unlockEverything } from './helpers';
 
-test.describe('навигация: панель вкладок видна на экранах хаба', () => {
+test.describe('навигация без вкладок', () => {
   test.beforeEach(async ({ page }) => {
     await unlockEverything(page);
   });
 
-  test('метеостанция и настройки открываются с панелью вкладок', async ({ page }) => {
-    await startShootTask(page, 's-zero');
-    await expect(page.getByTestId('tab-calc')).toBeVisible();
-    await page.goto('/tabs/hub/settings');
-    await expect(page.getByTestId('tab-log')).toBeVisible();
+  test('ни на одном экране нет нижних вкладок', async ({ page }) => {
+    for (const path of ['/', '/course', '/settings', '/journal', '/dope']) {
+      await page.goto(path);
+      await expect(page.locator('ion-tab-bar')).toHaveCount(0);
+    }
+    await startFreePlay(page);
+    await expect(page.locator('ion-tab-bar')).toHaveCount(0);
   });
 
-  test('с прицела можно вернуться на хаб', async ({ page }) => {
+  test('с прицела можно вернуться в меню', async ({ page }) => {
     await page.goto('/scope');
-    await page.getByTestId('scope-hub').click();
-    await expect(page).toHaveURL(/tabs\/hub$/);
+    await page.getByTestId('scope-main').click();
+    await expect(page.getByTestId('tile-course')).toBeVisible();
   });
 });
 
@@ -28,11 +30,11 @@ test.describe('ноутбук 1280×720', () => {
   });
 
   test('приложение показано телефонной колонкой 430 px по центру', async ({ page }) => {
-    await page.goto('/tabs/hub');
+    await page.goto('/');
     const app = (await page.locator('ion-app').boundingBox())!;
     expect(app.width).toBeLessThanOrEqual(432);
     expect(app.x).toBeGreaterThan(400);
-    await expect(page.getByTestId('tab-hub')).toBeInViewport();
+    await expect(page.getByTestId('tile-course')).toBeInViewport();
   });
 
   test('на прицеле «ОГОНЬ» и «Дыхание» помещаются в окно', async ({ page }) => {

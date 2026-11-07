@@ -1,8 +1,8 @@
 import { expect, Page, test } from '@playwright/test';
-import { startShootTask, unlockEverything } from './helpers';
+import { startFreePlay, unlockEverything } from './helpers';
 
-async function toScope(page: Page, taskId: string): Promise<void> {
-  await startShootTask(page, taskId);
+async function toScope(page: Page): Promise<void> {
+  await startFreePlay(page);
   await page.getByTestId('take-reading').click();
   await page.getByTestId('weather-done').click();
   await page.getByTestId('to-turrets').click();
@@ -46,7 +46,7 @@ test.describe('прицел, спуск, затвор, разбор', () => {
   });
 
   test('барабан высоты: ZERO STOP внизу и клик вверх', async ({ page }) => {
-    await toScope(page, 's-zero');
+    await toScope(page);
     await page.getByTestId('elevation-minus').click();
     await expect(page.getByTestId('stop-badge')).toHaveText('ZERO STOP');
     await page.getByTestId('elevation-plus').click();
@@ -54,7 +54,7 @@ test.describe('прицел, спуск, затвор, разбор', () => {
   });
 
   test('кратность меняется кнопками в пределах прицела', async ({ page }) => {
-    await toScope(page, 's-zero');
+    await toScope(page);
     await expect(page.getByTestId('magnification')).toHaveText('8×');
     for (let index = 0; index < 6; index++) {
       await page.getByTestId('zoom-in').click();
@@ -63,12 +63,12 @@ test.describe('прицел, спуск, затвор, разбор', () => {
   });
 
   test('удержание показывает остаток до расчёта', async ({ page }) => {
-    await toScope(page, 's-500');
+    await toScope(page);
     await expect(page.getByTestId('hold-value')).toHaveClass(/warn-text/);
   });
 
   test('выстрел через площадку спуска, разбор, перезарядка затвором и запись в журнал', async ({ page }) => {
-    await toScope(page, 's-zero');
+    await toScope(page);
     await holdTriggerUntilShot(page);
     await expect(page.getByTestId('debrief-verdict')).toHaveText(/ПОПАДАНИЕ|ПРОМАХ/);
     await expect(page.getByTestId('debrief-rule')).toBeVisible();
@@ -77,13 +77,12 @@ test.describe('прицел, спуск, затвор, разбор', () => {
     await expect(page.getByTestId('magazine')).toContainText('4 в магазине · гильза в стволе');
     await cycleBolt(page);
     await expect(page.getByTestId('fire')).toBeVisible();
-    await page.getByTestId('scope-back').click();
-    await page.getByTestId('tab-log').click();
+    await page.goto('/journal');
     await expect(page.locator('[data-test^="log-"]').first()).toContainText('выстрел 1');
   });
 
   test('без перезарядки «ОГОНЬ» отправляет к затвору', async ({ page }) => {
-    await toScope(page, 's-zero');
+    await toScope(page);
     await holdTriggerUntilShot(page);
     await page.getByTestId('debrief-next').click();
     await expect(page.locator('ion-modal')).toBeHidden();

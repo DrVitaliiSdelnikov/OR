@@ -12,7 +12,7 @@ type ToggleKey = keyof Settings;
     <ion-content>
       <div class="screen">
         <div class="top-bar">
-          <a class="button" routerLink="/tabs/hub" aria-label="Назад" data-test="settings-back">←</a>
+          <a class="button" routerLink="/" aria-label="Назад" data-test="settings-back">←</a>
           <h1>Настройки</h1>
         </div>
         <div class="card toggles">

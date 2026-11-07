@@ -59,6 +59,6 @@ export class WindPage {
 
   protected apply(): void {
     this.session.windInput.set({ speedMps: this.speedMps(), clockHours: this.clockHours() });
-    void this.router.navigate(['/tabs/calc']);
+    void this.router.navigate(['/calc']);
   }
 }

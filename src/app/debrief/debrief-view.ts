@@ -28,7 +28,7 @@ const PLATE_VIEW_CENTER = 60;
           <b [class.ok-text]="record.isHit" [class.error-text]="!record.isHit" data-test="debrief-verdict">
             {{ record.isHit ? '✓ ПОПАДАНИЕ' : '✕ ПРОМАХ' }}
           </b>
-          <span class="mono">{{ record.points }} очк. · {{ record.missMrad }} MIL от центра</span>
+          <span class="mono">{{ record.missMrad }} MIL от центра</span>
           <span class="mono">{{ direction() }}</span>
         </div>
       </div>

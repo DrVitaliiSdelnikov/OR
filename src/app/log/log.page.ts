@@ -11,11 +11,11 @@ import { ProgressStore } from '../services/progress.store';
       <div class="screen">
         <div class="top-bar"><h1>Журнал</h1></div>
         @for (shot of progress.shots(); track shot.id) {
-          <a class="card row shot" [routerLink]="['/tabs/log', shot.id]" [attr.data-test]="'log-' + shot.id">
+          <a class="card row shot" [routerLink]="['/journal', shot.id]" [attr.data-test]="'log-' + shot.id">
             <span class="mark" [class.ok-text]="shot.isHit" [class.error-text]="!shot.isHit">{{ shot.isHit ? '✓' : '✕' }}</span>
             <span class="text">
               {{ shot.taskTitle }} · выстрел {{ shot.shotNumber }}
-              <small class="mono">{{ shot.distanceM }} м · {{ shot.isHit ? 'попадание' : 'промах ' + shot.missMrad + ' MIL' }} · {{ shot.points }} очк.</small>
+              <small class="mono">{{ shot.distanceM }} м · {{ shot.isHit ? 'попадание' : 'промах ' + shot.missMrad + ' MIL' }}</small>
             </span>
             <span class="accent-text">→</span>
           </a>

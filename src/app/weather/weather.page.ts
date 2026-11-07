@@ -10,7 +10,6 @@ import { FeedbackService } from '../services/feedback.service';
 interface LcdRow {
   label: string;
   value: string;
-  isLocked: boolean;
 }
 
 const GAUGE_NOISE_MPS = 0.3;
@@ -36,7 +35,6 @@ export class WeatherPage {
 
   protected readonly rows = computed<LcdRow[]>(() => {
     const snapshot = this.session.gaugeSnapshot();
-    const isLocked = this.session.arePressureAndHumidityLocked();
     if (!snapshot) {
       return [];
     }
@@ -45,17 +43,17 @@ export class WeatherPage {
     const headwind = snapshot.windSpeedMps * Math.cos((fromDeg * Math.PI) / 180);
     const pages: LcdRow[][] = [
       [
-        { label: 'ТЕМП', value: `${snapshot.temperatureC.toFixed(1)} °C`, isLocked: false },
-        { label: 'ВЕТЕР', value: `${snapshot.windSpeedMps.toFixed(1)} м/с · ${formatClock(snapshot.windClock)}`, isLocked: false },
+        { label: 'ТЕМП', value: `${snapshot.temperatureC.toFixed(1)} °C` },
+        { label: 'ВЕТЕР', value: `${snapshot.windSpeedMps.toFixed(1)} м/с · ${formatClock(snapshot.windClock)}` },
       ],
       [
-        { label: 'ДАВЛ', value: `${snapshot.pressureHpa} гПа`, isLocked },
-        { label: 'ВЛАЖН', value: `${Math.round(snapshot.relativeHumidity * 100)} %`, isLocked },
-        { label: 'DA', value: `${Math.round(densityAltitudeM(snapshot.temperatureC, snapshot.pressureHpa))} м`, isLocked },
+        { label: 'ДАВЛ', value: `${snapshot.pressureHpa} гПа` },
+        { label: 'ВЛАЖН', value: `${Math.round(snapshot.relativeHumidity * 100)} %` },
+        { label: 'DA', value: `${Math.round(densityAltitudeM(snapshot.temperatureC, snapshot.pressureHpa))} м` },
       ],
       [
-        { label: 'КРОСС', value: `${Math.abs(crosswind).toFixed(1)} м/с ${crosswind >= 0 ? '→' : '←'}`, isLocked: false },
-        { label: 'ВСТРЕЧ', value: `${headwind.toFixed(1)} м/с`, isLocked: false },
+        { label: 'КРОСС', value: `${Math.abs(crosswind).toFixed(1)} м/с ${crosswind >= 0 ? '→' : '←'}` },
+        { label: 'ВСТРЕЧ', value: `${headwind.toFixed(1)} м/с` },
       ],
     ];
     return pages[this.pageIndex()];
@@ -72,6 +70,6 @@ export class WeatherPage {
   }
 
   protected close(): void {
-    void this.router.navigate(['/tabs/calc']);
+    void this.router.navigate(['/calc']);
   }
 }

@@ -1,12 +1,11 @@
 import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
-import { cartridgeById, MAX_TRAJECTORY_M, STANDARD_PRESSURE_HPA, TARGETS } from '../../core/content';
+import { cartridgeById, MAX_TRAJECTORY_M, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C, TARGETS } from '../../core/content';
 import { BallisticsEngine } from '../../core/engine';
 import { isTransonic } from '../../core/field';
 import { daySeed } from '../../core/rng';
-import { degFromClock, gaugeWindAt, GaugeReading, Scenario } from '../../core/scenario';
-import { Atmosphere, RequiredCorrection, TrajectoryPoint } from '../../core/types';
-import { scopeById } from '../../sim/scope-model';
-import { FREE_TASK, scenarioForTask, ShootTask, TASKS, UNIFORM_WIND_MAX_LEVEL } from '../../sim/tasks';
+import { createScenario, degFromClock, gaugeWindAt, GaugeReading, Scenario } from '../../core/scenario';
+import { Atmosphere, CartridgeId, RequiredCorrection, TrajectoryPoint } from '../../core/types';
+import { ScopeId, scopeById } from '../../sim/scope-model';
 import { ShotRecord } from './progress.store';
 
 export interface GaugeSnapshot extends GaugeReading {
@@ -28,6 +27,14 @@ export interface Solution {
 
 const WIND_FROM_LEFT_DEG = 90;
 
+// Старый поток свободной стрельбы до A7: один патрон, курсовой прицел, гонг 500 м, ветер по зонам.
+export const FREE_PLAY_TITLE = 'Свободная стрельба';
+const FREE_PLAY_CARTRIDGE_ID: CartridgeId = 'B';
+const FREE_PLAY_SCOPE_ID: ScopeId = 'course-tree';
+const FREE_PLAY_TARGET_INDEX = 1;
+export const FREE_PLAY_RESTING_BPM = 65;
+const SEEDS_PER_DAY = 10;
+
 export const DISTANCE_STEP_M = 25;
 export const MIN_DISTANCE_M = 100;
 export const MAX_DISTANCE_M = MAX_TRAJECTORY_M;
@@ -39,32 +46,25 @@ export class GameSession {
   private readonly startedAtMs = signal(Date.now());
   private freeSeedOffset = 0;
 
-  readonly task = signal<ShootTask>(FREE_TASK);
-  readonly scenario = signal<Scenario>(scenarioForTask(FREE_TASK, daySeed(new Date())));
+  readonly scenario = signal<Scenario>(freePlayScenario(daySeed(new Date()) * SEEDS_PER_DAY));
   readonly gaugeSnapshot = signal<GaugeSnapshot | null>(null);
   readonly windInput = signal<WindInput>({ speedMps: 0, clockHours: 9 });
-  readonly distanceM = signal(TARGETS[FREE_TASK.targetIndex].distanceM);
-  readonly targetIndex = signal(FREE_TASK.targetIndex);
-  readonly scopeId = signal(FREE_TASK.scopeId);
-  readonly taskShots = signal<ShotRecord[]>([]);
+  readonly distanceM = signal(TARGETS[FREE_PLAY_TARGET_INDEX].distanceM);
+  readonly targetIndex = signal(FREE_PLAY_TARGET_INDEX);
+  readonly scopeId = signal<ScopeId>(FREE_PLAY_SCOPE_ID);
+  readonly shots = signal<ShotRecord[]>([]);
   readonly solution = signal<Solution | null>(null);
 
-  readonly cartridge = computed(() => cartridgeById(this.task().cartridgeId));
+  readonly cartridge = computed(() => cartridgeById(FREE_PLAY_CARTRIDGE_ID));
   readonly target = computed(() => TARGETS[this.targetIndex()]);
   readonly scope = computed(() => scopeById(this.scopeId()));
-  readonly isFreeMode = computed(() => this.task().kind === 'free');
-  readonly arePressureAndHumidityLocked = computed(() => this.task().level <= UNIFORM_WIND_MAX_LEVEL);
-  /** @deprecated патроны, цели и конец упражнения — `sim/firing-line` (`FiringLine`); удалить в A3. */
-  readonly shotsLeft = computed(() => this.task().shots - this.taskShots().length);
-  readonly taskScore = computed(() => this.taskShots().reduce((sum, shot) => sum + shot.points, 0));
 
   readonly playerAtmosphere = computed<Atmosphere>(() => {
     const snapshot = this.gaugeSnapshot();
-    const temperatureC = snapshot?.temperatureC ?? 15;
-    if (!snapshot || this.arePressureAndHumidityLocked()) {
-      return { temperatureC, pressureHpa: STANDARD_PRESSURE_HPA, relativeHumidity: DEFAULT_RELATIVE_HUMIDITY };
+    if (!snapshot) {
+      return { temperatureC: STANDARD_TEMPERATURE_C, pressureHpa: STANDARD_PRESSURE_HPA, relativeHumidity: DEFAULT_RELATIVE_HUMIDITY };
     }
-    return { temperatureC, pressureHpa: snapshot.pressureHpa, relativeHumidity: snapshot.relativeHumidity };
+    return { temperatureC: snapshot.temperatureC, pressureHpa: snapshot.pressureHpa, relativeHumidity: snapshot.relativeHumidity };
   });
 
   private solveRequest = 0;
@@ -81,22 +81,15 @@ export class GameSession {
     });
   }
 
-  startTask(task: ShootTask): void {
-    const seed = task.kind === 'free' ? daySeed(new Date()) * 10 + this.freeSeedOffset++ : task.seed;
-    this.task.set(task);
-    this.scenario.set(scenarioForTask(task, seed));
-    this.targetIndex.set(task.targetIndex);
-    this.scopeId.set(task.scopeId);
-    this.distanceM.set(TARGETS[task.targetIndex].distanceM);
+  startFreePlay(): void {
+    this.scenario.set(freePlayScenario(daySeed(new Date()) * SEEDS_PER_DAY + this.freeSeedOffset++));
+    this.targetIndex.set(FREE_PLAY_TARGET_INDEX);
+    this.scopeId.set(FREE_PLAY_SCOPE_ID);
+    this.distanceM.set(TARGETS[FREE_PLAY_TARGET_INDEX].distanceM);
     this.gaugeSnapshot.set(null);
     this.windInput.set({ speedMps: 0, clockHours: 9 });
-    this.taskShots.set([]);
+    this.shots.set([]);
     this.startedAtMs.set(Date.now());
-  }
-
-  startFirstOpenTask(passedIds: ReadonlySet<string>): void {
-    const next = TASKS.find(task => task.kind === 'shoot' && !passedIds.has(task.id));
-    this.startTask((next as ShootTask | undefined) ?? FREE_TASK);
   }
 
   scenarioTimeS(nowMs = Date.now()): number {
@@ -127,7 +120,7 @@ export class GameSession {
   }
 
   addShot(shot: ShotRecord): void {
-    this.taskShots.update(shots => [...shots, shot]);
+    this.shots.update(shots => [...shots, shot]);
   }
 
   private async solve(cartridge: ReturnType<typeof cartridgeById>, atmosphere: Atmosphere, wind: WindInput, distanceM: number): Promise<void> {
@@ -148,4 +141,8 @@ export class GameSession {
       windageMradPerMps: Math.abs(BallisticsEngine.interpolated(unitWindPoints, distanceM).rightMrad),
     });
   }
+}
+
+function freePlayScenario(seed: number): Scenario {
+  return createScenario(seed, { windScale: 1, isWindUniform: false });
 }

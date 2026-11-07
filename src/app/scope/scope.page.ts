@@ -4,7 +4,6 @@ import { IonContent, IonModal } from '@ionic/angular/standalone';
 import { TARGETS, targetRadiusMrad } from '../../core/content';
 import { impactSoundDelayS } from '../../core/field';
 import { lateralWindMps, windAt } from '../../core/scenario';
-import { shotPoints } from '../../core/score';
 import { resolveShot } from '../../core/shot';
 import { Correction } from '../../core/types';
 import { BOLT_STEP_DIRECTION, BOLT_STEP_TRAVEL_PT, BOLT_STEPS, BoltEvent, BoltStep, ChamberState } from '../../sim/bolt';
@@ -20,15 +19,14 @@ import {
   TurretMove,
 } from '../../sim/scope-model';
 import { ScopeSession } from '../../sim/scope-session';
-import { hasZoneWind, maxScore } from '../../sim/tasks';
 import { MARKER_LIMIT_PT } from '../../sim/trigger';
 import { DebriefView } from '../debrief/debrief-view';
 import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
-import { GameSession } from '../services/game-session';
-import { ProgressStore, ShotRecord, TaskResult } from '../services/progress.store';
+import { FREE_PLAY_RESTING_BPM, FREE_PLAY_TITLE, GameSession } from '../services/game-session';
+import { ProgressStore, ShotRecord } from '../services/progress.store';
 import { ScopeRenderer } from './scope-renderer';
 
-type PanelMode = 'controls' | 'trigger' | 'bolt' | 'finished';
+type PanelMode = 'controls' | 'trigger' | 'bolt';
 
 const MARKS_ON_GLASS = 8;
 const UI_REFRESH_S = 0.1;
@@ -68,7 +66,7 @@ export class ScopePage {
 
   protected readonly session = new ScopeSession(
     this.game.scope(),
-    this.game.task().restingBpm,
+    FREE_PLAY_RESTING_BPM,
     this.game.scenario().seed,
     { isZoneLarger: this.progress.settings().isTriggerZoneLarger, isMarkerDriftOff: this.progress.settings().isMarkerDriftOff },
   );
@@ -77,7 +75,6 @@ export class ScopePage {
   protected readonly stopBadge = signal<string | null>(null);
   protected readonly message = signal<string | null>(null);
   protected readonly debriefShot = signal<ShotRecord | null>(null);
-  protected readonly taskResult = signal<TaskResult | null>(null);
   private readonly marks: Correction[] = [];
   private finger: Vector2 | null = null;
   private renderer: ScopeRenderer | null = null;
@@ -124,8 +121,6 @@ export class ScopePage {
       boltStep: session.bolt.currentStep,
       boltBall: this.boltBallPosition(session.bolt.currentStep, session.bolt.progress),
       averageCycleS: session.bolt.averageCycleTimeS,
-      shotsLeft: this.game.shotsLeft(),
-      score: this.game.taskScore(),
     };
   });
 
@@ -305,40 +300,25 @@ export class ScopePage {
 
   protected closeDebrief(): void {
     this.debriefShot.set(null);
-    if (this.game.shotsLeft() <= 0) {
-      this.finishTask();
-      return;
-    }
     this.panel.set(this.session.bolt.canFire ? 'controls' : 'bolt');
   }
 
   protected toDope(): void {
     this.debriefShot.set(null);
-    void this.router.navigate(['/tabs/dope']);
+    void this.router.navigate(['/dope']);
   }
 
   protected leave(): void {
-    void this.router.navigate(['/tabs/calc']);
+    void this.router.navigate(['/calc']);
   }
 
-  protected toHub(): void {
-    void this.router.navigate(['/tabs/hub']);
-  }
-
-  protected retry(): void {
-    this.game.startTask(this.game.task());
-    this.taskResult.set(null);
-    this.marks.length = 0;
-    void this.router.navigate(['/tabs/hub/weather']);
+  protected toMain(): void {
+    void this.router.navigate(['/']);
   }
 
   protected chamberText(chamber: ChamberState): string {
     const texts: Record<ChamberState, string> = { live: 'патрон в стволе', spent: 'гильза в стволе', empty: 'ствол пуст' };
     return texts[chamber];
-  }
-
-  protected starsText(stars: number): string {
-    return '★'.repeat(stars) + '☆'.repeat(3 - stars);
   }
 
   protected boltStepLabel(step: BoltStep, index: number): string {
@@ -348,16 +328,6 @@ export class ScopePage {
 
   protected isBoltStepDone(index: number): boolean {
     return index < BOLT_STEPS.indexOf(this.view().boltStep);
-  }
-
-  private finishTask(): void {
-    const task = this.game.task();
-    if (task.kind === 'free') {
-      this.panel.set('bolt');
-      return;
-    }
-    this.taskResult.set(this.progress.recordTaskResult(task.id, this.game.taskScore(), maxScore(task)));
-    this.panel.set('finished');
   }
 
   private refresh(): void {
@@ -401,7 +371,6 @@ export class ScopePage {
   }
 
   private draw(): void {
-    const task = this.game.task();
     const scenario = this.game.scenario();
     const zones = windAt(scenario, this.game.scenarioTimeS());
     this.renderer?.draw({
@@ -411,7 +380,7 @@ export class ScopePage {
       targetOffsetPt: this.session.targetOffsetPt,
       targetRadiusMil: targetRadiusMrad(this.game.target()),
       marks: this.marks,
-      flags: hasZoneWind(task) ? scenario.flags.map((flag, index) => ({ distanceM: flag.distanceM, lateralWindMps: lateralWindMps(zones[index + 1]) })) : [],
+      flags: scenario.flags.map((flag, index) => ({ distanceM: flag.distanceM, lateralWindMps: lateralWindMps(zones[index + 1]) })),
       timeS: performance.now() / 1000,
     });
     this.drawPad();
@@ -466,22 +435,19 @@ export class ScopePage {
     this.feedback.emit('shot');
     const game = this.game;
     const target = game.target();
-    const shotNumber = game.taskShots().length + 1;
+    const shotNumber = game.shots().length + 1;
     const result = await resolveShot(game.engine, game.scenario(), game.cartridge(), target, outcome.dial, shotNumber, {
       timeS: game.scenarioTimeS(),
       hold: outcome.hold,
     });
-    const points = shotPoints(result.missMrad, result.radiusMrad);
     const record: ShotRecord = {
       id: `${Date.now().toString(36)}-${shotNumber}`,
-      taskId: game.task().id,
-      taskTitle: game.task().title,
+      taskTitle: FREE_PLAY_TITLE,
       shotNumber,
       firedAtIso: new Date().toISOString(),
       distanceM: target.distanceM,
       scopeId: this.session.scope.id,
       isHit: result.isHit,
-      points,
       missMrad: result.missMrad,
       radiusMrad: result.radiusMrad,
       impact: result.impact,

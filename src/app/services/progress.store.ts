@@ -1,15 +1,11 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
-import { starsFor } from '../../core/score';
+import { ExerciseClass } from '../../core/exercise-scoring';
 import { Correction, MissCause } from '../../core/types';
+import { CourseResults, ExerciseId } from '../../sim/course';
+import { withExerciseResult, withIntroCompleted } from '../home/home.model';
 
 export const PROGRESS_STORAGE_KEY = 'or.progress.v1';
-
-export interface TaskResult {
-  score: number;
-  maxScore: number;
-  stars: 0 | 1 | 2 | 3;
-}
 
 export interface Settings {
   isSoundOn: boolean;
@@ -21,14 +17,12 @@ export interface Settings {
 
 export interface ShotRecord {
   id: string;
-  taskId: string;
   taskTitle: string;
   shotNumber: number;
   firedAtIso: string;
   distanceM: number;
   scopeId: string;
   isHit: boolean;
-  points: number;
   missMrad: number;
   radiusMrad: number;
   impact: Correction;
@@ -44,7 +38,7 @@ export interface ShotRecord {
 }
 
 interface ProgressState {
-  results: Record<string, TaskResult>;
+  course: CourseResults;
   settings: Settings;
   shots: ShotRecord[];
 }
@@ -58,18 +52,16 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 const SHOT_LOG_LIMIT = 200;
+const EMPTY_COURSE: CourseResults = { isIntroCompleted: false, bestClasses: {} };
 
 @Injectable({ providedIn: 'root' })
 export class ProgressStore {
-  private readonly state = signal<ProgressState>({ results: {}, settings: DEFAULT_SETTINGS, shots: [] });
+  private readonly state = signal<ProgressState>({ course: EMPTY_COURSE, settings: DEFAULT_SETTINGS, shots: [] });
 
-  readonly results = computed(() => this.state().results);
+  readonly course = computed(() => this.state().course);
   readonly settings = computed(() => this.state().settings);
   readonly shots = computed(() => this.state().shots);
   readonly lastShot = computed(() => this.state().shots[0] ?? null);
-  readonly passedTaskIds = computed(
-    () => new Set(Object.entries(this.state().results).filter(([, result]) => result.stars >= 1).map(([taskId]) => taskId)),
-  );
 
   async load(): Promise<void> {
     const { value } = await Preferences.get({ key: PROGRESS_STORAGE_KEY });
@@ -79,7 +71,7 @@ export class ProgressStore {
     try {
       const stored = JSON.parse(value) as Partial<ProgressState>;
       this.state.set({
-        results: stored.results ?? {},
+        course: stored.course ?? EMPTY_COURSE,
         settings: knownSettings(stored.settings),
         shots: stored.shots ?? [],
       });
@@ -88,13 +80,12 @@ export class ProgressStore {
     }
   }
 
-  recordTaskResult(taskId: string, score: number, maxScore: number): TaskResult {
-    const result: TaskResult = { score, maxScore, stars: starsFor(score, maxScore) };
-    const previous = this.state().results[taskId];
-    if (!previous || score >= previous.score) {
-      this.update(state => ({ ...state, results: { ...state.results, [taskId]: result } }));
-    }
-    return result;
+  recordExerciseResult(exerciseId: ExerciseId, exerciseClass: ExerciseClass): void {
+    this.update(state => ({ ...state, course: withExerciseResult(state.course, exerciseId, exerciseClass) }));
+  }
+
+  completeIntro(): void {
+    this.update(state => ({ ...state, course: withIntroCompleted(state.course) }));
   }
 
   recordShot(shot: ShotRecord): void {
@@ -110,7 +101,7 @@ export class ProgressStore {
   }
 
   resetProgress(): void {
-    this.update(state => ({ ...state, results: {}, shots: [] }));
+    this.update(state => ({ ...state, course: EMPTY_COURSE, shots: [] }));
   }
 
   private update(change: (state: ProgressState) => ProgressState): void {
