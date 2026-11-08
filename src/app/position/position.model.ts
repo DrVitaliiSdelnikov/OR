@@ -32,14 +32,16 @@ export interface Playability {
   reason: string | null;
 }
 
-type PositionFeature = 'intro' | 'pressure-trigger' | 'notebook-input' | 'moving-targets';
+type PositionFeature = 'intro' | 'pressure-trigger' | 'notebook-input' | 'manual-calc' | 'zone-flags' | 'moving-targets';
 
-// Что из позиции уже сделано; список растёт с A3.2 (спуск), A5 (блокнот), A7 (вводное), A9 (сцена) и уходит, когда играбельно всё.
-const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['pressure-trigger']);
+// Что из позиции уже сделано; список растёт с A5.2 (САМ), A7 (вводное), A9 (сцена) и уходит, когда играбельно всё.
+const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['pressure-trigger', 'notebook-input']);
 const FEATURE_NAMES: Record<PositionFeature, string> = {
   intro: 'вводное',
   'pressure-trigger': 'спуск с давлением',
   'notebook-input': 'блокнот',
+  'manual-calc': 'расчёт САМ',
+  'zone-flags': 'флажки по трассе',
   'moving-targets': 'движущиеся цели',
 };
 const PERCENT = 100;
@@ -59,14 +61,14 @@ export interface BoltStepView {
   isDone: boolean;
 }
 
-export function correctionCells(scope: ScopeModel, dial: DialClicks, total: NotebookTotal | null, distanceM: number): CorrectionCell[] {
+export function correctionCells(scope: ScopeModel, dial: DialClicks, total: NotebookTotal | null, distanceM: number | null): CorrectionCell[] {
   const hasTotal = total !== null && !total.isEmpty;
   const elevationMil = dial.elevation * scope.clickMrad;
   const rightMil = -dial.windageLeft * scope.clickMrad;
   const cells: CorrectionCell[] = [
     axisCell('ВЕРТ', verticalText(scope, elevationMil), hasTotal ? total.elevation.targetClicks : null, dial.elevation, clicks => verticalText(scope, clicks * scope.clickMrad)),
     axisCell('ГОР', horizontalText(scope, rightMil), hasTotal ? total.windageLeft.targetClicks : null, dial.windageLeft, clicks => horizontalText(scope, -clicks * scope.clickMrad)),
-    { label: 'ДИСТ', value: `${distanceM} м`, target: null, isOnTarget: true },
+    { label: 'ДИСТ', value: distanceM === null ? '—' : `${distanceM} м`, target: null, isOnTarget: true },
   ];
   if (hasTotal && (!isHoldoverSettled(scope, total.holdUpMil) || !isHoldoverSettled(scope, total.holdRightMil))) {
     cells.push({ label: 'УДЕРЖ.', value: `${verticalText(scope, total.holdUpMil)} · ${horizontalText(scope, total.holdRightMil)}`, target: null, isOnTarget: true });
@@ -84,6 +86,10 @@ export function drumCounter(axis: TurretAxis, progress: TurretProgress): string 
   const arrows: Record<TurretAxis, { up: string; down: string }> = { elevation: { up: '↑', down: '↓' }, windage: { up: '←', down: '→' } };
   const arrow = progress.direction === 'none' ? '' : ` ${arrows[axis][progress.direction]}`;
   return `ещё ${progress.remainingClicks} кл.${arrow}`;
+}
+
+export function drumCounterText(axis: TurretAxis, progress: TurretProgress | null): string {
+  return progress === null ? '' : drumCounter(axis, progress);
 }
 
 export function endCard(result: ExerciseResult): EndCard {
@@ -110,6 +116,12 @@ function requiredFeatures(def: ExerciseDef): PositionFeature[] {
   }
   if (def.conditions.windScale !== 0) {
     features.push('notebook-input');
+  }
+  if (def.notebookMode === 'manual-easy' || def.notebookMode === 'manual-hard') {
+    features.push('manual-calc');
+  }
+  if (def.conditions.isWindUniform === false) {
+    features.push('zone-flags');
   }
   if (def.hasPatrol) {
     features.push('moving-targets');

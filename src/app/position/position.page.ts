@@ -9,15 +9,18 @@ import { lateralWindMps, windAt } from '../../core/scenario';
 import { Correction } from '../../core/types';
 import { BoltEvent } from '../../sim/bolt';
 import { exerciseById, ExerciseId } from '../../sim/course';
+import { tabs } from '../../sim/notebook';
 import { Vector2 } from '../../sim/noise';
 import { formatScopeValue, reticleSubtensionScale, TurretMove } from '../../sim/scope-model';
+import { NotebookSheetComponent } from '../notebook/notebook-sheet.component';
+import { clockText, NotebookTab } from '../notebook/notebook.model';
 import { ScopeRenderer } from '../scene/scope-renderer';
 import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
 import { PositionSession } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
-import { breathRing, correctionCells, drumCounter, endCard, EndCard, markerTarget, playability, pressureText, TurretAxis } from './position.model';
+import { breathRing, correctionCells, drumCounterText, endCard, EndCard, markerTarget, playability, pressureText, TurretAxis } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
 
 const MARKS_ON_GLASS = 8;
@@ -29,6 +32,7 @@ const RING_STEP_PT = 24;
 const ZONE_TO_GLASS = 0.5;
 const HOLD_LABELS = { free: 'Держать', holding: 'Держу', cooldown: 'Выдох' } as const;
 const SEED_RANGE = 1_000_000_000;
+const SHEET_GAP_BELOW_CROSSHAIR_PT = 24;
 const CLICKS_PER_WHOLE_MIL = 10;
 const CLICKS_PER_WHOLE_MOA = 4;
 const CLICKS_PER_TURN = 100;
@@ -43,7 +47,7 @@ const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
 
 @Component({
   selector: 'or-position',
-  imports: [IonContent, TurretDrumComponent, FireControlComponent, BoltTrackComponent],
+  imports: [IonContent, TurretDrumComponent, FireControlComponent, BoltTrackComponent, NotebookSheetComponent],
   templateUrl: './position.page.html',
   styleUrl: './position.page.scss',
 })
@@ -55,6 +59,7 @@ export class PositionPage {
   private readonly progress = inject(ProgressStore);
   private readonly engine = new BallisticsEngine();
   private readonly glassCanvas = viewChild<ElementRef<HTMLCanvasElement>>('glass');
+  private readonly positionRoot = viewChild<ElementRef<HTMLElement>>('positionRoot');
 
   protected readonly def = computed(() => exerciseById(this.exerciseId() as ExerciseId) ?? null);
   protected readonly session = signal<PositionSession | null>(null);
@@ -63,6 +68,8 @@ export class PositionPage {
   protected readonly stopBadge = signal<string | null>(null);
   protected readonly end = signal<EndCard | null>(null);
   protected readonly isLeaveConfirmOpen = signal(false);
+  protected readonly sheetTab = signal<NotebookTab | null>(null);
+  protected readonly sheetFrame = signal<{ topPt: number; heightPt: number } | null>(null);
   protected readonly isUnplayable = computed(() => {
     const def = this.def();
     return def === null || !playability(def).isPlayable;
@@ -75,30 +82,35 @@ export class PositionPage {
       return null;
     }
     const scope = session.scope.scope;
-    const total = session.total;
-    const target = session.target;
+    const entered = session.enteredTotal;
+    const notebook = session.notebook;
+    const playerDistanceM = notebook.distanceM === null ? null : Math.round(notebook.distanceM);
+    const wind = notebook.readings.wind;
     const dial = { elevation: session.scope.elevation.clicks, windageLeft: session.scope.windage.clicks };
+    const distanceText = notebook.context.target.distanceM === null ? 'дистанция неизвестна' : `${notebook.context.target.distanceM} м`;
     return {
       title: `Упр. ${session.def.id} · ${session.def.title}`,
-      subtitle: `рубеж · ${target.distanceM} м · цель ${session.firingLine.targetIndex + 1} / ${session.setup.targets.length}`,
-      wind: session.def.conditions.windScale === 0 ? 'штиль' : '—',
-      cells: correctionCells(scope, dial, total, target.distanceM),
+      subtitle: `рубеж · ${distanceText} · цель ${session.firingLine.targetIndex + 1} / ${session.setup.targets.length}`,
+      wind: wind ? [`${wind.speedMps.toFixed(1)} м/с`, clockText(wind.clock)] : [session.def.conditions.windScale === 0 ? 'штиль' : '—'],
+      isWindUnfilled: !tabs(notebook).wind && session.def.conditions.windScale !== 0,
+      isNotEntered: entered === null,
+      cells: correctionCells(scope, dial, entered, playerDistanceM),
       elevation: {
         clicks: dial.elevation,
-        target: total.isEmpty ? null : total.elevation.targetClicks,
+        target: entered?.elevation.targetClicks ?? null,
         min: session.scope.elevation.minClicks,
         text: `↑ ${formatScopeValue(scope, dial.elevation * scope.clickMrad)}`,
-        counter: total.isEmpty ? '' : drumCounter('elevation', session.progress('elevation')),
+        counter: drumCounterText('elevation', session.progress('elevation')),
       },
       windage: {
         clicks: dial.windageLeft,
-        target: total.isEmpty ? null : total.windageLeft.targetClicks,
+        target: entered?.windageLeft.targetClicks ?? null,
         min: session.scope.windage.minClicks,
         text: formatScopeValue(scope, Math.abs(dial.windageLeft) * scope.clickMrad),
-        counter: total.isEmpty ? '' : drumCounter('windage', session.progress('windage')),
+        counter: drumCounterText('windage', session.progress('windage')),
       },
       magnification: session.scope.magnification,
-      dope: `ДОПЕ · ${target.distanceM} м ↑ ${dopeRowAt(session.notebook.context.card, target.distanceM).elevationMil.toFixed(1)}`,
+      dope: playerDistanceM === null ? 'ДОПЕ · —' : `ДОПЕ · ${playerDistanceM} м ↑ ${dopeRowAt(notebook.context.card, notebook.distanceM!).elevationMil.toFixed(1)}`,
       rounds: `${session.firingLine.magazineLeft} / ${session.firingLine.magazineLoaded}`,
       isMagazineChangeDue: session.isMagazineChangeDue,
       isBoltCycleDue: !session.isTapTrigger && session.isBoltCycleDue && this.end() === null,
@@ -162,9 +174,41 @@ export class PositionPage {
     this.session()?.scope.sway.breath.release();
   }
 
+  protected openSheet(tab: NotebookTab): void {
+    if (!this.session() || this.end()) {
+      return;
+    }
+    const glass = this.glassCanvas()?.nativeElement.getBoundingClientRect();
+    const root = this.positionRoot()?.nativeElement.getBoundingClientRect();
+    if (glass && root) {
+      const crosshairY = glass.top + glass.height / 2 + SHEET_GAP_BELOW_CROSSHAIR_PT;
+      this.sheetFrame.set({ topPt: crosshairY - root.top, heightPt: window.innerHeight - crosshairY });
+    }
+    this.fingerMarker = null;
+    this.sheetTab.set(tab);
+  }
+
+  protected closeSheet(): void {
+    this.sheetTab.set(null);
+  }
+
+  protected enterOnTurrets(): void {
+    this.session()?.enterOnTurrets();
+    this.closeSheet();
+    this.refresh();
+  }
+
+  protected measureStation(holdS: number): void {
+    const session = this.session();
+    if (session) {
+      session.measureStation(holdS, this.scenarioTimeS(session));
+      this.refresh();
+    }
+  }
+
   protected async fire(): Promise<void> {
     const session = this.session();
-    if (!session || this.isFiring || session.isMagazineChangeDue || session.isFinished) {
+    if (!session || this.isFiring || session.isMagazineChangeDue || session.isFinished || this.sheetTab() !== null) {
       return;
     }
     this.isFiring = true;
@@ -188,6 +232,7 @@ export class PositionPage {
     this.showShotLine(shot.record.isColdBore ? `${verdict} · холодный` : verdict);
     const result = session.result();
     if (result) {
+      this.closeSheet();
       this.progress.recordExerciseResult(session.def.id, result.exerciseClass);
       this.end.set(endCard(result));
     }
@@ -196,7 +241,7 @@ export class PositionPage {
 
   protected pressTrigger(fingerOffset: Vector2): void {
     const session = this.session();
-    if (!session || session.isFinished) {
+    if (!session || session.isFinished || this.sheetTab() !== null) {
       return;
     }
     if (!session.startTrigger()) {
@@ -251,6 +296,10 @@ export class PositionPage {
   }
 
   protected back(): void {
+    if (this.sheetTab() !== null) {
+      this.closeSheet();
+      return;
+    }
     const session = this.session();
     if (session && session.hasFired && !session.isFinished) {
       this.isLeaveConfirmOpen.set(true);
@@ -274,6 +323,7 @@ export class PositionPage {
 
   protected async retry(): Promise<void> {
     this.end.set(null);
+    this.closeSheet();
     this.marks.length = 0;
     await this.startSession();
   }
@@ -447,7 +497,7 @@ export class PositionPage {
     this.shotLineTimer = setTimeout(() => this.shotLine.set(null), SHOT_LINE_MS);
   }
 
-  private refresh(): void {
+  protected refresh(): void {
     this.uiTick.update(tick => tick + 1);
   }
 }

@@ -17,6 +17,3 @@ export function gaussian(random: RandomSource): number {
   return Math.sqrt(-2 * Math.log(radiusSample)) * Math.cos(2 * Math.PI * angleSample);
 }
 
-export function daySeed(date: Date): number {
-  return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
-}

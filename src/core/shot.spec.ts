@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { cartridgeById, RIFLE, TARGETS } from './content';
+import { cartridgeById, RIFLE } from './content';
 import { BallisticsEngine } from './engine';
 import { createScenario, windAt } from './scenario';
 import { targetMotionMil } from './moving-target';
@@ -8,7 +8,7 @@ import { Correction } from './types';
 
 const engine = new BallisticsEngine();
 const cartridge = cartridgeById('B');
-const target500 = TARGETS[1];
+const target500 = { distanceM: 500, diameterM: 0.5 };
 const scenario = createScenario(20261032, { windScale: 0 });
 let perfectDial: Correction;
 

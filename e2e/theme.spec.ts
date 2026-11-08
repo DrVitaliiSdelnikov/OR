@@ -52,7 +52,6 @@ test.describe('прибор: токены и одна тема', () => {
     await unlockEverything(page);
     const expectedOnPage: [string, string][] = [
       ['/settings', '.button'],
-      ['/dope', '.chip'],
     ];
     for (const [path, mustHave] of expectedOnPage) {
       await page.goto(path);

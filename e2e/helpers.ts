@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { expect, Page } from '@playwright/test';
 
 export const PROGRESS_KEY = 'CapacitorStorage.or.progress.v1';
 
@@ -22,8 +22,8 @@ export async function unlockEverything(page: Page, settings: object = {}): Promi
   });
 }
 
-export async function startFreePlay(page: Page): Promise<void> {
-  await page.goto('/');
-  await page.getByTestId('tile-free').click();
-  await page.waitForURL('**/weather');
+export async function enterTotalOnTurrets(page: Page): Promise<void> {
+  await page.getByTestId('tile-notebook').click();
+  await page.getByTestId('enter-turrets').click();
+  await expect(page.getByTestId('notebook-sheet')).toHaveCount(0);
 }

@@ -2,7 +2,6 @@ export const MRAD_PER_MOA = 0.29089;
 export const MILS_PER_DRUM_TURN = 10;
 export const EYEPIECE_RADIUS_PT = 138;
 export const PT_PER_MIL_PER_MAGNIFICATION = 3.4;
-export const DRUM_DRAG_PT_PER_CLICK = 9;
 
 export type ScopeId = 'course-tree' | 'course-dot' | 'moa' | 'tree' | 'dot';
 export type ScopeUnits = 'MIL' | 'MOA';
@@ -131,10 +130,6 @@ export function clickLimits(scope: ScopeModel): { elevation: number; windage: nu
 
 export function mradToScopeUnits(scope: ScopeModel, mrad: number): number {
   return scope.units === 'MIL' ? mrad : mrad / MRAD_PER_MOA;
-}
-
-export function clicksFor(scope: ScopeModel, mrad: number): number {
-  return Math.round(mrad / scope.clickMrad);
 }
 
 export function formatScopeValue(scope: ScopeModel, mrad: number): string {

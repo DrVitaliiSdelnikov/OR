@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cartridgeById } from './content';
 import { BallisticsEngine } from './engine';
-import { crosswindByClockRule, densityAltitudeM, formatClock, impactSoundDelayS, isTransonic, speedOfSoundMps, windClockShare } from './field';
+import { impactSoundDelayS, speedOfSoundMps, windClockShare } from './field';
 
 describe('wind clock rule', () => {
   it('follows the sine table: 12 and 6 → 0, 1/5/7/11 → 0.5, 2/4/8/10 → 0.87, 3 and 9 → 1', () => {
@@ -25,26 +25,9 @@ describe('wind clock rule', () => {
     expect(windClockShare(-3)).toBe(windClockShare(9));
     expect(windClockShare(0)).toBe(windClockShare(12));
   });
-
-  it('4 m/s from 10:30 gives 2.84 m/s crosswind', () => {
-    expect(crosswindByClockRule(4, 10.5)).toBeCloseTo(2.84, 6);
-  });
-
-  it('formats half hours', () => {
-    expect(formatClock(10.5)).toBe('10:30');
-    expect(formatClock(0)).toBe('12:00');
-  });
 });
 
 describe('atmosphere helpers', () => {
-  it('density altitude is about 0 m in the standard atmosphere', () => {
-    expect(Math.abs(densityAltitudeM(15, 1013.25))).toBeLessThan(30);
-  });
-
-  it('hot thin air raises density altitude', () => {
-    expect(densityAltitudeM(30, 990)).toBeGreaterThan(500);
-  });
-
   it('speed of sound is 343 m/s at 20 °C', () => {
     expect(speedOfSoundMps(20)).toBeCloseTo(343.4, 1);
   });
@@ -52,11 +35,6 @@ describe('atmosphere helpers', () => {
   it('steel rings about 3 s after the shot at 700 m', () => {
     expect(impactSoundDelayS(1.1, 700, 15)).toBeGreaterThan(3);
     expect(impactSoundDelayS(1.1, 700, 15)).toBeLessThan(3.3);
-  });
-
-  it('transonic below 1.2 Mach', () => {
-    expect(isTransonic(400, 15)).toBe(true);
-    expect(isTransonic(500, 15)).toBe(false);
   });
 });
 

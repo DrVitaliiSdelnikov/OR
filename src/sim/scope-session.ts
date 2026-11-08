@@ -34,7 +34,7 @@ export class ScopeSession {
     restingBpm: number,
     private readonly seed: number,
     private readonly accessibility: TriggerAccessibility,
-    loadedRounds = MAGAZINE_CAPACITY,
+    loadedRounds: number,
   ) {
     this.bolt = new BoltAction(loadedRounds - 1, 'live');
     this.random = mulberry32(seed);

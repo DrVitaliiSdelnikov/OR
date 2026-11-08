@@ -66,7 +66,6 @@ const PLATE_VIEW_CENTER = 60;
       </div>
 
       <div class="row actions">
-        <button class="button" (click)="toDope.emit()" data-test="debrief-dope">В DOPE</button>
         <button class="button primary" (click)="proceed.emit()" data-test="debrief-next">Дальше →</button>
       </div>
     </div>
@@ -93,7 +92,6 @@ const PLATE_VIEW_CENTER = 60;
 })
 export class DebriefView {
   readonly shot = input.required<ShotRecord>();
-  readonly toDope = output<void>();
   readonly proceed = output<void>();
 
   protected readonly center = PLATE_VIEW_CENTER;

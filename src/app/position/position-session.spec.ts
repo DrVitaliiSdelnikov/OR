@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RIFLE } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
+import { gaugeWindAt } from '../../core/scenario';
 import { exerciseById } from '../../sim/course';
 import { PositionSession } from './position-session';
 
@@ -10,13 +11,14 @@ const ACCESSIBILITY = { isZoneLarger: false, isMarkerDriftOff: true };
 const ON_TARGET = { x: 0, y: 0 };
 const FAR_OFF = { x: 6, y: 0 };
 
-async function start(id: '01' | '02', seed = 11): Promise<PositionSession> {
+async function start(id: '01' | '02' | '04' | '05', seed = 11): Promise<PositionSession> {
   return PositionSession.start({ def: exerciseById(id)!, seed, engine, accessibility: ACCESSIBILITY });
 }
 
 function dialToTarget(session: PositionSession): void {
-  session.turn('elevation', session.total.elevation.targetClicks - session.scope.elevation.clicks);
-  session.turn('windage', session.total.windageLeft.targetClicks - session.scope.windage.clicks);
+  const entered = session.enterOnTurrets();
+  session.turn('elevation', entered.elevation.targetClicks - session.scope.elevation.clicks);
+  session.turn('windage', entered.windageLeft.targetClicks - session.scope.windage.clicks);
 }
 
 async function shoot(session: PositionSession, aim: { x: number; y: number }) {
@@ -114,24 +116,33 @@ describe('PositionSession — dialling exactly the first time (01)', () => {
 
   it('overshooting and coming back does not count', async () => {
     const session = await start('01');
+    session.enterOnTurrets();
     session.turn('elevation', session.total.elevation.targetClicks + 1);
     session.turn('elevation', -1);
     expect((await shoot(session, ON_TARGET))!.record.isDialExactFirstTry).toBe(false);
   });
 
+  it('dialling the notebook total without entering it does not count (Б3)', async () => {
+    const session = await start('01');
+    session.turn('elevation', session.total.elevation.targetClicks);
+    expect((await shoot(session, ON_TARGET))!.record.isDialExactFirstTry).toBe(false);
+  });
+
   it('firing before the turret is on target does not count', async () => {
     const session = await start('01');
+    session.enterOnTurrets();
     session.turn('elevation', session.total.elevation.targetClicks - 2);
     expect((await shoot(session, ON_TARGET))!.record.isDialExactFirstTry).toBe(false);
   });
 
   it('the turret progress follows the target and its start', async () => {
     const session = await start('01');
-    const target = session.total.elevation.targetClicks;
+    expect(session.progress('elevation')).toBeNull();
+    const target = session.enterOnTurrets().elevation.targetClicks;
     session.turn('elevation', target - 3);
     expect(session.progress('elevation')).toEqual({ remainingClicks: 3, direction: 'up', isOnTarget: false, overshootClicks: 0 });
     session.turn('elevation', 5);
-    expect(session.progress('elevation').overshootClicks).toBe(2);
+    expect(session.progress('elevation')?.overshootClicks).toBe(2);
   });
 });
 
@@ -155,14 +166,14 @@ describe('PositionSession — exercise 02', () => {
 });
 
 describe('PositionSession — the end', () => {
-  it('three first-shot hits with exact dialling give class 1', async () => {
+  it('three first-shot hits with exact dialling give class 1; each target adds 10 for an exact check', async () => {
     const session = await start('01');
     dialToTarget(session);
     for (let shot = 0; shot < 3; shot++) {
       await shoot(session, ON_TARGET);
     }
     expect(session.isFinished).toBe(true);
-    expect(session.result()).toMatchObject({ exerciseClass: 1, isAdmitted: true, total: 30 });
+    expect(session.result()).toMatchObject({ exerciseClass: 1, isAdmitted: true, total: 60 });
   });
 
   it('all misses are not admitted', async () => {
@@ -291,3 +302,162 @@ describe('PositionSession — trigger with pressure and the manual bolt (03)', (
     expect(session.scope.bolt.canFire).toBe(true);
   });
 });
+
+describe('PositionSession — entering the total on the turrets (Б3)', () => {
+  it('no turret target before entering; entering freezes the total the notebook had', async () => {
+    const session = await start('01');
+    expect(session.enteredTotal).toBeNull();
+    const entered = session.enterOnTurrets();
+    expect(entered.elevation.targetClicks).toBe(dopeRowAt(session.notebook.context.card, 300).clicks);
+    expect(session.enteredTotal).toEqual(entered);
+  });
+
+  it('a new target at the same distance keeps what was entered (01)', async () => {
+    const session = await start('01');
+    dialToTarget(session);
+    await shoot(session, ON_TARGET);
+    expect(session.firingLine.targetIndex).toBe(1);
+    expect(session.enteredTotal).not.toBeNull();
+  });
+
+  it('a new target whose total differs in clicks clears what was entered (05)', async () => {
+    const session = await start('05', 5);
+    session.measureRange(rangeMil(session));
+    session.enterOnTurrets();
+    await shoot(session, FAR_OFF);
+    session.scope.bolt.cycle();
+    await shoot(session, FAR_OFF);
+    expect(session.firingLine.targetIndex).toBe(1);
+    expect(session.setup.targets[1].distanceM).not.toBe(session.setup.targets[0].distanceM);
+    expect(session.enteredTotal).toBeNull();
+  });
+
+  it('a new cartridge at the same unknown-distance target keeps the milling; a new target forgets it', async () => {
+    const base = exerciseById('05')!;
+    const def = {
+      ...base,
+      targets: { ...base.targets!, count: 1 },
+      stages: [
+        { cartridgeId: 'B' as const, maxShotsPerTarget: 2, closesOnHit: true },
+        { cartridgeId: 'C' as const, maxShotsPerTarget: 2, closesOnHit: true },
+      ],
+    };
+    const session = await PositionSession.start({ def, seed: 5, engine, accessibility: ACCESSIBILITY });
+    session.measureRange(rangeMil(session));
+    await shoot(session, FAR_OFF);
+    session.scope.bolt.cycle();
+    await shoot(session, FAR_OFF);
+    expect(session.firingLine.stageIndex).toBe(1);
+    expect(session.notebook.readings.reticleMil).not.toBeNull();
+    expect(session.notebook.context.card.cartridgeId).toBe('C');
+  });
+
+  it('re-entering the wind after entering changes the live total but not the entered one', async () => {
+    const session = await start('04');
+    session.measureStation(3, session.scenario.startTimeS);
+    session.enterWind(session.notebook.readings.station!.windSpeedMps, session.notebook.readings.station!.windClock);
+    const entered = session.enterOnTurrets();
+    session.enterWind(0, 12);
+    expect(session.enteredTotal).toEqual(entered);
+    expect(session.total.windageLeft.targetClicks).not.toBe(entered.windageLeft.targetClicks);
+  });
+});
+
+describe('PositionSession — station and readings', () => {
+  it('a full 3 s measurement is close to the gauge; a short one is marked and noisier; wind is not carried over (Б11)', async () => {
+    const session = await start('04');
+    const timeS = session.scenario.startTimeS;
+    const gauge = gaugeWindAt(session.scenario, timeS);
+    const fullSpreads: number[] = [];
+    for (let reading = 0; reading < 30; reading++) {
+      session.measureStation(3, timeS);
+      fullSpreads.push(Math.abs(session.notebook.readings.station!.windSpeedMps - gauge.speedMps));
+    }
+    const full = session.notebook.readings.station!;
+    expect(full.isShort).toBe(false);
+    expect(Math.max(...fullSpreads)).toBeLessThanOrEqual(0.15 + 1e-9);
+    expect(full.windSpeedMps * 10).toBeCloseTo(Math.round(full.windSpeedMps * 10), 9);
+    expect(full.temperatureC).toBe(session.scenario.gauge.temperatureC);
+    expect(session.notebook.readings.wind).toBeNull();
+    const shortSpreads: number[] = [];
+    for (let reading = 0; reading < 30; reading++) {
+      session.measureStation(1, timeS);
+      shortSpreads.push(Math.abs(session.notebook.readings.station!.windSpeedMps - gauge.speedMps));
+    }
+    expect(session.notebook.readings.station!.isShort).toBe(true);
+    expect(Math.max(...shortSpreads)).toBeLessThanOrEqual(0.35 + 1e-9);
+    expect(Math.max(...shortSpreads)).toBeGreaterThan(0.15);
+  });
+
+  it('the same seed gives the same readings', async () => {
+    const first = await start('04', 9);
+    const second = await start('04', 9);
+    const readings = (session: PositionSession): number[] =>
+      Array.from({ length: 10 }, () => {
+        session.measureStation(1, session.scenario.startTimeS);
+        return session.notebook.readings.station!.windSpeedMps;
+      });
+    expect(readings(first)).toEqual(readings(second));
+  });
+
+  it('05: the notebook does not know the distance until milled; milling sets the player distance (Ж)', async () => {
+    const session = await start('05', 5);
+    expect(session.notebook.distanceM).toBeNull();
+    expect(session.notebook.context.target.distanceM).toBeNull();
+    expect(session.total.isEmpty).toBe(true);
+    session.measureRange(1.7);
+    expect(session.notebook.distanceM).toBeCloseTo((session.target.diameterM * 1000) / 1.7, 6);
+    expect(session.total.isEmpty).toBe(false);
+  });
+
+  it('toggling a factor changes the total', async () => {
+    const session = await start('04');
+    session.enterWind(2.5, 9);
+    const withWind = session.total.windageLeft.targetClicks;
+    session.toggleFactor('wind');
+    expect(withWind).not.toBe(0);
+    expect(session.total.windageLeft.targetClicks).toBe(0);
+  });
+});
+
+describe('PositionSession — the check is recorded with the shot', () => {
+  it('04: wind typed off the station reading is a reading-speed error; typed as read is exact', async () => {
+    const wrong = await start('04');
+    wrong.measureStation(3, wrong.scenario.startTimeS);
+    const station = wrong.notebook.readings.station!;
+    wrong.enterWind(station.windSpeedMps + 2, station.windClock);
+    dialToTarget(wrong);
+    const wrongShot = (await shoot(wrong, ON_TARGET))!;
+    expect(wrongShot.record.check?.rowVerdicts['reading-speed']).toBe('error');
+
+    const right = await start('04');
+    right.measureStation(3, right.scenario.startTimeS);
+    right.enterWind(right.notebook.readings.station!.windSpeedMps, right.notebook.readings.station!.windClock);
+    dialToTarget(right);
+    const rightShot = (await shoot(right, ON_TARGET))!;
+    expect(rightShot.record.check?.rowVerdicts['reading-speed']).toBe('exact');
+    expect(rightShot.record.check?.rowVerdicts['turret-elevation']).toBe('exact');
+  });
+
+  it('the turret row compares the dial with the notebook total', async () => {
+    const session = await start('04');
+    session.enterWind(2.5, 9);
+    const shot = (await shoot(session, ON_TARGET))!;
+    expect(shot.record.check?.rowVerdicts['turret-elevation']).toBe('error');
+  });
+
+  it('05: the milled distance is the range estimate; a known distance has none', async () => {
+    const milled = await start('05', 5);
+    milled.measureRange(rangeMil(milled));
+    milled.enterOnTurrets();
+    const milledShot = (await shoot(milled, ON_TARGET))!;
+    expect(Math.abs(milledShot.record.rangeEstimateM! - milled.setup.targets[0].distanceM)).toBeLessThan(0.05 * milled.setup.targets[0].distanceM);
+
+    const known = await start('04');
+    expect((await shoot(known, ON_TARGET))!.record.rangeEstimateM).toBeUndefined();
+  });
+});
+
+function rangeMil(session: PositionSession): number {
+  return Math.round((session.target.diameterM * 1000) / session.target.distanceM / 0.05) * 0.05;
+}

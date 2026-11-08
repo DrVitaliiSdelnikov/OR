@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { daySeed, gaussian, mulberry32 } from './rng';
+import { gaussian, mulberry32 } from './rng';
 
 describe('mulberry32', () => {
   it('repeats the same sequence for the same seed', () => {
@@ -32,11 +32,5 @@ describe('gaussian', () => {
     const deviation = Math.sqrt(samples.reduce((sum, value) => sum + (value - mean) ** 2, 0) / samples.length);
     expect(Math.abs(mean)).toBeLessThan(0.03);
     expect(Math.abs(deviation - 1)).toBeLessThan(0.03);
-  });
-});
-
-describe('daySeed', () => {
-  it('encodes the calendar date as YYYYMMDD', () => {
-    expect(daySeed(new Date(2026, 9, 31))).toBe(20261031);
   });
 });

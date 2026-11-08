@@ -298,6 +298,16 @@ describe('stale steps', () => {
     expect(staleness(moved).dope).toBe('distance');
     expect(staleness(moved).wind).toBe('distance');
   });
+
+  it('a new target at an unknown distance forgets the milling of the previous one', () => {
+    const unknown = { sizeM: 0.5, distanceM: null };
+    const milled = measureRange(createNotebook(context({ target: unknown }), 'auto'), 1.7);
+    const next = changeContext(milled, { target: { ...unknown } });
+    expect(next.readings.reticleMil).toBeNull();
+    expect(next.distanceM).toBeNull();
+    expect(tabs(next).distance).toBe(false);
+    expect(changeContext(milled, { card: milled.context.card }).readings.reticleMil).toBe(1.7);
+  });
 });
 
 describe('immutability', () => {

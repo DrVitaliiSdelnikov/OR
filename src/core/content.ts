@@ -15,12 +15,6 @@ export const CARTRIDGES: readonly Cartridge[] = [
   { id: 'C', name: 'Патрон В', blurb: 'тяжёлая пуля, высокий BC', massG: 11.7, bcG7: 0.255, muzzleVelocityMps: 775, muzzleVelocitySdMps: 6 },
 ];
 
-export const TARGETS: readonly Target[] = [
-  { distanceM: 300, diameterM: 0.35 },
-  { distanceM: 500, diameterM: 0.5 },
-  { distanceM: 700, diameterM: 0.7 },
-];
-
 export const MAX_TRAJECTORY_M = 1000;
 export const TRAJECTORY_STEP_M = 100;
 export const FLAG_DISTANCES_M = [200, 400, 600] as const;

@@ -15,7 +15,7 @@ import { DebriefView } from './debrief-view';
           <h1>Разбор</h1>
         </div>
         @if (shot(); as record) {
-          <or-debrief-view [shot]="record" (toDope)="router.navigate(['/dope'])" (proceed)="router.navigate(['/'])" />
+          <or-debrief-view [shot]="record" (proceed)="router.navigate(['/'])" />
         } @else {
           <p>Выстрел не найден.</p>
         }

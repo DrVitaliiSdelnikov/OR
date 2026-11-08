@@ -1,14 +1,29 @@
 import { cartridgeById } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
-import { createScenario, Scenario } from '../../core/scenario';
+import { checkManualSteps, checkPreparation } from '../../core/calc-check';
+import { mulberry32 } from '../../core/rng';
+import { clockFromDeg, createScenario, gaugeWindAt, Scenario, windAt } from '../../core/scenario';
 import { resolveShot, ShotResult } from '../../core/shot';
 import { CartridgeId, Target } from '../../core/types';
 import { BoltCycleResult, BoltEvent } from '../../sim/bolt';
-import { ExerciseDef, exerciseResult, ExerciseResult, ExerciseSetup, ExerciseShotRecord, setupExercise } from '../../sim/course';
+import { CheckRowKind, ExerciseDef, exerciseResult, ExerciseResult, ExerciseSetup, ExerciseShotRecord, setupExercise, ShotCheckSummary } from '../../sim/course';
 import { FiringEvent, FiringLine } from '../../sim/firing-line';
 import { Vector2 } from '../../sim/noise';
-import { changeContext, createNotebook, Notebook, NotebookContext, NotebookTotal, total } from '../../sim/notebook';
+import {
+  changeContext,
+  checkInputs,
+  createNotebook,
+  enterWind,
+  measureRange,
+  Notebook,
+  NotebookContext,
+  NotebookFactor,
+  NotebookTotal,
+  recordStation,
+  toggleFactor,
+  total,
+} from '../../sim/notebook';
 import { scopeById, TurretMove } from '../../sim/scope-model';
 import { ScopeSession } from '../../sim/scope-session';
 import { diagnoseShot } from '../../sim/shot-review';
@@ -39,11 +54,17 @@ export const POSITION_RESTING_BPM = 65;
 // На холсте «назад» — влево, в `sim/bolt` — по +x: экранный жест зеркалится по X.
 const BOLT_SCREEN_X_MIRROR = -1;
 const CARD_CLICK_MIL = 0.1;
+const FULL_MEASUREMENT_S = 3;
+const FULL_MEASUREMENT_NOISE_MPS = 0.1;
+const SHORT_MEASUREMENT_NOISE_MPS = 0.3;
+const STATION_SPEED_DECIMALS = 10;
 
 export class PositionSession {
   readonly scope: ScopeSession;
   readonly firingLine: FiringLine;
   private currentNotebook: Notebook;
+  private entered: NotebookTotal | null = null;
+  private stationMeasurements = 0;
   private readonly shotRecords: ExerciseShotRecord[] = [];
   private readonly dialTracking: Record<TurretAxis, DialTracking> = {
     elevation: { startClicks: 0, hasOvershot: false },
@@ -84,6 +105,35 @@ export class PositionSession {
 
   get total(): NotebookTotal {
     return total(this.currentNotebook);
+  }
+
+  get enteredTotal(): NotebookTotal | null {
+    return this.entered;
+  }
+
+  enterOnTurrets(): NotebookTotal {
+    this.entered = this.total;
+    return this.entered;
+  }
+
+  measureStation(holdS: number, timeS: number): void {
+    const noiseLimitMps = holdS < FULL_MEASUREMENT_S ? SHORT_MEASUREMENT_NOISE_MPS : FULL_MEASUREMENT_NOISE_MPS;
+    const random = mulberry32(this.scenario.seed + ++this.stationMeasurements);
+    const wind = gaugeWindAt(this.scenario, timeS, (random() * 2 - 1) * noiseLimitMps);
+    const windSpeedMps = Math.round(wind.speedMps * STATION_SPEED_DECIMALS) / STATION_SPEED_DECIMALS;
+    this.currentNotebook = recordStation(this.currentNotebook, { ...this.scenario.gauge, windSpeedMps, windClock: wind.clock }, holdS, timeS);
+  }
+
+  enterWind(speedMps: number, clock: number): void {
+    this.currentNotebook = enterWind(this.currentNotebook, speedMps, clock);
+  }
+
+  measureRange(reticleMil: number): void {
+    this.currentNotebook = measureRange(this.currentNotebook, reticleMil);
+  }
+
+  toggleFactor(factor: NotebookFactor): void {
+    this.currentNotebook = toggleFactor(this.currentNotebook, factor);
   }
 
   get records(): readonly ExerciseShotRecord[] {
@@ -131,13 +181,14 @@ export class PositionSession {
     return result;
   }
 
-  progress(axis: TurretAxis): TurretProgress {
-    return turretProgress(this.dialTracking[axis].startClicks, this.turretClicks(axis), this.targetClicks(axis));
+  progress(axis: TurretAxis): TurretProgress | null {
+    const targetClicks = this.targetClicks(axis);
+    return targetClicks === null ? null : turretProgress(this.dialTracking[axis].startClicks, this.turretClicks(axis), targetClicks);
   }
 
   turn(axis: TurretAxis, clicks: number): TurretMove {
     const move = axis === 'elevation' ? this.scope.turnElevation(clicks) : this.scope.turnWindageLeft(clicks);
-    if (this.progress(axis).overshootClicks > 0) {
+    if ((this.progress(axis)?.overshootClicks ?? 0) > 0) {
       this.dialTracking[axis].hasOvershot = true;
     }
     return move;
@@ -150,6 +201,8 @@ export class PositionSession {
     const isDialExactFirstTry = this.isDialExact();
     const isBreathHeld = this.scope.sway.breath.state === 'holding';
     const isColdBore = this.firingLine.isNextShotCold;
+    const check = this.checkSummary(timeS);
+    const rangeEstimateM = this.currentNotebook.readings.reticleMil !== null ? this.currentNotebook.distanceM ?? undefined : undefined;
     const stageIndex = this.firingLine.stageIndex;
     const targetIndex = this.firingLine.targetIndex;
     const target = this.target;
@@ -174,12 +227,14 @@ export class PositionSession {
       diagnosis: diagnoseShot(outcome.hold, result.isHit),
       isDialExactFirstTry: isFirstShotAtTarget && isDialExactFirstTry,
       isBreathHeld,
+      ...(check ? { check } : {}),
+      ...(rangeEstimateM !== undefined ? { rangeEstimateM } : {}),
     };
     this.shotRecords.push(record);
     const events = this.firingLine.recordShot(result.isHit);
     const boltEvents = this.isTapTrigger ? this.scope.bolt.cycle() : [];
     if (events.includes('next-target') || events.includes('stage-done')) {
-      this.followNewTarget();
+      this.followNewTarget(this.target !== target);
     }
     return { record, result, events, boltEvents };
   }
@@ -198,11 +253,35 @@ export class PositionSession {
   }
 
   private isDialExact(): boolean {
-    return (['elevation', 'windage'] as const).every(axis => this.turretClicks(axis) === this.targetClicks(axis) && !this.dialTracking[axis].hasOvershot);
+    return this.entered !== null && (['elevation', 'windage'] as const).every(axis => this.turretClicks(axis) === this.targetClicks(axis) && !this.dialTracking[axis].hasOvershot);
   }
 
-  private followNewTarget(): void {
-    this.currentNotebook = changeContext(this.currentNotebook, { card: this.cards.get(this.firingLine.cartridgeId)!, target: this.notebookTarget() });
+  private checkSummary(timeS: number): ShotCheckSummary | null {
+    const inputs = checkInputs(this.currentNotebook, {
+      trueWindClock: clockFromDeg(windAt(this.scenario, timeS)[0].fromDeg),
+      dialedElevationClicks: this.scope.elevation.clicks,
+      dialedWindageLeftClicks: this.scope.windage.clicks,
+    });
+    const isAuto = this.currentNotebook.mode === 'auto';
+    const kinds: CheckRowKind[] = isAuto ? inputs.preparation.map(row => row.row) : inputs.steps.map(step => step.step);
+    if (kinds.length === 0) {
+      return null;
+    }
+    const result = isAuto ? checkPreparation(inputs.preparation) : checkManualSteps(inputs.steps, this.currentNotebook.context.card.clickMil);
+    return {
+      verdict: result.verdict,
+      rowVerdicts: Object.fromEntries(kinds.map((kind, index) => [kind, result.rows[index].status])),
+      errorTypes: [...new Set(result.rows.flatMap(row => row.errorTypes))],
+    };
+  }
+
+  private followNewTarget(isNewTarget: boolean): void {
+    const card = this.cards.get(this.firingLine.cartridgeId)!;
+    this.currentNotebook = changeContext(this.currentNotebook, isNewTarget ? { card, target: this.notebookTarget() } : { card });
+    const next = this.total;
+    if (this.entered && (next.elevation.targetClicks !== this.entered.elevation.targetClicks || next.windageLeft.targetClicks !== this.entered.windageLeft.targetClicks)) {
+      this.entered = null;
+    }
     for (const axis of ['elevation', 'windage'] as const) {
       this.dialTracking[axis] = { startClicks: this.turretClicks(axis), hasOvershot: false };
     }
@@ -220,15 +299,18 @@ export class PositionSession {
   }
 
   private notebookTarget(): NotebookContext['target'] {
-    return { sizeM: this.target.diameterM, distanceM: this.target.distanceM };
+    const isDistanceKnown = this.def.targets?.distance.kind !== 'unknown';
+    return { sizeM: this.target.diameterM, distanceM: isDistanceKnown ? this.target.distanceM : null };
   }
 
   private turretClicks(axis: TurretAxis): number {
     return axis === 'elevation' ? this.scope.elevation.clicks : this.scope.windage.clicks;
   }
 
-  private targetClicks(axis: TurretAxis): number {
-    const current = this.total;
-    return axis === 'elevation' ? current.elevation.targetClicks : current.windageLeft.targetClicks;
+  private targetClicks(axis: TurretAxis): number | null {
+    if (!this.entered) {
+      return null;
+    }
+    return axis === 'elevation' ? this.entered.elevation.targetClicks : this.entered.windageLeft.targetClicks;
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOLT_STEP_TRAVEL_PT } from './bolt';
+import { BOLT_STEP_TRAVEL_PT, MAGAZINE_CAPACITY } from './bolt';
 import { scopeById } from './scope-model';
 import { BOLT_KNOCK_MIL, ScopeSession } from './scope-session';
 
@@ -16,7 +16,7 @@ function cycleBolt(session: ScopeSession): void {
 
 describe('ScopeSession', () => {
   it('starts with a round chambered and four in the magazine', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     expect(session.bolt.canFire).toBe(true);
     expect(session.bolt.rounds).toBe(4);
   });
@@ -28,7 +28,7 @@ describe('ScopeSession', () => {
   });
 
   it('dialing elevation does not move the impact until the shooter re-aims', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     const before = impactUp(session, 4.6);
     session.turnElevation(46);
     expect(impactUp(session, 4.6)).toBeCloseTo(before, 9);
@@ -36,7 +36,7 @@ describe('ScopeSession', () => {
   });
 
   it('dialing wind left does not move the impact until the shooter re-aims', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     const before = impactRight(session, -0.8);
     session.turnWindageLeft(8);
     expect(impactRight(session, -0.8)).toBeCloseTo(before, 9);
@@ -44,21 +44,21 @@ describe('ScopeSession', () => {
   });
 
   it('a click blocked by ZERO STOP does not move the aim', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     const aimY = session.aim.y;
     expect(session.turnElevation(-5).stop).toBe('zero');
     expect(session.aim.y).toBe(aimY);
   });
 
   it('dragging the picture right moves the cross left of the target', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     const aimX = session.aim.x;
     session.dragPicture(session.ptPerMil, 0);
     expect(session.aim.x).toBeCloseTo(aimX - 1, 9);
   });
 
   it('the target is drawn opposite to the cross offset', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     session.aim = { x: 1, y: 1 };
     const offset = session.targetOffsetPt;
     expect(offset.x).toBeLessThan(0);
@@ -66,7 +66,7 @@ describe('ScopeSession', () => {
   });
 
   it('changing the scope resets the turrets and the zoom', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     session.turnElevation(30);
     session.setScope(scopeById('dot'));
     expect(session.elevation.clicks).toBe(0);
@@ -74,7 +74,7 @@ describe('ScopeSession', () => {
   });
 
   it('fires through the trigger and leaves a spent case', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     session.aim = { x: 0, y: 0 };
     expect(session.startTrigger()).toBe(true);
     let hasFired = false;
@@ -90,7 +90,7 @@ describe('ScopeSession', () => {
   });
 
   it('the hold at fire time is the cross offset plus the trigger spread', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     session.aim = { x: 0.3, y: -0.2 };
     const cross = session.crossOffsetMil;
     const outcome = session.fire()!;
@@ -99,7 +99,7 @@ describe('ScopeSession', () => {
   });
 
   it('cannot fire again before the bolt is cycled', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     session.fire();
     expect(session.fire()).toBeNull();
     cycleBolt(session);
@@ -107,7 +107,7 @@ describe('ScopeSession', () => {
   });
 
   it('knocks the aim by a fraction of a mil after cycling', () => {
-    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
+    const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
     const before = { ...session.aim };
     session.knockAimAfterCycle();
     expect(Math.abs(session.aim.x - before.x)).toBeLessThanOrEqual(BOLT_KNOCK_MIL);

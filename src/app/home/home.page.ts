@@ -1,7 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
-import { GameSession } from '../services/game-session';
 import { ProgressStore } from '../services/progress.store';
 import { continueCard, rankHeader } from './home.model';
 
@@ -25,7 +24,7 @@ const INTRO_ID = '00';
 
         <nav class="menu">
           <a class="tile" routerLink="/course" data-test="tile-course"><span class="number">01</span>Снайперская подготовка</a>
-          <button class="tile" type="button" (click)="startFreePlay()" data-test="tile-free"><span class="number">02</span>Свободная игра</button>
+          <button class="tile" type="button" (click)="showLater()" data-test="tile-free"><span class="number">02</span>Свободная игра</button>
           <button class="tile" type="button" (click)="showLater()" data-test="tile-textbook"><span class="number">03</span>Учебник курсанта</button>
           <a class="tile" routerLink="/journal" data-test="tile-journal"><span class="number">04</span>Журнал стрелка</a>
         </nav>
@@ -73,7 +72,6 @@ const INTRO_ID = '00';
 })
 export class HomePage {
   private readonly progress = inject(ProgressStore);
-  private readonly game = inject(GameSession);
   private readonly router = inject(Router);
 
   protected readonly laterMessage = signal(false);
@@ -88,22 +86,13 @@ export class HomePage {
     return card.kind === 'continue' && card.status === 'not-admitted' ? 'не зачтено' : 'новое';
   });
 
-  protected startFreePlay(): void {
-    this.game.startFreePlay();
-    void this.router.navigate(['/weather']);
-  }
-
   protected showLater(): void {
     this.laterMessage.set(true);
   }
 
   protected openContinue(): void {
     const card = this.card();
-    if (card.kind === 'free-play') {
-      this.startFreePlay();
-      return;
-    }
-    if (card.exerciseId === INTRO_ID) {
+    if (card.kind === 'free-play' || card.exerciseId === INTRO_ID) {
       this.showLater();
       return;
     }

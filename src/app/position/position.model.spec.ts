@@ -82,18 +82,20 @@ describe('end card', () => {
 });
 
 describe('playability', () => {
-  it('01, 02 and 03 are playable now', () => {
-    expect(playability(exerciseById('01')!)).toEqual({ isPlayable: true, reason: null });
-    expect(playability(exerciseById('02')!)).toEqual({ isPlayable: true, reason: null });
-    expect(playability(exerciseById('03')!)).toEqual({ isPlayable: true, reason: null });
+  it('01-05 are playable now', () => {
+    for (const id of ['01', '02', '03', '04', '05'] as const) {
+      expect(playability(exerciseById(id)!), id).toEqual({ isPlayable: true, reason: null });
+    }
   });
 
   it('the rest say what is missing', () => {
     const reason = (id: ExerciseId) => playability(exerciseById(id)!).reason;
-    expect(reason('04')).toBe('откроется позже: блокнот');
-    expect(reason('11')).toBe('откроется позже: блокнот, движущиеся цели');
+    expect(reason('06')).toBe('откроется позже: расчёт САМ');
+    expect(reason('10')).toBe('откроется позже: расчёт САМ');
+    expect(reason('09')).toBe('откроется позже: расчёт САМ, флажки по трассе');
+    expect(reason('11')).toBe('откроется позже: расчёт САМ, движущиеся цели');
+    expect(reason('12')).toBe('откроется позже: расчёт САМ, флажки по трассе');
     expect(reason('00')).toBe('откроется позже: вводное');
-    expect(playability(exerciseById('12')!).isPlayable).toBe(false);
   });
 });
 

@@ -1,7 +1,7 @@
 import { expect, Page, test } from '@playwright/test';
 import { ptPerMil } from '../src/sim/scope-model';
 import { INITIAL_AIM_MIL } from '../src/sim/scope-session';
-import { seedProgress } from './helpers';
+import { enterTotalOnTurrets, seedProgress } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 const DEFAULT_MAGNIFICATION = 8;
@@ -15,6 +15,7 @@ async function toPosition(page: Page, bestClasses: Record<string, number> = {}):
   await page.getByTestId('to-position').click();
   await page.waitForURL('**/position/01');
   await expect(page.getByTestId('fire')).toBeVisible();
+  await enterTotalOnTurrets(page);
 }
 
 async function clicksToTarget(page: Page): Promise<number> {
@@ -139,11 +140,11 @@ test.describe('позиция: упражнения 01–02', () => {
     await expect(page.getByTestId('sheet-title')).toBeVisible();
   });
 
-  test('04 пока закрыто: «НА ПОЗИЦИЮ» неактивна с причиной', async ({ page }) => {
-    await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: { '01': 3, '02': 3, '03': 3 } }, shots: [], settings: QUIET_SETTINGS });
-    await page.goto('/course/04');
+  test('06 пока закрыто: «НА ПОЗИЦИЮ» неактивна с причиной', async ({ page }) => {
+    await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3 } }, shots: [], settings: QUIET_SETTINGS });
+    await page.goto('/course/06');
     await expect(page.getByTestId('to-position')).toBeDisabled();
-    await expect(page.getByTestId('to-position-reason')).toHaveText('откроется позже: блокнот');
+    await expect(page.getByTestId('to-position-reason')).toHaveText('откроется позже: расчёт САМ');
   });
 
   test('кольцо кратности и касание не меньше 44', async ({ page }) => {

@@ -268,7 +268,8 @@ export function openReference(notebook: Notebook): Notebook {
 export function changeContext(notebook: Notebook, change: Partial<NotebookContext>): Notebook {
   const context = { ...notebook.context, ...change };
   const distanceM = change.target ? change.target.distanceM : notebook.distanceM;
-  return refreshStale({ ...notebook, context, distanceM, factorsOn: { ...notebook.factorsOn, lead: context.target.movement !== undefined } });
+  const readings = change.target ? { ...notebook.readings, reticleMil: null } : notebook.readings;
+  return refreshStale({ ...notebook, context, readings, distanceM, factorsOn: { ...notebook.factorsOn, lead: context.target.movement !== undefined } });
 }
 
 export function toggleFactor(notebook: Notebook, factor: NotebookFactor): Notebook {

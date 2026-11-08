@@ -45,60 +45,45 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
   await byTest('fire').waitFor();
   await snap(page, `19-position${suffix}`);
 
-  await page.goto(`${BASE_URL}/`);
-  await byTest('tile-free').click();
-  await page.waitForURL('**/weather');
-  await snap(page, `03-weather-empty${suffix}`);
-  await byTest('take-reading').click();
-  await snap(page, `04-weather-page1${suffix}`);
-  if (isFull) {
-    await byTest('lcd-page').click();
-    await snap(page, `05-weather-page2${suffix}`);
-    await byTest('lcd-page').click();
-    await snap(page, `06-weather-page3${suffix}`);
+  await page.goto(`${BASE_URL}/position/04`);
+  await byTest('fire').waitFor();
+  await byTest('tile-notebook').click();
+  await snap(page, `21-notebook-total${suffix}`);
+  await byTest('tab-conditions').click();
+  const measure = (await byTest('measure').boundingBox())!;
+  await page.mouse.move(measure.x + measure.width / 2, measure.y + measure.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(3300);
+  await page.mouse.up();
+  await snap(page, `22-notebook-conditions${suffix}`);
+  await byTest('tab-wind').click();
+  const dial = (await byTest('wind-clock').boundingBox())!;
+  await page.mouse.click(dial.x + dial.width * 0.23, dial.y + dial.height * 0.52);
+  for (let step = 0; step < 24; step++) {
+    await byTest('speed-plus').click();
   }
+  await snap(page, `23-notebook-wind${suffix}`);
+  await byTest('tab-dope').click();
+  await snap(page, `24-notebook-dope${suffix}`);
+  await byTest('tab-total').click();
+  await byTest('factor-wind').locator('.factor-name').click();
+  await snap(page, `25-notebook-total-filled${suffix}`);
+  await byTest('enter-turrets').click();
+  await snap(page, `26-position-entered${suffix}`);
 
-  await byTest('weather-done').click();
-  await page.waitForTimeout(800);
-  await snap(page, `07-calc-hud${suffix}`);
+  await page.goto(`${BASE_URL}/position/05`);
+  await byTest('fire').waitFor();
+  await byTest('tile-notebook').click();
+  await byTest('tab-distance').click();
+  const gong = (await page.locator('[data-test="milling-grid"] .gong').boundingBox())!;
+  await page.mouse.click(gong.x + gong.width / 2, gong.y);
+  await page.mouse.click(gong.x + gong.width / 2, gong.y + gong.height);
+  await byTest('milling-count').click();
+  await snap(page, `27-notebook-distance${suffix}`);
 
   if (isFull) {
-    await byTest('open-wind').click();
-    await byTest('clock-10.5').dispatchEvent('click');
-    await byTest('speed-4').click();
-    await snap(page, `08-wind-clock${suffix}`);
-    await byTest('apply-wind').click();
-  }
-
-  await byTest('to-turrets').click();
-  await page.waitForURL('**/scope');
-  await page.waitForTimeout(800);
-  await snap(page, `09-scope${suffix}`);
-
-  if (isFull) {
-    await byTest('elevation-minus').click();
-    await page.waitForTimeout(100);
-    await page.screenshot({ path: `${OUTPUT_DIR}/10-scope-zero-stop${suffix}.png` });
-    await byTest('fire').click();
-    const pad = (await byTest('trigger-pad').boundingBox())!;
-    await page.mouse.move(pad.x + pad.width / 2 + 30, pad.y + pad.height / 2 + 20);
-    await page.mouse.down();
-    await page.waitForTimeout(1500);
-    await page.screenshot({ path: `${OUTPUT_DIR}/11-scope-trigger${suffix}.png` });
-    await page.mouse.move(pad.x + pad.width / 2, pad.y + pad.height / 2, { steps: 5 });
-    await byTest('debrief').waitFor({ timeout: 20000 });
-    await page.mouse.up();
-    await snap(page, `12-debrief-sheet${suffix}`);
-    await byTest('debrief-next').click();
-    await page.locator('ion-modal').waitFor({ state: 'hidden' });
-    await snap(page, `13-scope-bolt${suffix}`);
-
-    await page.goto(`${BASE_URL}/dope`);
-    await snap(page, `14-dope${suffix}`);
     await page.goto(`${BASE_URL}/journal`);
     await snap(page, `15-log${suffix}`);
-    await page.locator('[data-test^="log-"]').first().click();
-    await snap(page, `16-debrief-page${suffix}`);
     await page.goto(`${BASE_URL}/settings`);
     await snap(page, `17-settings${suffix}`);
   }
