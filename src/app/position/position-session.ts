@@ -4,9 +4,10 @@ import { BallisticsEngine } from '../../core/engine';
 import { createScenario, Scenario } from '../../core/scenario';
 import { resolveShot, ShotResult } from '../../core/shot';
 import { CartridgeId, Target } from '../../core/types';
-import { BoltEvent } from '../../sim/bolt';
+import { BoltCycleResult, BoltEvent } from '../../sim/bolt';
 import { ExerciseDef, exerciseResult, ExerciseResult, ExerciseSetup, ExerciseShotRecord, setupExercise } from '../../sim/course';
 import { FiringEvent, FiringLine } from '../../sim/firing-line';
+import { Vector2 } from '../../sim/noise';
 import { changeContext, createNotebook, Notebook, NotebookContext, NotebookTotal, total } from '../../sim/notebook';
 import { scopeById, TurretMove } from '../../sim/scope-model';
 import { ScopeSession } from '../../sim/scope-session';
@@ -35,6 +36,8 @@ interface DialTracking {
 }
 
 export const POSITION_RESTING_BPM = 65;
+// На холсте «назад» — влево, в `sim/bolt` — по +x: экранный жест зеркалится по X.
+const BOLT_SCREEN_X_MIRROR = -1;
 const CARD_CLICK_MIL = 0.1;
 
 export class PositionSession {
@@ -101,6 +104,31 @@ export class PositionSession {
 
   get isTapTrigger(): boolean {
     return this.def.trigger === 'tap';
+  }
+
+  get isBoltCycleDue(): boolean {
+    return !this.firingLine.isFinished && !this.isMagazineChangeDue && !this.scope.bolt.canFire;
+  }
+
+  startTrigger(): boolean {
+    return this.scope.startTrigger();
+  }
+
+  step(dtS: number, finger: Vector2 | null): boolean {
+    const hasBroken = this.scope.step(dtS, finger);
+    const trigger = this.scope.trigger;
+    if (!hasBroken && trigger && finger === null && trigger.pressure <= 0) {
+      this.scope.cancelTrigger();
+    }
+    return hasBroken;
+  }
+
+  dragBolt(deltaXPt: number, deltaYPt: number, nowS: number): BoltCycleResult {
+    const result = this.scope.bolt.drag(deltaXPt * BOLT_SCREEN_X_MIRROR, deltaYPt, nowS);
+    if (result.stepCompleted === 'down') {
+      this.scope.knockAimAfterCycle();
+    }
+    return result;
   }
 
   progress(axis: TurretAxis): TurretProgress {

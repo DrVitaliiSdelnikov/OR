@@ -24,7 +24,7 @@ import { DebriefView } from '../debrief/debrief-view';
 import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
 import { FREE_PLAY_RESTING_BPM, FREE_PLAY_TITLE, GameSession } from '../services/game-session';
 import { ProgressStore, ShotRecord } from '../services/progress.store';
-import { ScopeRenderer } from './scope-renderer';
+import { ScopeRenderer } from '../scene/scope-renderer';
 
 type PanelMode = 'controls' | 'trigger' | 'bolt';
 

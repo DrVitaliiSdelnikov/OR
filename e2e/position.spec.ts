@@ -139,11 +139,11 @@ test.describe('позиция: упражнения 01–02', () => {
     await expect(page.getByTestId('sheet-title')).toBeVisible();
   });
 
-  test('03 пока закрыто: «НА ПОЗИЦИЮ» неактивна с причиной', async ({ page }) => {
-    await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: { '01': 3, '02': 3 } }, shots: [], settings: QUIET_SETTINGS });
-    await page.goto('/course/03');
+  test('04 пока закрыто: «НА ПОЗИЦИЮ» неактивна с причиной', async ({ page }) => {
+    await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: { '01': 3, '02': 3, '03': 3 } }, shots: [], settings: QUIET_SETTINGS });
+    await page.goto('/course/04');
     await expect(page.getByTestId('to-position')).toBeDisabled();
-    await expect(page.getByTestId('to-position-reason')).toHaveText('откроется позже: спуск с давлением');
+    await expect(page.getByTestId('to-position-reason')).toHaveText('откроется позже: блокнот');
   });
 
   test('кольцо кратности и касание не меньше 44', async ({ page }) => {

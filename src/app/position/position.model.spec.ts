@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { NotebookTotal } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
-import { correctionCells, drumCounter, endCard, playability } from './position.model';
+import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, endCard, markerTarget, playability, pressureText } from './position.model';
 
 const scope = scopeById('course-tree');
 
@@ -82,17 +82,57 @@ describe('end card', () => {
 });
 
 describe('playability', () => {
-  it('01 and 02 are playable now', () => {
+  it('01, 02 and 03 are playable now', () => {
     expect(playability(exerciseById('01')!)).toEqual({ isPlayable: true, reason: null });
     expect(playability(exerciseById('02')!)).toEqual({ isPlayable: true, reason: null });
+    expect(playability(exerciseById('03')!)).toEqual({ isPlayable: true, reason: null });
   });
 
   it('the rest say what is missing', () => {
     const reason = (id: ExerciseId) => playability(exerciseById(id)!).reason;
-    expect(reason('03')).toBe('откроется позже: спуск с давлением');
-    expect(reason('04')).toBe('откроется позже: спуск с давлением, блокнот');
-    expect(reason('11')).toBe('откроется позже: спуск с давлением, блокнот, движущиеся цели');
+    expect(reason('04')).toBe('откроется позже: блокнот');
+    expect(reason('11')).toBe('откроется позже: блокнот, движущиеся цели');
     expect(reason('00')).toBe('откроется позже: вводное');
     expect(playability(exerciseById('12')!).isPlayable).toBe(false);
+  });
+});
+
+describe('fire controls (Б12)', () => {
+  it('the pressure reads as a whole percent', () => {
+    expect(pressureText(0.643)).toBe('64 %');
+    expect(pressureText(0.646)).toBe('65 %');
+    expect(pressureText(0)).toBe('0 %');
+  });
+
+  it('the finger offset on ОГОНЬ leads the marker one and a half times', () => {
+    expect(markerTarget({ x: 10, y: -4 })).toEqual({ x: 15, y: -6 });
+  });
+
+  it('the air ring: holding 2.9 s leaves 5.1 s; at rest there is no ring; the exhale is empty and dimmed', () => {
+    expect(breathRing('holding', 2.9)).toEqual({ share: 0.6375, secondsText: '5.1 с', isCooldown: false });
+    expect(breathRing('free', 0)).toEqual({ share: 0, secondsText: '', isCooldown: false });
+    expect(breathRing('cooldown', 0)).toEqual({ share: 0, secondsText: '', isCooldown: true });
+    expect(breathRing('holding', 9).share).toBe(0);
+  });
+});
+
+describe('bolt track (Затвор 1)', () => {
+  it('labels the four strokes and marks the current one and the done ones', () => {
+    expect(boltSteps('forward')).toEqual([
+      { label: '1 ↑', isCurrent: false, isDone: true },
+      { label: '2 ← НАЗАД', isCurrent: false, isDone: true },
+      { label: '3 → ВПЕРЁД', isCurrent: true, isDone: false },
+      { label: '4 ↓', isCurrent: false, isDone: false },
+    ]);
+    expect(boltHeader('back')).toBe('Затвор · шаг 2 из 4');
+  });
+
+  it('places the handle along the L: home, up, left, right, down', () => {
+    expect(boltHandlePosition('up', 0)).toEqual({ x: 300, y: 110 });
+    expect(boltHandlePosition('up', 1)).toEqual({ x: 300, y: 50 });
+    expect(boltHandlePosition('back', 0.5)).toEqual({ x: 230, y: 50 });
+    expect(boltHandlePosition('back', 1)).toEqual({ x: 160, y: 50 });
+    expect(boltHandlePosition('forward', 1)).toEqual({ x: 300, y: 50 });
+    expect(boltHandlePosition('down', 1)).toEqual({ x: 300, y: 110 });
   });
 });

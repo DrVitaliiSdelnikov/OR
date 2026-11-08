@@ -186,3 +186,108 @@ describe('PositionSession — the end', () => {
     expect(await shoot(session, ON_TARGET)).toBeNull();
   });
 });
+
+describe('PositionSession — trigger with pressure and the manual bolt (03)', () => {
+  const CENTRE = { x: 0, y: 0 };
+  const FRAME_S = 0.05;
+  const MAX_FRAMES = 300;
+
+  async function start03(seed = 31): Promise<PositionSession> {
+    return PositionSession.start({ def: exerciseById('03')!, seed, engine, accessibility: { isZoneLarger: false, isMarkerDriftOff: true } });
+  }
+
+  function pressUntilShot(session: PositionSession): number {
+    expect(session.startTrigger()).toBe(true);
+    for (let frame = 1; frame <= MAX_FRAMES; frame++) {
+      if (session.step(FRAME_S, CENTRE)) {
+        return frame * FRAME_S;
+      }
+    }
+    throw new Error('the trigger never broke');
+  }
+
+  function cycleBolt(session: PositionSession): void {
+    session.dragBolt(0, -62, 0);
+    session.dragBolt(-142, 0, 0.2);
+    session.dragBolt(142, 0, 0.4);
+    session.dragBolt(0, 62, 0.6);
+  }
+
+  async function pressureShot(session: PositionSession) {
+    session.scope.aim = { ...ON_TARGET };
+    pressUntilShot(session);
+    return (await session.fire(session.scenario.startTimeS))!;
+  }
+
+  it('03 uses the pressure trigger; the trigger cannot start with an empty chamber', async () => {
+    const session = await start03();
+    expect(session.isTapTrigger).toBe(false);
+    await pressureShot(session);
+    expect(session.startTrigger()).toBe(false);
+  });
+
+  it('holding the finger in the zone breaks the shot in about 4.5 s; a held breath is recorded', async () => {
+    const session = await start03();
+    session.scope.sway.breath.press();
+    session.scope.aim = { ...ON_TARGET };
+    const seconds = pressUntilShot(session);
+    expect(seconds).toBeGreaterThan(4);
+    expect(seconds).toBeLessThan(6);
+    const shot = (await session.fire(session.scenario.startTimeS))!;
+    expect(shot.record.isBreathHeld).toBe(true);
+  });
+
+  it('lifting the finger lets the pressure drain; at zero the pull is cancelled', async () => {
+    const session = await start03();
+    session.startTrigger();
+    for (let frame = 0; frame < 20; frame++) {
+      session.step(FRAME_S, CENTRE);
+    }
+    expect(session.scope.trigger!.pressure).toBeGreaterThan(0);
+    let frames = 0;
+    while (session.scope.trigger && frames < MAX_FRAMES) {
+      session.step(FRAME_S, null);
+      frames++;
+    }
+    expect(session.scope.trigger).toBeNull();
+  });
+
+  it('after the shot the bolt waits; four strokes along the track chamber the next round and knock the aim', async () => {
+    const session = await start03();
+    await pressureShot(session);
+    expect(session.scope.bolt.canFire).toBe(false);
+    expect(session.isBoltCycleDue).toBe(true);
+    const aimBefore = { ...session.scope.aim };
+    cycleBolt(session);
+    expect(session.scope.bolt.canFire).toBe(true);
+    expect(session.isBoltCycleDue).toBe(false);
+    expect(session.scope.aim).not.toEqual(aimBefore);
+  });
+
+  it('a stroke the wrong way along the track does nothing', async () => {
+    const session = await start03();
+    await pressureShot(session);
+    session.dragBolt(0, -62, 0);
+    session.dragBolt(142, 0, 0.2);
+    expect(session.scope.bolt.currentStep).toBe('back');
+  });
+
+  it('a new magazine in 03 still needs the bolt to chamber the first round', async () => {
+    const session = await start03();
+    for (let shot = 0; shot < 5; shot++) {
+      session.scope.aim = { ...FAR_OFF };
+      pressUntilShot(session);
+      await session.fire(session.scenario.startTimeS);
+      if (shot < 4) {
+        cycleBolt(session);
+      }
+    }
+    expect(session.isMagazineChangeDue).toBe(true);
+    expect(session.isBoltCycleDue).toBe(false);
+    expect(session.changeMagazine()).toEqual(['magazine']);
+    expect(session.scope.bolt.canFire).toBe(false);
+    expect(session.isBoltCycleDue).toBe(true);
+    cycleBolt(session);
+    expect(session.scope.bolt.canFire).toBe(true);
+  });
+});

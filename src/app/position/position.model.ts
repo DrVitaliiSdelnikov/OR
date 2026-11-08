@@ -1,6 +1,9 @@
+import { BOLT_STEP_TRAVEL_PT, BOLT_STEPS, BoltStep } from '../../sim/bolt';
 import { ExerciseDef, ExerciseResult } from '../../sim/course';
+import { Vector2 } from '../../sim/noise';
 import { NotebookTotal } from '../../sim/notebook';
 import { formatScopeValue, isHoldoverSettled, ScopeModel } from '../../sim/scope-model';
+import { BREATH_HOLD_MAX_S, BreathState } from '../../sim/sway';
 import { TurretProgress } from '../../sim/turret-target';
 
 export type TurretAxis = 'elevation' | 'windage';
@@ -32,7 +35,7 @@ export interface Playability {
 type PositionFeature = 'intro' | 'pressure-trigger' | 'notebook-input' | 'moving-targets';
 
 // Что из позиции уже сделано; список растёт с A3.2 (спуск), A5 (блокнот), A7 (вводное), A9 (сцена) и уходит, когда играбельно всё.
-const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>();
+const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['pressure-trigger']);
 const FEATURE_NAMES: Record<PositionFeature, string> = {
   intro: 'вводное',
   'pressure-trigger': 'спуск с давлением',
@@ -40,6 +43,21 @@ const FEATURE_NAMES: Record<PositionFeature, string> = {
   'moving-targets': 'движущиеся цели',
 };
 const PERCENT = 100;
+const FINGER_TO_MARKER = 1.5;
+const BOLT_TRACK_HOME: Vector2 = { x: 300, y: 110 };
+const BOLT_STEP_LABELS: Record<BoltStep, string> = { up: '1 ↑', back: '2 ← НАЗАД', forward: '3 → ВПЕРЁД', down: '4 ↓' };
+
+export interface BreathRing {
+  share: number;
+  secondsText: string;
+  isCooldown: boolean;
+}
+
+export interface BoltStepView {
+  label: string;
+  isCurrent: boolean;
+  isDone: boolean;
+}
 
 export function correctionCells(scope: ScopeModel, dial: DialClicks, total: NotebookTotal | null, distanceM: number): CorrectionCell[] {
   const hasTotal = total !== null && !total.isEmpty;
@@ -117,4 +135,48 @@ function horizontalText(scope: ScopeModel, rightMil: number): string {
     return value;
   }
   return rightMil < 0 ? `← ${value} L` : `→ ${value} R`;
+}
+
+export function pressureText(pressure: number): string {
+  return `${Math.round(pressure * PERCENT)} %`;
+}
+
+export function markerTarget(fingerOffsetPt: Vector2): Vector2 {
+  return { x: fingerOffsetPt.x * FINGER_TO_MARKER, y: fingerOffsetPt.y * FINGER_TO_MARKER };
+}
+
+export function breathRing(state: BreathState, heldS: number): BreathRing {
+  if (state === 'cooldown') {
+    return { share: 0, secondsText: '', isCooldown: true };
+  }
+  if (state === 'free') {
+    return { share: 0, secondsText: '', isCooldown: false };
+  }
+  const leftS = Math.max(0, BREATH_HOLD_MAX_S - heldS);
+  return { share: leftS / BREATH_HOLD_MAX_S, secondsText: `${leftS.toFixed(1)} с`, isCooldown: false };
+}
+
+export function boltSteps(current: BoltStep): BoltStepView[] {
+  const currentIndex = BOLT_STEPS.indexOf(current);
+  return BOLT_STEPS.map((step, index) => ({ label: BOLT_STEP_LABELS[step], isCurrent: index === currentIndex, isDone: index < currentIndex }));
+}
+
+export function boltHeader(current: BoltStep): string {
+  return `Затвор · шаг ${BOLT_STEPS.indexOf(current) + 1} из ${BOLT_STEPS.length}`;
+}
+
+// Г-дорожка в единицах хода затвора: от дома вверх, назад (на экране — влево), вперёд и вниз домой.
+export function boltHandlePosition(step: BoltStep, progress: number): Vector2 {
+  const raisedY = BOLT_TRACK_HOME.y - BOLT_STEP_TRAVEL_PT.up;
+  const backX = BOLT_TRACK_HOME.x - BOLT_STEP_TRAVEL_PT.back;
+  switch (step) {
+    case 'up':
+      return { x: BOLT_TRACK_HOME.x, y: BOLT_TRACK_HOME.y - BOLT_STEP_TRAVEL_PT.up * progress };
+    case 'back':
+      return { x: BOLT_TRACK_HOME.x - BOLT_STEP_TRAVEL_PT.back * progress, y: raisedY };
+    case 'forward':
+      return { x: backX + BOLT_STEP_TRAVEL_PT.forward * progress, y: raisedY };
+    case 'down':
+      return { x: BOLT_TRACK_HOME.x, y: raisedY + BOLT_STEP_TRAVEL_PT.down * progress };
+  }
 }

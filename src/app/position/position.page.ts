@@ -11,11 +11,13 @@ import { BoltEvent } from '../../sim/bolt';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { Vector2 } from '../../sim/noise';
 import { formatScopeValue, reticleSubtensionScale, TurretMove } from '../../sim/scope-model';
-import { ScopeRenderer } from '../scope/scope-renderer';
+import { ScopeRenderer } from '../scene/scope-renderer';
 import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
 import { PositionSession } from './position-session';
-import { correctionCells, drumCounter, endCard, EndCard, playability, TurretAxis } from './position.model';
+import { BoltTrackComponent } from './bolt-track.component';
+import { FireControlComponent } from './fire-control.component';
+import { breathRing, correctionCells, drumCounter, endCard, EndCard, markerTarget, playability, pressureText, TurretAxis } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
 
 const MARKS_ON_GLASS = 8;
@@ -24,12 +26,15 @@ const SHOT_LINE_MS = 2000;
 const STOP_BADGE_MS = 900;
 const PINCH_STEP_PT = 40;
 const RING_STEP_PT = 24;
+const ZONE_TO_GLASS = 0.5;
+const HOLD_LABELS = { free: 'Держать', holding: 'Держу', cooldown: 'Выдох' } as const;
 const SEED_RANGE = 1_000_000_000;
 const CLICKS_PER_WHOLE_MIL = 10;
 const CLICKS_PER_WHOLE_MOA = 4;
 const CLICKS_PER_TURN = 100;
 const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
   unlock: 'bolt-unlock',
+  slide: 'bolt-slide',
   eject: 'bolt-eject',
   feed: 'bolt-feed',
   lock: 'bolt-lock',
@@ -38,7 +43,7 @@ const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
 
 @Component({
   selector: 'or-position',
-  imports: [IonContent, TurretDrumComponent],
+  imports: [IonContent, TurretDrumComponent, FireControlComponent, BoltTrackComponent],
   templateUrl: './position.page.html',
   styleUrl: './position.page.scss',
 })
@@ -96,12 +101,20 @@ export class PositionPage {
       dope: `ДОПЕ · ${target.distanceM} м ↑ ${dopeRowAt(session.notebook.context.card, target.distanceM).elevationMil.toFixed(1)}`,
       rounds: `${session.firingLine.magazineLeft} / ${session.firingLine.magazineLoaded}`,
       isMagazineChangeDue: session.isMagazineChangeDue,
-      breathState: session.scope.sway.breath.state,
-      breathHeldS: session.scope.sway.breath.heldS,
+      isBoltCycleDue: !session.isTapTrigger && session.isBoltCycleDue && this.end() === null,
+      boltStep: session.scope.bolt.currentStep,
+      boltProgress: session.scope.bolt.progress,
+      triggerMode: session.def.trigger,
+      pressure: session.scope.trigger?.pressure ?? 0,
+      pressureLabel: pressureText(session.scope.trigger?.pressure ?? 0),
+      breath: breathRing(session.scope.sway.breath.state, session.scope.sway.breath.heldS),
+      holdLabel: HOLD_LABELS[session.scope.sway.breath.state],
+      zone: this.zoneView(session),
     };
   });
 
   private readonly marks: Correction[] = [];
+  private fingerMarker: Vector2 | null = null;
   private renderer: ScopeRenderer | null = null;
   private frameHandle = 0;
   private lastFrameMs = 0;
@@ -179,6 +192,48 @@ export class PositionPage {
       this.end.set(endCard(result));
     }
     this.refresh();
+  }
+
+  protected pressTrigger(fingerOffset: Vector2): void {
+    const session = this.session();
+    if (!session || session.isFinished) {
+      return;
+    }
+    if (!session.startTrigger()) {
+      this.feedback.emit('empty-chamber');
+      this.showBoltHint();
+      return;
+    }
+    this.fingerMarker = markerTarget(fingerOffset);
+  }
+
+  protected moveTrigger(fingerOffset: Vector2): void {
+    if (this.fingerMarker) {
+      this.fingerMarker = markerTarget(fingerOffset);
+    }
+  }
+
+  protected releaseTrigger(): void {
+    this.fingerMarker = null;
+  }
+
+  protected dragBolt(delta: Vector2): void {
+    const session = this.session();
+    if (!session) {
+      return;
+    }
+    const result = session.dragBolt(delta.x, delta.y, performance.now() / 1000);
+    for (const boltEvent of result.events) {
+      const feedbackEvent = BOLT_EVENT_FEEDBACK[boltEvent];
+      if (feedbackEvent) {
+        this.feedback.emit(feedbackEvent);
+      }
+    }
+    this.refresh();
+  }
+
+  protected showBoltHint(): void {
+    this.showShotLine('Дошли патрон затвором');
   }
 
   protected changeMagazine(): void {
@@ -311,7 +366,10 @@ export class PositionPage {
       this.lastFrameMs = nowMs;
       const session = this.session();
       if (session) {
-        session.scope.step(dtS, null);
+        if (session.step(dtS, this.fingerMarker)) {
+          this.fingerMarker = null;
+          void this.fire();
+        }
         this.draw(session);
       }
       this.uiAccumulatorS += dtS;
@@ -336,6 +394,18 @@ export class PositionPage {
       flags: session.scenario.flags.map((flag, index) => ({ distanceM: flag.distanceM, lateralWindMps: lateralWindMps(zones[index + 1]) })),
       timeS: performance.now() / 1000,
     });
+  }
+
+  private zoneView(session: PositionSession): { radius: number; markerX: number; markerY: number } | null {
+    const trigger = session.scope.trigger;
+    if (!trigger) {
+      return null;
+    }
+    return {
+      radius: trigger.radiusPt(session.scope.heart.bpm) * ZONE_TO_GLASS,
+      markerX: trigger.marker.x * ZONE_TO_GLASS,
+      markerY: trigger.marker.y * ZONE_TO_GLASS,
+    };
   }
 
   private scenarioTimeS(session: PositionSession): number {

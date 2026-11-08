@@ -55,6 +55,13 @@
           @if (stopBadge(); as badge) {
             <span class="stop-badge" data-test="stop-badge">{{ badge }}</span>
           }
+          @if (state?.zone; as zone) {
+            <svg class="zone" viewBox="0 0 276 276" aria-hidden="true" data-test="trigger-zone">
+              <circle class="zone-ring" cx="138" cy="138" [attr.r]="zone.radius" />
+              <circle class="zone-marker" [attr.cx]="138 + zone.markerX" [attr.cy]="138 + zone.markerY" r="5" data-test="trigger-marker" />
+              <text class="zone-label" x="138" [attr.y]="138 + zone.radius + 16">ЗОНА СПУСКА</text>
+            </svg>
+          }
           @if (shotLine(); as line) {
             <span class="shot-line mono" data-test="shot-line">{{ line }}</span>
           }
@@ -87,28 +94,30 @@
         <button class="tile" type="button" disabled data-test="tile-notebook">Блокнот · следующий этап</button>
       </div>
 
-      <div class="fire-row">
-        <button
-          class="hold"
-          type="button"
-          [class.holding]="state.breathState === 'holding'"
-          [class.cooldown]="state.breathState === 'cooldown'"
-          (pointerdown)="breathDown()"
-          (pointerup)="breathUp()"
-          (pointerleave)="breathUp()"
-          data-test="hold"
-        >
-          {{ state.breathState === 'holding' ? 'Держу' : state.breathState === 'cooldown' ? 'Выдох' : 'Держать' }}
-        </button>
-        <div class="fire-wrap">
-          @if (state.isMagazineChangeDue) {
-            <button class="change-magazine" type="button" (click)="changeMagazine()" data-test="change-magazine">Сменить магазин</button>
-          } @else {
-            <button class="fire" type="button" (click)="fire()" [disabled]="end() !== null" data-test="fire">Огонь</button>
-          }
+      @if (state.isBoltCycleDue) {
+        <or-bolt-track [step]="state.boltStep" [progress]="state.boltProgress" (drag)="dragBolt($event)" (waitingTap)="showBoltHint()" />
+      } @else if (state.isMagazineChangeDue) {
+        <div class="fire-row">
           <span class="rounds mono" data-test="rounds">{{ state.rounds }}</span>
+          <button class="change-magazine" type="button" (click)="changeMagazine()" data-test="change-magazine">Сменить магазин</button>
         </div>
-      </div>
+      } @else {
+        <or-fire-control
+          [mode]="state.triggerMode"
+          [pressure]="state.pressure"
+          [pressureLabel]="state.pressureLabel"
+          [breath]="state.breath"
+          [holdLabel]="state.holdLabel"
+          [rounds]="state.rounds"
+          [isFireEnabled]="end() === null"
+          (fireTap)="fire()"
+          (firePress)="pressTrigger($event)"
+          (fireMove)="moveTrigger($event)"
+          (fireRelease)="releaseTrigger()"
+          (holdPress)="breathDown()"
+          (holdRelease)="breathUp()"
+        />
+      }
     }
 
     @if (end(); as card) {

@@ -1,0 +1,35 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+const POSITION_DIR = new URL('./', import.meta.url);
+const FORBIDDEN_IMPORTS = ['/scope/', 'game-session', '/debrief/', 'core/score', 'sim/tasks', 'explainMiss'];
+const FORBIDDEN_STYLES = ['--hub-', 'var(--font-sans)', 'class="button', 'class="chip', 'class="card'];
+
+function sourceFiles(): { name: string; text: string }[] {
+  return readdirSync(POSITION_DIR)
+    .filter(name => /\.(ts|html|scss)$/.test(name) && !name.endsWith('.spec.ts'))
+    .map(name => ({ name, text: readFileSync(new URL(name, POSITION_DIR), 'utf-8') }));
+}
+
+describe('the position does not lean on the old free-play screens', () => {
+  it('imports nothing from the old scope, GameSession, the old debrief, score or tasks', () => {
+    for (const { name, text } of sourceFiles()) {
+      const imports = text.split('\n').filter(line => line.startsWith('import '));
+      for (const forbidden of FORBIDDEN_IMPORTS) {
+        expect(imports.filter(line => line.includes(forbidden)), `${name} imports ${forbidden}`).toEqual([]);
+      }
+    }
+  });
+
+  it('uses only the tokens, not the legacy --hub-* variables or the old global classes', () => {
+    for (const { name, text } of sourceFiles()) {
+      for (const forbidden of FORBIDDEN_STYLES) {
+        expect(text.includes(forbidden), `${name} uses ${forbidden}`).toBe(false);
+      }
+    }
+  });
+
+  it('sees the position files', () => {
+    expect(sourceFiles().map(file => file.name)).toEqual(expect.arrayContaining(['position.page.ts', 'position-session.ts', 'position.model.ts']));
+  });
+});
