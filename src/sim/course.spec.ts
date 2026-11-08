@@ -397,6 +397,14 @@ describe('exerciseResult', () => {
     expect(result.total).toBe(Math.round((40 + 4 * 5) * 1.5));
   });
 
+  it('a repeat after «пересчитать» goes without the mode multiplier (Б16); the class is the same', () => {
+    const shots = firstShotHits(4, { check: check('close') });
+    const normal = exerciseResult(exercise('06'), run(shots, { mode: 'manual-easy' }));
+    const repeat = exerciseResult(exercise('06'), run(shots, { mode: 'manual-easy', isRepeatAfterRecalc: true }));
+    expect(repeat.total).toBe(40 + 4 * 5);
+    expect(repeat.exerciseClass).toBe(normal.exerciseClass);
+  });
+
   it('a calculation counts once per target, from its first shot', () => {
     const shots = [shot({ targetIndex: 0, isHit: false, check: check('exact') }), shot({ targetIndex: 0, check: check('exact') }), ...firstShotHits(3, { check: check('exact') }).map(record => ({ ...record, targetIndex: record.targetIndex + 1 }))];
     expect(exerciseResult(exercise('06'), run(shots)).total).toBe(5 + 30 + 4 * 10);

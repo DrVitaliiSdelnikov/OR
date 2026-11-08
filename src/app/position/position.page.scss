@@ -322,7 +322,8 @@
   background: var(--device-accent);
 }
 
-.notebook-sheet {
+.notebook-sheet,
+.review-sheet {
   position: absolute;
   right: 0;
   left: 0;

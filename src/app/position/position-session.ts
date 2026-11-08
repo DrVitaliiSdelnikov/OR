@@ -1,11 +1,12 @@
 import { cartridgeById } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
-import { CheckErrorType, checkManualSteps, checkPreparation } from '../../core/calc-check';
+import { CheckErrorType, checkManualSteps, checkPreparation, CheckResult } from '../../core/calc-check';
+import { targetRadiusMrad } from '../../core/content';
 import { mulberry32 } from '../../core/rng';
 import { clockFromDeg, createScenario, gaugeWindAt, Scenario, windAt } from '../../core/scenario';
 import { resolveShot, ShotResult } from '../../core/shot';
-import { CartridgeId, Target } from '../../core/types';
+import { CartridgeId, Correction, Target } from '../../core/types';
 import { BoltCycleResult, BoltEvent } from '../../sim/bolt';
 import { CheckRowKind, ExerciseDef, exerciseResult, ExerciseResult, ExerciseSetup, ExerciseShotRecord, setupExercise, ShotCheckSummary } from '../../sim/course';
 import { FiringEvent, FiringLine } from '../../sim/firing-line';
@@ -13,11 +14,13 @@ import { Vector2 } from '../../sim/noise';
 import {
   changeContext,
   checkInputs,
+  CheckTruth,
   ChipKind,
   createNotebook,
   enterWind,
   measureRange,
   Notebook,
+  NotebookCheckInputs,
   NotebookContext,
   NotebookFactor,
   NotebookStepId,
@@ -40,7 +43,7 @@ import {
 } from '../../sim/notebook';
 import { scopeById, TurretMove } from '../../sim/scope-model';
 import { ScopeSession } from '../../sim/scope-session';
-import { diagnoseShot } from '../../sim/shot-review';
+import { diagnoseShot, dopeNoteElevationMil, isCallAccurate, secondShotCorrection, ShotDiagnosis, TurretCorrection, warmImpact } from '../../sim/shot-review';
 import { TriggerAccessibility } from '../../sim/trigger';
 import { TurretProgress, turretProgress } from '../../sim/turret-target';
 import { TurretAxis } from './position.model';
@@ -50,6 +53,28 @@ export interface PositionStart {
   seed: number;
   engine: BallisticsEngine;
   accessibility: TriggerAccessibility;
+  recalcNotebook?: Notebook;
+}
+
+export interface ShotCheck {
+  notebook: Notebook;
+  truth: CheckTruth;
+  inputs: NotebookCheckInputs;
+  result: CheckResult;
+}
+
+export interface ShotReview {
+  call: Correction;
+  impact: Correction;
+  warmImpact: Correction;
+  diagnosis: ShotDiagnosis;
+  correction: TurretCorrection | null;
+  isFirstShotAtTarget: boolean;
+  check: ShotCheck | null;
+  dopeNoteMil: number | null;
+  targetRadiusMil: number;
+  distanceM: number;
+  cartridgeId: CartridgeId;
 }
 
 export interface PositionShot {
@@ -57,6 +82,7 @@ export interface PositionShot {
   result: ShotResult;
   events: FiringEvent[];
   boltEvents: BoltEvent[];
+  review: ShotReview;
 }
 
 interface DialTracking {
@@ -76,9 +102,11 @@ const STATION_SPEED_DECIMALS = 10;
 export class PositionSession {
   readonly scope: ScopeSession;
   readonly firingLine: FiringLine;
+  readonly isRepeatAfterRecalc: boolean;
   private currentNotebook: Notebook;
   private entered: NotebookTotal | null = null;
   private stationMeasurements = 0;
+  private lastCall: Correction | null = null;
   private readonly shotRecords: ExerciseShotRecord[] = [];
   private readonly dialTracking: Record<TurretAxis, DialTracking> = {
     elevation: { startClicks: 0, hasOvershot: false },
@@ -91,11 +119,15 @@ export class PositionSession {
     readonly scenario: Scenario,
     private readonly cards: ReadonlyMap<CartridgeId, DopeCard>,
     private readonly engine: BallisticsEngine,
-    accessibility: TriggerAccessibility,
+    private readonly accessibility: TriggerAccessibility,
+    recalcNotebook: Notebook | undefined,
   ) {
     this.firingLine = new FiringLine(setup.plan);
     this.scope = new ScopeSession(scopeById(def.scopeId), POSITION_RESTING_BPM, scenario.seed, accessibility, this.firingLine.magazineLoaded);
-    this.currentNotebook = createNotebook(this.notebookContext(), def.notebookMode ?? 'auto');
+    this.isRepeatAfterRecalc = recalcNotebook !== undefined;
+    this.currentNotebook = recalcNotebook
+      ? changeContext(recalcNotebook, { card: this.cards.get(this.firingLine.cartridgeId)!, target: this.notebookTarget() })
+      : createNotebook(this.notebookContext(), def.notebookMode ?? 'auto');
   }
 
   static async start(options: PositionStart): Promise<PositionSession> {
@@ -106,7 +138,21 @@ export class PositionSession {
       cards.set(cartridgeId, await buildDopeCard(options.engine, cartridgeById(cartridgeId), CARD_CLICK_MIL));
     }
     const scenario = createScenario(options.seed, setup.scenarioOptions);
-    return new PositionSession(options.def, setup, scenario, cards, options.engine, options.accessibility);
+    return new PositionSession(options.def, setup, scenario, cards, options.engine, options.accessibility, options.recalcNotebook);
+  }
+
+  restartForRecalc(engine: BallisticsEngine): Promise<PositionSession> {
+    return PositionSession.start({ def: this.def, seed: this.scenario.seed, engine, accessibility: this.accessibility, recalcNotebook: this.currentNotebook });
+  }
+
+  recordCall(playerCall: Correction): boolean {
+    const lastIndex = this.shotRecords.length - 1;
+    if (lastIndex < 0 || !this.lastCall) {
+      return false;
+    }
+    const isAccurate = isCallAccurate(playerCall, this.lastCall);
+    this.shotRecords[lastIndex] = { ...this.shotRecords[lastIndex], isCallAccurate: isAccurate };
+    return isAccurate;
   }
 
   get notebook(): Notebook {
@@ -255,7 +301,9 @@ export class PositionSession {
     const isDialExactFirstTry = this.isDialExact();
     const isBreathHeld = this.scope.sway.breath.state === 'holding';
     const isColdBore = this.firingLine.isNextShotCold;
-    const check = this.checkSummary(timeS);
+    const shotCheck = this.shotCheck(timeS);
+    const check = shotCheck ? summaryOf(shotCheck) : null;
+    const dialUpMil = this.scope.elevation.clicks * this.currentNotebook.context.card.clickMil;
     const rangeEstimateM = this.currentNotebook.readings.reticleMil !== null ? this.currentNotebook.distanceM ?? undefined : undefined;
     const stageIndex = this.firingLine.stageIndex;
     const targetIndex = this.firingLine.targetIndex;
@@ -271,6 +319,7 @@ export class PositionSession {
       sightOffset: this.setup.sightOffset,
     });
     const isFirstShotAtTarget = !this.shotRecords.some(record => record.stageIndex === stageIndex && record.targetIndex === targetIndex);
+    const diagnosis = diagnoseShot(outcome.hold, result.isHit);
     const record: ExerciseShotRecord = {
       stageIndex,
       targetIndex,
@@ -278,7 +327,7 @@ export class PositionSession {
       isHit: result.isHit,
       isColdBore,
       impact: result.impact,
-      diagnosis: diagnoseShot(outcome.hold, result.isHit),
+      diagnosis,
       isDialExactFirstTry: isFirstShotAtTarget && isDialExactFirstTry,
       isBreathHeld,
       ...(check ? { check } : {}),
@@ -286,11 +335,27 @@ export class PositionSession {
     };
     this.shotRecords.push(record);
     const events = this.firingLine.recordShot(result.isHit);
+    const warm = warmImpact(result.impact, result.coldBore);
+    const clickMil = this.currentNotebook.context.card.clickMil;
+    this.lastCall = outcome.hold;
+    const review: ShotReview = {
+      call: outcome.hold,
+      impact: result.impact,
+      warmImpact: warm,
+      diagnosis,
+      correction: events.includes('target-closed') ? null : secondShotCorrection(outcome.hold, warm, clickMil, diagnosis),
+      isFirstShotAtTarget,
+      check: isFirstShotAtTarget ? shotCheck : null,
+      dopeNoteMil: dopeNoteElevationMil(dialUpMil, outcome.hold, warm, diagnosis),
+      targetRadiusMil: targetRadiusMrad(target),
+      distanceM: target.distanceM,
+      cartridgeId: this.firingLine.cartridgeId,
+    };
     const boltEvents = this.isTapTrigger ? this.scope.bolt.cycle() : [];
     if (events.includes('next-target') || events.includes('stage-done')) {
       this.followNewTarget(this.target !== target);
     }
-    return { record, result, events, boltEvents };
+    return { record, result, events, boltEvents, review };
   }
 
   changeMagazine(): BoltEvent[] {
@@ -303,30 +368,31 @@ export class PositionSession {
     if (!this.firingLine.isFinished) {
       return null;
     }
-    return exerciseResult(this.def, { mode: this.def.notebookMode ?? 'auto', hasOpenedReference: this.currentNotebook.hasOpenedReference, shots: this.shotRecords });
+    return exerciseResult(this.def, {
+      mode: this.def.notebookMode ?? 'auto',
+      hasOpenedReference: this.currentNotebook.hasOpenedReference,
+      shots: this.shotRecords,
+      isRepeatAfterRecalc: this.isRepeatAfterRecalc,
+    });
   }
 
   private isDialExact(): boolean {
     return this.entered !== null && (['elevation', 'windage'] as const).every(axis => this.turretClicks(axis) === this.targetClicks(axis) && !this.dialTracking[axis].hasOvershot);
   }
 
-  private checkSummary(timeS: number): ShotCheckSummary | null {
-    const inputs = checkInputs(this.currentNotebook, {
+  private shotCheck(timeS: number): ShotCheck | null {
+    const truth: CheckTruth = {
       trueWindClock: clockFromDeg(windAt(this.scenario, timeS)[0].fromDeg),
       dialedElevationClicks: this.scope.elevation.clicks,
       dialedWindageLeftClicks: this.scope.windage.clicks,
-    });
+    };
+    const inputs = checkInputs(this.currentNotebook, truth);
     const isAuto = this.currentNotebook.mode === 'auto';
-    const kinds: CheckRowKind[] = isAuto ? inputs.preparation.map(row => row.row) : inputs.steps.map(step => step.step);
-    if (kinds.length === 0) {
+    if ((isAuto ? inputs.preparation.length : inputs.steps.length) === 0) {
       return null;
     }
     const result = isAuto ? checkPreparation(inputs.preparation) : checkManualSteps(inputs.steps, this.currentNotebook.context.card.clickMil);
-    return {
-      verdict: result.verdict,
-      rowVerdicts: Object.fromEntries(kinds.map((kind, index) => [kind, result.rows[index].status])),
-      errorTypes: [...new Set(result.rows.flatMap(row => row.errorTypes))],
-    };
+    return { notebook: this.currentNotebook, truth, inputs, result };
   }
 
   private followNewTarget(isNewTarget: boolean): void {
@@ -367,4 +433,13 @@ export class PositionSession {
     }
     return axis === 'elevation' ? this.entered.elevation.targetClicks : this.entered.windageLeft.targetClicks;
   }
+}
+
+function summaryOf(check: ShotCheck): ShotCheckSummary {
+  const kinds: CheckRowKind[] = check.notebook.mode === 'auto' ? check.inputs.preparation.map(row => row.row) : check.inputs.steps.map(step => step.step);
+  return {
+    verdict: check.result.verdict,
+    rowVerdicts: Object.fromEntries(kinds.map((kind, index) => [kind, check.result.rows[index].status])),
+    errorTypes: [...new Set(check.result.rows.flatMap(row => row.errorTypes))],
+  };
 }

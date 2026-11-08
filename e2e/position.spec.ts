@@ -1,11 +1,7 @@
 import { expect, Page, test } from '@playwright/test';
-import { ptPerMil } from '../src/sim/scope-model';
-import { INITIAL_AIM_MIL } from '../src/sim/scope-session';
-import { enterTotalOnTurrets, seedProgress } from './helpers';
+import { centreReticle, clicksToTarget, dialElevation, enterTotalOnTurrets, seedProgress } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
-const DEFAULT_MAGNIFICATION = 8;
-const CLICK_MIL = 0.1;
 const MIN_TOUCH_PX = 44;
 const SHOT_SETTLE_MS = 1200;
 
@@ -18,33 +14,11 @@ async function toPosition(page: Page, bestClasses: Record<string, number> = {}):
   await enterTotalOnTurrets(page);
 }
 
-async function clicksToTarget(page: Page): Promise<number> {
-  const counter = await page.locator('[data-test="drum-elevation"] [data-test="drum-counter"]').textContent();
-  return Number(/ещё (\d+)/.exec(counter ?? '')![1]);
-}
-
-async function dialElevation(page: Page, clicks: number): Promise<void> {
-  for (let click = 0; click < clicks; click++) {
-    await page.getByTestId('elevation-plus').click();
-  }
-}
-
-async function centreReticle(page: Page, dialledClicks: number): Promise<void> {
-  await page.getByTestId('glass').click({ trial: true });
-  const glass = (await page.getByTestId('glass').boundingBox())!;
-  const scale = ptPerMil(DEFAULT_MAGNIFICATION) * (glass.width / 276);
-  const startX = glass.x + glass.width / 2;
-  const startY = glass.y + glass.height / 2;
-  const aimUpMil = INITIAL_AIM_MIL.y - dialledClicks * CLICK_MIL;
-  await page.mouse.move(startX, startY);
-  await page.mouse.down();
-  await page.mouse.move(startX + INITIAL_AIM_MIL.x * scale, startY - aimUpMil * scale, { steps: 10 });
-  await page.mouse.up();
-}
-
 async function fireAndSettle(page: Page): Promise<void> {
   await page.getByTestId('fire').click();
-  await expect(page.getByTestId('shot-line')).toBeVisible();
+  await expect(page.getByTestId('review-sheet')).toBeVisible();
+  await page.getByTestId('review-next').click();
+  await expect(page.getByTestId('review-sheet')).toHaveCount(0);
   await page.waitForTimeout(SHOT_SETTLE_MS);
 }
 
@@ -88,7 +62,7 @@ test.describe('позиция: упражнения 01–02', () => {
     await expect(page.locator('[data-test="drum-elevation"] [data-test="drum-target"]')).toHaveCount(0);
   });
 
-  test('тап по «ОГОНЬ»: строка выстрела, счётчик 4 / 5, затвор сам', async ({ page }) => {
+  test('тап по «ОГОНЬ»: разбор, «ДАЛЬШЕ», счётчик 4 / 5, затвор сам', async ({ page }) => {
     await toPosition(page);
     await fireAndSettle(page);
     await expect(page.getByTestId('rounds')).toHaveText('4 / 5');

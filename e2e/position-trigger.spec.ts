@@ -38,8 +38,9 @@ async function strokeHandle(page: Page, deltaXUnits: number, deltaYUnits: number
 
 async function shootWithPressure(page: Page): Promise<void> {
   await pressFire(page);
-  await expect(page.getByTestId('shot-line')).toBeVisible({ timeout: SHOT_TIMEOUT_MS });
+  await expect(page.getByTestId('review-sheet')).toBeVisible({ timeout: SHOT_TIMEOUT_MS });
   await page.mouse.up();
+  await page.getByTestId('review-next').click();
 }
 
 test.describe('позиция: спуск с давлением, затвор, дыхание (03)', () => {
@@ -49,7 +50,7 @@ test.describe('позиция: спуск с давлением, затвор, �
     await expect(page.getByTestId('trigger-zone')).toBeVisible();
     await expect(page.getByTestId('trigger-marker')).toBeVisible();
     await expect.poll(async () => Number((await page.getByTestId('pressure').textContent())!.replace(/\D/g, ''))).toBeGreaterThan(20);
-    await expect(page.getByTestId('shot-line')).toBeVisible({ timeout: SHOT_TIMEOUT_MS });
+    await expect(page.getByTestId('review-sheet')).toBeVisible({ timeout: SHOT_TIMEOUT_MS });
     await page.mouse.up();
   });
 

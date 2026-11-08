@@ -140,6 +140,7 @@
           [style.height.px]="sheetFrame()?.heightPt"
           [session]="current"
           [revision]="uiTick()"
+          [dopeNotes]="dopeNotes()"
           [tab]="tab"
           (tabChange)="sheetTab.set($event)"
           (measure)="measureStation($event)"
@@ -147,6 +148,21 @@
           (enter)="enterOnTurrets()"
           (close)="closeSheet()"
           (expandedChange)="setSheetExpanded($event)"
+        />
+      }
+    }
+
+    @if (reviewedShot(); as shot) {
+      @if (session(); as current) {
+        <or-review-sheet
+          class="review-sheet"
+          [style.top.px]="reviewFrame()?.topPt"
+          [style.height.px]="reviewFrame()?.heightPt"
+          [session]="current"
+          [shot]="shot"
+          (next)="closeReview()"
+          (recalc)="recalcAndRepeat()"
+          (saveDope)="saveDopeNote()"
         />
       }
     }

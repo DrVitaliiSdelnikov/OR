@@ -91,6 +91,7 @@ export interface ExerciseRun {
   mode: NotebookMode;
   hasOpenedReference: boolean;
   shots: readonly ExerciseShotRecord[];
+  isRepeatAfterRecalc?: boolean;
 }
 
 export interface SkillGoals {
@@ -279,7 +280,7 @@ export function exerciseResult(def: ExerciseDef, run: ExerciseRun): ExerciseResu
   const total = seriesTotal({
     targetPoints: pointsPerTarget,
     calcPoints: calculationPoints,
-    multiplier: modeMultiplier(run.mode, false),
+    multiplier: modeMultiplier(run.mode, run.isRepeatAfterRecalc === true),
     hasOpenedReference: run.hasOpenedReference,
   });
   const goals = skillGoals(def, run);

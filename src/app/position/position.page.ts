@@ -17,7 +17,8 @@ import { clockText, NotebookTab } from '../notebook/notebook.model';
 import { ScopeRenderer } from '../scene/scope-renderer';
 import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
-import { PositionSession } from './position-session';
+import { ReviewSheetComponent } from '../review/review-sheet.component';
+import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
 import { breathRing, correctionCells, drumCounterText, endCard, EndCard, markerTarget, playability, pressureText, TurretAxis } from './position.model';
@@ -47,7 +48,7 @@ const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
 
 @Component({
   selector: 'or-position',
-  imports: [IonContent, TurretDrumComponent, FireControlComponent, BoltTrackComponent, NotebookSheetComponent],
+  imports: [IonContent, TurretDrumComponent, FireControlComponent, BoltTrackComponent, NotebookSheetComponent, ReviewSheetComponent],
   templateUrl: './position.page.html',
   styleUrl: './position.page.scss',
 })
@@ -69,6 +70,12 @@ export class PositionPage {
   protected readonly end = signal<EndCard | null>(null);
   protected readonly isLeaveConfirmOpen = signal(false);
   protected readonly sheetTab = signal<NotebookTab | null>(null);
+  protected readonly reviewedShot = signal<PositionShot | null>(null);
+  protected readonly reviewFrame = signal<{ topPt: number; heightPt: number } | null>(null);
+  protected readonly dopeNotes = computed(() => {
+    const session = this.session();
+    return session ? (this.progress.dopeNotes()[session.notebook.context.card.cartridgeId] ?? []) : [];
+  });
   protected readonly sheetFrame = signal<{ topPt: number; heightPt: number } | null>(null);
   protected readonly isUnplayable = computed(() => {
     const def = this.def();
@@ -194,10 +201,10 @@ export class PositionPage {
   }
 
   protected setSheetExpanded(isExpanded: boolean): void {
-    const root = this.positionRoot()?.nativeElement.getBoundingClientRect();
-    if (isExpanded && root) {
+    const frame = this.fullFrame();
+    if (isExpanded && frame) {
       this.compactSheetFrame = this.sheetFrame();
-      this.sheetFrame.set({ topPt: 0, heightPt: window.innerHeight - root.top });
+      this.sheetFrame.set(frame);
     } else if (!isExpanded && this.compactSheetFrame) {
       this.sheetFrame.set(this.compactSheetFrame);
     }
@@ -219,7 +226,7 @@ export class PositionPage {
 
   protected async fire(): Promise<void> {
     const session = this.session();
-    if (!session || this.isFiring || session.isMagazineChangeDue || session.isFinished || this.sheetTab() !== null) {
+    if (!session || this.isFiring || session.isMagazineChangeDue || session.isFinished || this.sheetTab() !== null || this.reviewedShot() !== null) {
       return;
     }
     this.isFiring = true;
@@ -239,20 +246,48 @@ export class PositionPage {
     }
     this.marks.unshift(shot.result.impact);
     this.marks.length = Math.min(this.marks.length, MARKS_ON_GLASS);
-    const verdict = shot.record.isHit ? 'ПОПАДАНИЕ' : `ПРОМАХ · ${shot.result.missMrad.toFixed(1)} MIL`;
-    this.showShotLine(shot.record.isColdBore ? `${verdict} · холодный` : verdict);
-    const result = session.result();
-    if (result) {
-      this.closeSheet();
+    this.closeSheet();
+    this.fingerMarker = null;
+    this.reviewFrame.set(this.fullFrame());
+    this.reviewedShot.set(shot);
+    this.refresh();
+  }
+
+  protected closeReview(): void {
+    const session = this.session();
+    this.reviewedShot.set(null);
+    const result = session?.result();
+    if (session && result) {
       this.progress.recordExerciseResult(session.def.id, result.exerciseClass);
       this.end.set(endCard(result));
     }
     this.refresh();
   }
 
+  protected async recalcAndRepeat(): Promise<void> {
+    const session = this.session();
+    if (!session) {
+      return;
+    }
+    const repeat = await session.restartForRecalc(this.engine);
+    this.reviewedShot.set(null);
+    this.end.set(null);
+    this.marks.length = 0;
+    this.startedAtMs = performance.now();
+    this.session.set(repeat);
+    this.refresh();
+  }
+
+  protected saveDopeNote(): void {
+    const review = this.reviewedShot()?.review;
+    if (review && review.dopeNoteMil !== null) {
+      this.progress.addDopeNote(review.cartridgeId, review.distanceM, review.dopeNoteMil);
+    }
+  }
+
   protected pressTrigger(fingerOffset: Vector2): void {
     const session = this.session();
-    if (!session || session.isFinished || this.sheetTab() !== null) {
+    if (!session || session.isFinished || this.sheetTab() !== null || this.reviewedShot() !== null) {
       return;
     }
     if (!session.startTrigger()) {
@@ -334,6 +369,7 @@ export class PositionPage {
 
   protected async retry(): Promise<void> {
     this.end.set(null);
+    this.reviewedShot.set(null);
     this.closeSheet();
     this.marks.length = 0;
     await this.startSession();
@@ -498,6 +534,11 @@ export class PositionPage {
       this.stopBadge.set(move.stop === 'zero' ? 'ZERO STOP' : move.stop === 'top' ? 'УПОР ВВЕРХ' : 'УПОР');
       setTimeout(() => this.stopBadge.set(null), STOP_BADGE_MS);
     }
+  }
+
+  private fullFrame(): { topPt: number; heightPt: number } | null {
+    const root = this.positionRoot()?.nativeElement.getBoundingClientRect();
+    return root ? { topPt: 0, heightPt: window.innerHeight - root.top } : null;
   }
 
   private showShotLine(text: string): void {

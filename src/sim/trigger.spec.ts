@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../core/rng';
-import { MAX_TRIGGER_SPREAD_MIL, qualityLabel, TriggerPull, zoneRadiusPt } from './trigger';
+import { MAX_TRIGGER_SPREAD_MIL, TriggerPull, zoneRadiusPt } from './trigger';
 
 describe('zoneRadiusPt', () => {
   it('matches the design examples: 62 → 73, 92 → 55, 118 → 38 pt', () => {
@@ -16,15 +16,6 @@ describe('zoneRadiusPt', () => {
 
   it('the accessibility option enlarges the zone', () => {
     expect(zoneRadiusPt(92, true)).toBeGreaterThan(zoneRadiusPt(92));
-  });
-});
-
-describe('qualityLabel', () => {
-  it('splits clean, medium and jerk at 0.7 and 0.4', () => {
-    expect(qualityLabel(0.71)).toBe('clean');
-    expect(qualityLabel(0.7)).toBe('medium');
-    expect(qualityLabel(0.4)).toBe('medium');
-    expect(qualityLabel(0.39)).toBe('jerk');
   });
 });
 
@@ -48,9 +39,9 @@ describe('TriggerPull', () => {
     expect(firedAtS!).toBeLessThan(4.8);
   });
 
-  it('a clean hold gives a clean label and almost no extra spread', () => {
+  it('a clean hold gives a high quality and almost no extra spread', () => {
     const { trigger } = pullWithFingerAtCenter(62, true);
-    expect(qualityLabel(trigger.quality(62))).toBe('clean');
+    expect(trigger.quality(62)).toBeGreaterThan(0.7);
     const spread = trigger.extraSpread(62, 9);
     expect(Math.hypot(spread.upMrad, spread.rightMrad)).toBeLessThan(0.1);
   });

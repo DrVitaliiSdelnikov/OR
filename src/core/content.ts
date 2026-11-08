@@ -1,4 +1,4 @@
-import { Cartridge, CartridgeId, MissCause, Rifle, RuleCard, Target } from './types';
+import { Cartridge, CartridgeId, Rifle, Target } from './types';
 
 export const RIFLE: Rifle = {
   name: '«Рубеж-1», класс .308',
@@ -37,29 +37,3 @@ export function flagAngleDeg(lateralWindMps: number): number {
   return Math.min(FLAG_MAX_DEG, Math.abs(lateralWindMps) * FLAG_DEG_PER_MPS);
 }
 
-export const RULE_CARDS: Record<MissCause, RuleCard> = {
-  wind: {
-    title: 'Правило ветра',
-    text: 'Снос ≈ ветер × (время полёта − дистанция ÷ V₀). Ветер у стрелка весит больше, чем у мишени: ближняя часть трассы отклоняет пулю дольше всего.',
-  },
-  flags: {
-    title: 'Правило флага',
-    text: 'Каждые ≈9° подъёма флага от вертикали — примерно 1 м/с бокового ветра. После 80° флаг лежит: сильнее он не покажет.',
-  },
-  gust: {
-    title: 'Ветер — это диапазон',
-    text: 'Замерьте 5 секунд, возьмите середину вилки и стреляйте в затишье, а не в порыв. Если порыв пришёл, ждите следующего окна.',
-  },
-  hold: {
-    title: 'Пауза и call',
-    text: 'Стреляйте в паузе после выдоха. Запомните, где стоял крест в момент выстрела (call): он объясняет промах без гаданий.',
-  },
-  vertical: {
-    title: 'Вертикаль',
-    text: 'Холоднее и выше давление — воздух плотнее, пуля падает сильнее. Сверяйте карточку падения с прибором, особенно на 500–700 м.',
-  },
-  luck: {
-    title: 'Процесс, а не результат',
-    text: 'Хорошее решение иногда промахивается. Оценивайте себя по шансу попасть, а не по одному выстрелу.',
-  },
-};

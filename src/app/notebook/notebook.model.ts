@@ -15,6 +15,7 @@ export interface DopeTableRow {
   windConstant: string;
   colderBy10C: string;
   pressureUp10Hpa: string;
+  note: string;
   isCurrent: boolean;
 }
 
@@ -109,7 +110,7 @@ export function stepSpeed(speedMps: number, steps: number): number {
   return Math.min(MAX_WIND_SPEED_MPS, Math.max(0, next));
 }
 
-export function dopeTable(card: DopeCard, distanceM: number | null): DopeTableRow[] {
+export function dopeTable(card: DopeCard, distanceM: number | null, noteTexts: ReadonlyMap<number, string> = new Map()): DopeTableRow[] {
   const nearest =
     distanceM === null ? null : card.rows.reduce((best, row) => (Math.abs(row.distanceM - distanceM) < Math.abs(best.distanceM - distanceM) ? row : best)).distanceM;
   return card.rows.map(row => ({
@@ -120,6 +121,7 @@ export function dopeTable(card: DopeCard, distanceM: number | null): DopeTableRo
     windConstant: String(row.windConstant),
     colderBy10C: row.colderBy10CMil.toFixed(2),
     pressureUp10Hpa: row.pressureUp10HpaMil.toFixed(2),
+    note: noteTexts.get(row.distanceM) ?? '—',
     isCurrent: row.distanceM === nearest,
   }));
 }

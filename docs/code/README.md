@@ -72,3 +72,4 @@
 | app · позиция, часть 2: спуск, затвор, дыхание (A3.2) | [specs/app-position-trigger.md](specs/app-position-trigger.md) | реализовано, слито в `master` 8.11 |
 | app · шторка блокнота и вкладки, АВТО (A5.1) | [specs/app-notebook-sheet.md](specs/app-notebook-sheet.md) | реализовано, слито в `master` 8.11 |
 | app · лист расчёта САМ (A5.2) | [specs/app-calc-sheet.md](specs/app-calc-sheet.md) | реализовано, слито в `master` 9.11 |
+| app · разбор выстрела и проверка (A6.1) | [specs/app-debrief.md](specs/app-debrief.md) | реализовано, слито в `master` 9.11 |

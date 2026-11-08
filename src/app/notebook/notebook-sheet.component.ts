@@ -7,6 +7,7 @@ import { ConditionsTabComponent, StationView } from './conditions-tab.component'
 import { DistanceTabComponent } from './distance-tab.component';
 import { DopeTabComponent } from './dope-tab.component';
 import { FormulaLine, FormulasSheetComponent } from './formulas-sheet.component';
+import { DopeNote, dopeNoteTexts } from '../review/review.model';
 import { ManualHubComponent } from './manual-hub.component';
 import {
   CARTRIDGE_LETTERS,
@@ -128,6 +129,7 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
 export class NotebookSheetComponent {
   readonly session = input.required<PositionSession>();
   readonly revision = input(0);
+  readonly dopeNotes = input<DopeNote[]>([]);
   readonly tab = model<NotebookTab>('total');
   readonly measure = output<number>();
   readonly changed = output<void>();
@@ -197,7 +199,7 @@ export class NotebookSheetComponent {
       stationWind: station ? `станция: ${station.windSpeedMps.toFixed(1)} м/с · ${stationTime}` : 'станция: нет замера',
       windCorrection: correctionLine('wind', factors.wind),
       dopeHeading: `Карточка патрона ${CARTRIDGE_LETTERS[notebook.context.card.cartridgeId]} · ноль 100 м · эталон +15 C / 1013 гПа`,
-      dopeRows: dopeTable(notebook.context.card, notebook.distanceM),
+      dopeRows: dopeTable(notebook.context.card, notebook.distanceM, dopeNoteTexts(this.dopeNotes(), notebook.context.card)),
       strip: shotStrip(session.records),
       totalLine: totalLine(scope, total),
       isTotalEmpty: total.isEmpty,

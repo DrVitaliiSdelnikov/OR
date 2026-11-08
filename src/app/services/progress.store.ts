@@ -1,9 +1,10 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { ExerciseClass } from '../../core/exercise-scoring';
-import { Correction, MissCause } from '../../core/types';
+import { CartridgeId, Correction } from '../../core/types';
 import { CourseResults, ExerciseId } from '../../sim/course';
 import { withExerciseResult, withIntroCompleted } from '../home/home.model';
+import { DopeNotes, withDopeNote } from '../review/review.model';
 
 export const PROGRESS_STORAGE_KEY = 'or.progress.v1';
 
@@ -32,8 +33,6 @@ export interface ShotRecord {
   triggerQuality: number;
   hitProbability: number;
   luck: number;
-  cause: MissCause;
-  verdict: string;
   timeOfFlightS: number;
 }
 
@@ -41,6 +40,7 @@ interface ProgressState {
   course: CourseResults;
   settings: Settings;
   shots: ShotRecord[];
+  dopeNotes: DopeNotes;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -51,17 +51,16 @@ export const DEFAULT_SETTINGS: Settings = {
   isEverythingUnlocked: false,
 };
 
-const SHOT_LOG_LIMIT = 200;
 const EMPTY_COURSE: CourseResults = { isIntroCompleted: false, bestClasses: {} };
 
 @Injectable({ providedIn: 'root' })
 export class ProgressStore {
-  private readonly state = signal<ProgressState>({ course: EMPTY_COURSE, settings: DEFAULT_SETTINGS, shots: [] });
+  private readonly state = signal<ProgressState>({ course: EMPTY_COURSE, settings: DEFAULT_SETTINGS, shots: [], dopeNotes: {} });
 
   readonly course = computed(() => this.state().course);
   readonly settings = computed(() => this.state().settings);
   readonly shots = computed(() => this.state().shots);
-  readonly lastShot = computed(() => this.state().shots[0] ?? null);
+  readonly dopeNotes = computed(() => this.state().dopeNotes);
 
   async load(): Promise<void> {
     const { value } = await Preferences.get({ key: PROGRESS_STORAGE_KEY });
@@ -74,6 +73,7 @@ export class ProgressStore {
         course: stored.course ?? EMPTY_COURSE,
         settings: knownSettings(stored.settings),
         shots: stored.shots ?? [],
+        dopeNotes: stored.dopeNotes ?? {},
       });
     } catch {
       await Preferences.remove({ key: PROGRESS_STORAGE_KEY });
@@ -88,12 +88,8 @@ export class ProgressStore {
     this.update(state => ({ ...state, course: withIntroCompleted(state.course) }));
   }
 
-  recordShot(shot: ShotRecord): void {
-    this.update(state => ({ ...state, shots: [shot, ...state.shots].slice(0, SHOT_LOG_LIMIT) }));
-  }
-
-  shotById(id: string): ShotRecord | undefined {
-    return this.state().shots.find(shot => shot.id === id);
+  addDopeNote(cartridgeId: CartridgeId, distanceM: number, elevationMil: number): void {
+    this.update(state => ({ ...state, dopeNotes: withDopeNote(state.dopeNotes, cartridgeId, distanceM, elevationMil) }));
   }
 
   updateSettings(patch: Partial<Settings>): void {
@@ -101,7 +97,7 @@ export class ProgressStore {
   }
 
   resetProgress(): void {
-    this.update(state => ({ ...state, course: EMPTY_COURSE, shots: [] }));
+    this.update(state => ({ ...state, course: EMPTY_COURSE, shots: [], dopeNotes: {} }));
   }
 
   private update(change: (state: ProgressState) => ProgressState): void {

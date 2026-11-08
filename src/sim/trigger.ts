@@ -24,14 +24,6 @@ const BEAT_IMPULSE_BASE = 60;
 const BEAT_IMPULSE_PER_BPM = 1.6;
 const BEAT_SPRING_COUPLING = 0.4;
 
-export type TriggerQualityLabel = 'clean' | 'medium' | 'jerk';
-
-export const TRIGGER_QUALITY_TEXT: Record<TriggerQualityLabel, string> = {
-  clean: 'ЧИСТЫЙ СПУСК',
-  medium: 'СРЕДНИЙ СПУСК',
-  jerk: 'РЫВОК',
-};
-
 export interface TriggerAccessibility {
   isZoneLarger: boolean;
   isMarkerDriftOff: boolean;
@@ -42,12 +34,6 @@ export function zoneRadiusPt(bpm: number, isZoneLarger = false): number {
   return isZoneLarger ? radius * LARGER_ZONE_FACTOR : radius;
 }
 
-export function qualityLabel(quality: number): TriggerQualityLabel {
-  if (quality > 0.7) {
-    return 'clean';
-  }
-  return quality >= 0.4 ? 'medium' : 'jerk';
-}
 
 export class TriggerPull {
   marker: Vector2 = { x: 60, y: 40 };

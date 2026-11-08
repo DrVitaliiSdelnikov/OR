@@ -42,7 +42,7 @@ export const STEP_FORMULAS: Record<NotebookStepId, string> = {
   wind: 'W = V⊥ × D / K',
   lead: 'L = V⊥ цели × t / D × 1000',
 };
-const SLOT_LABELS: Record<ChipKind, string> = {
+export const SLOT_LABELS: Record<ChipKind, string> = {
   'target-size': 'размер',
   'reticle-mil': 'MIL',
   distance: 'D',

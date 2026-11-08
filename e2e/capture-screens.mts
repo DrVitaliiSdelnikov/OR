@@ -115,6 +115,32 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
   await byTest('formulas-open').click();
   await snap(page, `34-formulas${suffix}`);
 
+  await page.goto(`${BASE_URL}/position/01`);
+  await byTest('fire').waitFor();
+  await byTest('tile-notebook').click();
+  await byTest('enter-turrets').click();
+  await byTest('fire').click();
+  await byTest('review-sheet').waitFor();
+  await snap(page, `35-review-miss${suffix}`);
+  if ((await byTest('check-subtitle').count()) === 0) {
+    await byTest('check-toggle').click();
+  }
+  await byTest('check-subtitle').scrollIntoViewIfNeeded();
+  await snap(page, `36-review-check${suffix}`);
+
+  await page.goto(`${BASE_URL}/position/10`);
+  await byTest('fire').waitFor();
+  const fire = (await byTest('fire').boundingBox())!;
+  await page.mouse.move(fire.x + fire.width / 2, fire.y + fire.height / 2);
+  await page.mouse.down();
+  await byTest('review-sheet').waitFor({ timeout: 25000 });
+  await page.mouse.up();
+  const scheme = (await byTest('target-scheme').boundingBox())!;
+  await page.mouse.click(scheme.x + scheme.width / 2 + 10, scheme.y + scheme.height / 2 - 10);
+  await snap(page, `37-review-call${suffix}`);
+  await byTest('call-reveal').click();
+  await snap(page, `38-review-call-revealed${suffix}`);
+
   if (isFull) {
     await page.goto(`${BASE_URL}/journal`);
     await snap(page, `15-log${suffix}`);

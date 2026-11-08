@@ -7,6 +7,5 @@ export const routes: Routes = [
   { path: 'position/:exerciseId', loadComponent: () => import('./position/position.page').then(module => module.PositionPage) },
   { path: 'settings', loadComponent: () => import('./settings/settings.page').then(module => module.SettingsPage) },
   { path: 'journal', loadComponent: () => import('./log/log.page').then(module => module.LogPage) },
-  { path: 'journal/:shotId', loadComponent: () => import('./debrief/debrief.page').then(module => module.DebriefPage) },
   { path: '**', redirectTo: '' },
 ];

@@ -29,7 +29,7 @@ import { DopeTableRow } from './notebook.model';
               <td>{{ row.windConstant }}</td>
               <td>{{ row.colderBy10C }}</td>
               <td>{{ row.pressureUp10Hpa }}</td>
-              <td class="notes">—</td>
+              <td class="notes" [attr.data-test]="'dope-note-' + row.distanceM">{{ row.note }}</td>
             </tr>
           }
         </tbody>

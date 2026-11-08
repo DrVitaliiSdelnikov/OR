@@ -54,9 +54,3 @@ export interface RequiredCorrection extends Correction {
   velocityMps: number;
 }
 
-export type MissCause = 'wind' | 'flags' | 'gust' | 'hold' | 'vertical' | 'luck';
-
-export interface RuleCard {
-  title: string;
-  text: string;
-}

@@ -552,3 +552,92 @@ describe('PositionSession — manual calculation (A5.2)', () => {
 function stepChipValue(session: PositionSession, kind: 'crosswind' | 'distance'): number {
   return session.stepSheet('wind').chips.find(chip => chip.kind === kind)!.value;
 }
+
+describe('PositionSession — shot review (A6.1)', () => {
+  it('a shot carries the call, the warm impact, the diagnosis and the check snapshot of the first shot at the target', async () => {
+    const session = await start('01');
+    dialToTarget(session);
+    const notebookAtShot = session.notebook;
+    const shot = (await shoot(session, ON_TARGET))!;
+    expect(shot.review.call).toEqual(shot.result.hold);
+    expect(shot.review.diagnosis).toBe('clean');
+    expect(shot.review.isFirstShotAtTarget).toBe(true);
+    expect(shot.review.check?.result.verdict).toBe('exact');
+    expect(shot.review.check?.notebook).toBe(notebookAtShot);
+    expect(shot.review.targetRadiusMil).toBeCloseTo(((0.5 / 2) * 1000) / 300, 6);
+  });
+
+  it('a miss with a shot left gives the correction; the second shot at the target has no check of its own', async () => {
+    const session = await start('01');
+    const first = (await shoot(session, ON_TARGET))!;
+    expect(first.record.isHit).toBe(false);
+    expect(first.review.correction).not.toBeNull();
+    expect(first.review.correction!.upClicks).toBeGreaterThan(0);
+    const second = (await shoot(session, ON_TARGET))!;
+    expect(second.review.isFirstShotAtTarget).toBe(false);
+    expect(second.review.check).toBeNull();
+    expect(second.review.correction).toBeNull();
+  });
+
+  it('the cold bore shift is taken out of the impact for the correction and the DOPE note', async () => {
+    const session = await start('02', 23);
+    const shot = (await shoot(session, ON_TARGET))!;
+    expect(shot.record.isColdBore).toBe(true);
+    expect(shot.review.warmImpact.upMrad).toBeCloseTo(shot.result.impact.upMrad - RIFLE.coldBoreShiftMil.upMrad, 9);
+  });
+
+  it('a clean call gives a DOPE note; an execution miss gives none', async () => {
+    const clean = await start('01');
+    dialToTarget(clean);
+    expect((await shoot(clean, ON_TARGET))!.review.dopeNoteMil).not.toBeNull();
+    const wild = await start('01');
+    dialToTarget(wild);
+    expect((await shoot(wild, FAR_OFF))!.review.dopeNoteMil).toBeNull();
+  });
+
+  it('10: the player call is accurate within 0.2 MIL and goes into the record', async () => {
+    const session = await start('10');
+    const shot = (await shoot(session, ON_TARGET))!;
+    const call = shot.review.call;
+    expect(session.recordCall({ upMrad: call.upMrad + 0.15, rightMrad: call.rightMrad })).toBe(true);
+    expect(session.records[0].isCallAccurate).toBe(true);
+    expect(session.recordCall({ upMrad: call.upMrad + 0.4, rightMrad: call.rightMrad })).toBe(false);
+    expect(session.records[0].isCallAccurate).toBe(false);
+  });
+
+  it('the repeat result goes without the mode multiplier (06: ×1.5 → ×1)', async () => {
+    const plain = await start('06');
+    const repeat = await plain.restartForRecalc(engine);
+    for (const session of [plain, repeat]) {
+      session.placeChip('dope', 'distance');
+      session.typeTape('dope', 0, dopeRowAt(session.notebook.context.card, session.notebook.distanceM!).elevationMil);
+      session.setSign('dope', 1);
+      session.recordStep('dope');
+      session.enterOnTurrets();
+      while (!session.isFinished) {
+        if (session.isMagazineChangeDue) {
+          session.changeMagazine();
+        }
+        if (!session.scope.bolt.canFire) {
+          session.scope.bolt.cycle();
+        }
+        await shoot(session, FAR_OFF);
+      }
+    }
+    expect(repeat.result()!.total).toBeGreaterThan(0);
+    expect(plain.result()!.total).toBe(Math.round(repeat.result()!.total * 1.5));
+  });
+
+  it('«пересчитать»: the same seed and targets, the notebook kept, no shots, no multiplier', async () => {
+    const session = await start('06');
+    session.enterWind(3.2, 9);
+    await shoot(session, FAR_OFF);
+    const repeat = await session.restartForRecalc(engine);
+    expect(repeat.scenario.seed).toBe(session.scenario.seed);
+    expect(repeat.setup.targets).toEqual(session.setup.targets);
+    expect(repeat.notebook.readings.wind).toEqual({ speedMps: 3.2, clock: 9 });
+    expect(repeat.records).toHaveLength(0);
+    expect(repeat.firingLine.targetIndex).toBe(0);
+    expect(repeat.isRepeatAfterRecalc).toBe(true);
+  });
+});
