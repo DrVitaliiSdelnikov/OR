@@ -126,6 +126,7 @@ export class PositionPage {
   });
 
   private readonly marks: Correction[] = [];
+  private compactSheetFrame: { topPt: number; heightPt: number } | null = null;
   private fingerMarker: Vector2 | null = null;
   private renderer: ScopeRenderer | null = null;
   private frameHandle = 0;
@@ -190,6 +191,16 @@ export class PositionPage {
 
   protected closeSheet(): void {
     this.sheetTab.set(null);
+  }
+
+  protected setSheetExpanded(isExpanded: boolean): void {
+    const root = this.positionRoot()?.nativeElement.getBoundingClientRect();
+    if (isExpanded && root) {
+      this.compactSheetFrame = this.sheetFrame();
+      this.sheetFrame.set({ topPt: 0, heightPt: window.innerHeight - root.top });
+    } else if (!isExpanded && this.compactSheetFrame) {
+      this.sheetFrame.set(this.compactSheetFrame);
+    }
   }
 
   protected enterOnTurrets(): void {

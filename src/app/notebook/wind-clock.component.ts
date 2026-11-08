@@ -1,9 +1,11 @@
 import { Component, computed, input, output } from '@angular/core';
+import { windClockShare } from '../../core/field';
 import { clockFromDialAngle, dialAngleFromClock } from './notebook.model';
 
 const DIAL_CENTER = 130;
 const DIAL_RADIUS = 104;
 const HOUR_NUMBER_RADIUS = 84;
+const SHARE_LABEL_RADIUS = 62;
 const HAND_LENGTH = 76;
 const HALF_HOURS = 24;
 const DEG_TO_RAD = Math.PI / 180;
@@ -42,6 +44,11 @@ interface DialTick {
         @for (hour of hours; track hour.label) {
           <text class="hour-label" [attr.x]="hour.x" [attr.y]="hour.y">{{ hour.label }}</text>
         }
+        @if (showShares()) {
+          @for (share of shares; track share.label + share.x) {
+            <text class="share-label" [attr.x]="share.x" [attr.y]="share.y" data-test="clock-share">{{ share.label }}</text>
+          }
+        }
         @if (hand(); as end) {
           <line class="hand" [attr.x1]="center" [attr.y1]="center" [attr.x2]="end.x" [attr.y2]="end.y" data-test="wind-hand" />
           <circle class="hand-tip" [attr.cx]="end.x" [attr.cy]="end.y" r="7" />
@@ -56,6 +63,7 @@ interface DialTick {
     .face { fill: var(--device-sunken); stroke: var(--device-line-strong); stroke-width: 2; }
     .tick { stroke: var(--device-line); stroke-width: 1.5; }
     .tick.hour { stroke: var(--device-text-muted); stroke-width: 2.5; }
+    .share-label { fill: var(--device-accent); font: 500 9px var(--font-mono); text-anchor: middle; dominant-baseline: central; }
     .hour-label { fill: var(--device-text); font: 500 13px var(--font-mono); text-anchor: middle; dominant-baseline: central; }
     .aim { fill: var(--device-accent); font: 700 11px var(--font-mono); letter-spacing: var(--tracking-label); text-anchor: middle; }
     .hand { stroke: var(--device-accent); stroke-width: 4; stroke-linecap: round; }
@@ -65,6 +73,7 @@ interface DialTick {
 })
 export class WindClockComponent {
   readonly clock = input<number | null>(null);
+  readonly showShares = input(false);
   readonly clockChange = output<number>();
 
   protected readonly center = DIAL_CENTER;
@@ -77,6 +86,10 @@ export class WindClockComponent {
     return { x1: inner.x, y1: inner.y, x2: outer.x, y2: outer.y, isHour };
   });
   protected readonly hours = Array.from({ length: 12 }, (_, index) => ({ label: String(index + 1), ...pointAt(dialAngleFromClock(index + 1), HOUR_NUMBER_RADIUS) }));
+  protected readonly shares = Array.from({ length: 12 }, (_, index) => ({
+    label: shareText(windClockShare(index + 1)),
+    ...pointAt(dialAngleFromClock(index + 1), SHARE_LABEL_RADIUS),
+  }));
   protected readonly hand = computed(() => {
     const clock = this.clock();
     return clock === null ? null : pointAt(dialAngleFromClock(clock), HAND_LENGTH);
@@ -112,6 +125,10 @@ export class WindClockComponent {
       this.clockChange.emit(clock);
     }
   }
+}
+
+function shareText(share: number): string {
+  return share === 1 ? '1' : share === 0 ? '0' : share.toFixed(2).replace(/^0/, '').replace(/0$/, '');
 }
 
 function pointAt(angleDeg: number, distance: number): { x: number; y: number } {

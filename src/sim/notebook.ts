@@ -71,7 +71,7 @@ export interface NotebookReadings {
 export interface StepState {
   slots: readonly (ChipKind | null)[];
   tape: readonly (number | null)[];
-  sign: 1 | -1;
+  sign: 1 | -1 | null;
   units: 'mil' | 'moa';
   isRecorded: boolean;
   snapshot: StepSnapshot | null;
@@ -323,7 +323,7 @@ export function removeChip(notebook: Notebook, step: NotebookStepId, slotIndex: 
   return withStep(notebook, step, { ...state, slots, isRecorded: false });
 }
 
-export function typeTape(notebook: Notebook, step: NotebookStepId, index: number, value: number): Notebook {
+export function typeTape(notebook: Notebook, step: NotebookStepId, index: number, value: number | null): Notebook {
   const state = notebook.steps[step];
   const tape = Array.from({ length: STEPS[step].tapeLength }, (_, cell) => (cell === index ? value : (state.tape[cell] ?? null)));
   return withStep(notebook, step, { ...state, tape, isRecorded: false });
@@ -345,8 +345,15 @@ export function recordStep(notebook: Notebook, step: NotebookStepId): Notebook {
   if (!isFilled || finalValue === null || finalValue === undefined) {
     throw new RangeError(`step ${step} has empty slots or no result`);
   }
+  if (stepHasSide(step) && finalValue !== 0 && state.sign === null) {
+    throw new RangeError(`step ${step} has no side`);
+  }
   const recorded = withStep(notebook, step, { ...state, isRecorded: true, snapshot: snapshotOf(notebook), staleReason: null });
   return step === 'distance' ? refreshStale({ ...recorded, distanceM: finalValue }) : recorded;
+}
+
+export function stepHasSide(step: NotebookStepId): boolean {
+  return step !== 'distance';
 }
 
 export function softHint(notebook: Notebook, step: NotebookStepId): CheckErrorType | null {
@@ -490,9 +497,9 @@ function playerStepMil(notebook: Notebook, step: NotebookStepId): number | null 
     return dopeRowAt(notebook.context.card, finalValue).elevationMil;
   }
   if (step === 'zones') {
-    return zoneWindMil(notebook, [state.sign * finalValue]);
+    return zoneWindMil(notebook, [(state.sign ?? 1) * finalValue]);
   }
-  return state.sign * finalValue;
+  return (state.sign ?? 1) * finalValue;
 }
 
 function autoDopeMil(notebook: Notebook): number | null {
@@ -554,7 +561,7 @@ function playerCrosswindMps(notebook: Notebook): number | null {
   if (notebook.context.hasZones) {
     const zones = notebook.steps.zones;
     const finalValue = zones.tape[STEPS.zones.tapeLength - 1];
-    return zones.isRecorded && finalValue != null ? zones.sign * finalValue : null;
+    return zones.isRecorded && finalValue != null ? (zones.sign ?? 1) * finalValue : null;
   }
   const wind = notebook.readings.wind;
   return wind ? signedCrosswindMps(wind) : null;
@@ -618,7 +625,7 @@ function withStep(notebook: Notebook, step: NotebookStepId, state: StepState): N
 }
 
 function emptyStep(step: NotebookStepId, staleReason: StaleReason | null = null): StepState {
-  return { slots: [], tape: Array.from({ length: STEPS[step].tapeLength }, () => null), sign: 1, units: 'mil', isRecorded: false, snapshot: null, staleReason };
+  return { slots: [], tape: Array.from({ length: STEPS[step].tapeLength }, () => null), sign: null, units: 'mil', isRecorded: false, snapshot: null, staleReason };
 }
 
 function snapshotOf(notebook: Notebook): StepSnapshot {

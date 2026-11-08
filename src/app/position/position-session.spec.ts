@@ -11,7 +11,7 @@ const ACCESSIBILITY = { isZoneLarger: false, isMarkerDriftOff: true };
 const ON_TARGET = { x: 0, y: 0 };
 const FAR_OFF = { x: 6, y: 0 };
 
-async function start(id: '01' | '02' | '04' | '05', seed = 11): Promise<PositionSession> {
+async function start(id: '01' | '02' | '04' | '05' | '06' | '08' | '10', seed = 11): Promise<PositionSession> {
   return PositionSession.start({ def: exerciseById(id)!, seed, engine, accessibility: ACCESSIBILITY });
 }
 
@@ -460,4 +460,95 @@ describe('PositionSession — the check is recorded with the shot', () => {
 
 function rangeMil(session: PositionSession): number {
   return Math.round((session.target.diameterM * 1000) / session.target.distanceM / 0.05) * 0.05;
+}
+
+describe('PositionSession — manual calculation (A5.2)', () => {
+  function solveWind(session: PositionSession, divisor: number): void {
+    session.enterWind(3.2, 9);
+    session.placeChip('wind', 'crosswind');
+    session.placeChip('wind', 'distance');
+    const distanceM = session.notebook.distanceM!;
+    const crosswind = stepChipValue(session, 'crosswind');
+    session.typeTape('wind', 0, crosswind * distanceM);
+    session.typeTape('wind', 1, (crosswind * distanceM) / divisor);
+    session.typeTape('wind', 2, Math.round(((crosswind * distanceM) / divisor) * 10) / 10);
+    session.setSign('wind', -1);
+    session.recordStep('wind');
+  }
+
+  function solveDope(session: PositionSession): void {
+    session.placeChip('dope', 'distance');
+    session.typeTape('dope', 0, dopeRowAt(session.notebook.context.card, session.notebook.distanceM!).elevationMil);
+    session.setSign('dope', 1);
+    session.recordStep('dope');
+  }
+
+  function windConstant(session: PositionSession): number {
+    return dopeRowAt(session.notebook.context.card, session.notebook.distanceM!).windConstant;
+  }
+
+  it('06: a recorded wind step goes into the total; an exact step is checked as exact with the shot', async () => {
+    const session = await start('06');
+    solveDope(session);
+    solveWind(session, windConstant(session));
+    const expectedClicks = Math.round(((stepChipValue(session, 'crosswind') * session.notebook.distanceM!) / windConstant(session)) * 10);
+    expect(session.total.windageLeft.targetClicks).toBe(expectedClicks);
+    dialToTarget(session);
+    const shot = (await shoot(session, ON_TARGET))!;
+    expect(shot.record.check?.rowVerdicts.wind).toBe('exact');
+    expect(shot.record.check?.rowVerdicts.dope).toBe('exact');
+  });
+
+  it('06: a wrong divisor is a wind error; the easy hint names the type, not the number', async () => {
+    const session = await start('06');
+    solveDope(session);
+    solveWind(session, windConstant(session) / 2);
+    expect(session.softHint('wind')).toBe('arithmetic');
+    dialToTarget(session);
+    expect((await shoot(session, ON_TARGET))!.record.check?.rowVerdicts.wind).toBe('error');
+  });
+
+  it('a step cannot be recorded with an empty slot', async () => {
+    const session = await start('06');
+    session.typeTape('dope', 0, 2.8);
+    session.setSign('dope', 1);
+    expect(() => session.recordStep('dope')).toThrow(RangeError);
+  });
+
+  it('10: opening the reference costs 30 points in the result', async () => {
+    const plain = await start('10');
+    const peeked = await start('10');
+    peeked.openReference();
+    for (const session of [plain, peeked]) {
+      solveDope(session);
+      dialToTarget(session);
+      for (let shot = 0; shot < 6 && !session.isFinished; shot++) {
+        await shoot(session, ON_TARGET);
+        session.scope.bolt.cycle();
+        if (session.isMagazineChangeDue) {
+          session.changeMagazine();
+          session.scope.bolt.cycle();
+        }
+      }
+    }
+    expect(plain.result()!.total - peeked.result()!.total).toBe(30);
+  });
+
+  it('08: after the first cartridge the DOPE and wind steps are stale and the entered total is gone', async () => {
+    const session = await start('08');
+    solveDope(session);
+    solveWind(session, windConstant(session));
+    session.enterOnTurrets();
+    await shoot(session, FAR_OFF);
+    session.scope.bolt.cycle();
+    await shoot(session, FAR_OFF);
+    expect(session.firingLine.stageIndex).toBe(1);
+    expect(session.staleness().dope).toBe('cartridge');
+    expect(session.staleness().wind).toBe('cartridge');
+    expect(session.enteredTotal).toBeNull();
+  });
+});
+
+function stepChipValue(session: PositionSession, kind: 'crosswind' | 'distance'): number {
+  return session.stepSheet('wind').chips.find(chip => chip.kind === kind)!.value;
 }

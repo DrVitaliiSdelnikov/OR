@@ -120,6 +120,8 @@ flowchart LR
 
 Блокнот (A5.1): ![ИТОГ](screens/21-notebook-total.png) ![УСЛОВИЯ](screens/22-notebook-conditions.png) ![ВЕТЕР](screens/23-notebook-wind.png) ![ДОПЕ](screens/24-notebook-dope.png) ![ИТОГ, ветер раскрыт](screens/25-notebook-total-filled.png) ![После «ВНЕСТИ»](screens/26-position-entered.png) ![ДИСТАНЦИЯ, упр. 05](screens/27-notebook-distance.png)
 
+Расчёт САМ (A5.2): ![Хаб САМ](screens/28-manual-hub.png) ![Доли на циферблате](screens/29-wind-easy-shares.png) ![Лист ветра, чипы](screens/30-calc-wind-chips.png) ![Лист ветра, клавиатура](screens/31-calc-wind-keypad.png) ![Сложный](screens/32-calc-hard.png) ![Справочник −30](screens/33-formulas-confirm.png) ![Справочник](screens/34-formulas.png)
+
 По брифу 08 на токенах A1. Ниже — описание старого хаба, оставлено как история.
 
 Сверху вниз:

@@ -34,8 +34,8 @@ export interface Playability {
 
 type PositionFeature = 'intro' | 'pressure-trigger' | 'notebook-input' | 'manual-calc' | 'zone-flags' | 'moving-targets';
 
-// Что из позиции уже сделано; список растёт с A5.2 (САМ), A7 (вводное), A9 (сцена) и уходит, когда играбельно всё.
-const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['pressure-trigger', 'notebook-input']);
+// Что из позиции уже сделано; список растёт с A7 (вводное), A9 (сцена) и уходит, когда играбельно всё.
+const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['pressure-trigger', 'notebook-input', 'manual-calc']);
 const FEATURE_NAMES: Record<PositionFeature, string> = {
   intro: 'вводное',
   'pressure-trigger': 'спуск с давлением',

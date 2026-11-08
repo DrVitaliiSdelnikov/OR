@@ -71,3 +71,4 @@
 | app · позиция, часть 1: каркас и упр. 01–02 (A3.1) | [specs/app-position.md](specs/app-position.md) | реализовано, слито в `master` 8.11 |
 | app · позиция, часть 2: спуск, затвор, дыхание (A3.2) | [specs/app-position-trigger.md](specs/app-position-trigger.md) | реализовано, слито в `master` 8.11 |
 | app · шторка блокнота и вкладки, АВТО (A5.1) | [specs/app-notebook-sheet.md](specs/app-notebook-sheet.md) | реализовано, слито в `master` 8.11 |
+| app · лист расчёта САМ (A5.2) | [specs/app-calc-sheet.md](specs/app-calc-sheet.md) | реализовано, слито в `master` 9.11 |

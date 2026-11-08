@@ -1,9 +1,13 @@
 import { Component, computed, ElementRef, input, model, output, signal, viewChild } from '@angular/core';
-import { factorContributions, NotebookFactor, tabs } from '../../sim/notebook';
+import { factorContributions, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
 import { PositionSession } from '../position/position-session';
+import { CalcSheetComponent } from './calc-sheet.component';
+import { hubRows, hubSteps, modeBadge, STEP_FORMULAS, STEP_TITLES } from './calc-sheet.model';
 import { ConditionsTabComponent, StationView } from './conditions-tab.component';
 import { DistanceTabComponent } from './distance-tab.component';
 import { DopeTabComponent } from './dope-tab.component';
+import { FormulaLine, FormulasSheetComponent } from './formulas-sheet.component';
+import { ManualHubComponent } from './manual-hub.component';
 import {
   CARTRIDGE_LETTERS,
   clockText,
@@ -28,9 +32,12 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
 
 @Component({
   selector: 'or-notebook-sheet',
-  imports: [TotalTabComponent, DistanceTabComponent, ConditionsTabComponent, WindTabComponent, DopeTabComponent],
+  imports: [TotalTabComponent, ManualHubComponent, DistanceTabComponent, ConditionsTabComponent, WindTabComponent, DopeTabComponent, CalcSheetComponent, FormulasSheetComponent],
   template: `
     @let state = view();
+    @if (calcStep(); as step) {
+      <or-calc-sheet [session]="session()" [revision]="revision()" [step]="step" (back)="closeStep()" (changed)="changed.emit()" (formulas)="openFormulas()" />
+    } @else {
     <section class="sheet" [style.transform]="'translateY(' + dragOffsetPt() + 'px)'" role="dialog" aria-label="Блокнот" data-test="notebook-sheet">
       <header class="frame" (pointerdown)="dragStart($event)" (pointermove)="dragMove($event)" (pointerup)="dragEnd()" (pointercancel)="dragEnd()">
         <button class="handle" type="button" (click)="close.emit()" aria-label="Закрыть блокнот" data-test="sheet-handle"><span class="grip"></span></button>
@@ -58,16 +65,20 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
         }
         @switch (tab()) {
           @case ('total') {
-            <or-total-tab [rows]="state.factorRows" (toggle)="toggleFactor($event)" />
+            @if (state.isManual) {
+              <or-manual-hub [rows]="state.hubRows" [badge]="state.badge" [formulasLabel]="state.formulasLabel" (openStep)="openStep($event)" (formulas)="openFormulas()" />
+            } @else {
+              <or-total-tab [rows]="state.factorRows" (toggle)="toggleFactor($event)" />
+            }
           }
           @case ('distance') {
-            <or-distance-tab [knownText]="state.knownDistance" [gongMil]="state.gongMil" [resultText]="state.millingResult" (measure)="measureRange($event)" />
+            <or-distance-tab [knownText]="state.knownDistance" [gongMil]="state.gongMil" [resultText]="state.millingResult" [isManual]="state.isManual" (measure)="measureRange($event)" />
           }
           @case ('conditions') {
-            <or-conditions-tab [reading]="state.station" [correctionText]="state.conditionsCorrection" (measure)="measure.emit($event)" />
+            <or-conditions-tab [reading]="state.station" [correctionText]="state.conditionsCorrection" [stepLinkText]="state.isManual ? 'к расчёту: шаг Атмосфера →' : null" (measure)="measure.emit($event)" (toStep)="openStep('atmosphere')" />
           }
           @case ('wind') {
-            <or-wind-tab [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" (windChange)="enterWind($event)" />
+            <or-wind-tab [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? 'к расчёту: шаг Ветер →' : null" [showShares]="state.isEasy" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
           }
           @case ('dope') {
             <or-dope-tab [heading]="state.dopeHeading" [rows]="state.dopeRows" />
@@ -87,6 +98,10 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
         <button class="enter" type="button" [disabled]="state.isTotalEmpty" (click)="enter.emit()" data-test="enter-turrets">Внести на барабаны</button>
       </footer>
     </section>
+    }
+    @if (isFormulasOpen()) {
+      <or-formulas-sheet [lines]="state.formulaLines" [needsConfirm]="state.needsReferenceConfirm" (confirm)="confirmReference()" (close)="isFormulasOpen.set(false)" />
+    }
   `,
   styles: `
     :host { display: block; }
@@ -118,6 +133,7 @@ export class NotebookSheetComponent {
   readonly changed = output<void>();
   readonly enter = output<void>();
   readonly close = output<void>();
+  readonly expandedChange = output<boolean>();
 
   private readonly paper = viewChild<ElementRef<HTMLElement>>('paper');
 
@@ -125,6 +141,8 @@ export class NotebookSheetComponent {
   protected readonly lockedTabs = LOCKED_TABS;
   protected readonly lockedNotice = signal(false);
   protected readonly dragOffsetPt = signal(0);
+  protected readonly calcStep = signal<NotebookStepId | null>(null);
+  protected readonly isFormulasOpen = signal(false);
   protected readonly view = computed(() => {
     this.revision();
     const session = this.session();
@@ -153,7 +171,17 @@ export class NotebookSheetComponent {
       detail: factorDetail(notebook, factor),
     }));
     const reticleMil = notebook.readings.reticleMil;
+    const isManual = notebook.mode !== 'auto';
+    const formulaLines: FormulaLine[] = hubSteps(notebook).map(step => ({ title: STEP_TITLES[step], formula: STEP_FORMULAS[step] }));
     return {
+      isManual,
+      isEasy: notebook.mode === 'manual-easy',
+      hasZones: notebook.context.hasZones,
+      hubRows: isManual ? hubRows(notebook) : [],
+      badge: modeBadge(notebook.mode),
+      formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? 'Формулы −30' : 'Формулы',
+      formulaLines,
+      needsReferenceConfirm: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference,
       filled: { total: filled.total, distance: filled.distance, conditions: filled.conditions, wind: filled.wind, dope: filled.dope } as Record<NotebookTab, boolean>,
       factorRows,
       knownDistance: notebook.context.target.distanceM === null ? null : `Дистанция ${notebook.context.target.distanceM} м · задана упражнением`,
@@ -196,6 +224,29 @@ export class NotebookSheetComponent {
 
   protected measureRange(sizeMil: number): void {
     this.session().measureRange(sizeMil);
+    this.changed.emit();
+    if (this.session().notebook.mode !== 'auto') {
+      this.openStep('distance');
+    }
+  }
+
+  protected openStep(step: NotebookStepId): void {
+    this.calcStep.set(step);
+    this.expandedChange.emit(true);
+  }
+
+  protected closeStep(): void {
+    this.calcStep.set(null);
+    this.tab.set('total');
+    this.expandedChange.emit(false);
+  }
+
+  protected openFormulas(): void {
+    this.isFormulasOpen.set(true);
+  }
+
+  protected confirmReference(): void {
+    this.session().openReference();
     this.changed.emit();
   }
 

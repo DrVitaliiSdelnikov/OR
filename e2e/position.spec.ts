@@ -140,11 +140,11 @@ test.describe('позиция: упражнения 01–02', () => {
     await expect(page.getByTestId('sheet-title')).toBeVisible();
   });
 
-  test('06 пока закрыто: «НА ПОЗИЦИЮ» неактивна с причиной', async ({ page }) => {
-    await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3 } }, shots: [], settings: QUIET_SETTINGS });
-    await page.goto('/course/06');
+  test('09 пока закрыто: «НА ПОЗИЦИЮ» неактивна с причиной', async ({ page }) => {
+    await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3, '06': 3, '07': 3, '08': 3 } }, shots: [], settings: QUIET_SETTINGS });
+    await page.goto('/course/09');
     await expect(page.getByTestId('to-position')).toBeDisabled();
-    await expect(page.getByTestId('to-position-reason')).toHaveText('откроется позже: расчёт САМ');
+    await expect(page.getByTestId('to-position-reason')).toHaveText('откроется позже: флажки по трассе');
   });
 
   test('кольцо кратности и касание не меньше 44', async ({ page }) => {

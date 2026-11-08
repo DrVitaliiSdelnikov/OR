@@ -15,7 +15,7 @@ async function seed(page: Page): Promise<void> {
     [
       PROGRESS_KEY,
       JSON.stringify({
-        course: { isIntroCompleted: true, bestClasses: { '01': 1, '02': 2, '03': 3, '04': 0 } },
+        course: { isIntroCompleted: true, bestClasses: { '01': 1, '02': 2, '03': 3, '04': 2, '05': 2, '06': 2, '07': 2, '08': 2, '09': 2 } },
         shots: [],
         settings: { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: false, isMarkerDriftOff: true, isEverythingUnlocked: false },
       }),
@@ -80,6 +80,40 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
   await page.mouse.click(gong.x + gong.width / 2, gong.y + gong.height);
   await byTest('milling-count').click();
   await snap(page, `27-notebook-distance${suffix}`);
+
+  await page.goto(`${BASE_URL}/position/06`);
+  await byTest('fire').waitFor();
+  await byTest('tile-notebook').click();
+  await snap(page, `28-manual-hub${suffix}`);
+  await byTest('tab-wind').click();
+  const windDial = (await byTest('wind-clock').boundingBox())!;
+  await page.mouse.click(windDial.x + windDial.width * 0.23, windDial.y + windDial.height * 0.52);
+  for (let step = 0; step < 32; step++) {
+    await byTest('speed-plus').click();
+  }
+  await snap(page, `29-wind-easy-shares${suffix}`);
+  await byTest('wind-step-link').click();
+  await byTest('slot-0').click();
+  await snap(page, `30-calc-wind-chips${suffix}`);
+  await byTest('chip-crosswind').click();
+  await byTest('chip-distance').click();
+  await byTest('tape-0').click();
+  for (const key of '1440') {
+    await byTest(`key-${key}`).click();
+  }
+  await byTest('side--1').click();
+  await snap(page, `31-calc-wind-keypad${suffix}`);
+
+  await page.goto(`${BASE_URL}/position/10`);
+  await byTest('fire').waitFor();
+  await byTest('tile-notebook').click();
+  await byTest('step-dope').click();
+  await byTest('slot-0').click();
+  await snap(page, `32-calc-hard${suffix}`);
+  await byTest('calc-formulas').click();
+  await snap(page, `33-formulas-confirm${suffix}`);
+  await byTest('formulas-open').click();
+  await snap(page, `34-formulas${suffix}`);
 
   if (isFull) {
     await page.goto(`${BASE_URL}/journal`);

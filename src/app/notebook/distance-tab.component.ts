@@ -33,8 +33,8 @@ const HASH_STEP_MIL = 0.5;
         <div class="side mono">
           <div class="formula">Д = размер × 1000 / MIL</div>
           <div data-test="milling-size">{{ sizeText() }}</div>
-          <button class="count" type="button" [disabled]="sizeMil() === null" (click)="count()" data-test="milling-count">Посчитать</button>
-          @if (resultText(); as result) {
+          <button class="count" type="button" [disabled]="sizeMil() === null" (click)="count()" data-test="milling-count">{{ isManual() ? 'К расчёту: шаг Дистанция →' : 'Посчитать' }}</button>
+          @if (!isManual() && resultText(); as result) {
             <div class="result" data-test="milling-result">{{ result }}</div>
           }
         </div>
@@ -60,6 +60,7 @@ export class DistanceTabComponent {
   readonly knownText = input<string | null>(null);
   readonly gongMil = input(0);
   readonly resultText = input<string | null>(null);
+  readonly isManual = input(false);
   readonly measure = output<number>();
 
   protected readonly gridWidth = GRID_WIDTH_PT;

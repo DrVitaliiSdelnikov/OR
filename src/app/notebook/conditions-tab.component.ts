@@ -66,7 +66,11 @@ const RING_RADIUS = 30;
         <div class="hint mono">Держи «Замер» 3 с</div>
       }
       <div class="reference mono">Эталон ДОПЕ: +15 C · 1013 гПа</div>
-      <div class="correction mono" data-test="conditions-correction">{{ correctionText() }}</div>
+      @if (stepLinkText(); as link) {
+        <button class="step-link mono" type="button" (click)="toStep.emit()" data-test="conditions-step-link">{{ link }}</button>
+      } @else {
+        <div class="correction mono" data-test="conditions-correction">{{ correctionText() }}</div>
+      }
     </div>
   `,
   styles: `
@@ -87,13 +91,16 @@ const RING_RADIUS = 30;
     .readings, .hint, .reference { font: 500 var(--type-label) / 18px var(--font-mono); color: var(--paper-ink); }
     .short { color: var(--paper-red-pencil); }
     .correction { font: 700 var(--type-body) / 20px var(--font-mono); color: var(--paper-ink); }
+    .step-link { min-height: var(--touch-min); border: 1.5px solid var(--paper-graphite); border-radius: var(--radius-device); background: transparent; color: var(--paper-ink); font: 700 var(--type-label) / 16px var(--font-mono); text-align: left; padding: 0 var(--space-3); }
     @keyframes spin { to { transform: rotate(360deg); } }
   `,
 })
 export class ConditionsTabComponent {
   readonly reading = input<StationView | null>(null);
   readonly correctionText = input.required<string>();
+  readonly stepLinkText = input<string | null>(null);
   readonly measure = output<number>();
+  readonly toStep = output<void>();
 
   protected readonly ringRadius = RING_RADIUS;
   protected readonly isMeasuring = signal(false);

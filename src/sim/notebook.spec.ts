@@ -32,6 +32,7 @@ import {
   removeChip,
   setUnits,
   openReference,
+  stepHasSide,
 } from './notebook';
 import { scopeById } from './scope-model';
 
@@ -307,6 +308,41 @@ describe('stale steps', () => {
     expect(next.distanceM).toBeNull();
     expect(tabs(next).distance).toBe(false);
     expect(changeContext(milled, { card: milled.context.card }).readings.reticleMil).toBe(1.7);
+  });
+});
+
+describe('tape and side (A5.2)', () => {
+  function windReady(): Notebook {
+    let notebook = enterWind(createNotebook(context(), 'manual-easy'), 3.2, 9);
+    notebook = placeChip(notebook, 'wind', 'crosswind');
+    notebook = placeChip(notebook, 'wind', 'distance');
+    return typeTape(typeTape(typeTape(notebook, 'wind', 0, 960), 'wind', 1, 0.6), 'wind', 2, 0.6);
+  }
+
+  it('a cleared tape cell is empty and unrecords the step', () => {
+    const recorded = recordStep(setSign(windReady(), 'wind', -1), 'wind');
+    const cleared = typeTape(recorded, 'wind', 2, null);
+    expect(cleared.steps.wind.tape[2]).toBeNull();
+    expect(cleared.steps.wind.isRecorded).toBe(false);
+    expect(() => recordStep(cleared, 'wind')).toThrow(RangeError);
+  });
+
+  it('a new step has no side; a step with a side cannot be recorded without one', () => {
+    expect(windReady().steps.wind.sign).toBeNull();
+    expect(() => recordStep(windReady(), 'wind')).toThrow(RangeError);
+    expect(total(recordStep(setSign(windReady(), 'wind', -1), 'wind')).rightMil).toBeCloseTo(-0.6, 9);
+  });
+
+  it('a zero answer needs no side; the distance step has none', () => {
+    const calm = typeTape(windReady(), 'wind', 2, 0);
+    expect(recordStep(calm, 'wind').steps.wind.isRecorded).toBe(true);
+    expect(stepHasSide('distance')).toBe(false);
+    expect(stepHasSide('wind')).toBe(true);
+    expect(stepHasSide('dope')).toBe(true);
+    const unknown = measureRange(createNotebook(context({ target: { sizeM: 0.5, distanceM: null } }), 'manual-easy'), 1.7);
+    let milled = placeChip(placeChip(unknown, 'distance', 'target-size'), 'distance', 'reticle-mil');
+    milled = recordStep(typeTape(milled, 'distance', 0, 294), 'distance');
+    expect(milled.distanceM).toBe(294);
   });
 });
 

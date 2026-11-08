@@ -1,7 +1,7 @@
 import { cartridgeById } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
-import { checkManualSteps, checkPreparation } from '../../core/calc-check';
+import { CheckErrorType, checkManualSteps, checkPreparation } from '../../core/calc-check';
 import { mulberry32 } from '../../core/rng';
 import { clockFromDeg, createScenario, gaugeWindAt, Scenario, windAt } from '../../core/scenario';
 import { resolveShot, ShotResult } from '../../core/shot';
@@ -13,16 +13,30 @@ import { Vector2 } from '../../sim/noise';
 import {
   changeContext,
   checkInputs,
+  ChipKind,
   createNotebook,
   enterWind,
   measureRange,
   Notebook,
   NotebookContext,
   NotebookFactor,
+  NotebookStepId,
   NotebookTotal,
+  openReference,
+  placeChip,
   recordStation,
+  recordStep,
+  removeChip,
+  setSign,
+  setUnits,
+  softHint,
+  StaleReason,
+  staleness,
+  stepSheet,
+  StepSheet,
   toggleFactor,
   total,
+  typeTape,
 } from '../../sim/notebook';
 import { scopeById, TurretMove } from '../../sim/scope-model';
 import { ScopeSession } from '../../sim/scope-session';
@@ -134,6 +148,46 @@ export class PositionSession {
 
   toggleFactor(factor: NotebookFactor): void {
     this.currentNotebook = toggleFactor(this.currentNotebook, factor);
+  }
+
+  stepSheet(step: NotebookStepId): StepSheet {
+    return stepSheet(this.currentNotebook, step);
+  }
+
+  placeChip(step: NotebookStepId, chipKind: ChipKind, slotIndex?: number): void {
+    this.currentNotebook = placeChip(this.currentNotebook, step, chipKind, slotIndex);
+  }
+
+  removeChip(step: NotebookStepId, slotIndex: number): void {
+    this.currentNotebook = removeChip(this.currentNotebook, step, slotIndex);
+  }
+
+  typeTape(step: NotebookStepId, index: number, value: number | null): void {
+    this.currentNotebook = typeTape(this.currentNotebook, step, index, value);
+  }
+
+  setSign(step: NotebookStepId, sign: 1 | -1): void {
+    this.currentNotebook = setSign(this.currentNotebook, step, sign);
+  }
+
+  setUnits(step: NotebookStepId, units: 'mil' | 'moa'): void {
+    this.currentNotebook = setUnits(this.currentNotebook, step, units);
+  }
+
+  recordStep(step: NotebookStepId): void {
+    this.currentNotebook = recordStep(this.currentNotebook, step);
+  }
+
+  softHint(step: NotebookStepId): CheckErrorType | null {
+    return softHint(this.currentNotebook, step);
+  }
+
+  staleness(): Record<NotebookStepId, StaleReason | null> {
+    return staleness(this.currentNotebook);
+  }
+
+  openReference(): void {
+    this.currentNotebook = openReference(this.currentNotebook);
   }
 
   get records(): readonly ExerciseShotRecord[] {

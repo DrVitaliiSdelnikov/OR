@@ -14,11 +14,15 @@ export interface WindInput {
     <div class="wind">
       <div class="caption mono" data-test="wind-caption">{{ caption() }}</div>
       <div class="instruments">
-        <or-wind-clock [clock]="wind()?.clock ?? null" (clockChange)="windChange.emit({ speedMps: wind()?.speedMps ?? 0, clock: $event })" />
+        <or-wind-clock [clock]="wind()?.clock ?? null" [showShares]="showShares()" (clockChange)="windChange.emit({ speedMps: wind()?.speedMps ?? 0, clock: $event })" />
         <or-speed-wheel [speed]="wind()?.speedMps ?? null" (speedChange)="windChange.emit({ speedMps: $event, clock: wind()?.clock ?? 12 })" />
       </div>
       <div class="station mono" data-test="wind-station">{{ stationText() }}</div>
-      <div class="correction mono" data-test="wind-correction">{{ correctionText() }}</div>
+      @if (stepLinkText(); as link) {
+        <button class="step-link mono" type="button" (click)="toStep.emit()" data-test="wind-step-link">{{ link }}</button>
+      } @else {
+        <div class="correction mono" data-test="wind-correction">{{ correctionText() }}</div>
+      }
     </div>
   `,
   styles: `
@@ -28,6 +32,7 @@ export interface WindInput {
     .caption { text-align: center; font: 500 var(--type-label) / 16px var(--font-mono); color: var(--paper-ink); }
     .station { font: 500 var(--type-label) / 16px var(--font-mono); color: var(--paper-graphite); }
     .correction { font: 700 var(--type-body) / 20px var(--font-mono); color: var(--paper-ink); }
+    .step-link { min-height: var(--touch-min); border: 1.5px solid var(--paper-graphite); border-radius: var(--radius-device); background: transparent; color: var(--paper-ink); font: 700 var(--type-label) / 16px var(--font-mono); text-align: left; padding: 0 var(--space-3); }
   `,
 })
 export class WindTabComponent {
@@ -35,5 +40,8 @@ export class WindTabComponent {
   readonly caption = input.required<string>();
   readonly stationText = input.required<string>();
   readonly correctionText = input.required<string>();
+  readonly stepLinkText = input<string | null>(null);
+  readonly showShares = input(false);
   readonly windChange = output<WindInput>();
+  readonly toStep = output<void>();
 }
