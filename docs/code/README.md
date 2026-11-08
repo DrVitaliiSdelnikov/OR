@@ -68,3 +68,4 @@
 | sim/scope-model — каталог прицелов (S11) | [specs/sim-scope-catalog.md](specs/sim-scope-catalog.md) | реализовано, слито в `master` 7.11 |
 | app · токены и одна тема (A1) | [specs/app-tokens.md](specs/app-tokens.md) | реализовано, слито в `master` 7.11 |
 | app · главный экран и курс-тропа (A2) | [specs/app-main-course.md](specs/app-main-course.md) | реализовано, слито в `master` 7.11 |
+| app · позиция, часть 1: каркас и упр. 01–02 (A3.1) | [specs/app-position.md](specs/app-position.md) | реализовано, слито в `master` 8.11 |

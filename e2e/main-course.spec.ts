@@ -51,7 +51,7 @@ test.describe('главный экран и курс-тропа', () => {
     await expect(page.getByTestId('sheet-title')).toHaveText('01 · Первые щелчки');
     await expect(page.getByTestId('sheet-targets')).toHaveText('3 × гонг 0,5 м · 300 м');
     await expect(page.getByTestId('sheet-wind')).toHaveText('штиль');
-    await expect(page.getByTestId('to-position')).toBeDisabled();
+    await expect(page.getByTestId('to-position')).toBeEnabled();
     await page.getByTestId('sheet-back').click();
     await expect(page.locator('[data-test^="node-"]')).toHaveCount(13);
   });

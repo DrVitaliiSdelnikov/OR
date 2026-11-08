@@ -76,6 +76,12 @@ describe('COURSE catalog', () => {
     }
   });
 
+  it('01 and 02 fire with a tap, from 03 the trigger needs pressure', () => {
+    expect(COURSE.filter(def => def.trigger === 'tap').map(def => def.id)).toEqual(['00', '01', '02']);
+    expect(exercise('03').trigger).toBe('pressure');
+    expect(exercise('12').trigger).toBe('pressure');
+  });
+
   it('the notebook mode follows the course: AUTO to 05, SAM easy from 06, SAM hard in 10', () => {
     expect(['01', '02', '03', '04', '05'].map(id => exercise(id as ExerciseId).notebookMode)).toEqual(['auto', 'auto', 'auto', 'auto', 'auto']);
     expect(exercise('06').notebookMode).toBe('manual-easy');

@@ -1,0 +1,135 @@
+@let state = view();
+<ion-content>
+  <div class="position">
+    <header class="header">
+      <button class="back" type="button" (click)="back()" aria-label="Назад" data-test="position-back">←</button>
+      <div class="titles">
+        <div class="title" data-test="position-title">{{ state?.title ?? def()?.title ?? '' }}</div>
+        <div class="subtitle mono" data-test="position-subtitle">{{ state?.subtitle ?? '' }}</div>
+      </div>
+      <div class="wind-tile mono" data-test="wind-tile">{{ state?.wind ?? '—' }}</div>
+    </header>
+
+    @if (isUnplayable()) {
+      <div class="notice" data-test="position-unavailable">Упражнение пока недоступно</div>
+    }
+
+    @if (state) {
+      <div class="cells mono" data-test="correction-cells">
+        @for (cell of state.cells; track cell.label) {
+          <div class="cell" [class.on-target]="cell.isOnTarget" [attr.data-test]="'cell-' + cell.label">
+            <span class="cell-label">{{ cell.label }}</span>
+            <span class="cell-value">{{ cell.value }}</span>
+            @if (cell.target) {
+              <span class="cell-target" [attr.data-test]="'cell-target-' + cell.label">→ {{ cell.target }}</span>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <div class="body">
+      @if (state) {
+        <or-turret-drum
+          class="top-drum"
+          axis="elevation"
+          [clicks]="state.elevation.clicks"
+          [targetClicks]="state.elevation.target"
+          [minClicks]="state.elevation.min"
+          [valueText]="state.elevation.text"
+          [counter]="state.elevation.counter"
+          (turn)="turn('elevation', $event)"
+        />
+      }
+      <div class="glass-row">
+        <div class="glass-ring">
+          <canvas
+            #glass
+            class="glass"
+            (pointerdown)="glassDown($event)"
+            (pointermove)="glassMove($event)"
+            (pointerup)="glassUp($event)"
+            (pointercancel)="glassUp($event)"
+            data-test="glass"
+          ></canvas>
+          @if (stopBadge(); as badge) {
+            <span class="stop-badge" data-test="stop-badge">{{ badge }}</span>
+          }
+          @if (shotLine(); as line) {
+            <span class="shot-line mono" data-test="shot-line">{{ line }}</span>
+          }
+        </div>
+        @if (state) {
+          <or-turret-drum
+            class="side-drum"
+            axis="windage"
+            [clicks]="state.windage.clicks"
+            [targetClicks]="state.windage.target"
+            [minClicks]="state.windage.min"
+            [valueText]="state.windage.text"
+            [counter]="state.windage.counter"
+            (turn)="turn('windage', $event)"
+          />
+        }
+      </div>
+      @if (state) {
+        <div class="ring" (pointerdown)="ringDown($event)" (pointermove)="ringMove($event)" (pointerup)="ringUp()" (pointercancel)="ringUp()" data-test="zoom-ring">
+          <button class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(-1)" aria-label="Уменьшить кратность" data-test="zoom-out">−</button>
+          <span class="ring-value mono" data-test="magnification">{{ state.magnification }}×</span>
+          <button class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(1)" aria-label="Увеличить кратность" data-test="zoom-in">+</button>
+        </div>
+      }
+    </div>
+
+    @if (state) {
+      <div class="tiles">
+        <div class="tile mono" data-test="tile-dope">{{ state.dope }}</div>
+        <button class="tile" type="button" disabled data-test="tile-notebook">Блокнот · следующий этап</button>
+      </div>
+
+      <div class="fire-row">
+        <button
+          class="hold"
+          type="button"
+          [class.holding]="state.breathState === 'holding'"
+          [class.cooldown]="state.breathState === 'cooldown'"
+          (pointerdown)="breathDown()"
+          (pointerup)="breathUp()"
+          (pointerleave)="breathUp()"
+          data-test="hold"
+        >
+          {{ state.breathState === 'holding' ? 'Держу' : state.breathState === 'cooldown' ? 'Выдох' : 'Держать' }}
+        </button>
+        <div class="fire-wrap">
+          @if (state.isMagazineChangeDue) {
+            <button class="change-magazine" type="button" (click)="changeMagazine()" data-test="change-magazine">Сменить магазин</button>
+          } @else {
+            <button class="fire" type="button" (click)="fire()" [disabled]="end() !== null" data-test="fire">Огонь</button>
+          }
+          <span class="rounds mono" data-test="rounds">{{ state.rounds }}</span>
+        </div>
+      </div>
+    }
+
+    @if (end(); as card) {
+      <div class="end-card" data-test="end-card">
+        <div class="end-heading" [class.admitted]="card.isAdmitted" data-test="end-heading">{{ card.heading }}</div>
+        <div class="end-numbers mono">{{ card.points }} · {{ card.share }}</div>
+        <div class="end-actions">
+          <button class="end-main" type="button" (click)="toTrail()" data-test="end-trail">К тропе</button>
+          <button class="end-secondary" type="button" (click)="retry()" data-test="end-retry">Ещё раз</button>
+        </div>
+      </div>
+    }
+
+    @if (isLeaveConfirmOpen()) {
+      <div class="confirm" data-test="leave-confirm">
+        <div class="confirm-text">Покинуть позицию? Упражнение не засчитается</div>
+        <div class="end-actions">
+          <button class="end-main" type="button" (click)="stay()" data-test="leave-stay">Остаться</button>
+          <button class="end-secondary" type="button" (click)="leave()" data-test="leave-confirm-yes">Покинуть</button>
+        </div>
+      </div>
+    }
+  </div>
+</ion-content>

@@ -84,6 +84,12 @@ export class BoltAction {
     return ['magazine'];
   }
 
+  cycle(): BoltEvent[] {
+    const events: BoltEvent[] = ['unlock', ...this.eject(), ...this.feed(), 'lock'];
+    this.isLocked = true;
+    return events;
+  }
+
   drag(deltaXPt: number, deltaYPt: number, nowS: number): BoltCycleResult {
     const step = this.currentStep;
     const direction = BOLT_STEP_DIRECTION[step];

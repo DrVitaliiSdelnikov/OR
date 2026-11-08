@@ -48,6 +48,7 @@ export interface ExerciseDef {
   hasColdBore: boolean;
   hasKnockedSight: boolean;
   hasPatrol: boolean;
+  trigger: 'tap' | 'pressure';
   notebookMode: NotebookMode | null;
   scopeId: ScopeId;
   conditions: ScenarioOptions;
@@ -127,6 +128,7 @@ export interface CourseProgress {
 }
 
 const MIL_DOT_FROM_EXERCISE = 6;
+const LAST_TAP_TRIGGER_EXERCISE = 2;
 const TWO_SHOTS: ExerciseStage = { cartridgeId: 'B', maxShotsPerTarget: 2, closesOnHit: true };
 const CALM: ScenarioOptions = { windScale: 0, isWindUniform: true };
 const LIGHT_WIND: ScenarioOptions = { isWindUniform: true, windSpeedRangeMps: [2, 2.5] };
@@ -337,6 +339,7 @@ function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | n
     hasColdBore: true,
     hasKnockedSight: false,
     hasPatrol: false,
+    trigger: Number(id) <= LAST_TAP_TRIGGER_EXERCISE ? 'tap' : 'pressure',
     notebookMode: 'auto',
     scopeId: Number(id) >= MIL_DOT_FROM_EXERCISE ? 'course-dot' : 'course-tree',
     conditions: {},

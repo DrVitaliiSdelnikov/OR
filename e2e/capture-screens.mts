@@ -41,6 +41,10 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
   await byTest('node-02').click();
   await snap(page, `18-exercise-sheet${suffix}`);
 
+  await page.goto(`${BASE_URL}/position/01`);
+  await byTest('fire').waitFor();
+  await snap(page, `19-position${suffix}`);
+
   await page.goto(`${BASE_URL}/`);
   await byTest('tile-free').click();
   await page.waitForURL('**/weather');

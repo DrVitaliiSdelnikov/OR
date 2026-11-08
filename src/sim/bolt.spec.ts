@@ -68,6 +68,33 @@ describe('BoltAction', () => {
     expect(bolt.rounds).toBe(1);
   });
 
+  it('an automatic cycle ejects the case, chambers the next round and locks', () => {
+    const bolt = new BoltAction(2, 'live');
+    bolt.fire();
+    expect(bolt.cycle()).toEqual(['unlock', 'eject', 'feed', 'chamber', 'lock']);
+    expect(bolt.chamberState).toBe('live');
+    expect(bolt.rounds).toBe(1);
+    expect(bolt.canFire).toBe(true);
+    expect(bolt.casingsOnGround).toEqual({ spent: 1, live: 0 });
+  });
+
+  it('an automatic cycle on an empty magazine leaves the chamber empty', () => {
+    const bolt = new BoltAction(0, 'live');
+    bolt.fire();
+    expect(bolt.cycle()).toEqual(['unlock', 'eject', 'feed-empty', 'lock']);
+    expect(bolt.chamberState).toBe('empty');
+    expect(bolt.canFire).toBe(false);
+  });
+
+  it('an automatic cycle leaves the bolt ready for a manual one', () => {
+    const bolt = new BoltAction(3, 'live');
+    bolt.fire();
+    bolt.cycle();
+    expect(bolt.currentStep).toBe('up');
+    expect(bolt.progress).toBe(0);
+    expect(bolt.locked).toBe(true);
+  });
+
   it('moving against the step rolls progress back', () => {
     const bolt = new BoltAction();
     bolt.drag(0, -40, 0);

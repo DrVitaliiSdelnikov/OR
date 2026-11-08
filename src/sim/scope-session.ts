@@ -19,7 +19,7 @@ export interface FireOutcome {
 export class ScopeSession {
   readonly heart: Heart;
   readonly sway: ScopeSway;
-  readonly bolt = new BoltAction(MAGAZINE_CAPACITY - 1, 'live');
+  readonly bolt: BoltAction;
   elevation: Turret;
   windage: Turret;
   magnification: number;
@@ -34,7 +34,9 @@ export class ScopeSession {
     restingBpm: number,
     private readonly seed: number,
     private readonly accessibility: TriggerAccessibility,
+    loadedRounds = MAGAZINE_CAPACITY,
   ) {
+    this.bolt = new BoltAction(loadedRounds - 1, 'live');
     this.random = mulberry32(seed);
     this.heart = new Heart(this.random, new TaskPulse(restingBpm));
     this.sway = new ScopeSway(this.random, this.heart);

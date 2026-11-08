@@ -1,7 +1,8 @@
-import { Component, computed, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, inject, input } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { exerciseById, ExerciseId } from '../../sim/course';
+import { playability } from '../position/position.model';
 import { exerciseSheet } from './course-trail.model';
 
 @Component({
@@ -37,8 +38,10 @@ import { exerciseSheet } from './course-trail.model';
               }
             </div>
           }
-          <button class="to-position" type="button" disabled data-test="to-position">На позицию</button>
-          <div class="note">позиция — следующий этап</div>
+          <button class="to-position" type="button" [disabled]="!availability()?.isPlayable" (click)="toPosition()" data-test="to-position">На позицию</button>
+          @if (availability()?.reason; as reason) {
+            <div class="note" data-test="to-position-reason">{{ reason }}</div>
+          }
         } @else {
           <div class="note" data-test="sheet-missing">Такого упражнения нет</div>
         }
@@ -62,6 +65,16 @@ import { exerciseSheet } from './course-trail.model';
 })
 export class ExerciseSheetPage {
   readonly exerciseId = input.required<string>();
+  private readonly router = inject(Router);
+
+  protected readonly availability = computed(() => {
+    const def = exerciseById(this.exerciseId() as ExerciseId);
+    return def ? playability(def) : null;
+  });
+
+  protected toPosition(): void {
+    void this.router.navigate(['/position', this.exerciseId()]);
+  }
 
   protected readonly sheet = computed(() => {
     const def = exerciseById(this.exerciseId() as ExerciseId);

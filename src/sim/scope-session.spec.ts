@@ -21,6 +21,12 @@ describe('ScopeSession', () => {
     expect(session.bolt.rounds).toBe(4);
   });
 
+  it('loads the rounds it is given: one chambered, the rest in the magazine', () => {
+    const session = new ScopeSession(scopeById('course-tree'), 62, 1, accessibility, 2);
+    expect(session.bolt.canFire).toBe(true);
+    expect(session.bolt.rounds).toBe(1);
+  });
+
   it('dialing elevation does not move the impact until the shooter re-aims', () => {
     const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility);
     const before = impactUp(session, 4.6);

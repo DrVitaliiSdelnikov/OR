@@ -114,7 +114,7 @@ flowchart LR
 
 ### 1. Главный экран и курс-тропа (A2, 7.11 — заменили хаб)
 
-![Главный](screens/01-main.png) ![Тропа](screens/02-course-trail.png) ![Лист упражнения](screens/18-exercise-sheet.png)
+![Главный](screens/01-main.png) ![Тропа](screens/02-course-trail.png) ![Лист упражнения](screens/18-exercise-sheet.png) ![Позиция, упр. 01 (A3.1)](screens/19-position.png)
 
 По брифу 08 на токенах A1. Ниже — описание старого хаба, оставлено как история.
 
