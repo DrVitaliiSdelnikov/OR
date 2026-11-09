@@ -1,8 +1,9 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, linkedSignal, output } from '@angular/core';
 import { MAX_WIND_SPEED_MPS, stepSpeed } from './notebook.model';
 
 const ROW_PT = 32;
 const VISIBLE_NEIGHBORS = 2;
+const KEY_STEPS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1, PageUp: 10, PageDown: -10 };
 
 @Component({
   selector: 'or-speed-wheel',
@@ -11,14 +12,16 @@ const VISIBLE_NEIGHBORS = 2;
       <div
         class="wheel mono"
         role="spinbutton"
+        tabindex="0"
         aria-label="Скорость ветра, м/с"
         aria-valuemin="0"
         [attr.aria-valuemax]="maxSpeed"
-        [attr.aria-valuenow]="speed() ?? 0"
+        [attr.aria-valuenow]="shownSpeed() ?? 0"
         (pointerdown)="down($event)"
         (pointermove)="move($event)"
         (pointerup)="up()"
         (pointercancel)="up()"
+        (keydown)="key($event)"
         data-test="speed-wheel"
       >
         @for (row of rows(); track row.offset) {
@@ -47,9 +50,11 @@ export class SpeedWheelComponent {
   readonly speed = input<number | null>(null);
   readonly speedChange = output<number>();
 
+  // Быстрые шаги подряд приходят раньше, чем родитель вернёт новое значение во вход: считаем от своего.
+  protected readonly shownSpeed = linkedSignal(() => this.speed());
   protected readonly maxSpeed = MAX_WIND_SPEED_MPS;
   protected readonly rows = computed(() => {
-    const current = this.speed();
+    const current = this.shownSpeed();
     return Array.from({ length: VISIBLE_NEIGHBORS * 2 + 1 }, (_, index) => {
       const offset = index - VISIBLE_NEIGHBORS;
       if (current === null) {
@@ -65,7 +70,18 @@ export class SpeedWheelComponent {
   private dragStepsApplied = 0;
 
   protected nudge(steps: number): void {
-    this.speedChange.emit(stepSpeed(this.speed() ?? 0, steps));
+    const next = stepSpeed(this.shownSpeed() ?? 0, steps);
+    this.shownSpeed.set(next);
+    this.speedChange.emit(next);
+  }
+
+  protected key(event: KeyboardEvent): void {
+    const steps = KEY_STEPS[event.key];
+    if (steps === undefined) {
+      return;
+    }
+    event.preventDefault();
+    this.nudge(steps);
   }
 
   protected down(event: PointerEvent): void {

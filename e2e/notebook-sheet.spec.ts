@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { seedProgress } from './helpers';
+import { seedProgress, setWindSpeed } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 const PASSED_TO_05 = { '01': 3, '02': 3, '03': 3, '04': 3 };
@@ -73,10 +73,7 @@ test.describe('шторка блокнота (A5.1)', () => {
     const stationSpeed = Number(/(\d+\.\d) м\/с/.exec(stationText)![1]);
     await pointClockAt(page, 9);
     await expect(page.getByTestId('wind-clock')).toHaveAttribute('aria-valuenow', '9');
-    for (let step = 0; step < Math.round(stationSpeed * 10); step++) {
-      await page.getByTestId('speed-plus').click();
-    }
-    await expect(page.getByTestId('speed-wheel')).toHaveAttribute('aria-valuenow', String(stationSpeed));
+    await setWindSpeed(page, stationSpeed);
     await expect(page.getByTestId('wind-caption')).toHaveText(`ветер ${stationSpeed.toFixed(1)} м/с с 9 ч`);
     await expect(page.getByTestId('sheet-total')).toContainText('← ');
     await expect(page.getByTestId('sheet-total')).toContainText('кл. влево');
@@ -101,9 +98,7 @@ test.describe('шторка блокнота (A5.1)', () => {
     await toPosition(page, '04');
     await page.getByTestId('wind-tile').click();
     await pointClockAt(page, 9);
-    for (let step = 0; step < 25; step++) {
-      await page.getByTestId('speed-plus').click();
-    }
+    await setWindSpeed(page, 2.5);
     await page.getByTestId('tab-total').click();
     await expect(page.getByTestId('sheet-total')).toContainText('кл. влево');
     await page.getByTestId('toggle-wind').click();
@@ -178,5 +173,30 @@ test.describe('шторка блокнота (A5.1)', () => {
     for (const id of ['speed-minus', 'speed-plus']) {
       expect((await page.getByTestId(id).boundingBox())!.height, id).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
     }
+  });
+
+  test('колесо скорости: «+» и «−» по 0,1; с клавиатуры стрелки по 0,1, PageUp и PageDown по 1; быстрые нажатия подряд не теряются', async ({ page }) => {
+    await toPosition(page, '04');
+    await page.getByTestId('wind-tile').click();
+    const wheel = page.getByTestId('speed-wheel');
+    await page.getByTestId('speed-plus').click();
+    await page.getByTestId('speed-plus').click();
+    await expect(wheel).toHaveAttribute('aria-valuenow', '0.2');
+    await page.getByTestId('speed-minus').click();
+    await expect(wheel).toHaveAttribute('aria-valuenow', '0.1');
+    await wheel.focus();
+    await page.keyboard.press('PageUp');
+    await page.keyboard.press('PageUp');
+    await page.keyboard.press('ArrowUp');
+    await expect(wheel).toHaveAttribute('aria-valuenow', '2.2');
+    await page.keyboard.press('PageDown');
+    await page.keyboard.press('ArrowDown');
+    await expect(wheel).toHaveAttribute('aria-valuenow', '1.1');
+    await wheel.evaluate(element => {
+      for (let press = 0; press < 3; press++) {
+        element.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      }
+    });
+    await expect(wheel).toHaveAttribute('aria-valuenow', '1.4');
   });
 });

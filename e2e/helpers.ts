@@ -27,6 +27,23 @@ export async function unlockEverything(page: Page, settings: object = {}): Promi
   });
 }
 
+const SPEED_STEPS_PER_MPS = 10;
+const SPEED_STEPS_PER_PAGE = 10;
+
+export async function setWindSpeed(page: Page, speedMps: number): Promise<void> {
+  const wheel = page.getByTestId('speed-wheel');
+  const current = Number(await wheel.getAttribute('aria-valuenow'));
+  const steps = Math.round((speedMps - current) * SPEED_STEPS_PER_MPS);
+  await wheel.focus();
+  for (let page10 = 0; page10 < Math.floor(Math.abs(steps) / SPEED_STEPS_PER_PAGE); page10++) {
+    await page.keyboard.press(steps > 0 ? 'PageUp' : 'PageDown');
+  }
+  for (let single = 0; single < Math.abs(steps) % SPEED_STEPS_PER_PAGE; single++) {
+    await page.keyboard.press(steps > 0 ? 'ArrowUp' : 'ArrowDown');
+  }
+  await expect(wheel).toHaveAttribute('aria-valuenow', String(speedMps));
+}
+
 export async function enterTotalOnTurrets(page: Page): Promise<void> {
   await page.getByTestId('tile-notebook').click();
   await page.getByTestId('enter-turrets').click();

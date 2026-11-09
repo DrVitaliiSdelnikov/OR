@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { seedProgress } from './helpers';
+import { seedProgress, setWindSpeed } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 const PASSED_TO_10 = { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3, '06': 3, '07': 3, '08': 3, '09': 3 };
@@ -34,9 +34,7 @@ async function enterWind(page: Page): Promise<void> {
   const dial = (await page.getByTestId('wind-clock').boundingBox())!;
   const scale = dial.width / 260;
   await page.mouse.click(dial.x + (130 - 70) * scale, dial.y + 140 * scale);
-  for (let step = 0; step < 32; step++) {
-    await page.getByTestId('speed-plus').click();
-  }
+  await setWindSpeed(page, 3.2);
 }
 
 test.describe('лист расчёта САМ (A5.2)', () => {

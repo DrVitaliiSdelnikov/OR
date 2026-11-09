@@ -9,6 +9,7 @@
     "docs:dope": "npx tsx scripts/print-dope.mts",
     "test:unit": "vitest run --config vitest.core.config.ts",
     "test:e2e": "playwright test",
+    "test:e2e:build": "playwright test --config playwright.build.config.ts",
     "test": "npm run test:unit && npm run test:e2e"
   },
   "private": true,
