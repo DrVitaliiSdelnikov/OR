@@ -39,7 +39,7 @@ const LABEL_POSITIONS: readonly Vector2[] = [
         />
         <circle class="handle-core" [attr.cx]="handle().x" [attr.cy]="handle().y" r="10" />
       </svg>
-      <button class="waiting" type="button" (click)="waitingTap.emit()" data-test="fire-waiting">Огонь · ждёт затвор</button>
+      <button data-own-feedback class="waiting" type="button" (click)="waitingTap.emit()" data-test="fire-waiting">Огонь · ждёт затвор</button>
     </div>
   `,
   styles: `

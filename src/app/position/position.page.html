@@ -87,9 +87,9 @@
       </div>
       @if (state) {
         <div class="ring" (pointerdown)="ringDown($event)" (pointermove)="ringMove($event)" (pointerup)="ringUp()" (pointercancel)="ringUp()" data-test="zoom-ring">
-          <button class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(-1)" aria-label="Уменьшить кратность" data-test="zoom-out">−</button>
+          <button data-own-feedback class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(-1)" aria-label="Уменьшить кратность" data-test="zoom-out">−</button>
           <span class="ring-value mono" data-test="magnification">{{ state.magnification }}×</span>
-          <button class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(1)" aria-label="Увеличить кратность" data-test="zoom-in">+</button>
+          <button data-own-feedback class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(1)" aria-label="Увеличить кратность" data-test="zoom-in">+</button>
         </div>
       }
     </div>
@@ -110,7 +110,7 @@
       } @else if (state.isMagazineChangeDue) {
         <div class="fire-row">
           <span class="rounds mono" data-test="rounds">{{ state.rounds }}</span>
-          <button class="change-magazine" type="button" (click)="changeMagazine()" data-test="change-magazine">Сменить магазин</button>
+          <button data-own-feedback class="change-magazine" type="button" (click)="changeMagazine()" data-test="change-magazine">Сменить магазин</button>
         </div>
       } @else {
         <or-fire-control

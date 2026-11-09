@@ -20,7 +20,7 @@ const INERTIA_FRICTION = 0.92;
   selector: 'or-turret-drum',
   template: `
     <div class="drum" [class.vertical]="axis() === 'windage'" [attr.data-test]="'drum-' + axis()">
-      <button class="step" type="button" (click)="turn.emit(stepClicks()[0])" [attr.aria-label]="stepLabels()[0]" [attr.data-test]="axis() + '-' + stepNames()[0]">{{ stepLabels()[0] }}</button>
+      <button data-own-feedback class="step" type="button" (click)="turn.emit(stepClicks()[0])" [attr.aria-label]="stepLabels()[0]" [attr.data-test]="axis() + '-' + stepNames()[0]">{{ stepLabels()[0] }}</button>
       <div
         class="tape"
         role="slider"
@@ -58,7 +58,7 @@ const INERTIA_FRICTION = 0.92;
         </svg>
         <span class="value mono">{{ valueText() }} <small>{{ clicks() }} кл</small></span>
       </div>
-      <button class="step" type="button" (click)="turn.emit(stepClicks()[1])" [attr.aria-label]="stepLabels()[1]" [attr.data-test]="axis() + '-' + stepNames()[1]">{{ stepLabels()[1] }}</button>
+      <button data-own-feedback class="step" type="button" (click)="turn.emit(stepClicks()[1])" [attr.aria-label]="stepLabels()[1]" [attr.data-test]="axis() + '-' + stepNames()[1]">{{ stepLabels()[1] }}</button>
       @if (counter()) {
         <span class="counter mono" data-test="drum-counter">{{ counter() }}</span>
       }

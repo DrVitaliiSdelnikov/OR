@@ -1,4 +1,5 @@
-import { Component, computed, ElementRef, input, model, output, signal, viewChild } from '@angular/core';
+import { afterNextRender, Component, computed, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
+import { FeedbackService } from '../services/feedback.service';
 import { factorContributions, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
 import { PositionSession } from '../position/position-session';
 import { CalcSheetComponent } from './calc-sheet.component';
@@ -127,6 +128,8 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
   `,
 })
 export class NotebookSheetComponent {
+  private readonly feedback = inject(FeedbackService);
+  private readonly openingClick = afterNextRender(() => this.feedback.emit('sheet'));
   readonly session = input.required<PositionSession>();
   readonly revision = input(0);
   readonly dopeNotes = input<DopeNote[]>([]);

@@ -30,6 +30,7 @@
 
 | Что | Когда | Задача |
 | --- | --- | --- |
+| события `hit` и `gauge-read` в `FeedbackService` — объявлены, но не вызывались; вибрация по `switch` — заменена таблицей `FEEDBACK_PLAN` (В31) | 9.11 | A4 |
 | строка над стеклом `shotLine` («Дошли патрон затвором») — заменена плашкой рации (В31) | 9.11 | A6.4 |
 | временная карточка итога на позиции: `endCard`, `EndCard`, разметка `end-card`, кнопки «К тропе» и «Ещё раз»; `isSkillGoalMet` / `isTopSkillGoalMet` в `SkillGoals` (теперь `GoalCheck` с фактом) — В17, В31 | 9.11 | A6.3 |
 | старый разбор `app/debrief` и маршрут `/journal/:shotId`; `explainMiss`, `MissExplanation`, `MissCause`, `RULE_CARDS`, `RuleCard`; `qualityLabel`, `TRIGGER_QUALITY_TEXT`; `recordShot`, `shotById`, `cause` и `verdict` в `ShotRecord`; строка «ПОПАДАНИЕ / ПРОМАХ» на стекле — В12, В31 | 9.11 | A6.1 |

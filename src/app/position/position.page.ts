@@ -215,7 +215,15 @@ export class PositionPage {
   }
 
   protected zoom(direction: 1 | -1): void {
-    this.session()?.scope.zoom(direction);
+    const scope = this.session()?.scope;
+    if (!scope) {
+      return;
+    }
+    const before = scope.magnification;
+    scope.zoom(direction);
+    if (scope.magnification !== before) {
+      this.feedback.emit('detent');
+    }
     this.refresh();
   }
 
@@ -606,7 +614,6 @@ export class PositionPage {
     const direction = steps > 0 ? 1 : -1;
     for (let step = 0; step < Math.abs(steps); step++) {
       this.zoom(direction);
-      this.feedback.emit('drum-click');
     }
   }
 

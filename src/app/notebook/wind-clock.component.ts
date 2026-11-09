@@ -1,4 +1,5 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
+import { FeedbackService } from '../services/feedback.service';
 import { windClockShare } from '../../core/field';
 import { clockFromDialAngle, dialAngleFromClock } from './notebook.model';
 
@@ -72,6 +73,7 @@ interface DialTick {
   `,
 })
 export class WindClockComponent {
+  private readonly feedback = inject(FeedbackService);
   readonly clock = input<number | null>(null);
   readonly showShares = input(false);
   readonly clockChange = output<number>();
@@ -122,6 +124,7 @@ export class WindClockComponent {
     const angle = Math.atan2(event.clientX - centerX, centerY - event.clientY) / DEG_TO_RAD;
     const clock = clockFromDialAngle(angle);
     if (clock !== this.clock()) {
+      this.feedback.emit('detent');
       this.clockChange.emit(clock);
     }
   }

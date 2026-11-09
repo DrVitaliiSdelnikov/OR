@@ -1,33 +1,38 @@
 import { inject, Injectable } from '@angular/core';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
+import { FEEDBACK_PLAN, FeedbackEvent, HapticKind, SelectionHaptics, SoundKind } from './feedback.model';
 import { ProgressStore } from './progress.store';
 
-export type FeedbackEvent =
-  | 'drum-click'
-  | 'drum-whole-mil'
-  | 'drum-turn'
-  | 'drum-stop'
-  | 'gauge-read'
-  | 'shot'
-  | 'hit'
-  | 'empty-chamber'
-  | 'bolt-unlock'
-  | 'bolt-slide'
-  | 'bolt-eject'
-  | 'bolt-feed'
-  | 'bolt-lock'
-  | 'magazine'
-  | 'stamp'
-  | 'radio';
+export type { FeedbackEvent } from './feedback.model';
+
+const IMPACT_STYLES: Partial<Record<HapticKind, ImpactStyle>> = {
+  light: ImpactStyle.Light,
+  medium: ImpactStyle.Medium,
+  heavy: ImpactStyle.Heavy,
+};
+
+function quietly(action: () => Promise<void>): void {
+  action().catch(() => undefined);
+}
 
 @Injectable({ providedIn: 'root' })
 export class FeedbackService {
   private readonly progress = inject(ProgressStore);
   private audioContext: AudioContext | null = null;
+  // Start, changed and end must reach the plugin in order: the web plugin loads lazily and would see "changed" before "start".
+  private selectionQueue: Promise<void> = Promise.resolve();
+  private readonly selection = new SelectionHaptics({
+    start: () => this.queueSelection(() => Haptics.selectionStart()),
+    changed: () => this.queueSelection(() => Haptics.selectionChanged()),
+    end: () => this.queueSelection(() => Haptics.selectionEnd()),
+  });
 
   emit(event: FeedbackEvent): void {
-    this.vibrate(event);
-    this.sound(event);
+    const step = FEEDBACK_PLAN[event];
+    if (step.haptic) {
+      this.vibrate(step.haptic);
+    }
+    this.sound(step.sound);
   }
 
   scheduleImpact(isHit: boolean, delayS: number): void {
@@ -43,61 +48,50 @@ export class FeedbackService {
     }
   }
 
-  private vibrate(event: FeedbackEvent): void {
+  private queueSelection(action: () => Promise<void>): void {
+    this.selectionQueue = this.selectionQueue.then(action).catch(() => undefined);
+  }
+
+  private vibrate(haptic: HapticKind): void {
     if (!this.progress.settings().isHapticsOn) {
       return;
     }
-    const run = async (): Promise<void> => {
-      switch (event) {
-        case 'drum-click':
-        case 'bolt-unlock':
-        case 'bolt-slide':
-          return Haptics.impact({ style: ImpactStyle.Light });
-        case 'drum-whole-mil':
-        case 'gauge-read':
-        case 'bolt-feed':
-        case 'hit':
-          return Haptics.impact({ style: ImpactStyle.Medium });
-        case 'drum-turn':
-          await Haptics.impact({ style: ImpactStyle.Medium });
-          return Haptics.impact({ style: ImpactStyle.Medium });
-        case 'bolt-eject':
-          return Haptics.vibrate({ duration: 30 });
-        case 'drum-stop':
-        case 'shot':
-        case 'bolt-lock':
-        case 'magazine':
-        case 'stamp':
-          return Haptics.impact({ style: ImpactStyle.Heavy });
-        case 'empty-chamber':
-        case 'radio':
-          return Haptics.notification({ type: NotificationType.Warning });
-      }
-    };
-    run().catch(() => undefined);
+    if (haptic === 'selection') {
+      this.selection.tick();
+      return;
+    }
+    if (haptic === 'warning') {
+      quietly(() => Haptics.notification({ type: NotificationType.Warning }));
+      return;
+    }
+    quietly(() => Haptics.impact({ style: IMPACT_STYLES[haptic]! }));
   }
 
-  private sound(event: FeedbackEvent): void {
+  private sound(sound: SoundKind): void {
     const context = this.context();
     if (!context) {
       return;
     }
     const nowS = context.currentTime;
-    switch (event) {
+    switch (sound) {
       case 'shot':
         this.noiseBurst(context, nowS, 0.45, 5000, 0.9);
         this.tone(context, nowS, 110, 40, 0.3, 'sine', 0.8);
+        this.noiseBurst(context, nowS + 0.35, 1.1, 700, 0.18);
+        this.noiseBurst(context, nowS + 0.9, 1.4, 450, 0.1);
         return;
-      case 'drum-click':
-      case 'drum-whole-mil':
-      case 'drum-turn':
-        this.tone(context, nowS, 2200, 2200, 0.025, 'square', event === 'drum-click' ? 0.06 : 0.1);
+      case 'tick':
+        this.tone(context, nowS, 2200, 2200, 0.025, 'square', 0.06);
         return;
-      case 'drum-stop':
+      case 'tick-strong':
+        this.tone(context, nowS, 2200, 2200, 0.025, 'square', 0.1);
+        return;
+      case 'stop':
         this.noiseBurst(context, nowS, 0.08, 600, 0.4);
         return;
-      case 'gauge-read':
-        this.tone(context, nowS, 2900, 2900, 0.08, 'square', 0.08);
+      case 'empty-click':
+        this.noiseBurst(context, nowS, 0.03, 2400, 0.3);
+        this.tone(context, nowS, 900, 600, 0.03, 'square', 0.08);
         return;
       case 'bolt-unlock':
         this.noiseBurst(context, nowS, 0.05, 2600, 0.4);
@@ -106,7 +100,7 @@ export class FeedbackService {
       case 'bolt-slide':
         this.noiseBurst(context, nowS, 0.08, 1200, 0.15);
         return;
-      case 'bolt-eject':
+      case 'casing':
         this.tone(context, nowS, 3400, 3000, 0.25, 'sine', 0.12);
         return;
       case 'bolt-feed':
@@ -127,7 +121,11 @@ export class FeedbackService {
         this.noiseBurst(context, nowS, 0.15, 3000, 0.2);
         this.tone(context, nowS + 0.15, 1800, 1800, 0.09, 'square', 0.08);
         return;
-      default:
+      case 'button':
+        this.noiseBurst(context, nowS, 0.015, 3200, 0.22);
+        return;
+      case 'sheet':
+        this.noiseBurst(context, nowS, 0.04, 1800, 0.3);
         return;
     }
   }

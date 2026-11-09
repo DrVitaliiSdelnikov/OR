@@ -1,4 +1,5 @@
-import { Component, computed, input, linkedSignal, output } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import { FeedbackService } from '../services/feedback.service';
 import { MAX_WIND_SPEED_MPS, stepSpeed } from './notebook.model';
 
 const ROW_PT = 32;
@@ -30,8 +31,8 @@ const KEY_STEPS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1,
         <span class="unit">м/с</span>
       </div>
       <div class="steps">
-        <button class="step" type="button" (click)="nudge(-1)" aria-label="Медленнее на 0,1" data-test="speed-minus">−</button>
-        <button class="step" type="button" (click)="nudge(1)" aria-label="Быстрее на 0,1" data-test="speed-plus">+</button>
+        <button data-own-feedback class="step" type="button" (click)="nudge(-1)" aria-label="Медленнее на 0,1" data-test="speed-minus">−</button>
+        <button data-own-feedback class="step" type="button" (click)="nudge(1)" aria-label="Быстрее на 0,1" data-test="speed-plus">+</button>
       </div>
     </div>
   `,
@@ -47,6 +48,7 @@ const KEY_STEPS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1,
   `,
 })
 export class SpeedWheelComponent {
+  private readonly feedback = inject(FeedbackService);
   readonly speed = input<number | null>(null);
   readonly speedChange = output<number>();
 
@@ -71,6 +73,9 @@ export class SpeedWheelComponent {
 
   protected nudge(steps: number): void {
     const next = stepSpeed(this.shownSpeed() ?? 0, steps);
+    if (next !== this.shownSpeed()) {
+      this.feedback.emit('detent');
+    }
     this.shownSpeed.set(next);
     this.speedChange.emit(next);
   }

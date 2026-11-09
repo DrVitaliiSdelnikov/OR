@@ -14,7 +14,7 @@ const HOLD_RING_RADIUS = 48;
           <circle class="ring-track" cx="57" cy="57" [attr.r]="holdRadius" />
           <circle class="ring-air" cx="57" cy="57" [attr.r]="holdRadius" [attr.stroke-dasharray]="holdDash()" transform="rotate(-90 57 57)" data-test="air-ring" [attr.data-share]="breath().share" />
         </svg>
-        <button
+        <button data-own-feedback
           class="hold"
           type="button"
           [class.cooldown]="breath().isCooldown"
@@ -39,7 +39,7 @@ const HOLD_RING_RADIUS = 48;
           <circle class="ring-track" cx="69" cy="69" [attr.r]="fireRadius" />
           <circle class="ring-pressure" cx="69" cy="69" [attr.r]="fireRadius" [attr.stroke-dasharray]="fireDash()" transform="rotate(-90 69 69)" />
         </svg>
-        <button
+        <button data-own-feedback
           class="fire"
           type="button"
           [disabled]="!isFireEnabled()"
