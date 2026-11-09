@@ -113,8 +113,7 @@
   touch-action: none;
 }
 
-.stop-badge,
-.shot-line {
+.stop-badge {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -122,18 +121,9 @@
   border-radius: var(--radius-device);
   font: 700 var(--type-label) / 18px var(--font-mono);
   white-space: nowrap;
-}
-
-.stop-badge {
   top: var(--space-3);
   background: var(--device-error);
   color: var(--device-text);
-}
-
-.shot-line {
-  bottom: var(--space-3);
-  background: var(--device-bg);
-  color: var(--device-accent);
 }
 
 .ring {

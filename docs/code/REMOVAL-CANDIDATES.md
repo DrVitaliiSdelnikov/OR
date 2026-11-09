@@ -29,6 +29,7 @@
 
 | Что | Когда | Задача |
 | --- | --- | --- |
+| строка над стеклом `shotLine` («Дошли патрон затвором») — заменена плашкой рации (В31) | 9.11 | A6.4 |
 | временная карточка итога на позиции: `endCard`, `EndCard`, разметка `end-card`, кнопки «К тропе» и «Ещё раз»; `isSkillGoalMet` / `isTopSkillGoalMet` в `SkillGoals` (теперь `GoalCheck` с фактом) — В17, В31 | 9.11 | A6.3 |
 | старый разбор `app/debrief` и маршрут `/journal/:shotId`; `explainMiss`, `MissExplanation`, `MissCause`, `RULE_CARDS`, `RuleCard`; `qualityLabel`, `TRIGGER_QUALITY_TEXT`; `recordShot`, `shotById`, `cause` и `verdict` в `ShotRecord`; строка «ПОПАДАНИЕ / ПРОМАХ» на стекле — В12, В31 | 9.11 | A6.1 |
 | старая свободная игра целиком: `app/weather`, `app/calc`, `app/wind`, `app/dope`, `app/scope`, `GameSession` и маршруты к ним; e2e `calculation`, `shooting`; кнопка «В DOPE» старого разбора; ставшие ничьими `TARGETS`, `crosswindByClockRule`, `formatClock`, `densityAltitudeM`, `isTransonic`, `daySeed`, `clicksFor`, `DRUM_DRAG_PT_PER_CLICK`; значение по умолчанию `loadedRounds` в `ScopeSession`; снимки 03–14 и 16 — В31, ответ автора 8.11 | 8.11 | A5.1 |

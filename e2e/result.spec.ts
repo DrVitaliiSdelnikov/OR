@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { centreReticle, clicksToTarget, dialElevation, enterTotalOnTurrets, seedProgress } from './helpers';
+import { centreReticle, clicksToTarget, dialElevation, enterTotalOnTurrets, positionFromBriefing, seedProgress } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 const MIN_TOUCH_PX = 44;
@@ -11,9 +11,7 @@ async function seed(page: Page, bestClasses: Record<string, number> = {}): Promi
 
 async function shootCleanSeriesOf01(page: Page): Promise<void> {
   await seed(page);
-  await page.goto('/course/01');
-  await page.getByTestId('to-position').click();
-  await page.waitForURL('**/position/01');
+  await positionFromBriefing(page, '01');
   await expect(page.getByTestId('fire')).toBeVisible();
   await enterTotalOnTurrets(page);
   const clicks = await clicksToTarget(page);
@@ -30,6 +28,7 @@ async function shootCleanSeriesOf01(page: Page): Promise<void> {
 
 test.describe('итог упражнения и брифинг (A6.3)', () => {
   test('01 зачтено впервые: штамп, три строки классов, очки, мишень, главная ошибка, новые термины; «ДАЛЬШЕ» — тропа с открытым 02', async ({ page }) => {
+    test.slow();
     await shootCleanSeriesOf01(page);
     await expect(page.getByTestId('result-stamp')).toHaveText(/^[123] КЛАСС$/);
     await expect(page.getByTestId('result-class-0')).toContainText('3 класс');

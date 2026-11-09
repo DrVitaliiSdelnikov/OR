@@ -128,6 +128,8 @@ flowchart LR
 
 Итог упражнения и брифинг (A6.3): ![Итог](screens/43-result.png) ![Итог, низ](screens/44-result-bottom.png) ![Брифинг](screens/45-briefing.png)
 
+Подсказки инструктора (A6.4): ![Переключатель на брифинге](screens/46-briefing-instructor.png) ![Обучение, 1 из 8](screens/47-teaching.png) ![Обучение, барабан](screens/48-teaching-drum.png) ![Забытый фактор и рация](screens/49-forgotten-factor.png)
+
 По брифу 08 на токенах A1. Ниже — описание старого хаба, оставлено как история.
 
 Сверху вниз:

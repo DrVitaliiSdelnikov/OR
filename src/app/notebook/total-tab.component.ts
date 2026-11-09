@@ -15,7 +15,7 @@ export interface FactorRow {
     <div class="mode mono" data-test="notebook-mode">Авто · отметь, что учесть</div>
     <div class="factors">
       @for (row of rows(); track row.factor) {
-        <div class="factor" [class.off]="!row.isOn" [attr.data-test]="'factor-' + row.factor">
+        <div class="factor" [class.off]="!row.isOn" [attr.data-test]="'factor-' + row.factor" [attr.data-hint]="'factor-' + row.factor">
           <div class="factor-head">
             <button class="factor-name" type="button" (click)="toggleOpen(row.factor)" [attr.aria-expanded]="openFactor() === row.factor">{{ row.name }}</button>
             <span class="contribution mono" [attr.data-test]="'contribution-' + row.factor">{{ row.contribution }}</span>
@@ -27,6 +27,7 @@ export interface FactorRow {
               [attr.aria-label]="'Учитывать: ' + row.name"
               (click)="toggle.emit(row.factor)"
               [attr.data-test]="'toggle-' + row.factor"
+              [attr.data-hint]="'toggle-' + row.factor"
             >
               <span class="track"><span class="knob"></span></span>
             </button>

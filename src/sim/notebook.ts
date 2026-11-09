@@ -10,6 +10,7 @@ import { TurretTarget, turretTarget } from './turret-target';
 
 export type NotebookStepId = 'distance' | 'dope' | 'atmosphere' | 'zones' | 'wind' | 'lead';
 export type NotebookFactor = 'dope' | 'conditions' | 'wind' | 'lead';
+export const NOTEBOOK_FACTORS: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', 'lead'];
 export type StaleReason = 'cartridge' | 'distance' | 'conditions' | 'wind';
 export type ChipGroup = 'instruments' | 'steps' | 'cartridge';
 export type ChipKind =
@@ -285,6 +286,11 @@ export function toggleFactor(notebook: Notebook, factor: NotebookFactor): Notebo
   return { ...notebook, factorsOn: { ...notebook.factorsOn, [factor]: !notebook.factorsOn[factor] } };
 }
 
+export function forgottenFactor(notebook: Notebook): NotebookFactor | null {
+  const contributions = factorContributions(notebook);
+  return NOTEBOOK_FACTORS.find(factor => !contributions[factor].isOn && Math.abs(contributions[factor].clicks ?? 0) >= 1) ?? null;
+}
+
 export function factorContributions(notebook: Notebook): Record<NotebookFactor, FactorContribution> {
   const contribution = (factor: NotebookFactor, mil: number | null): FactorContribution => ({
     isOn: notebook.factorsOn[factor],
@@ -455,7 +461,7 @@ function preparationRows(notebook: Notebook, truth: CheckTruth): PreparationRowI
   const stationSpeedClicks = clicks(autoWindMil(notebook, { speedMps: stationSpeedMps, clock: wind.clock }));
   const trueClockClicks = clicks(autoWindMil(notebook, { speedMps: wind.speedMps, clock: truth.trueWindClock }));
   const factors = factorContributions(notebook);
-  const missedFactorClicks = (['dope', 'conditions', 'wind', 'lead'] as const)
+  const missedFactorClicks = NOTEBOOK_FACTORS
     .filter(factor => !factors[factor].isOn)
     .reduce((sum, factor) => sum + Math.abs(factors[factor].clicks ?? 0), 0);
   const planned = total(notebook);

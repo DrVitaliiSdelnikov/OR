@@ -9,9 +9,15 @@ import { lateralWindMps, windAt } from '../../core/scenario';
 import { Correction } from '../../core/types';
 import { BoltEvent } from '../../sim/bolt';
 import { exerciseById, ExerciseId } from '../../sim/course';
-import { tabs } from '../../sim/notebook';
+import { factorContributions, forgottenFactor, NotebookFactor, tabs } from '../../sim/notebook';
 import { Vector2 } from '../../sim/noise';
+import { TurretCorrection } from '../../sim/shot-review';
 import { formatScopeValue, reticleSubtensionScale, TurretMove } from '../../sim/scope-model';
+import { InstructorSnapshot } from '../instructor/instructor-snapshot';
+import { RadioPlateComponent } from '../instructor/radio-plate.component';
+import { forgottenFactorRadio, offMarksRadio, RADIO_EMPTY_CHAMBER, RadioLine } from '../instructor/radio.model';
+import { TeachingOverlayComponent } from '../instructor/teaching-overlay.component';
+import { forgottenFactorTeaching, isFactorGuarded, nextTeaching, teachingScript, TeachingView } from '../instructor/teaching.model';
 import { NotebookSheetComponent } from '../notebook/notebook-sheet.component';
 import { clockText, NotebookTab } from '../notebook/notebook.model';
 import { ScopeRenderer } from '../scene/scope-renderer';
@@ -28,7 +34,8 @@ import { TurretDrumComponent } from './turret-drum.component';
 
 const MARKS_ON_GLASS = 8;
 const UI_REFRESH_S = 0.1;
-const SHOT_LINE_MS = 2000;
+const RADIO_MS = 4000;
+const INSTRUCTOR_ON = 'on';
 const STOP_BADGE_MS = 900;
 const PINCH_STEP_PT = 40;
 const RING_STEP_PT = 24;
@@ -50,12 +57,23 @@ const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
 
 @Component({
   selector: 'or-position',
-  imports: [IonContent, TurretDrumComponent, FireControlComponent, BoltTrackComponent, NotebookSheetComponent, ReviewSheetComponent, ResultSheetComponent],
+  imports: [
+    IonContent,
+    TurretDrumComponent,
+    FireControlComponent,
+    BoltTrackComponent,
+    NotebookSheetComponent,
+    ReviewSheetComponent,
+    ResultSheetComponent,
+    RadioPlateComponent,
+    TeachingOverlayComponent,
+  ],
   templateUrl: './position.page.html',
   styleUrl: './position.page.scss',
 })
 export class PositionPage {
   readonly exerciseId = input.required<string>();
+  readonly instructor = input<string>();
 
   private readonly router = inject(Router);
   private readonly feedback = inject(FeedbackService);
@@ -67,7 +85,7 @@ export class PositionPage {
   protected readonly def = computed(() => exerciseById(this.exerciseId() as ExerciseId) ?? null);
   protected readonly session = signal<PositionSession | null>(null);
   protected readonly uiTick = signal(0);
-  protected readonly shotLine = signal<string | null>(null);
+  protected readonly radio = signal<RadioLine | null>(null);
   protected readonly stopBadge = signal<string | null>(null);
   protected readonly end = signal<ResultSheetView | null>(null);
   protected readonly isLeaveConfirmOpen = signal(false);
@@ -79,6 +97,26 @@ export class PositionPage {
     return session ? (this.progress.dopeNotes()[session.notebook.context.card.cartridgeId] ?? []) : [];
   });
   protected readonly sheetFrame = signal<{ topPt: number; heightPt: number } | null>(null);
+  private readonly hasOpenedNotebook = signal(false);
+  private readonly acknowledgedSteps = signal<ReadonlySet<string>>(new Set());
+  private readonly isTeachingSkipped = signal(false);
+  private readonly guardedFactor = signal<NotebookFactor | null>(null);
+  protected readonly teaching = computed<TeachingView | null>(() => {
+    this.uiTick();
+    const session = this.session();
+    if (!session) {
+      return null;
+    }
+    const factor = this.guardedFactor();
+    if (factor && !session.notebook.factorsOn[factor]) {
+      return forgottenFactorTeaching(factor, factorContributions(session.notebook)[factor]);
+    }
+    const script = teachingScript(session.def.id);
+    if (!script || this.instructor() !== INSTRUCTOR_ON || this.isTeachingSkipped() || session.isRepeatAfterRecalc) {
+      return null;
+    }
+    return nextTeaching(script, this.acknowledgedSteps(), this.instructorSnapshot(session));
+  });
   protected readonly isUnplayable = computed(() => {
     const def = this.def();
     return def === null || !playability(def).isPlayable;
@@ -144,7 +182,9 @@ export class PositionPage {
   private startedAtMs = 0;
   private attempt = 0;
   private isFiring = false;
-  private shotLineTimer: ReturnType<typeof setTimeout> | null = null;
+  private radioTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastCorrection: TurretCorrection | null = null;
+  private dialAtLastShot = { elevation: 0, windageLeft: 0 };
   private readonly glassPointers = new Map<number, Vector2>();
   private pinchDistancePt: number | null = null;
   private ringDrag: { lastPt: number; remainderPt: number } | null = null;
@@ -153,8 +193,8 @@ export class PositionPage {
     const destroyRef = inject(DestroyRef);
     destroyRef.onDestroy(() => {
       cancelAnimationFrame(this.frameHandle);
-      if (this.shotLineTimer) {
-        clearTimeout(this.shotLineTimer);
+      if (this.radioTimer) {
+        clearTimeout(this.radioTimer);
       }
     });
     afterNextRender(() => void this.begin());
@@ -195,6 +235,7 @@ export class PositionPage {
       this.sheetFrame.set({ topPt: crosshairY - root.top, heightPt: window.innerHeight - crosshairY });
     }
     this.fingerMarker = null;
+    this.hasOpenedNotebook.set(true);
     this.sheetTab.set(tab);
   }
 
@@ -213,7 +254,11 @@ export class PositionPage {
   }
 
   protected enterOnTurrets(): void {
-    this.session()?.enterOnTurrets();
+    const session = this.session();
+    if (!session || this.isFactorForgotten(session)) {
+      return;
+    }
+    session.enterOnTurrets();
     this.closeSheet();
     this.refresh();
   }
@@ -231,7 +276,11 @@ export class PositionPage {
     if (!session || this.isFiring || session.isMagazineChangeDue || session.isFinished || this.sheetTab() !== null || this.reviewedShot() !== null) {
       return;
     }
+    if (this.isFactorForgotten(session)) {
+      return;
+    }
     this.isFiring = true;
+    const offMarks = offMarksRadio(session.progress('elevation'), session.progress('windage'));
     const shot = await session.fire(this.scenarioTimeS(session));
     this.isFiring = false;
     if (!shot) {
@@ -239,6 +288,11 @@ export class PositionPage {
       return;
     }
     this.feedback.emit('shot');
+    if (offMarks) {
+      this.showRadio(offMarks);
+    }
+    this.lastCorrection = shot.review.correction;
+    this.dialAtLastShot = { elevation: session.scope.elevation.clicks, windageLeft: session.scope.windage.clicks };
     this.feedback.scheduleImpact(shot.record.isHit, impactSoundDelayS(shot.result.timeOfFlightS, shot.record.distanceM, session.scenario.atmosphere.temperatureC));
     for (const boltEvent of shot.boltEvents) {
       const feedbackEvent = BOLT_EVENT_FEEDBACK[boltEvent];
@@ -291,7 +345,7 @@ export class PositionPage {
 
   protected pressTrigger(fingerOffset: Vector2): void {
     const session = this.session();
-    if (!session || session.isFinished || this.sheetTab() !== null || this.reviewedShot() !== null) {
+    if (!session || session.isFinished || this.sheetTab() !== null || this.reviewedShot() !== null || this.isFactorForgotten(session)) {
       return;
     }
     if (!session.startTrigger()) {
@@ -328,7 +382,22 @@ export class PositionPage {
   }
 
   protected showBoltHint(): void {
-    this.showShotLine('Дошли патрон затвором');
+    this.showRadio(RADIO_EMPTY_CHAMBER);
+  }
+
+  protected dismissRadio(): void {
+    this.radio.set(null);
+  }
+
+  protected acknowledgeTeaching(): void {
+    const view = this.teaching();
+    if (view) {
+      this.acknowledgedSteps.update(ids => new Set([...ids, view.id]));
+    }
+  }
+
+  protected skipTeaching(): void {
+    this.isTeachingSkipped.set(true);
   }
 
   protected changeMagazine(): void {
@@ -549,15 +618,58 @@ export class PositionPage {
     return root ? { topPt: 0, heightPt: window.innerHeight - root.top } : null;
   }
 
-  private showShotLine(text: string): void {
-    this.shotLine.set(text);
-    if (this.shotLineTimer) {
-      clearTimeout(this.shotLineTimer);
+  private showRadio(line: RadioLine): void {
+    this.radio.set(line);
+    if (line.isImportant) {
+      this.feedback.emit('radio');
     }
-    this.shotLineTimer = setTimeout(() => this.shotLine.set(null), SHOT_LINE_MS);
+    if (this.radioTimer) {
+      clearTimeout(this.radioTimer);
+    }
+    this.radioTimer = setTimeout(() => this.radio.set(null), RADIO_MS);
+  }
+
+  private isFactorForgotten(session: PositionSession): boolean {
+    const factor = isFactorGuarded(session.def.id) && session.notebook.mode === 'auto' ? forgottenFactor(session.notebook) : null;
+    if (!factor) {
+      return false;
+    }
+    this.guardedFactor.set(factor);
+    this.showRadio(forgottenFactorRadio(factor));
+    if (this.sheetTab() !== 'total') {
+      this.openSheet('total');
+    }
+    return true;
+  }
+
+  private instructorSnapshot(session: PositionSession): InstructorSnapshot {
+    const entered = session.enteredTotal;
+    return {
+      exerciseId: session.def.id,
+      sheetTab: this.sheetTab(),
+      hasOpenedNotebook: this.hasOpenedNotebook(),
+      isEntered: entered !== null,
+      dopeMil: factorContributions(session.notebook).dope.mil,
+      elevation: session.progress('elevation'),
+      windageTargetClicks: entered?.windageLeft.targetClicks ?? null,
+      shotsFired: session.records.length,
+      isReviewOpen: this.reviewedShot() !== null,
+      isResultOpen: this.end() !== null,
+      isBoltCycleDue: !session.isTapTrigger && session.isBoltCycleDue,
+      lastCorrection: this.lastCorrection,
+      turnedSinceShot: {
+        upClicks: session.scope.elevation.clicks - this.dialAtLastShot.elevation,
+        rightClicks: this.dialAtLastShot.windageLeft - session.scope.windage.clicks,
+      },
+      aimOffMil: Math.hypot(session.scope.aim.x, session.scope.aim.y),
+    };
   }
 
   protected refresh(): void {
+    const factor = this.guardedFactor();
+    if (factor && this.session()?.notebook.factorsOn[factor]) {
+      this.guardedFactor.set(null);
+    }
     this.uiTick.update(tick => tick + 1);
   }
 }

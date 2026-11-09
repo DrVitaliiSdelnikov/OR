@@ -34,6 +34,7 @@ import {
   openReference,
   stepHasSide,
   formulaCorrectionMil,
+  forgottenFactor,
 } from './notebook';
 import { atmosphereCorrectionMil, windCorrectionMil } from '../core/game-formulas';
 import { scopeById } from './scope-model';
@@ -157,6 +158,17 @@ describe('AUTO', () => {
     const result = total(notebook);
     expect(result.elevation.targetClicks).toBe(0);
     expect(result.holdUpMil).toBeCloseTo(-0.1, 9);
+  });
+
+  it('a forgotten factor is the first one off with at least one click; DOPE before conditions', () => {
+    const measured = recordStation(createNotebook(context({ target: { sizeM: 0.5, distanceM: 600 } }), 'auto'), station({ temperatureC: -5, pressureHpa: 1030 }), 3, 10);
+    expect(forgottenFactor(measured)).toBe('conditions');
+    expect(forgottenFactor(toggleFactor(measured, 'conditions'))).toBeNull();
+    expect(forgottenFactor(toggleFactor(measured, 'dope'))).toBe('dope');
+    expect(forgottenFactor(createNotebook(context({ target: { sizeM: 0.5, distanceM: 600 } }), 'auto'))).toBeNull();
+    const standard = recordStation(createNotebook(context(), 'auto'), station({ temperatureC: 15, pressureHpa: 1013 }), 3, 10);
+    expect(factorContributions(standard).conditions.clicks).toBe(0);
+    expect(forgottenFactor(standard)).toBeNull();
   });
 });
 

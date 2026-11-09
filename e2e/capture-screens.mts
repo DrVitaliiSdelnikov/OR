@@ -163,6 +163,24 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
   await page.goto(`${BASE_URL}/course/10`);
   await byTest('briefing-card').waitFor();
   await snap(page, `45-briefing${suffix}`);
+  await page.goto(`${BASE_URL}/course/03`);
+  await byTest('briefing-instructor').waitFor();
+  await snap(page, `46-briefing-instructor${suffix}`);
+  await page.goto(`${BASE_URL}/position/01?instructor=on`);
+  await byTest('teaching-card').waitFor();
+  await snap(page, `47-teaching${suffix}`);
+  await byTest('teaching-ok').click();
+  await byTest('tile-notebook').click();
+  await byTest('teaching-ok').click();
+  await byTest('enter-turrets').click();
+  await snap(page, `48-teaching-drum${suffix}`);
+  await page.goto(`${BASE_URL}/position/01`);
+  await byTest('tile-notebook').click();
+  await byTest('toggle-dope').click();
+  await byTest('position-back').click();
+  await byTest('fire').click();
+  await byTest('teaching-card').waitFor();
+  await snap(page, `49-forgotten-factor${suffix}`);
 
   if (isFull) {
     await page.goto(`${BASE_URL}/journal`);

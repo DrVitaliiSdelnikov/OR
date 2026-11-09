@@ -96,7 +96,7 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
           }
         </div>
         <div class="total mono" data-test="sheet-total">{{ state.totalLine }}</div>
-        <button class="enter" type="button" [disabled]="state.isTotalEmpty" (click)="enter.emit()" data-test="enter-turrets">Внести на барабаны</button>
+        <button class="enter" type="button" [disabled]="state.isTotalEmpty" (click)="enter.emit()" data-test="enter-turrets" data-hint="enter-turrets">Внести на барабаны</button>
       </footer>
     </section>
     }

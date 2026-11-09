@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { seedProgress } from './helpers';
+import { positionFromBriefing, seedProgress } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 const TRACK_VIEWBOX_WIDTH = 380;
@@ -9,9 +9,7 @@ const SHOT_TIMEOUT_MS = 25_000;
 
 async function toPosition03(page: Page): Promise<void> {
   await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: { '01': 3, '02': 3 } }, shots: [], settings: QUIET_SETTINGS });
-  await page.goto('/course/03');
-  await page.getByTestId('to-position').click();
-  await page.waitForURL('**/position/03');
+  await positionFromBriefing(page, '03');
   await page.getByTestId('fire').click({ trial: true });
 }
 
@@ -74,7 +72,9 @@ test.describe('позиция: спуск с давлением, затвор, �
     await shootWithPressure(page);
     await page.waitForTimeout(2200);
     await page.getByTestId('fire-waiting').click();
-    await expect(page.getByTestId('shot-line')).toHaveText('Дошли патрон затвором');
+    await expect(page.getByTestId('radio-text')).toHaveText('дошли патрон затвором');
+    await page.getByTestId('radio').click();
+    await expect(page.getByTestId('radio')).toHaveCount(0);
   });
 
   test('отпустил «ОГОНЬ» на середине — давление стекает, выстрела нет', async ({ page }) => {
@@ -83,7 +83,7 @@ test.describe('позиция: спуск с давлением, затвор, �
     await expect.poll(async () => Number((await page.getByTestId('pressure').textContent())!.replace(/\D/g, ''))).toBeGreaterThan(15);
     await page.mouse.up();
     await expect(page.getByTestId('trigger-zone')).toHaveCount(0, { timeout: 8000 });
-    await expect(page.getByTestId('shot-line')).toHaveCount(0);
+    await expect(page.getByTestId('radio')).toHaveCount(0);
     await expect(page.getByTestId('rounds')).toHaveText('5 / 5');
   });
 

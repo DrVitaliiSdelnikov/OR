@@ -58,6 +58,13 @@ describe('briefingCard', () => {
     expect(briefing.novelty).toBeNull();
   });
 
+  it('«с инструктором»: on before the admission, off after it; only where there is a script', () => {
+    expect(card('01').instructor).toEqual({ isDefaultOn: true });
+    expect(card('03', { isIntroCompleted: true, bestClasses: { '03': 2 } }).instructor).toEqual({ isDefaultOn: false });
+    expect(card('02', { isIntroCompleted: true, bestClasses: { '02': 0 } }).instructor).toEqual({ isDefaultOn: true });
+    expect(card('04').instructor).toBeNull();
+  });
+
   it('the facts stay from the sheet', () => {
     expect(card('04').facts.wind).toContain('м/с');
   });

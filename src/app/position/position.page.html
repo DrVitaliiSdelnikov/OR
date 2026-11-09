@@ -39,6 +39,7 @@
       @if (state) {
         <or-turret-drum
           class="top-drum"
+          data-hint="drum-elevation"
           axis="elevation"
           [clicks]="state.elevation.clicks"
           [targetClicks]="state.elevation.target"
@@ -49,7 +50,7 @@
         />
       }
       <div class="glass-row">
-        <div class="glass-ring">
+        <div class="glass-ring" data-hint="glass">
           <canvas
             #glass
             class="glass"
@@ -69,13 +70,11 @@
               <text class="zone-label" x="138" [attr.y]="138 + zone.radius + 16">ЗОНА СПУСКА</text>
             </svg>
           }
-          @if (shotLine(); as line) {
-            <span class="shot-line mono" data-test="shot-line">{{ line }}</span>
-          }
         </div>
         @if (state) {
           <or-turret-drum
             class="side-drum"
+            data-hint="drum-windage"
             axis="windage"
             [clicks]="state.windage.clicks"
             [targetClicks]="state.windage.target"
@@ -98,7 +97,7 @@
     @if (state) {
       <div class="tiles">
         <button class="tile mono" type="button" (click)="openSheet('dope')" data-test="tile-dope">{{ state.dope }}</button>
-        <button class="tile" type="button" (click)="openSheet('total')" data-test="tile-notebook">
+        <button class="tile" type="button" (click)="openSheet('total')" data-test="tile-notebook" data-hint="tile-notebook">
           Блокнот
           @if (state.isNotEntered) {
             <span class="tile-dot" aria-label="итог не внесён" data-test="notebook-dot"></span>
@@ -107,7 +106,7 @@
       </div>
 
       @if (state.isBoltCycleDue) {
-        <or-bolt-track [step]="state.boltStep" [progress]="state.boltProgress" (drag)="dragBolt($event)" (waitingTap)="showBoltHint()" />
+        <or-bolt-track data-hint="bolt-track" [step]="state.boltStep" [progress]="state.boltProgress" (drag)="dragBolt($event)" (waitingTap)="showBoltHint()" />
       } @else if (state.isMagazineChangeDue) {
         <div class="fire-row">
           <span class="rounds mono" data-test="rounds">{{ state.rounds }}</span>
@@ -115,6 +114,7 @@
         </div>
       } @else {
         <or-fire-control
+          data-hint="fire-control"
           [mode]="state.triggerMode"
           [pressure]="state.pressure"
           [pressureLabel]="state.pressureLabel"
@@ -182,6 +182,14 @@
           (journal)="toJournal()"
         />
       }
+    }
+
+    @if (radio(); as line) {
+      <or-radio-plate [line]="line" (dismiss)="dismissRadio()" />
+    }
+
+    @if (teaching(); as view) {
+      <or-teaching-overlay [view]="view" [revision]="uiTick()" (acknowledge)="acknowledgeTeaching()" (skip)="skipTeaching()" />
     }
 
     @if (isLeaveConfirmOpen()) {

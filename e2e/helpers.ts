@@ -44,6 +44,17 @@ export async function setWindSpeed(page: Page, speedMps: number): Promise<void> 
   await expect(wheel).toHaveAttribute('aria-valuenow', String(speedMps));
 }
 
+export async function positionFromBriefing(page: Page, exerciseId: string, isWithInstructor = false): Promise<void> {
+  await page.goto(`/course/${exerciseId}`);
+  await expect(page.getByTestId('briefing-card')).toBeVisible();
+  const toggle = page.getByTestId('briefing-instructor');
+  if ((await toggle.count()) > 0 && (await toggle.evaluate(element => (element as HTMLInputElement).checked)) !== isWithInstructor) {
+    await toggle.click();
+  }
+  await page.getByTestId('to-position').click();
+  await page.waitForURL(`**/position/${exerciseId}${isWithInstructor ? '?instructor=on' : ''}`);
+}
+
 export async function enterTotalOnTurrets(page: Page): Promise<void> {
   await page.getByTestId('tile-notebook').click();
   await page.getByTestId('enter-turrets').click();

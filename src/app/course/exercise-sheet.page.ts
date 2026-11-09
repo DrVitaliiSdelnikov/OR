@@ -1,6 +1,6 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { IonContent } from '@ionic/angular/standalone';
+import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { playability } from '../position/position.model';
 import { ProgressStore } from '../services/progress.store';
@@ -15,7 +15,7 @@ const GROUND_Y = 66;
 
 @Component({
   selector: 'or-exercise-sheet',
-  imports: [IonContent, RouterLink],
+  imports: [IonContent, IonToggle, RouterLink],
   template: `
     <ion-content>
       <div class="briefing-screen">
@@ -78,6 +78,9 @@ const GROUND_Y = 66;
             @if (briefing.best; as best) {
               <div class="best mono" data-test="briefing-best">{{ best }}</div>
             }
+            @if (briefing.instructor) {
+              <ion-toggle class="instructor" [checked]="isInstructorOn()" (ionChange)="isInstructorOn.set($event.detail.checked)" justify="space-between" data-test="briefing-instructor">с инструктором</ion-toggle>
+            }
             <div class="order-stamp" aria-hidden="true">к исполнению</div>
           </article>
 
@@ -124,6 +127,7 @@ const GROUND_Y = 66;
     .class-3 { background: var(--paper-stamp-bronze); }
     .novelty { font: 700 var(--type-label) / 18px var(--font-text); }
     .best { font: 500 var(--type-label) / 18px var(--font-mono); color: var(--paper-graphite); }
+    .instructor { --track-background: var(--paper-grid); --track-background-checked: var(--paper-stamp-green); --handle-background: var(--paper-bg); --handle-background-checked: var(--paper-bg); min-height: var(--touch-min); color: var(--paper-ink); font: 500 var(--type-label) / 18px var(--font-mono); }
     .order-stamp { align-self: flex-end; padding: 2px 10px; border: 2.5px solid var(--paper-red-pencil); border-radius: 3px; color: var(--paper-red-pencil); font: 700 var(--type-label) / 18px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; transform: rotate(-4deg); }
     .terms { font: 500 var(--type-label) / 18px var(--font-mono); color: var(--device-text-muted); }
     .note { font: 500 var(--type-label) / 18px var(--font-mono); color: var(--device-text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label); }
@@ -148,6 +152,7 @@ export class ExerciseSheetPage {
     const def = this.def();
     return def ? briefingCard(def, this.progress.course()) : null;
   });
+  protected readonly isInstructorOn = linkedSignal(() => this.card()?.instructor?.isDefaultOn ?? false);
   protected readonly availability = computed(() => {
     const def = this.def();
     return def ? playability(def) : null;
@@ -158,6 +163,7 @@ export class ExerciseSheetPage {
   });
 
   protected toPosition(): void {
-    void this.router.navigate(['/position', this.exerciseId()]);
+    const isWithInstructor = this.card()?.instructor !== null && this.isInstructorOn();
+    void this.router.navigate(['/position', this.exerciseId()], isWithInstructor ? { queryParams: { instructor: 'on' } } : {});
   }
 }

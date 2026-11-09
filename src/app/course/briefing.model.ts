@@ -1,5 +1,6 @@
 import { modeMultiplier } from '../../core/exercise-scoring';
 import { CourseResults, ExerciseDef, TargetDistance } from '../../sim/course';
+import { teachingScript } from '../instructor/teaching.model';
 import { allFirstText, classStamp, isPaperExercise } from '../result/result.model';
 import { exerciseSheet, ExerciseSheet, MODE_LABELS } from './course-trail.model';
 
@@ -20,6 +21,7 @@ export interface BriefingCard {
   novelty: string | null;
   best: string | null;
   termsLine: string | null;
+  instructor: { isDefaultOn: boolean } | null;
 }
 
 const ATTESTATION_ID = '12';
@@ -47,6 +49,7 @@ export function briefingCard(def: ExerciseDef, course: CourseResults): BriefingC
     novelty: !isAdmittedBefore && def.novelty ? `Новое: ${def.novelty}` : null,
     best: bestTotal !== undefined ? `лучший: ${bestClass ? classStamp(bestClass).toLowerCase() : 'не зачтено'} · ${bestTotal} очк.` : null,
     termsLine: def.terms.length > 0 ? `узнаешь: ${def.terms.join(' · ')}` : null,
+    instructor: teachingScript(def.id) ? { isDefaultOn: !isAdmittedBefore } : null,
   };
 }
 

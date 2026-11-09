@@ -82,3 +82,4 @@
 | app · разбор выстрела и проверка (A6.1) | [specs/app-debrief.md](specs/app-debrief.md) | реализовано, слито в `master` 9.11 |
 | app · разбор: почему ушла пуля, траектории и группа (A6.2) | [specs/app-debrief-causes.md](specs/app-debrief-causes.md) | реализовано, слито в `master` 9.11 |
 | app · итог упражнения и карточка брифинга (A6.3) | [specs/app-result-briefing.md](specs/app-result-briefing.md) | реализовано, слито в `master` 9.11 |
+| app · подсказки инструктора: рация, обучение 01–03, забытый фактор (A6.4) | [specs/app-instructor.md](specs/app-instructor.md) | реализовано, слито в `master` 9.11 |

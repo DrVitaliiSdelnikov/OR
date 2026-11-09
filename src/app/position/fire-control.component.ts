@@ -23,6 +23,7 @@ const HOLD_RING_RADIUS = 48;
           (pointerleave)="holdRelease.emit()"
           (pointercancel)="holdRelease.emit()"
           data-test="hold"
+          data-hint="hold"
         >
           <span>{{ holdLabel() }}</span>
           @if (breath().secondsText) {

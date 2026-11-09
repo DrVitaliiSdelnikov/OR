@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { centreReticle, clicksToTarget, dialElevation, enterTotalOnTurrets, seedProgress } from './helpers';
+import { centreReticle, clicksToTarget, dialElevation, enterTotalOnTurrets, positionFromBriefing, seedProgress } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 const MIN_TOUCH_PX = 44;
@@ -7,9 +7,7 @@ const SHOT_SETTLE_MS = 1200;
 
 async function toPosition(page: Page, bestClasses: Record<string, number> = {}): Promise<void> {
   await seedProgress(page, { course: { isIntroCompleted: true, bestClasses }, shots: [], settings: QUIET_SETTINGS });
-  await page.goto('/course/01');
-  await page.getByTestId('to-position').click();
-  await page.waitForURL('**/position/01');
+  await positionFromBriefing(page, '01');
   await expect(page.getByTestId('fire')).toBeVisible();
   await enterTotalOnTurrets(page);
 }

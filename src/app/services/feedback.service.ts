@@ -17,7 +17,8 @@ export type FeedbackEvent =
   | 'bolt-feed'
   | 'bolt-lock'
   | 'magazine'
-  | 'stamp';
+  | 'stamp'
+  | 'radio';
 
 @Injectable({ providedIn: 'root' })
 export class FeedbackService {
@@ -69,6 +70,7 @@ export class FeedbackService {
         case 'stamp':
           return Haptics.impact({ style: ImpactStyle.Heavy });
         case 'empty-chamber':
+        case 'radio':
           return Haptics.notification({ type: NotificationType.Warning });
       }
     };
@@ -120,6 +122,10 @@ export class FeedbackService {
         return;
       case 'stamp':
         this.noiseBurst(context, nowS, 0.12, 450, 0.6);
+        return;
+      case 'radio':
+        this.noiseBurst(context, nowS, 0.15, 3000, 0.2);
+        this.tone(context, nowS + 0.15, 1800, 1800, 0.09, 'square', 0.08);
         return;
       default:
         return;

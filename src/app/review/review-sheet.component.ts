@@ -50,7 +50,7 @@ const CALL_DISTANCE_DECIMALS = 1;
         @if (!isCallPending()) {
           <div class="diagnosis" data-test="review-diagnosis">{{ state.diagnosis }}</div>
           @if (state.correction; as correction) {
-            <div class="correction mono" data-test="review-correction">{{ correction }}</div>
+            <div class="correction mono" data-test="review-correction" data-hint="review-correction">{{ correction }}</div>
           }
           @if (state.check; as check) {
             <or-check-sheet [view]="check" [isInitiallyOpen]="shot().review.diagnosis === 'data'" />
@@ -73,7 +73,7 @@ const CALL_DISTANCE_DECIMALS = 1;
         }
         <div class="actions">
           <button class="recalc mono" type="button" [disabled]="isCallPending()" (click)="recalc.emit()" data-test="review-recalc">Пересчитать и повторить</button>
-          <button class="next mono" type="button" [disabled]="isCallPending()" (click)="next.emit()" data-test="review-next">Дальше</button>
+          <button class="next mono" type="button" [disabled]="isCallPending()" (click)="next.emit()" data-test="review-next" data-hint="review-next">Дальше</button>
         </div>
       </footer>
     </section>
