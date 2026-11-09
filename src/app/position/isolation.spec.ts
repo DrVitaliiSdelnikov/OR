@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const GUARDED_DIRS = [new URL('./', import.meta.url), new URL('../notebook/', import.meta.url), new URL('../review/', import.meta.url), new URL('../result/', import.meta.url), new URL('../instructor/', import.meta.url)];
+const GUARDED_DIRS = [new URL('./', import.meta.url), new URL('../notebook/', import.meta.url), new URL('../review/', import.meta.url), new URL('../result/', import.meta.url), new URL('../instructor/', import.meta.url), new URL('../textbook/', import.meta.url)];
 const FORBIDDEN_IMPORTS = ['/scope/', 'game-session', '/debrief/', 'core/score', 'sim/tasks', 'explainMiss'];
 const FORBIDDEN_STYLES = ['--hub-', 'var(--font-sans)', 'class="button', 'class="chip', 'class="card'];
 

@@ -73,8 +73,8 @@ test.describe('итог упражнения и брифинг (A6.3)', () => {
 
   test('касание не меньше 44 на итоге и брифинге', async ({ page }) => {
     await shootCleanSeriesOf01(page);
-    for (const id of ['result-next', 'result-repeat', 'result-journal']) {
-      expect((await page.getByTestId(id).boundingBox())!.height, id).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
+    for (const id of ['result-next', 'result-repeat', 'result-journal', 'result-term']) {
+      expect((await page.getByTestId(id).first().boundingBox())!.height, id).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
     }
     await page.getByTestId('result-journal').click();
     await page.waitForURL('**/journal');

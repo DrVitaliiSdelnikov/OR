@@ -57,11 +57,12 @@ test.describe('главный экран и курс-тропа', () => {
     await expect(page.locator('[data-test^="node-"]')).toHaveCount(13);
   });
 
-  test('учебник и вводное — «откроется позже»; шестерёнка и журнал открываются', async ({ page }) => {
+  test('вводное — «откроется позже»; шестерёнка, учебник и журнал открываются', async ({ page }) => {
     await seedCourse(page, false, {});
     await page.goto('/');
     await page.getByTestId('tile-textbook').click();
-    await expect(page.getByTestId('later-message')).toBeVisible();
+    await expect(page).toHaveURL(/\/textbook$/);
+    await page.goto('/');
     await page.getByTestId('open-settings').click();
     await expect(page.getByTestId('reset-progress')).toBeVisible();
     await page.goto('/');

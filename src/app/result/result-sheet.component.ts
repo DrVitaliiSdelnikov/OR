@@ -48,8 +48,13 @@ import { ResultSheetView } from './result.model';
 
         @if (sheet.newTerms.length > 0 || sheet.openedLine) {
           <div class="news" data-test="result-news">
-            @for (term of sheet.newTerms; track term) {
-              <span class="term mono" [style.animation-delay.ms]="$index * 250" data-test="result-term">новый термин · {{ term }}</span>
+            @if (sheet.newTerms.length > 0) {
+              <div class="terms-label mono">новые термины</div>
+              <div class="terms">
+                @for (term of sheet.newTerms; track term) {
+                  <button class="term mono" type="button" [style.animation-delay.ms]="$index * 250" (click)="termOpen.emit(term)" data-test="result-term">{{ term }}</button>
+                }
+              </div>
             }
             @if (sheet.openedLine; as opened) {
               <div class="opened mono" data-test="result-opened">{{ opened }}</div>
@@ -99,7 +104,9 @@ import { ResultSheetView } from './result.model';
     .main-error { padding-left: var(--space-2); border-left: 2px solid var(--paper-red-pencil); font: 700 var(--type-label) / 18px var(--font-mono); color: var(--paper-red-pencil); }
     .main-error.clean { border-color: var(--paper-ink); color: var(--paper-ink); }
     .news { display: flex; flex-direction: column; gap: 4px; }
-    .term { font: 500 12px / 16px var(--font-mono); animation: term-in 0.3s ease-out both; }
+    .terms-label { font: 500 12px / 16px var(--font-mono); color: var(--paper-graphite); text-transform: uppercase; letter-spacing: var(--tracking-label); }
+    .terms { display: flex; flex-wrap: wrap; gap: 6px; }
+    .term { min-height: var(--touch-min); padding: 0 var(--space-3); border: 1.5px solid var(--paper-ink); border-radius: var(--radius-paper); background: transparent; color: var(--paper-ink); font: 500 12px / 16px var(--font-mono); animation: term-in 0.3s ease-out both; }
     .opened { margin-top: 4px; font: 700 var(--type-label) / 18px var(--font-mono); }
     .foot { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-2); padding: var(--space-2) var(--gutter) var(--space-3); }
     .foot:has(> :nth-child(2):last-child) { grid-template-columns: 1.4fr 1fr; }
@@ -118,6 +125,7 @@ export class ResultSheetComponent implements OnInit {
   readonly next = output<void>();
   readonly repeat = output<void>();
   readonly journal = output<void>();
+  readonly termOpen = output<string>();
 
   private readonly feedback = inject(FeedbackService);
   protected readonly groupLine = computed(() => groupText(this.group()));

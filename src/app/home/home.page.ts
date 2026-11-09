@@ -25,7 +25,7 @@ const INTRO_ID = '00';
         <nav class="menu">
           <a class="tile" routerLink="/course" data-test="tile-course"><span class="number">01</span>Снайперская подготовка</a>
           <a class="tile" routerLink="/free" data-test="tile-free"><span class="number">02</span>Свободная игра</a>
-          <button class="tile" type="button" (click)="showLater()" data-test="tile-textbook"><span class="number">03</span>Учебник курсанта</button>
+          <a class="tile" routerLink="/textbook" data-test="tile-textbook"><span class="number">03</span>Учебник курсанта</a>
           <a class="tile" routerLink="/journal" data-test="tile-journal"><span class="number">04</span>Журнал стрелка</a>
         </nav>
 
