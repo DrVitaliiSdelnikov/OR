@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RIFLE } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
-import { gaugeWindAt } from '../../core/scenario';
+import { gaugeWindAt, windAt } from '../../core/scenario';
 import { exerciseById } from '../../sim/course';
 import { CauseKind, groupPoint, MissBreakdown } from '../../sim/miss-breakdown';
 import { PositionSession } from './position-session';
@@ -54,6 +54,14 @@ describe('PositionSession — firing with a tap', () => {
     expect(session.scope.bolt.canFire).toBe(true);
     expect(session.firingLine.magazineLeft).toBe(4);
     expect(session.hasFired).toBe(true);
+  });
+
+  it('the shot keeps the wind at the shooter at that moment — for the journal statistics', async () => {
+    const session = await start('04');
+    dialToTarget(session);
+    const shot = (await shoot(session, ON_TARGET))!;
+    expect(shot.record.windSpeedMps).toBe(windAt(session.scenario, session.scenario.startTimeS)[0].speedMps);
+    expect(shot.record.windSpeedMps).toBeGreaterThan(0);
   });
 
   it('a reticle on the target with an undialled turret is a data miss, not an execution one', async () => {

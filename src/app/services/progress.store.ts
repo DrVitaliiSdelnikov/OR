@@ -1,10 +1,11 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { ExerciseClass } from '../../core/exercise-scoring';
-import { CartridgeId, Correction } from '../../core/types';
+import { CartridgeId } from '../../core/types';
 import { CourseResults, ExerciseId } from '../../sim/course';
 import { DEFAULT_FREE_PLAY, FreePlaySettings, knownFreePlay } from '../../sim/free-play';
 import { withExerciseResult, withIntroCompleted } from '../home/home.model';
+import { JournalSeries, withSeries } from '../journal/journal.model';
 import { DopeNotes, withDopeNote } from '../review/review.model';
 
 export const PROGRESS_STORAGE_KEY = 'or.progress.v1';
@@ -17,30 +18,10 @@ export interface Settings {
   isEverythingUnlocked: boolean;
 }
 
-export interface ShotRecord {
-  id: string;
-  taskTitle: string;
-  shotNumber: number;
-  firedAtIso: string;
-  distanceM: number;
-  scopeId: string;
-  isHit: boolean;
-  missMrad: number;
-  radiusMrad: number;
-  impact: Correction;
-  dial: Correction;
-  ideal: Correction;
-  hold: Correction;
-  triggerQuality: number;
-  hitProbability: number;
-  luck: number;
-  timeOfFlightS: number;
-}
-
 interface ProgressState {
   course: CourseResults;
   settings: Settings;
-  shots: ShotRecord[];
+  series: JournalSeries[];
   dopeNotes: DopeNotes;
   freePlay: FreePlaySettings;
 }
@@ -57,11 +38,11 @@ const EMPTY_COURSE: CourseResults = { isIntroCompleted: false, bestClasses: {} }
 
 @Injectable({ providedIn: 'root' })
 export class ProgressStore {
-  private readonly state = signal<ProgressState>({ course: EMPTY_COURSE, settings: DEFAULT_SETTINGS, shots: [], dopeNotes: {}, freePlay: DEFAULT_FREE_PLAY });
+  private readonly state = signal<ProgressState>({ course: EMPTY_COURSE, settings: DEFAULT_SETTINGS, series: [], dopeNotes: {}, freePlay: DEFAULT_FREE_PLAY });
 
   readonly course = computed(() => this.state().course);
   readonly settings = computed(() => this.state().settings);
-  readonly shots = computed(() => this.state().shots);
+  readonly journal = computed(() => this.state().series);
   readonly dopeNotes = computed(() => this.state().dopeNotes);
   readonly freePlay = computed(() => this.state().freePlay);
 
@@ -75,7 +56,7 @@ export class ProgressStore {
       this.state.set({
         course: stored.course ?? EMPTY_COURSE,
         settings: knownSettings(stored.settings),
-        shots: stored.shots ?? [],
+        series: Array.isArray(stored.series) ? stored.series : [],
         dopeNotes: stored.dopeNotes ?? {},
         freePlay: knownFreePlay(stored.freePlay),
       });
@@ -96,6 +77,10 @@ export class ProgressStore {
     this.update(state => ({ ...state, dopeNotes: withDopeNote(state.dopeNotes, cartridgeId, distanceM, elevationMil) }));
   }
 
+  addSeries(series: JournalSeries): void {
+    this.update(state => ({ ...state, series: withSeries(state.series, series) }));
+  }
+
   updateFreePlay(patch: Partial<FreePlaySettings>): void {
     this.update(state => ({ ...state, freePlay: { ...state.freePlay, ...patch } }));
   }
@@ -105,7 +90,7 @@ export class ProgressStore {
   }
 
   resetProgress(): void {
-    this.update(state => ({ ...state, course: EMPTY_COURSE, shots: [], dopeNotes: {} }));
+    this.update(state => ({ ...state, course: EMPTY_COURSE, series: [], dopeNotes: {} }));
   }
 
   private update(change: (state: ProgressState) => ProgressState): void {

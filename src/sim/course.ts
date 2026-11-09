@@ -104,6 +104,7 @@ export interface ExerciseShotRecord {
   isCallAccurate?: boolean;
   isAmbush?: boolean;
   mainCause?: MainCause | null;
+  windSpeedMps?: number;
 }
 
 export interface ExerciseRun {

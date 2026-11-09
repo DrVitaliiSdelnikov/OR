@@ -39,9 +39,9 @@ const SECOND_CLASS_SHARE = 0.85;
 const FIRST_CLASS_SHARE = 1;
 const SHARE_EPSILON = 1e-9;
 const FIRST_SHOT_POINTS = 10;
-const STAMP_TONES: Record<ExerciseClass, StampTone> = { 0: 'red', 1: 'gold', 2: 'silver', 3: 'bronze' };
+export const STAMP_TONES: Record<ExerciseClass, StampTone> = { 0: 'red', 1: 'gold', 2: 'silver', 3: 'bronze' };
 const MAIN_CAUSE_ORDER: readonly MainCause[] = ['calc', 'wind-under', 'wind-over', 'hold', 'trigger', 'zero'];
-const MAIN_CAUSE_PHRASES: Record<MainCause, string> = {
+export const MAIN_CAUSE_PHRASES: Record<MainCause, string> = {
   calc: 'ошибка расчёта',
   'wind-under': 'недооценка ветра',
   'wind-over': 'переоценка ветра',

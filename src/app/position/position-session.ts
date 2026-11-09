@@ -356,6 +356,7 @@ export class PositionSession {
       isDialExactFirstTry: isFirstShotAtTarget && isDialExactFirstTry,
       isBreathHeld,
       mainCause: mainCauseOf(breakdown),
+      windSpeedMps: windAt(this.scenario, timeS)[0].speedMps,
       ...(check ? { check } : {}),
       ...(rangeEstimateM !== undefined ? { rangeEstimateM } : {}),
     };

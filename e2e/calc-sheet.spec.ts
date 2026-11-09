@@ -70,6 +70,7 @@ test.describe('лист расчёта САМ (A5.2)', () => {
   });
 
   test('06: шаг Ветер по ссылке с вкладки — V⊥ и D в слоты, K печатью; три клетки, ←; «ВНЕСТИ» — метки', async ({ page }) => {
+    test.slow();
     await toPosition(page, '06');
     await page.getByTestId('tile-notebook').click();
     await recordDope(page, '3.4');

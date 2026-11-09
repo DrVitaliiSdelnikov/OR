@@ -16,6 +16,7 @@ import { Vector2 } from '../../sim/noise';
 import { TurretCorrection } from '../../sim/shot-review';
 import { formatScopeValue, reticleSubtensionScale, TurretMove } from '../../sim/scope-model';
 import { InstructorSnapshot } from '../instructor/instructor-snapshot';
+import { journalSeries } from '../journal/journal.model';
 import { RadioPlateComponent } from '../instructor/radio-plate.component';
 import { forgottenFactorRadio, offMarksRadio, RADIO_EMPTY_CHAMBER, RadioLine } from '../instructor/radio.model';
 import { TeachingOverlayComponent } from '../instructor/teaching-overlay.component';
@@ -198,6 +199,8 @@ export class PositionPage {
   private lastCorrection: TurretCorrection | null = null;
   private dialAtLastShot = { elevation: 0, windageLeft: 0 };
   private aimLimitsKey = '';
+  private seriesStartedAtIso = new Date().toISOString();
+  private savedSeriesSession: PositionSession | null = null;
   private aimLimitsSession: PositionSession | null = null;
   private readonly glassPointers = new Map<number, Vector2>();
   private pinchDistancePt: number | null = null;
@@ -206,6 +209,7 @@ export class PositionPage {
   constructor() {
     const destroyRef = inject(DestroyRef);
     destroyRef.onDestroy(() => {
+      this.saveSeries();
       cancelAnimationFrame(this.frameHandle);
       if (this.radioTimer) {
         clearTimeout(this.radioTimer);
@@ -339,6 +343,7 @@ export class PositionPage {
     if (session && result && isExerciseTask(session.def)) {
       const courseBefore = this.progress.course();
       this.progress.recordExerciseResult(session.def.id, result.exerciseClass, result.total);
+      this.saveSeries();
       this.reviewFrame.set(this.fullFrame());
       this.end.set(resultSheet({ def: session.def, result, records: session.records, courseBefore, courseAfter: this.progress.course() }));
     }
@@ -350,7 +355,9 @@ export class PositionPage {
     if (!session) {
       return;
     }
+    this.saveSeries();
     const repeat = await session.restartForRecalc(this.engine);
+    this.seriesStartedAtIso = new Date().toISOString();
     this.reviewedShot.set(null);
     this.end.set(null);
     this.marks.length = 0;
@@ -457,6 +464,7 @@ export class PositionPage {
 
   protected leave(): void {
     this.isLeaveConfirmOpen.set(false);
+    this.saveSeries();
     void this.router.navigate(this.isFreePlay() ? ['/free'] : ['/course', this.exerciseId()]);
   }
 
@@ -548,8 +556,27 @@ export class PositionPage {
       accessibility: { isZoneLarger: settings.isTriggerZoneLarger, isMarkerDriftOff: settings.isMarkerDriftOff },
     });
     this.startedAtMs = performance.now();
+    this.seriesStartedAtIso = new Date().toISOString();
     this.session.set(session);
     this.refresh();
+  }
+
+  private saveSeries(): void {
+    const session = this.session();
+    if (!session || session === this.savedSeriesSession) {
+      return;
+    }
+    const series = journalSeries({
+      id: `${this.seriesStartedAtIso}-${session.scenario.seed}`,
+      task: session.def,
+      startedAtIso: this.seriesStartedAtIso,
+      records: session.records,
+      result: session.result(),
+    });
+    if (series) {
+      this.savedSeriesSession = session;
+      this.progress.addSeries(series);
+    }
   }
 
   private startLoop(): void {

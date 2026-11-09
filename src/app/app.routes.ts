@@ -7,6 +7,6 @@ export const routes: Routes = [
   { path: 'position/:exerciseId', loadComponent: () => import('./position/position.page').then(module => module.PositionPage) },
   { path: 'free', loadComponent: () => import('./free/free-play.page').then(module => module.FreePlayPage) },
   { path: 'settings', loadComponent: () => import('./settings/settings.page').then(module => module.SettingsPage) },
-  { path: 'journal', loadComponent: () => import('./log/log.page').then(module => module.LogPage) },
+  { path: 'journal', loadComponent: () => import('./journal/journal.page').then(module => module.JournalPage) },
   { path: '**', redirectTo: '' },
 ];
