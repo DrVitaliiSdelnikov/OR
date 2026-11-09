@@ -20,6 +20,7 @@ import { TeachingOverlayComponent } from '../instructor/teaching-overlay.compone
 import { forgottenFactorTeaching, isFactorGuarded, nextTeaching, teachingScript, TeachingView } from '../instructor/teaching.model';
 import { NotebookSheetComponent } from '../notebook/notebook-sheet.component';
 import { clockText, NotebookTab } from '../notebook/notebook.model';
+import { aimLimitsMil } from '../scene/scene.model';
 import { ScopeRenderer } from '../scene/scope-renderer';
 import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
@@ -185,6 +186,8 @@ export class PositionPage {
   private radioTimer: ReturnType<typeof setTimeout> | null = null;
   private lastCorrection: TurretCorrection | null = null;
   private dialAtLastShot = { elevation: 0, windageLeft: 0 };
+  private aimLimitsKey = '';
+  private aimLimitsSession: PositionSession | null = null;
   private readonly glassPointers = new Map<number, Vector2>();
   private pinchDistancePt: number | null = null;
   private ringDrag: { lastPt: number; remainderPt: number } | null = null;
@@ -557,6 +560,7 @@ export class PositionPage {
   }
 
   private draw(session: PositionSession): void {
+    this.keepAimInScene(session);
     const zones = windAt(session.scenario, this.scenarioTimeS(session));
     this.renderer?.draw({
       scope: session.scope.scope,
@@ -564,10 +568,22 @@ export class PositionPage {
       reticleScale: reticleSubtensionScale(session.scope.scope, session.scope.magnification),
       targetOffsetPt: session.scope.targetOffsetPt,
       targetRadiusMil: targetRadiusMrad(session.target),
+      targetDistanceM: session.target.distanceM,
+      nearWindMps: lateralWindMps(zones[0]),
       marks: this.marks,
       flags: session.scenario.flags.map((flag, index) => ({ distanceM: flag.distanceM, lateralWindMps: lateralWindMps(zones[index + 1]) })),
       timeS: performance.now() / 1000,
     });
+  }
+
+  private keepAimInScene(session: PositionSession): void {
+    const radiusMil = targetRadiusMrad(session.target);
+    const key = `${session.target.distanceM}:${radiusMil}:${session.scope.magnification}`;
+    if (key !== this.aimLimitsKey || session !== this.aimLimitsSession) {
+      this.aimLimitsKey = key;
+      this.aimLimitsSession = session;
+      session.scope.setAimLimits(aimLimitsMil(session.target.distanceM, radiusMil, session.scope.magnification));
+    }
   }
 
   private zoneView(session: PositionSession): { radius: number; markerX: number; markerY: number } | null {

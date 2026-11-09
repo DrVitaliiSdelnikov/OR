@@ -17,6 +17,18 @@ export interface FireOutcome {
   dial: Correction;
 }
 
+export interface AimLimits {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+function clampedStep(value: number, delta: number, min: number, max: number): number {
+  const next = value + delta;
+  return delta > 0 ? Math.min(next, Math.max(value, max)) : Math.max(next, Math.min(value, min));
+}
+
 export class ScopeSession {
   readonly heart: Heart;
   readonly sway: ScopeSway;
@@ -26,6 +38,7 @@ export class ScopeSession {
   magnification: number;
   aim: Vector2 = { ...INITIAL_AIM_MIL };
   trigger: TriggerPull | null = null;
+  private aimLimits: AimLimits | null = null;
   private readonly random: RandomSource;
   private shotCounter = 0;
   private lastBeat = false;
@@ -94,9 +107,23 @@ export class ScopeSession {
     return move;
   }
 
+  setAimLimits(limits: AimLimits): void {
+    this.aimLimits = limits;
+    this.aim = {
+      x: Math.min(limits.maxX, Math.max(limits.minX, this.aim.x)),
+      y: Math.min(limits.maxY, Math.max(limits.minY, this.aim.y)),
+    };
+  }
+
   dragPicture(deltaXPt: number, deltaYPt: number): void {
-    this.aim.x -= deltaXPt / this.ptPerMil;
-    this.aim.y += deltaYPt / this.ptPerMil;
+    const deltaX = -deltaXPt / this.ptPerMil;
+    const deltaY = deltaYPt / this.ptPerMil;
+    const limits = this.aimLimits;
+    if (!limits) {
+      this.aim = { x: this.aim.x + deltaX, y: this.aim.y + deltaY };
+      return;
+    }
+    this.aim = { x: clampedStep(this.aim.x, deltaX, limits.minX, limits.maxX), y: clampedStep(this.aim.y, deltaY, limits.minY, limits.maxY) };
   }
 
   resetAim(): void {

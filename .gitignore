@@ -46,3 +46,6 @@ Thumbs.db
 # Tests
 /test-results
 /playwright-report
+
+# scene preparation checks (tools/scene/prepare.py)
+tools/scene/*-check.png

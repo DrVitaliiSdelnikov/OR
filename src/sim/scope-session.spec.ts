@@ -117,4 +117,44 @@ describe('ScopeSession', () => {
     expect(Math.abs(session.aim.y - before.y)).toBeLessThanOrEqual(BOLT_KNOCK_MIL);
     expect(session.aim).not.toEqual(before);
   });
+
+  describe('aim limits', () => {
+    const limits = { minX: -20, maxX: 20, minY: -10, maxY: 5 };
+
+    it('a drag stops at the limit and can come back', () => {
+      const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
+      session.setAimLimits(limits);
+      session.aim = { x: 0, y: 0 };
+      session.dragPicture(0, 100 * session.ptPerMil);
+      expect(session.aim.y).toBe(5);
+      session.dragPicture(0, -2 * session.ptPerMil);
+      expect(session.aim.y).toBeCloseTo(3, 9);
+      session.dragPicture(-100 * session.ptPerMil, -100 * session.ptPerMil);
+      expect(session.aim).toEqual({ x: 20, y: -10 });
+    });
+
+    it('beyond the limit after a turret turn: a drag further is held, a drag back works', () => {
+      const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
+      session.setAimLimits(limits);
+      session.aim = { x: 0, y: -12 };
+      session.dragPicture(0, -1 * session.ptPerMil);
+      expect(session.aim.y).toBe(-12);
+      session.dragPicture(0, 1 * session.ptPerMil);
+      expect(session.aim.y).toBeCloseTo(-11, 9);
+    });
+
+    it('new limits bring the aim back inside', () => {
+      const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
+      session.aim = { x: 30, y: 8 };
+      session.setAimLimits(limits);
+      expect(session.aim).toEqual({ x: 20, y: 5 });
+    });
+
+    it('without limits the picture moves freely', () => {
+      const session = new ScopeSession(scopeById('tree'), 62, 1, accessibility, MAGAZINE_CAPACITY);
+      session.aim = { x: 0, y: 0 };
+      session.dragPicture(0, 100 * session.ptPerMil);
+      expect(session.aim.y).toBeCloseTo(100, 9);
+    });
+  });
 });

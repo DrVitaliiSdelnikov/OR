@@ -1,0 +1,147 @@
+import { describe, expect, it } from 'vitest';
+import { ptPerMil } from '../../sim/scope-model';
+import { aimLimitsMil, bermLayout, flagFootY, gongFrame, grassFrame, isFlagBeforeBerm, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, PHOTO, skyFrame } from './scene.model';
+
+const GLASS_PT = 276;
+const AT_8X = ptPerMil(8);
+const target = { x: 138, y: 138 };
+const halfMetreAt300 = (0.25 / 300) * 1000;
+
+describe('scene layout — the gong', () => {
+  it('0.5 m at 300 m on 8×: the plate is 1.67 MIL wide and centred on the target', () => {
+    const frame = gongFrame(target, halfMetreAt300, AT_8X);
+    const platePt = frame.width * (PHOTO.gong.plateDiameterPx / PHOTO.gong.width);
+    expect(platePt).toBeCloseTo(1.667 * AT_8X, 1);
+    expect(frame.x + PHOTO.gong.plateCentrePx.x * (frame.width / PHOTO.gong.width)).toBeCloseTo(target.x, 6);
+    expect(frame.y + PHOTO.gong.plateCentrePx.y * (frame.height / PHOTO.gong.height)).toBeCloseTo(target.y, 6);
+  });
+
+  it('the ground under the stand lies 1.48 plate diameters below the centre', () => {
+    expect(groundLineY(target, halfMetreAt300, AT_8X)).toBeCloseTo(target.y + 1.48 * 1.667 * AT_8X, 0);
+  });
+});
+
+describe('scene layout — the berm', () => {
+  it('2 m high: 6.67 MIL at 300 m, 3.33 at 600 m; its foot on the ground line', () => {
+    const groundY = 200;
+    const near = bermLayout(target.x, groundY, 300, AT_8X, GLASS_PT);
+    const far = bermLayout(target.x, groundY, 600, AT_8X, GLASS_PT);
+    const bermPt = (layout: typeof near) => (PHOTO.berm.basePx - PHOTO.berm.topPx) * (layout.tileHeight / PHOTO.berm.height);
+    expect(bermPt(near)).toBeCloseTo(6.667 * AT_8X, 1);
+    expect(bermPt(far)).toBeCloseTo(3.333 * AT_8X, 1);
+    expect(near.y + PHOTO.berm.basePx * (near.tileHeight / PHOTO.berm.height)).toBeCloseTo(groundY, 6);
+    expect(near.y + PHOTO.berm.topPx * (near.tileHeight / PHOTO.berm.height)).toBeCloseTo(near.topY, 6);
+  });
+
+  it('tiles cover the whole glass whatever the aim offset', () => {
+    for (const targetX of [-400, 0, 138, 700]) {
+      const layout = bermLayout(targetX, 200, 300, ptPerMil(3), GLASS_PT);
+      expect(layout.tileXs[0]).toBeLessThanOrEqual(0);
+      expect(layout.tileXs[layout.tileXs.length - 1] + layout.tileWidth).toBeGreaterThanOrEqual(GLASS_PT);
+      for (const x of layout.tileXs) {
+        const tilesFromCentred = (x - (targetX - layout.tileWidth / 2)) / layout.tileWidth;
+        expect(Math.abs(tilesFromCentred - Math.round(tilesFromCentred))).toBeLessThan(1e-9);
+      }
+    }
+  });
+});
+
+describe('scene layout — the ground and the sky', () => {
+  it('the ground photo starts at the berm foot; its berm scale is 2 m, so 600 m is half the size of 300 m', () => {
+    const near = groundFrame(target.x, 200, 300, AT_8X);
+    const far = groundFrame(target.x, 200, 600, AT_8X);
+    expect(near.y).toBe(200);
+    expect(near.height / PHOTO.ground.height * PHOTO.ground.bermPx).toBeCloseTo(6.667 * AT_8X, 1);
+    expect(far.width).toBeCloseTo(near.width / 2, 6);
+    expect(near.x + near.width / 2).toBeCloseTo(target.x, 6);
+  });
+
+  it('the sky reaches down to the berm top and drifts at a quarter of the aim', () => {
+    const centred = skyFrame(138, 40, GLASS_PT);
+    const shifted = skyFrame(138 + 100, 40, GLASS_PT);
+    expect(centred.y + centred.height).toBeCloseTo(40, 6);
+    expect(centred.y).toBeLessThanOrEqual(0);
+    expect(shifted.x - centred.x).toBeCloseTo(25, 6);
+    expect(centred.x).toBeLessThanOrEqual(0);
+    expect(centred.x + centred.width).toBeGreaterThanOrEqual(GLASS_PT);
+  });
+});
+
+describe('scene layout — hit marks and near grass', () => {
+  it('a hit inside the plate gets an 8 cm lead mark; a miss does not', () => {
+    const hit = hitMarkFrame(target, { upMrad: 0.3, rightMrad: -0.2 }, halfMetreAt300, 300, AT_8X)!;
+    expect(hit.width).toBeCloseTo((80 / 300) * AT_8X, 6);
+    expect(hit.x + hit.width / 2).toBeCloseTo(target.x - 0.2 * AT_8X, 6);
+    expect(hit.y + hit.height / 2).toBeCloseTo(target.y - 0.3 * AT_8X, 6);
+    expect(hitMarkFrame(target, { upMrad: 0.9, rightMrad: 0 }, halfMetreAt300, 300, AT_8X)).toBeNull();
+    expect(hitMarkFrame(target, { upMrad: 0, rightMrad: 0 }, halfMetreAt300, 600, AT_8X)!.width).toBeCloseTo((80 / 600) * AT_8X, 6);
+  });
+
+  it('the horizon is 500 / D MIL above the ground under the target (eye 0.5 m over the ground)', () => {
+    expect(horizonY(200, 300, AT_8X)).toBeCloseTo(200 - (500 / 300) * AT_8X, 6);
+    expect(horizonY(200, 100, AT_8X)).toBeCloseTo(200 - 5 * AT_8X, 6);
+  });
+
+  it('a flag stands on its own ground: 200 m — 2.5 MIL below the horizon; behind the berm it is not drawn', () => {
+    expect(flagFootY(100, 200, AT_8X)).toBeCloseTo(100 + 2.5 * AT_8X, 6);
+    expect(isFlagBeforeBerm(200, 300)).toBe(true);
+    expect(isFlagBeforeBerm(400, 300)).toBe(false);
+    expect(isFlagBeforeBerm(300, 300)).toBe(false);
+  });
+
+  it('near grass stands in the world: tied to the target, tops 6 MIL below the horizon, centred on the target plus the sway', () => {
+    const grass = grassFrame(138, 200, 300, AT_8X, 0);
+    expect(grass.y).toBeCloseTo(horizonY(200, 300, AT_8X) + 6 * AT_8X, 6);
+    expect(grass.x + grass.width / 2).toBeCloseTo(138, 6);
+    const aimedAway = grassFrame(138 + 50, 200 - 30, 300, AT_8X, 0);
+    expect(aimedAway.x - grass.x).toBeCloseTo(50, 6);
+    expect(aimedAway.y - grass.y).toBeCloseTo(-30, 6);
+    expect(grassFrame(138, 200, 300, AT_8X, 4).x - grass.x).toBeCloseTo(4, 6);
+  });
+
+  it('at 3× the grass reaches into the glass; at 12× it is out of the field of view below', () => {
+    const glassHalf = 138;
+    const at3 = grassFrame(138, 138 + 0.75 * ptPerMil(3), 300, ptPerMil(3), 0);
+    const at12 = grassFrame(138, 138 + 0.75 * ptPerMil(12), 300, ptPerMil(12), 0);
+    expect(at3.y).toBeLessThan(138 + glassHalf);
+    expect(at12.y).toBeGreaterThan(138 + glassHalf);
+  });
+
+  it('near grass leans with the wind: the sign follows the wind, calm is still', () => {
+    expect(grassSwayPt(0, 1.2)).toBe(0);
+    expect(Math.sign(grassSwayPt(3, 0.4))).toBe(1);
+    expect(Math.sign(grassSwayPt(-3, 0.4))).toBe(-1);
+  });
+});
+
+describe('scene layout — how far the aim may go', () => {
+  const fovHalf = (magnification: number) => 138 / ptPerMil(magnification);
+  const groundUnderTarget = 1.48 * 1.667;
+
+  it('300 m, 8×: the bottom of the view stops at the end of the ground photo, the top 6 MIL above the berm', () => {
+    const limits = aimLimitsMil(300, halfMetreAt300, 8);
+    const groundBottom = -groundUnderTarget - (PHOTO.ground.height / PHOTO.ground.bermPx) * (2000 / 300);
+    expect(limits.minY).toBeCloseTo(groundBottom + fovHalf(8), 2);
+    const bermTop = -groundUnderTarget + 2000 / 300;
+    expect(limits.maxY).toBeCloseTo(Math.max(bermTop + 6 - fovHalf(8), 6), 2);
+    expect([limits.minX, limits.maxX]).toEqual([-20, 20]);
+  });
+
+  it('the target and a 6 MIL hold stay reachable even when the scene is smaller than the view (3×, 1000 m)', () => {
+    const limits = aimLimitsMil(1000, (0.25 / 1000) * 1000, 3);
+    expect(limits.minY).toBeLessThanOrEqual(-6);
+    expect(limits.maxY).toBeGreaterThanOrEqual(6);
+  });
+
+  it('100 m, 8× (zeroing): the berm is tall, so the top limit is the sky band above it, not the hold reserve', () => {
+    const plateRadiusMil = (0.25 / 100) * 1000;
+    const groundRatio = (PHOTO.gong.standBottomPx - PHOTO.gong.plateCentrePx.y) / PHOTO.gong.plateDiameterPx;
+    const bermTop = -groundRatio * 2 * plateRadiusMil + 2000 / 100;
+    expect(aimLimitsMil(100, plateRadiusMil, 8).maxY).toBeCloseTo(bermTop + 6 - fovHalf(8), 2);
+  });
+
+  it('more magnification — a narrower view — lets the aim go further down', () => {
+    expect(aimLimitsMil(300, halfMetreAt300, 12).minY).toBeLessThan(aimLimitsMil(300, halfMetreAt300, 6).minY);
+  });
+});
+

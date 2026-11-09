@@ -2,6 +2,8 @@ import { flagAngleDeg } from '../../core/content';
 import { Correction } from '../../core/types';
 import { Vector2 } from '../../sim/noise';
 import { EYEPIECE_RADIUS_PT, MRAD_PER_MOA, ScopeModel } from '../../sim/scope-model';
+import { loadSceneImages, SceneImages } from './scene-images';
+import { bermLayout, flagFootY, gongFrame, grassFrame, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, isFlagBeforeBerm, skyFrame, tileXs } from './scene.model';
 
 export interface FlagView {
   distanceM: number;
@@ -14,23 +16,31 @@ export interface SceneFrame {
   reticleScale: number;
   targetOffsetPt: Vector2;
   targetRadiusMil: number;
+  targetDistanceM: number;
+  nearWindMps: number;
   marks: Correction[];
   flags: FlagView[];
   timeS: number;
 }
 
 const FLAG_SIDE_OFFSET_M = 2.5;
+/** @deprecated Drawn-scene flag feet; the photo scene uses `flagFootY`. Remove in A9.2. */
 const FLAG_DROP_MIL: Record<number, number> = { 200: 6, 400: 3, 600: 1.5 };
 const DEVICE_PIXEL_RATIO = 2;
 export const GLASS_SIZE_PT = EYEPIECE_RADIUS_PT * 2;
 
+const SKY_FILL = '#c9d3d6';
+const GROUND_FILL = '#8f7f55';
+
 export class ScopeRenderer {
   private readonly context: CanvasRenderingContext2D;
+  private images: SceneImages | null = null;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     canvas.width = GLASS_SIZE_PT * DEVICE_PIXEL_RATIO;
     canvas.height = GLASS_SIZE_PT * DEVICE_PIXEL_RATIO;
     this.context = canvas.getContext('2d')!;
+    void loadSceneImages().then(images => (this.images = images));
   }
 
   draw(frame: SceneFrame): void {
@@ -45,15 +55,25 @@ export class ScopeRenderer {
 
     const targetX = center + frame.targetOffsetPt.x;
     const targetY = center + frame.targetOffsetPt.y;
-    this.drawScene(frame, targetX, targetY);
-    this.drawTarget(frame, targetX, targetY);
-    this.drawFlags(frame, targetX, targetY);
-    this.drawMarks(frame, targetX, targetY);
+    const images = this.images;
+    if (images) {
+      this.drawPhotoScene(images, frame, targetX, targetY);
+      this.drawGong(images, frame, targetX, targetY);
+    } else {
+      this.drawScene(frame, targetX, targetY);
+      this.drawTarget(frame, targetX, targetY);
+    }
+    this.drawFlags(frame, targetX, targetY, images !== null);
+    if (images) {
+      this.drawNearGrass(images, frame, targetX, targetY);
+    }
+    this.drawMarks(frame, targetX, targetY, images);
     this.drawReticle(frame, center);
     this.drawVignette(center);
     context.restore();
   }
 
+  /** @deprecated Fallback until the scene photos load; remove in A9.2 when they become required. */
   private drawScene(frame: SceneFrame, targetX: number, targetY: number): void {
     const context = this.context;
     const horizonY = targetY - 2.2 * frame.ptPerMil;
@@ -78,6 +98,50 @@ export class ScopeRenderer {
     }
   }
 
+  private drawPhotoScene(images: SceneImages, frame: SceneFrame, targetX: number, targetY: number): void {
+    const context = this.context;
+    const target = { x: targetX, y: targetY };
+    const groundY = groundLineY(target, frame.targetRadiusMil, frame.ptPerMil);
+    const berm = bermLayout(targetX, groundY, frame.targetDistanceM, frame.ptPerMil, GLASS_SIZE_PT);
+    context.fillStyle = SKY_FILL;
+    context.fillRect(0, 0, GLASS_SIZE_PT, GLASS_SIZE_PT);
+    if (berm.topY > 0) {
+      const sky = skyFrame(targetX, berm.topY, GLASS_SIZE_PT);
+      context.drawImage(images.sky, sky.x, sky.y, sky.width, sky.height);
+    }
+    const ground = groundFrame(targetX, groundY, frame.targetDistanceM, frame.ptPerMil);
+    context.fillStyle = GROUND_FILL;
+    context.fillRect(0, ground.y + ground.height - 1, GLASS_SIZE_PT, GLASS_SIZE_PT);
+    for (const x of tileXs(targetX, ground.width, GLASS_SIZE_PT)) {
+      context.drawImage(images.ground, x, ground.y, ground.width, ground.height);
+    }
+    for (const x of berm.tileXs) {
+      context.drawImage(images.berm, x, berm.y, berm.tileWidth, berm.tileHeight);
+    }
+    const shimmerShift = Math.sin(frame.timeS * 2.4) * 1.1;
+    context.fillStyle = 'rgba(255,255,255,0.05)';
+    for (let band = 0; band < 6; band++) {
+      context.fillRect(shimmerShift * (band % 2 ? 1 : -1), groundY - band * 6, GLASS_SIZE_PT, 2);
+    }
+  }
+
+  private drawGong(images: SceneImages, frame: SceneFrame, targetX: number, targetY: number): void {
+    const gong = gongFrame({ x: targetX, y: targetY }, frame.targetRadiusMil, frame.ptPerMil);
+    this.context.drawImage(images.gong, gong.x, gong.y, gong.width, gong.height);
+  }
+
+  private drawNearGrass(images: SceneImages, frame: SceneFrame, targetX: number, targetY: number): void {
+    const groundY = groundLineY({ x: targetX, y: targetY }, frame.targetRadiusMil, frame.ptPerMil);
+    const grass = grassFrame(targetX, groundY, frame.targetDistanceM, frame.ptPerMil, grassSwayPt(frame.nearWindMps, frame.timeS));
+    if (grass.y >= GLASS_SIZE_PT) {
+      return;
+    }
+    for (const x of tileXs(grass.x + grass.width / 2, grass.width, GLASS_SIZE_PT)) {
+      this.context.drawImage(images.grass, x, grass.y, grass.width, grass.height);
+    }
+  }
+
+  /** @deprecated Fallback until the scene photos load; remove in A9.2 when they become required. */
   private drawTarget(frame: SceneFrame, targetX: number, targetY: number): void {
     const context = this.context;
     const radiusPt = frame.targetRadiusMil * frame.ptPerMil;
@@ -98,12 +162,16 @@ export class ScopeRenderer {
     context.fill();
   }
 
-  private drawFlags(frame: SceneFrame, targetX: number, targetY: number): void {
+  private drawFlags(frame: SceneFrame, targetX: number, targetY: number, isPhotoScene: boolean): void {
     const context = this.context;
+    const horizon = horizonY(groundLineY({ x: targetX, y: targetY }, frame.targetRadiusMil, frame.ptPerMil), frame.targetDistanceM, frame.ptPerMil);
     for (const flag of frame.flags) {
+      if (isPhotoScene && !isFlagBeforeBerm(flag.distanceM, frame.targetDistanceM)) {
+        continue;
+      }
       const sideMil = (FLAG_SIDE_OFFSET_M / flag.distanceM) * 1000;
       const poleX = targetX - sideMil * frame.ptPerMil;
-      const poleBottomY = targetY + (FLAG_DROP_MIL[flag.distanceM] ?? 2) * frame.ptPerMil;
+      const poleBottomY = isPhotoScene ? flagFootY(horizon, flag.distanceM, frame.ptPerMil) : targetY + (FLAG_DROP_MIL[flag.distanceM] ?? 2) * frame.ptPerMil;
       const poleHeightPt = (2.5 / flag.distanceM) * 1000 * frame.ptPerMil;
       const poleTopY = poleBottomY - poleHeightPt;
       context.strokeStyle = '#3a3a3a';
@@ -125,9 +193,17 @@ export class ScopeRenderer {
     }
   }
 
-  private drawMarks(frame: SceneFrame, targetX: number, targetY: number): void {
+  private drawMarks(frame: SceneFrame, targetX: number, targetY: number, images: SceneImages | null): void {
     const context = this.context;
-    for (const mark of frame.marks) {
+    for (const [index, mark] of frame.marks.entries()) {
+      const hit = images ? hitMarkFrame({ x: targetX, y: targetY }, mark, frame.targetRadiusMil, frame.targetDistanceM, frame.ptPerMil) : null;
+      if (images && hit) {
+        context.save();
+        context.globalCompositeOperation = 'multiply';
+        context.drawImage(images.hitMarks[index % images.hitMarks.length], hit.x, hit.y, hit.width, hit.height);
+        context.restore();
+        continue;
+      }
       context.strokeStyle = '#ffe08a';
       context.lineWidth = 1.5;
       context.beginPath();

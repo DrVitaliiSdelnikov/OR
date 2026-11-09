@@ -130,6 +130,8 @@ flowchart LR
 
 Подсказки инструктора (A6.4): ![Переключатель на брифинге](screens/46-briefing-instructor.png) ![Обучение, 1 из 8](screens/47-teaching.png) ![Обучение, барабан](screens/48-teaching-drum.png) ![Забытый фактор и рация](screens/49-forgotten-factor.png)
 
+Сцена в стекле из фото (A9.1): ![01, 3×](screens/50-scene-01-3x.png) ![01, 8×](screens/51-scene-01-8x.png) ![04, 3×, флажок](screens/52-scene-04-3x.png) ![07, 12×](screens/53-scene-07-12x.png) ![02, 8× — пока гонг вместо бумаги](screens/54-scene-02-8x.png)
+
 По брифу 08 на токенах A1. Ниже — описание старого хаба, оставлено как история.
 
 Сверху вниз:
