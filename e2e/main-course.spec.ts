@@ -27,7 +27,7 @@ test.describe('главный экран и курс-тропа', () => {
     await expect(page.getByTestId('continue-card')).toContainText('05 · Дистанции: ДОПЕ и дальномер');
     await expect(page.getByTestId('continue-card')).toContainText('новое');
     await page.getByTestId('continue-card').click();
-    await expect(page.getByTestId('sheet-title')).toHaveText('05 · Дистанции: ДОПЕ и дальномер');
+    await expect(page.getByTestId('sheet-title')).toHaveText('Дистанции: ДОПЕ и дальномер');
   });
 
   test('тропа: 13 узлов, штампы, текущий, закрытые не нажимаются', async ({ page }) => {
@@ -48,7 +48,8 @@ test.describe('главный экран и курс-тропа', () => {
     await seedCourse(page, true, { '01': 3 });
     await page.goto('/course');
     await page.getByTestId('node-01').click();
-    await expect(page.getByTestId('sheet-title')).toHaveText('01 · Первые щелчки');
+    await expect(page.getByTestId('briefing-header')).toHaveText('ЗАДАНИЕ 01 · УЧЕБНОЕ');
+    await expect(page.getByTestId('sheet-title')).toHaveText('Первые щелчки');
     await expect(page.getByTestId('sheet-targets')).toHaveText('3 × гонг 0,5 м · 300 м');
     await expect(page.getByTestId('sheet-wind')).toHaveText('штиль');
     await expect(page.getByTestId('to-position')).toBeEnabled();

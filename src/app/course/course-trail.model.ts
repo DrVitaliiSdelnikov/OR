@@ -34,7 +34,7 @@ const LARGE_GONG_FROM_M = 600;
 const PAPER_TARGET_DISTANCE_M = 100;
 const OBLIQUE_CLOCK_COUNT = 8;
 const CARTRIDGE_LETTERS: Record<CartridgeId, string> = { A: 'А', B: 'Б', C: 'В' };
-const MODE_LABELS: Record<NotebookMode, string> = { auto: 'АВТО', 'manual-easy': 'САМ · лёгкий', 'manual-hard': 'САМ · сложный' };
+export const MODE_LABELS: Record<NotebookMode, string> = { auto: 'АВТО', 'manual-easy': 'САМ · лёгкий', 'manual-hard': 'САМ · сложный' };
 const STAMPS: Record<Exclude<ExerciseClass, 0>, ClassStamp> = { 1: 'gold', 2: 'silver', 3: 'bronze' };
 
 export function trailNodes(results: CourseResults, isEverythingUnlocked = false): TrailNode[] {

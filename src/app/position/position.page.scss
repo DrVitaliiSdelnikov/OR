@@ -243,7 +243,6 @@
   stroke-width: 3;
 }
 
-.end-card,
 .confirm {
   position: absolute;
   left: var(--gutter);
@@ -259,30 +258,18 @@
   z-index: 5;
 }
 
-.end-heading {
-  font: 700 var(--type-big) / 32px var(--font-title);
-  letter-spacing: var(--tracking-title);
-  text-transform: uppercase;
-  color: var(--device-error-text);
-
-  &.admitted {
-    color: var(--device-accent);
-  }
-}
-
-.end-numbers,
 .confirm-text {
   font: 500 var(--type-body) / 20px var(--font-mono);
   color: var(--device-text);
 }
 
-.end-actions {
+.confirm-actions {
   display: flex;
   gap: var(--space-2);
 }
 
-.end-main,
-.end-secondary {
+.confirm-stay,
+.confirm-leave {
   flex: 1;
   min-height: var(--touch-min);
   border-radius: var(--radius-device);
@@ -291,13 +278,13 @@
   text-transform: uppercase;
 }
 
-.end-main {
+.confirm-stay {
   border: 0;
   background: var(--device-accent);
   color: var(--device-on-accent);
 }
 
-.end-secondary {
+.confirm-leave {
   border: var(--border-width) solid var(--device-line-strong);
   background: transparent;
   color: var(--device-text);

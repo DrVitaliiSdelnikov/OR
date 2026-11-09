@@ -167,23 +167,29 @@
       }
     }
 
-    @if (end(); as card) {
-      <div class="end-card" data-test="end-card">
-        <div class="end-heading" [class.admitted]="card.isAdmitted" data-test="end-heading">{{ card.heading }}</div>
-        <div class="end-numbers mono">{{ card.points }} · {{ card.share }}</div>
-        <div class="end-actions">
-          <button class="end-main" type="button" (click)="toTrail()" data-test="end-trail">К тропе</button>
-          <button class="end-secondary" type="button" (click)="retry()" data-test="end-retry">Ещё раз</button>
-        </div>
-      </div>
+    @if (end(); as sheet) {
+      @if (session(); as current) {
+        <or-result-sheet
+          class="review-sheet"
+          [style.top.px]="reviewFrame()?.topPt"
+          [style.height.px]="reviewFrame()?.heightPt"
+          [view]="sheet"
+          [group]="current.group"
+          [calls]="current.calls"
+          [radiusMil]="seriesRadiusMil(current)"
+          (next)="toTrail()"
+          (repeat)="toBriefing()"
+          (journal)="toJournal()"
+        />
+      }
     }
 
     @if (isLeaveConfirmOpen()) {
       <div class="confirm" data-test="leave-confirm">
         <div class="confirm-text">Покинуть позицию? Упражнение не засчитается</div>
-        <div class="end-actions">
-          <button class="end-main" type="button" (click)="stay()" data-test="leave-stay">Остаться</button>
-          <button class="end-secondary" type="button" (click)="leave()" data-test="leave-confirm-yes">Покинуть</button>
+        <div class="confirm-actions">
+          <button class="confirm-stay" type="button" (click)="stay()" data-test="leave-stay">Остаться</button>
+          <button class="confirm-leave" type="button" (click)="leave()" data-test="leave-confirm-yes">Покинуть</button>
         </div>
       </div>
     }

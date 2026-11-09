@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { NotebookTotal } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
-import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, endCard, markerTarget, playability, pressureText } from './position.model';
+import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, markerTarget, playability, pressureText } from './position.model';
 
 const scope = scopeById('course-tree');
 
@@ -63,21 +63,6 @@ describe('drum counter', () => {
   it('overshooting says how many clicks are extra; on target says nothing', () => {
     expect(drumCounter('elevation', { remainingClicks: 2, direction: 'down', isOnTarget: false, overshootClicks: 2 })).toBe('лишние 2 кл.');
     expect(drumCounter('elevation', { remainingClicks: 0, direction: 'none', isOnTarget: true, overshootClicks: 0 })).toBe('');
-  });
-});
-
-describe('end card', () => {
-  it('an admitted exercise shows the class and the points', () => {
-    expect(endCard({ targetPoints: [10, 10, 10], hitShare: 1, total: 30, exerciseClass: 1, isAdmitted: true })).toEqual({
-      heading: 'Класс 1',
-      points: '30 очк.',
-      share: '100 %',
-      isAdmitted: true,
-    });
-  });
-
-  it('below 70 % it is not admitted', () => {
-    expect(endCard({ targetPoints: [10, 0, 0], hitShare: 1 / 3, total: 10, exerciseClass: 0, isAdmitted: false }).heading).toBe('Не зачтено');
   });
 });
 

@@ -126,6 +126,8 @@ flowchart LR
 
 Почему ушла пуля, траектории и группа (A6.2): ![Лепестки](screens/39-review-causes.png) ![Сбоку](screens/40-review-flight-side.png) ![Сверху](screens/41-review-flight-top.png) ![Группа](screens/42-review-group.png)
 
+Итог упражнения и брифинг (A6.3): ![Итог](screens/43-result.png) ![Итог, низ](screens/44-result-bottom.png) ![Брифинг](screens/45-briefing.png)
+
 По брифу 08 на токенах A1. Ниже — описание старого хаба, оставлено как история.
 
 Сверху вниз:

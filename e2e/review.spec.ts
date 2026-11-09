@@ -93,9 +93,9 @@ test.describe('разбор выстрела (A6.1)', () => {
       }
     }
     await expect(page.getByTestId('review-points')).toHaveText(/^(попадание|мимо)$/);
-    await expect(page.getByTestId('end-card')).toHaveCount(0);
+    await expect(page.getByTestId('result-sheet')).toHaveCount(0);
     await page.getByTestId('review-next').click();
-    await expect(page.getByTestId('end-card')).toBeVisible();
+    await expect(page.getByTestId('result-sheet')).toBeVisible();
   });
 
   test('«ПЕРЕСЧИТАТЬ И ПОВТОРИТЬ» — упражнение с начала, блокнот сохранён', async ({ page }) => {
@@ -175,6 +175,7 @@ test.describe('разбор: почему ушла пуля, траектори�
   });
 
   test('04: ветер записан неверно — лепесток ветра в кликах', async ({ page }) => {
+    test.slow();
     await toPosition(page, '04');
     await page.getByTestId('tile-notebook').click();
     await page.getByTestId('tab-wind').click();

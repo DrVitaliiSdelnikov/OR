@@ -3,6 +3,7 @@ import { Correction } from '../core/types';
 
 export type CauseKind = 'calc' | 'wind' | 'hold' | 'trigger' | 'zero' | 'formula' | 'rifle' | 'cold-bore';
 export type WindVerdict = 'under' | 'over';
+export type MainCause = Exclude<CauseKind, 'wind' | 'formula' | 'rifle' | 'cold-bore'> | 'wind-under' | 'wind-over';
 
 export interface MissBreakdownInput {
   ideal: Correction;
@@ -68,6 +69,13 @@ export function missBreakdown(input: MissBreakdownInput): MissBreakdown {
     isTriggerClean: trigger.clicks === 0,
     windVerdict: windCause.clicks === 0 ? null : Math.abs(input.formulaPlayerWind.rightMrad) < Math.abs(input.formulaTruth.rightMrad) ? 'under' : 'over',
   };
+}
+
+export function mainCauseOf(breakdown: MissBreakdown): MainCause | null {
+  if (breakdown.main === 'wind') {
+    return breakdown.windVerdict === 'under' ? 'wind-under' : 'wind-over';
+  }
+  return breakdown.main as MainCause | null;
 }
 
 export function groupPoint(breakdown: MissBreakdown): Correction {

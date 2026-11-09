@@ -80,8 +80,8 @@ export class ProgressStore {
     }
   }
 
-  recordExerciseResult(exerciseId: ExerciseId, exerciseClass: ExerciseClass): void {
-    this.update(state => ({ ...state, course: withExerciseResult(state.course, exerciseId, exerciseClass) }));
+  recordExerciseResult(exerciseId: ExerciseId, exerciseClass: ExerciseClass, total: number): void {
+    this.update(state => ({ ...state, course: withExerciseResult(state.course, exerciseId, exerciseClass, total) }));
   }
 
   completeIntro(): void {

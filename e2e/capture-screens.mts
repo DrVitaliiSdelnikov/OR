@@ -149,6 +149,21 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
   await byTest('call-reveal').click();
   await snap(page, `38-review-call-revealed${suffix}`);
 
+  await page.goto(`${BASE_URL}/position/02`);
+  await byTest('fire').waitFor();
+  for (let shot = 0; shot < 5; shot++) {
+    await byTest('fire').click();
+    await byTest('review-next').click();
+    await page.waitForTimeout(1200);
+  }
+  await byTest('result-sheet').waitFor();
+  await snap(page, `43-result${suffix}`);
+  await byTest('result-main-error').scrollIntoViewIfNeeded();
+  await snap(page, `44-result-bottom${suffix}`);
+  await page.goto(`${BASE_URL}/course/10`);
+  await byTest('briefing-card').waitFor();
+  await snap(page, `45-briefing${suffix}`);
+
   if (isFull) {
     await page.goto(`${BASE_URL}/journal`);
     await snap(page, `15-log${suffix}`);

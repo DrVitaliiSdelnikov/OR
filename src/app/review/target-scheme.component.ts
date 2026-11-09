@@ -44,6 +44,12 @@ interface ScenePoint {
           <line [attr.x1]="mark.x" [attr.y1]="mark.y - 7" [attr.x2]="mark.x" [attr.y2]="mark.y + 7" />
         </g>
       }
+      @for (mark of callScenePoints(); track $index) {
+        <g class="series-call" data-test="scheme-series-call">
+          <line [attr.x1]="mark.x - 4" [attr.y1]="mark.y" [attr.x2]="mark.x + 4" [attr.y2]="mark.y" />
+          <line [attr.x1]="mark.x" [attr.y1]="mark.y - 4" [attr.x2]="mark.x" [attr.y2]="mark.y + 4" />
+        </g>
+      }
       @for (point of groupScenePoints(); track $index) {
         <circle class="group-point" [attr.cx]="point.x" [attr.cy]="point.y" r="4" data-test="scheme-group-point" />
       }
@@ -61,6 +67,7 @@ interface ScenePoint {
     .call line { stroke: var(--paper-ink); stroke-width: 2; }
     .player-call line { stroke: var(--paper-red-pencil); stroke-width: 2; }
     .impact { fill: var(--paper-ink); }
+    .series-call line { stroke: var(--paper-graphite); stroke-width: 1.2; }
     .group-point { fill: none; stroke: var(--paper-ink); stroke-width: 2; }
     .impact.clamped { fill: var(--paper-red-pencil); }
   `,
@@ -71,6 +78,7 @@ export class TargetSchemeComponent {
   readonly impact = input<Correction | null>(null);
   readonly playerCall = input<Correction | null>(null);
   readonly groupPoints = input<readonly Correction[]>([]);
+  readonly callPoints = input<readonly Correction[]>([]);
   readonly isPicking = input(false);
   readonly pick = output<Correction>();
 
@@ -83,6 +91,7 @@ export class TargetSchemeComponent {
   protected readonly impactPoint = computed(() => this.toScene(this.impact()));
   protected readonly playerCallPoint = computed(() => this.toScene(this.playerCall()));
   protected readonly groupScenePoints = computed(() => this.groupPoints().map(point => this.toScene(point)!));
+  protected readonly callScenePoints = computed(() => this.callPoints().map(point => this.toScene(point)!));
   protected readonly gridLines = computed(() => {
     const stepPt = GRID_STEP_MIL * 5 * this.ptPerMil();
     const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];

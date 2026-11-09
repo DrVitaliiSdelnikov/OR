@@ -8,6 +8,7 @@ import {
   NotebookMode,
   Rank,
   rankFor,
+  REFERENCE_PENALTY,
   seriesTotal,
   targetPoints,
 } from '../core/exercise-scoring';
@@ -18,6 +19,7 @@ import { CartridgeId, Correction, Target } from '../core/types';
 import { FiringPlan } from './firing-line';
 import { PatrolTarget, patrolPlan } from './patrol';
 import { FreePlayScopeUnlocks, ScopeId } from './scope-model';
+import { MainCause } from './miss-breakdown';
 import { ShotDiagnosis } from './shot-review';
 
 export type ExerciseId = '00' | '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10' | '11' | '12';
@@ -53,6 +55,13 @@ export interface ExerciseDef {
   scopeId: ScopeId;
   conditions: ScenarioOptions;
   terms: readonly string[];
+  goals: ExerciseGoalTexts;
+  novelty: string | null;
+}
+
+export interface ExerciseGoalTexts {
+  second: string;
+  first: string | null;
 }
 
 export interface ExerciseSetup {
@@ -85,6 +94,7 @@ export interface ExerciseShotRecord {
   rangeEstimateM?: number;
   isCallAccurate?: boolean;
   isAmbush?: boolean;
+  mainCause?: MainCause | null;
 }
 
 export interface ExerciseRun {
@@ -94,9 +104,24 @@ export interface ExerciseRun {
   isRepeatAfterRecalc?: boolean;
 }
 
+export interface GoalCheck {
+  isMet: boolean;
+  passed?: number;
+  total?: number;
+  valueMil?: number;
+  limitMil?: number;
+}
+
 export interface SkillGoals {
-  isSkillGoalMet: boolean;
-  isTopSkillGoalMet: boolean;
+  skill: GoalCheck;
+  top: GoalCheck;
+}
+
+export interface ScoreParts {
+  targetSum: number;
+  calcSum: number;
+  multiplier: number;
+  referencePenalty: number;
 }
 
 export interface ExerciseResult {
@@ -105,11 +130,14 @@ export interface ExerciseResult {
   total: number;
   exerciseClass: ExerciseClass;
   isAdmitted: boolean;
+  score: ScoreParts;
+  goals: SkillGoals;
 }
 
 export interface CourseResults {
   isIntroCompleted: boolean;
   bestClasses: Partial<Record<ExerciseId, ExerciseClass>>;
+  bestTotals?: Partial<Record<ExerciseId, number>>;
 }
 
 export interface FreePlayUnlocks extends FreePlayScopeUnlocks {
@@ -153,6 +181,41 @@ const PATROL_MIN_TARGETS_HIT = 7;
 const PATROL_TARGETS = 10;
 const POINTS_PER_PAPER_HIT = 10;
 const DISTANCE_EPSILON_MIL = 1e-9;
+const MET: GoalCheck = { isMet: true };
+const NOT_MET: GoalCheck = { isMet: false };
+const NO_SCORE: ScoreParts = { targetSum: 0, calcSum: 0, multiplier: 1, referencePenalty: 0 };
+
+const GOAL_TEXTS: Record<ExerciseId, ExerciseGoalTexts> = {
+  '00': { second: '', first: null },
+  '01': { second: 'накрутка ровно по итогу с первого раза', first: null },
+  '02': { second: 'группа 2–4 ≤ 1 MIL', first: 'холодный — без срыва спуска, контрольный ≤ 0,3 MIL от точки прицеливания' },
+  '03': { second: 'ни одного сорванного спуска', first: 'все 5 с задержкой дыхания в окне' },
+  '04': { second: 'скорость перенесена без ошибки', first: 'вклад ветра учтён на всех' },
+  '05': { second: 'дальность ±10 % на всех', first: 'дальность ±5 % на всех' },
+  '06': { second: 'проверка расчёта без «ошибки» на всех', first: '«точно» на всех' },
+  '07': { second: 'условия учтены на всех', first: '«точно» на всех' },
+  '08': { second: 'верный расчёт для всех трёх патронов', first: '«точно» для всех трёх' },
+  '09': { second: 'ни одной ошибки СТОРОНА', first: '«точно» на всех' },
+  '10': { second: 'все промахи первым выстрелом добиты вторым', first: 'вызов точен (≤ 0,2 MIL) на всех' },
+  '11': { second: '≥ 7 из 10 и ни одной ошибки СТОРОНА', first: '10 из 10, засадой — все первым выстрелом' },
+  '12': { second: 'без справочника', first: 'САМ сложный' },
+};
+
+const NOVELTIES: Record<ExerciseId, string | null> = {
+  '00': 'знакомство: части винтовки и прицела, барабан двигает сетку, кратность, сетки',
+  '01': 'барабаны, клики, ДОПЕ подсказкой; спуск — тап; затвор — сам',
+  '02': 'вызов выстрела (ставит игра), группа',
+  '03': 'полный спуск с давлением, дыхание, затвор Г-дорожкой',
+  '04': 'ветер, метеостанция, флажок у бруствера',
+  '05': 'неизвестная дистанция, миллинг по сетке',
+  '06': 'режим САМ лёгкий',
+  '07': null,
+  '08': 'смена патрона внутри упражнения',
+  '09': 'разный ветер по трассе, мираж',
+  '10': 'САМ сложный, вызов выстрела игроком, карандаш в ДОПЕ',
+  '11': 'движущиеся цели, упреждение сеткой, шаг «Упреждение» в блокноте',
+  '12': null,
+};
 
 export const COURSE: readonly ExerciseDef[] = [
   exerciseDef('00', 'Винтовка и прицел', null, { stages: [], hasColdBore: false, notebookMode: null, conditions: CALM, terms: ['винтовка', 'прицел', 'сетка', 'кратность', 'фокальная плоскость'] }),
@@ -205,37 +268,37 @@ export const COURSE: readonly ExerciseDef[] = [
 ];
 
 const SKILL_GOALS: Record<ExerciseId, (run: ExerciseRun) => SkillGoals> = {
-  '00': () => ({ isSkillGoalMet: false, isTopSkillGoalMet: false }),
-  '01': run => ({ isSkillGoalMet: everyRecord(firstShots(run), record => record.isDialExactFirstTry === true), isTopSkillGoalMet: true }),
+  '00': () => ({ skill: NOT_MET, top: NOT_MET }),
+  '01': run => ({ skill: tally(firstShots(run), record => record.isDialExactFirstTry === true), top: MET }),
   '02': zeroingGoals,
   '03': run => ({
-    isSkillGoalMet: everyRecord(run.shots, record => record.diagnosis !== 'execution'),
-    isTopSkillGoalMet: everyRecord(run.shots, record => record.isBreathHeld === true),
+    skill: tally(run.shots, record => record.diagnosis !== 'execution'),
+    top: tally(run.shots, record => record.isBreathHeld === true),
   }),
   '04': run => ({
-    isSkillGoalMet: everyCheck(run, check => check.rowVerdicts['reading-speed'] !== undefined && check.rowVerdicts['reading-speed'] !== 'error'),
-    isTopSkillGoalMet: everyCheck(run, check => check.rowVerdicts['turret-windage'] === 'exact'),
+    skill: tallyChecks(run, check => check.rowVerdicts['reading-speed'] !== undefined && check.rowVerdicts['reading-speed'] !== 'error'),
+    top: tallyChecks(run, check => check.rowVerdicts['turret-windage'] === 'exact'),
   }),
   '05': run => ({
-    isSkillGoalMet: everyRecord(run.shots, record => isRangeEstimated(record, RANGE_TOLERANCE_SECOND_CLASS)),
-    isTopSkillGoalMet: everyRecord(run.shots, record => isRangeEstimated(record, RANGE_TOLERANCE_FIRST_CLASS)),
+    skill: tally(run.shots, record => isRangeEstimated(record, RANGE_TOLERANCE_SECOND_CLASS)),
+    top: tally(run.shots, record => isRangeEstimated(record, RANGE_TOLERANCE_FIRST_CLASS)),
   }),
   '06': checkVerdictGoals,
   '07': run => ({
-    isSkillGoalMet: everyCheck(run, check => check.rowVerdicts.atmosphere !== undefined && check.rowVerdicts.atmosphere !== 'error'),
-    isTopSkillGoalMet: everyCheck(run, check => check.verdict === 'exact'),
+    skill: tallyChecks(run, check => check.rowVerdicts.atmosphere !== undefined && check.rowVerdicts.atmosphere !== 'error'),
+    top: tallyChecks(run, check => check.verdict === 'exact'),
   }),
   '08': checkVerdictGoals,
   '09': run => ({
-    isSkillGoalMet: everyCheck(run, check => !check.errorTypes.includes('side')),
-    isTopSkillGoalMet: everyCheck(run, check => check.verdict === 'exact'),
+    skill: tallyChecks(run, check => !check.errorTypes.includes('side')),
+    top: tallyChecks(run, check => check.verdict === 'exact'),
   }),
   '10': run => ({
-    isSkillGoalMet: run.shots.length > 0 && targetShots(run).every(shots => shots.some(record => record.isHit)),
-    isTopSkillGoalMet: everyRecord(run.shots, record => record.isCallAccurate === true),
+    skill: tally(targetShots(run), shots => shots.some(record => record.isHit)),
+    top: tally(run.shots, record => record.isCallAccurate === true),
   }),
   '11': patrolGoals,
-  '12': run => ({ isSkillGoalMet: run.shots.length > 0 && !run.hasOpenedReference, isTopSkillGoalMet: run.mode === 'manual-hard' }),
+  '12': run => ({ skill: { isMet: run.shots.length > 0 && !run.hasOpenedReference }, top: { isMet: run.mode === 'manual-hard' } }),
 };
 
 export function exerciseById(id: ExerciseId): ExerciseDef | undefined {
@@ -264,7 +327,7 @@ export function skillGoals(def: ExerciseDef, run: ExerciseRun): SkillGoals {
 
 export function exerciseResult(def: ExerciseDef, run: ExerciseRun): ExerciseResult {
   if (!def.targets) {
-    return { targetPoints: [], hitShare: 0, total: 0, exerciseClass: 0, isAdmitted: false };
+    return { targetPoints: [], hitShare: 0, total: 0, exerciseClass: 0, isAdmitted: false, score: NO_SCORE, goals: { skill: NOT_MET, top: NOT_MET } };
   }
   const isPaperTarget = def.stages.every(stage => !stage.closesOnHit);
   const shotsByTarget = def.stages.flatMap((stage, stageIndex) =>
@@ -284,8 +347,14 @@ export function exerciseResult(def: ExerciseDef, run: ExerciseRun): ExerciseResu
     hasOpenedReference: run.hasOpenedReference,
   });
   const goals = skillGoals(def, run);
-  const resultClass = exerciseClass({ hitShare: share, isSkillGoalMet: goals.isSkillGoalMet, isTopSkillGoalMet: goals.isTopSkillGoalMet });
-  return { targetPoints: pointsPerTarget, hitShare: share, total, exerciseClass: resultClass, isAdmitted: resultClass !== 0 };
+  const resultClass = exerciseClass({ hitShare: share, isSkillGoalMet: goals.skill.isMet, isTopSkillGoalMet: goals.top.isMet });
+  const score: ScoreParts = {
+    targetSum: sumOf(pointsPerTarget),
+    calcSum: sumOf(calculationPoints),
+    multiplier: modeMultiplier(run.mode, run.isRepeatAfterRecalc === true),
+    referencePenalty: run.hasOpenedReference ? REFERENCE_PENALTY : 0,
+  };
+  return { targetPoints: pointsPerTarget, hitShare: share, total, exerciseClass: resultClass, isAdmitted: resultClass !== 0, score, goals };
 }
 
 export function mergeBestClass(previous: ExerciseClass | undefined, next: ExerciseClass): ExerciseClass {
@@ -331,11 +400,13 @@ export function courseProgress(results: CourseResults, isEverythingUnlocked = fa
   };
 }
 
-function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | null, fields: Partial<Omit<ExerciseDef, 'id' | 'title' | 'targets'>>): ExerciseDef {
+function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | null, fields: Partial<Omit<ExerciseDef, 'id' | 'title' | 'targets' | 'goals' | 'novelty'>>): ExerciseDef {
   return {
     id,
     title,
     targets,
+    goals: GOAL_TEXTS[id],
+    novelty: NOVELTIES[id],
     stages: [TWO_SHOTS],
     hasColdBore: true,
     hasKnockedSight: false,
@@ -408,31 +479,38 @@ function zeroingGoals(run: ExerciseRun): SkillGoals {
   const groupImpacts = ZERO_GROUP_SHOTS.map(index => run.shots[index]?.impact).filter((impact): impact is Correction => impact !== undefined);
   const coldShot = run.shots[0];
   const controlShot = run.shots[ZERO_CONTROL_SHOT];
+  const isGroupComplete = groupImpacts.length === ZERO_GROUP_SHOTS.length;
+  const groupSpreadMil = isGroupComplete ? extremeSpreadMil(groupImpacts) : undefined;
+  const controlMissMil = controlShot ? Math.hypot(controlShot.impact.upMrad, controlShot.impact.rightMrad) : undefined;
   return {
-    isSkillGoalMet: groupImpacts.length === ZERO_GROUP_SHOTS.length && extremeSpreadMil(groupImpacts) <= ZERO_GROUP_MAX_MIL + DISTANCE_EPSILON_MIL,
-    isTopSkillGoalMet:
-      coldShot !== undefined &&
-      coldShot.diagnosis !== 'execution' &&
-      controlShot !== undefined &&
-      Math.hypot(controlShot.impact.upMrad, controlShot.impact.rightMrad) <= ZERO_CONTROL_MAX_MIL + DISTANCE_EPSILON_MIL,
+    skill: {
+      isMet: groupSpreadMil !== undefined && groupSpreadMil <= ZERO_GROUP_MAX_MIL + DISTANCE_EPSILON_MIL,
+      ...(groupSpreadMil !== undefined ? { valueMil: groupSpreadMil } : {}),
+      limitMil: ZERO_GROUP_MAX_MIL,
+    },
+    top: {
+      isMet: coldShot !== undefined && coldShot.diagnosis !== 'execution' && controlMissMil !== undefined && controlMissMil <= ZERO_CONTROL_MAX_MIL + DISTANCE_EPSILON_MIL,
+      ...(controlMissMil !== undefined ? { valueMil: controlMissMil } : {}),
+      limitMil: ZERO_CONTROL_MAX_MIL,
+    },
   };
 }
 
 function checkVerdictGoals(run: ExerciseRun): SkillGoals {
   return {
-    isSkillGoalMet: everyCheck(run, check => check.verdict !== 'error'),
-    isTopSkillGoalMet: everyCheck(run, check => check.verdict === 'exact'),
+    skill: tallyChecks(run, check => check.verdict !== 'error'),
+    top: tallyChecks(run, check => check.verdict === 'exact'),
   };
 }
 
 function patrolGoals(run: ExerciseRun): SkillGoals {
   const targets = targetShots(run);
   const hitTargets = targets.filter(shots => shots.some(record => record.isHit)).length;
-  const hasNoSideError = everyCheck(run, check => !check.errorTypes.includes('side'));
+  const hasNoSideError = tallyChecks(run, check => !check.errorTypes.includes('side')).isMet;
   const isEveryAmbushFirstShot = targets.every(shots => !shots[0].isAmbush || shots[0].isHit);
   return {
-    isSkillGoalMet: hitTargets >= PATROL_MIN_TARGETS_HIT && hasNoSideError,
-    isTopSkillGoalMet: hitTargets === PATROL_TARGETS && isEveryAmbushFirstShot,
+    skill: { isMet: hitTargets >= PATROL_MIN_TARGETS_HIT && hasNoSideError, passed: hitTargets, total: PATROL_TARGETS },
+    top: { isMet: hitTargets === PATROL_TARGETS && isEveryAmbushFirstShot, passed: hitTargets, total: PATROL_TARGETS },
   };
 }
 
@@ -449,12 +527,17 @@ function firstShots(run: ExerciseRun): ExerciseShotRecord[] {
   return targetShots(run).map(shots => shots[0]);
 }
 
-function everyRecord(records: readonly ExerciseShotRecord[], predicate: (record: ExerciseShotRecord) => boolean): boolean {
-  return records.length > 0 && records.every(predicate);
+function tally<T>(items: readonly T[], predicate: (item: T) => boolean): GoalCheck {
+  const passed = items.filter(predicate).length;
+  return { isMet: items.length > 0 && passed === items.length, passed, total: items.length };
 }
 
-function everyCheck(run: ExerciseRun, predicate: (check: ShotCheckSummary) => boolean): boolean {
-  return everyRecord(run.shots, record => record.check !== undefined && predicate(record.check));
+function tallyChecks(run: ExerciseRun, predicate: (check: ShotCheckSummary) => boolean): GoalCheck {
+  return tally(run.shots, record => record.check !== undefined && predicate(record.check));
+}
+
+function sumOf(values: readonly number[]): number {
+  return values.reduce((total, value) => total + value, 0);
 }
 
 function isRangeEstimated(record: ExerciseShotRecord, toleranceShare: number): boolean {

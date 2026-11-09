@@ -18,10 +18,12 @@ import { ScopeRenderer } from '../scene/scope-renderer';
 import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
 import { ReviewSheetComponent } from '../review/review-sheet.component';
+import { ResultSheetComponent } from '../result/result-sheet.component';
+import { resultSheet, ResultSheetView } from '../result/result.model';
 import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
-import { breathRing, correctionCells, drumCounterText, endCard, EndCard, markerTarget, playability, pressureText, TurretAxis } from './position.model';
+import { breathRing, correctionCells, drumCounterText, markerTarget, playability, pressureText, TurretAxis } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
 
 const MARKS_ON_GLASS = 8;
@@ -48,7 +50,7 @@ const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
 
 @Component({
   selector: 'or-position',
-  imports: [IonContent, TurretDrumComponent, FireControlComponent, BoltTrackComponent, NotebookSheetComponent, ReviewSheetComponent],
+  imports: [IonContent, TurretDrumComponent, FireControlComponent, BoltTrackComponent, NotebookSheetComponent, ReviewSheetComponent, ResultSheetComponent],
   templateUrl: './position.page.html',
   styleUrl: './position.page.scss',
 })
@@ -67,7 +69,7 @@ export class PositionPage {
   protected readonly uiTick = signal(0);
   protected readonly shotLine = signal<string | null>(null);
   protected readonly stopBadge = signal<string | null>(null);
-  protected readonly end = signal<EndCard | null>(null);
+  protected readonly end = signal<ResultSheetView | null>(null);
   protected readonly isLeaveConfirmOpen = signal(false);
   protected readonly sheetTab = signal<NotebookTab | null>(null);
   protected readonly reviewedShot = signal<PositionShot | null>(null);
@@ -258,8 +260,10 @@ export class PositionPage {
     this.reviewedShot.set(null);
     const result = session?.result();
     if (session && result) {
-      this.progress.recordExerciseResult(session.def.id, result.exerciseClass);
-      this.end.set(endCard(result));
+      const courseBefore = this.progress.course();
+      this.progress.recordExerciseResult(session.def.id, result.exerciseClass, result.total);
+      this.reviewFrame.set(this.fullFrame());
+      this.end.set(resultSheet({ def: session.def, result, records: session.records, courseBefore, courseAfter: this.progress.course() }));
     }
     this.refresh();
   }
@@ -367,12 +371,16 @@ export class PositionPage {
     void this.router.navigate(['/course']);
   }
 
-  protected async retry(): Promise<void> {
-    this.end.set(null);
-    this.reviewedShot.set(null);
-    this.closeSheet();
-    this.marks.length = 0;
-    await this.startSession();
+  protected toBriefing(): void {
+    void this.router.navigate(['/course', this.exerciseId()]);
+  }
+
+  protected toJournal(): void {
+    void this.router.navigate(['/journal']);
+  }
+
+  protected seriesRadiusMil(session: PositionSession): number {
+    return targetRadiusMrad(session.setup.targets[0]);
   }
 
   protected glassDown(event: PointerEvent): void {

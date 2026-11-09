@@ -69,7 +69,7 @@ test.describe('позиция: упражнения 01–02', () => {
     await expect(page.getByTestId('fire')).toBeEnabled();
   });
 
-  test('все мимо: смена магазина, конец, «не зачтено», штампа нет', async ({ page }) => {
+  test('все мимо: смена магазина, конец, «не зачтено», «ПОВТОРИТЬ» — брифинг, штампа на тропе нет', async ({ page }) => {
     await toPosition(page);
     for (let shot = 0; shot < 5; shot++) {
       await fireAndSettle(page);
@@ -77,12 +77,16 @@ test.describe('позиция: упражнения 01–02', () => {
     await page.getByTestId('change-magazine').click();
     await expect(page.getByTestId('rounds')).toHaveText('1 / 1');
     await fireAndSettle(page);
-    await expect(page.getByTestId('end-heading')).toHaveText('Не зачтено');
-    await page.getByTestId('end-trail').click();
+    await expect(page.getByTestId('result-stamp')).toHaveText('НЕ ЗАЧТЕНО');
+    await expect(page.getByTestId('result-next')).toHaveCount(0);
+    await page.getByTestId('result-repeat').click();
+    await expect(page.getByTestId('briefing-header')).toHaveText('ЗАДАНИЕ 01 · УЧЕБНОЕ');
+    await page.getByTestId('sheet-back').click();
     await expect(page.getByTestId('stamp-01')).toHaveCount(0);
   });
 
   test('ровная накрутка и сетка на цели: класс, штамп 01 на тропе, открыт 02', async ({ page }) => {
+    test.slow();
     await toPosition(page);
     const clicks = await clicksToTarget(page);
     await dialElevation(page, clicks);
@@ -90,8 +94,8 @@ test.describe('позиция: упражнения 01–02', () => {
     for (let shot = 0; shot < 3; shot++) {
       await fireAndSettle(page);
     }
-    await expect(page.getByTestId('end-heading')).toHaveText(/^Класс [123]$/);
-    await page.getByTestId('end-trail').click();
+    await expect(page.getByTestId('result-stamp')).toHaveText(/^[123] КЛАСС$/);
+    await page.getByTestId('result-next').click();
     await expect(page.getByTestId('stamp-01')).toBeVisible();
     await expect(page.getByTestId('node-02')).toBeEnabled();
   });
@@ -105,7 +109,7 @@ test.describe('позиция: упражнения 01–02', () => {
     await expect(page.getByTestId('leave-confirm')).toHaveCount(0);
     await page.getByTestId('position-back').click();
     await page.getByTestId('leave-confirm-yes').click();
-    await expect(page.getByTestId('sheet-title')).toHaveText('01 · Первые щелчки');
+    await expect(page.getByTestId('sheet-title')).toHaveText('Первые щелчки');
   });
 
   test('«назад» до выстрела — без вопроса', async ({ page }) => {

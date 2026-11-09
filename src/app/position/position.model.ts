@@ -1,5 +1,5 @@
 import { BOLT_STEP_TRAVEL_PT, BOLT_STEPS, BoltStep } from '../../sim/bolt';
-import { ExerciseDef, ExerciseResult } from '../../sim/course';
+import { ExerciseDef } from '../../sim/course';
 import { Vector2 } from '../../sim/noise';
 import { NotebookTotal } from '../../sim/notebook';
 import { formatScopeValue, isHoldoverSettled, ScopeModel } from '../../sim/scope-model';
@@ -18,13 +18,6 @@ export interface CorrectionCell {
 export interface DialClicks {
   elevation: number;
   windageLeft: number;
-}
-
-export interface EndCard {
-  heading: string;
-  points: string;
-  share: string;
-  isAdmitted: boolean;
 }
 
 export interface Playability {
@@ -90,15 +83,6 @@ export function drumCounter(axis: TurretAxis, progress: TurretProgress): string 
 
 export function drumCounterText(axis: TurretAxis, progress: TurretProgress | null): string {
   return progress === null ? '' : drumCounter(axis, progress);
-}
-
-export function endCard(result: ExerciseResult): EndCard {
-  return {
-    heading: result.isAdmitted ? `Класс ${result.exerciseClass}` : 'Не зачтено',
-    points: `${result.total} очк.`,
-    share: `${Math.round(result.hitShare * PERCENT)} %`,
-    isAdmitted: result.isAdmitted,
-  };
 }
 
 export function playability(def: ExerciseDef): Playability {

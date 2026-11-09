@@ -11,7 +11,7 @@ import { BoltCycleResult, BoltEvent } from '../../sim/bolt';
 import { CheckRowKind, ExerciseDef, exerciseResult, ExerciseResult, ExerciseSetup, ExerciseShotRecord, setupExercise, ShotCheckSummary } from '../../sim/course';
 import { FiringEvent, FiringLine } from '../../sim/firing-line';
 import { FlightPaths, flightPaths, flightSamples } from '../../sim/flight-path';
-import { groupPoint, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
+import { groupPoint, mainCauseOf, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
 import { Vector2 } from '../../sim/noise';
 import {
   changeContext,
@@ -119,6 +119,7 @@ export class PositionSession {
   private lastCall: Correction | null = null;
   private readonly shotRecords: ExerciseShotRecord[] = [];
   private readonly groupPoints: Correction[] = [];
+  private readonly shotCalls: Correction[] = [];
   private readonly dialTracking: Record<TurretAxis, DialTracking> = {
     elevation: { startClicks: 0, hasOvershot: false },
     windage: { startClicks: 0, hasOvershot: false },
@@ -247,6 +248,14 @@ export class PositionSession {
     this.currentNotebook = openReference(this.currentNotebook);
   }
 
+  get group(): readonly Correction[] {
+    return this.groupPoints;
+  }
+
+  get calls(): readonly Correction[] {
+    return this.shotCalls;
+  }
+
   get records(): readonly ExerciseShotRecord[] {
     return this.shotRecords;
   }
@@ -332,6 +341,7 @@ export class PositionSession {
     });
     const breakdown = this.breakdownOf(notebookAtShot, target, timeS, outcome, result);
     this.groupPoints.push(groupPoint(breakdown));
+    this.shotCalls.push(outcome.hold);
     const flight = await this.flightOf(target, timeS, result);
     const isFirstShotAtTarget = !this.shotRecords.some(record => record.stageIndex === stageIndex && record.targetIndex === targetIndex);
     const diagnosis = diagnoseShot(outcome.hold, result.isHit);
@@ -345,6 +355,7 @@ export class PositionSession {
       diagnosis,
       isDialExactFirstTry: isFirstShotAtTarget && isDialExactFirstTry,
       isBreathHeld,
+      mainCause: mainCauseOf(breakdown),
       ...(check ? { check } : {}),
       ...(rangeEstimateM !== undefined ? { rangeEstimateM } : {}),
     };

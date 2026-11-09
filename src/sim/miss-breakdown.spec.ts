@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Correction } from '../core/types';
-import { CauseKind, groupPoint, missBreakdown, MissBreakdownInput } from './miss-breakdown';
+import { CauseKind, groupPoint, mainCauseOf, missBreakdown, MissBreakdownInput } from './miss-breakdown';
 
 const ZERO: Correction = { upMrad: 0, rightMrad: 0 };
 
@@ -165,5 +165,14 @@ describe('groupPoint', () => {
     const group = groupPoint(missBreakdown(value));
     expect(group.upMrad).toBeCloseTo(0.13, 9);
     expect(group.rightMrad).toBeCloseTo(-0.2, 9);
+  });
+});
+
+describe('mainCauseOf (A6.3)', () => {
+  it('the main cause of a shot; the wind estimate split into under and over', () => {
+    expect(mainCauseOf(missBreakdown(input({ reticle: point(0, 0.4) })))).toBe('hold');
+    expect(mainCauseOf(missBreakdown(input({ formulaPlayerWind: point(1.4, 0.1), dial: point(1.4, 0.1) })))).toBe('wind-under');
+    expect(mainCauseOf(missBreakdown(input({ formulaPlayerWind: point(1.4, 0.6), dial: point(1.4, 0.6) })))).toBe('wind-over');
+    expect(mainCauseOf(missBreakdown(input()))).toBeNull();
   });
 });

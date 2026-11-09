@@ -701,6 +701,7 @@ describe('PositionSession — why the bullet went there (A6.2)', () => {
     const shot = (await shoot(session, { x: 0.3, y: 0 }))!;
     expect(causeOf(shot, 'hold').clicks).toBe(3);
     expect(shot.review.breakdown.main).toBe('hold');
+    expect(shot.record.mainCause).toBe('hold');
   });
 
   it('02: the cold bore is a grey cause; the knocked sight and turret beyond the plan are the zero', async () => {

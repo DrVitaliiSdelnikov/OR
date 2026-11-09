@@ -23,13 +23,13 @@
 
 | Что | Почему уходит | Чем заменится | Задача |
 | --- | --- | --- | --- |
-| временная карточка итога на позиции (`position.page`, `endCard`) | бриф 07 (итог) | экран итога | A6.3 |
 | `IMPLEMENTED_FEATURES` и `playability` в `position.model` (сейчас: спуск с давлением, блокнот, расчёт САМ) | временная играбельность, пока не всё сделано | — (всё играбельно) | A9 |
 
 ## Удалено
 
 | Что | Когда | Задача |
 | --- | --- | --- |
+| временная карточка итога на позиции: `endCard`, `EndCard`, разметка `end-card`, кнопки «К тропе» и «Ещё раз»; `isSkillGoalMet` / `isTopSkillGoalMet` в `SkillGoals` (теперь `GoalCheck` с фактом) — В17, В31 | 9.11 | A6.3 |
 | старый разбор `app/debrief` и маршрут `/journal/:shotId`; `explainMiss`, `MissExplanation`, `MissCause`, `RULE_CARDS`, `RuleCard`; `qualityLabel`, `TRIGGER_QUALITY_TEXT`; `recordShot`, `shotById`, `cause` и `verdict` в `ShotRecord`; строка «ПОПАДАНИЕ / ПРОМАХ» на стекле — В12, В31 | 9.11 | A6.1 |
 | старая свободная игра целиком: `app/weather`, `app/calc`, `app/wind`, `app/dope`, `app/scope`, `GameSession` и маршруты к ним; e2e `calculation`, `shooting`; кнопка «В DOPE» старого разбора; ставшие ничьими `TARGETS`, `crosswindByClockRule`, `formatClock`, `densityAltitudeM`, `isTransonic`, `daySeed`, `clicksFor`, `DRUM_DRAG_PT_PER_CLICK`; значение по умолчанию `loadedRounds` в `ScopeSession`; снимки 03–14 и 16 — В31, ответ автора 8.11 | 8.11 | A5.1 |
 | нижние вкладки `app/tabs`, хаб `app/hub` (9 задач), викторины `app/quiz`, `sim/tasks.ts`, `core/score.ts` и звёзды (`TaskResult`, `results`, `passedTaskIds`), уровни задач в старом потоке (давление до Lv3, `shotsLeft`, итог задачи на прицеле) — В1, В3, В31 | 7.11 | A2 |

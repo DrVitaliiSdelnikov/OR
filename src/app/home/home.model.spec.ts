@@ -53,6 +53,16 @@ describe('course progress in storage', () => {
     expect(course.bestClasses['01']).toBe(2);
   });
 
+  it('the best total is kept per exercise: a better one replaces it, a worse one does not (A6.3)', () => {
+    let course = results({});
+    course = withExerciseResult(course, '04', 3, 25);
+    expect(course.bestTotals?.['04']).toBe(25);
+    course = withExerciseResult(course, '04', 0, 10);
+    expect(course.bestTotals?.['04']).toBe(25);
+    course = withExerciseResult(course, '04', 2, 40);
+    expect(course.bestTotals?.['04']).toBe(40);
+  });
+
   it('the intro is marked as completed', () => {
     expect(withIntroCompleted(results({}, false)).isIntroCompleted).toBe(true);
   });

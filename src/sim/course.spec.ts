@@ -221,12 +221,17 @@ describe('setupExercise — conditions and sight', () => {
   });
 });
 
+function goalsMet(def: ExerciseDef, value: ExerciseRun): { isSkillGoalMet: boolean; isTopSkillGoalMet: boolean } {
+  const goals = skillGoals(def, value);
+  return { isSkillGoalMet: goals.skill.isMet, isTopSkillGoalMet: goals.top.isMet };
+}
+
 describe('skillGoals', () => {
   it('01: dial exact first try at every target', () => {
-    expect(skillGoals(exercise('01'), run(firstShotHits(3, { isDialExactFirstTry: true }))).isSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('01'), run(firstShotHits(3, { isDialExactFirstTry: true }))).isSkillGoalMet).toBe(true);
     const shots = firstShotHits(3, { isDialExactFirstTry: true });
     shots[1] = { ...shots[1], isDialExactFirstTry: false };
-    expect(skillGoals(exercise('01'), run(shots)).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('01'), run(shots)).isSkillGoalMet).toBe(false);
   });
 
   it('01: only the first shot at a target counts', () => {
@@ -234,7 +239,7 @@ describe('skillGoals', () => {
       shot({ targetIndex: 0, isHit: false, isDialExactFirstTry: true }),
       shot({ targetIndex: 0, isDialExactFirstTry: false }),
     ];
-    expect(skillGoals(exercise('01'), run(shots)).isSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('01'), run(shots)).isSkillGoalMet).toBe(true);
   });
 
   function zeroing(groupImpacts: Correction[], cold: Partial<ExerciseShotRecord> = {}, control: Correction = point(0.1, 0.1)): ExerciseRun {
@@ -246,87 +251,87 @@ describe('skillGoals', () => {
   }
 
   it('02: a group of 0.9 MIL meets the goal, 1.1 MIL does not', () => {
-    expect(skillGoals(exercise('02'), zeroing([point(1, 1), point(1, 1.9), point(1.2, 1.4)])).isSkillGoalMet).toBe(true);
-    expect(skillGoals(exercise('02'), zeroing([point(1, 1), point(1, 2.1), point(1.2, 1.4)])).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('02'), zeroing([point(1, 1), point(1, 1.9), point(1.2, 1.4)])).isSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('02'), zeroing([point(1, 1), point(1, 2.1), point(1.2, 1.4)])).isSkillGoalMet).toBe(false);
   });
 
   it('02: the cold shot does not belong to the group', () => {
     const groupRun = zeroing([point(1, 1), point(1, 1.5), point(1.2, 1.2)], { impact: point(-1, -1) });
-    expect(skillGoals(exercise('02'), groupRun).isSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('02'), groupRun).isSkillGoalMet).toBe(true);
   });
 
   it('02: top goal — a clean cold shot and the control shot within 0.3 MIL', () => {
     const group = [point(1, 1), point(1, 1.5), point(1.2, 1.2)];
-    expect(skillGoals(exercise('02'), zeroing(group)).isTopSkillGoalMet).toBe(true);
-    expect(skillGoals(exercise('02'), zeroing(group, { diagnosis: 'execution' })).isTopSkillGoalMet).toBe(false);
-    expect(skillGoals(exercise('02'), zeroing(group, {}, point(0.3, 0.2))).isTopSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('02'), zeroing(group)).isTopSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('02'), zeroing(group, { diagnosis: 'execution' })).isTopSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('02'), zeroing(group, {}, point(0.3, 0.2))).isTopSkillGoalMet).toBe(false);
   });
 
   it('03: no jerked trigger; top — breath held on all five', () => {
     const clean = firstShotHits(5, { isBreathHeld: true });
-    expect(skillGoals(exercise('03'), run(clean))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: true });
+    expect(goalsMet(exercise('03'), run(clean))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: true });
     const jerked = [...clean.slice(0, 4), shot({ targetIndex: 4, diagnosis: 'execution', isBreathHeld: true })];
-    expect(skillGoals(exercise('03'), run(jerked)).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('03'), run(jerked)).isSkillGoalMet).toBe(false);
     const breathless = [...clean.slice(0, 4), shot({ targetIndex: 4, isBreathHeld: false })];
-    expect(skillGoals(exercise('03'), run(breathless)).isTopSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('03'), run(breathless)).isTopSkillGoalMet).toBe(false);
   });
 
   it('04: speed read without error; top — windage turret exact', () => {
     const good = check('exact', { rowVerdicts: { 'reading-speed': 'close', 'turret-windage': 'exact' } });
-    expect(skillGoals(exercise('04'), run(firstShotHits(3, { check: good })))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: true });
+    expect(goalsMet(exercise('04'), run(firstShotHits(3, { check: good })))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: true });
     const misread = check('error', { rowVerdicts: { 'reading-speed': 'error', 'turret-windage': 'exact' } });
-    expect(skillGoals(exercise('04'), run([...firstShotHits(2, { check: good }), shot({ targetIndex: 2, check: misread })])).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('04'), run([...firstShotHits(2, { check: good }), shot({ targetIndex: 2, check: misread })])).isSkillGoalMet).toBe(false);
     const roughWindage = check('close', { rowVerdicts: { 'reading-speed': 'exact', 'turret-windage': 'close' } });
-    expect(skillGoals(exercise('04'), run([...firstShotHits(2, { check: good }), shot({ targetIndex: 2, check: roughWindage })])).isTopSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('04'), run([...firstShotHits(2, { check: good }), shot({ targetIndex: 2, check: roughWindage })])).isTopSkillGoalMet).toBe(false);
   });
 
   it('a check goal is not met when a shot has no check', () => {
-    expect(skillGoals(exercise('06'), run(firstShotHits(4))).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('06'), run(firstShotHits(4))).isSkillGoalMet).toBe(false);
   });
 
   it('05: range within 10 % for 2nd class, within 5 % for 1st', () => {
     const within9 = firstShotHits(3, { distanceM: 400, rangeEstimateM: 436 });
-    expect(skillGoals(exercise('05'), run(within9))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
+    expect(goalsMet(exercise('05'), run(within9))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
     const within4 = firstShotHits(3, { distanceM: 400, rangeEstimateM: 384 });
-    expect(skillGoals(exercise('05'), run(within4)).isTopSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('05'), run(within4)).isTopSkillGoalMet).toBe(true);
     const off11 = [...within4.slice(0, 2), shot({ targetIndex: 2, distanceM: 400, rangeEstimateM: 444 })];
-    expect(skillGoals(exercise('05'), run(off11)).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('05'), run(off11)).isSkillGoalMet).toBe(false);
   });
 
   it('06: no error on every check; top — exact on every check', () => {
-    expect(skillGoals(exercise('06'), run(firstShotHits(4, { check: check('close') })))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
-    expect(skillGoals(exercise('06'), run(firstShotHits(4, { check: check('exact') }))).isTopSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('06'), run(firstShotHits(4, { check: check('close') })))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
+    expect(goalsMet(exercise('06'), run(firstShotHits(4, { check: check('exact') }))).isTopSkillGoalMet).toBe(true);
     const withError = [...firstShotHits(3, { check: check('exact') }), shot({ targetIndex: 3, check: check('error') })];
-    expect(skillGoals(exercise('06'), run(withError)).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('06'), run(withError)).isSkillGoalMet).toBe(false);
   });
 
   it('07: the conditions step without error, even when another step has one', () => {
     const windWrong = check('error', { rowVerdicts: { atmosphere: 'close', wind: 'error' } });
-    expect(skillGoals(exercise('07'), run(firstShotHits(4, { check: windWrong })))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
+    expect(goalsMet(exercise('07'), run(firstShotHits(4, { check: windWrong })))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
     const conditionsWrong = check('error', { rowVerdicts: { atmosphere: 'error' } });
-    expect(skillGoals(exercise('07'), run(firstShotHits(4, { check: conditionsWrong }))).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('07'), run(firstShotHits(4, { check: conditionsWrong }))).isSkillGoalMet).toBe(false);
   });
 
   it('08: no error for all three cartridges; top — exact for all', () => {
     const stages = (verdict: CheckVerdict) => [0, 1, 2].map(stageIndex => shot({ stageIndex, distanceM: 600, check: check(verdict) }));
-    expect(skillGoals(exercise('08'), run(stages('close')))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
-    expect(skillGoals(exercise('08'), run(stages('exact'))).isTopSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('08'), run(stages('close')))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
+    expect(goalsMet(exercise('08'), run(stages('exact'))).isTopSkillGoalMet).toBe(true);
   });
 
   it('09: no SIDE error; top — exact everywhere', () => {
     const rounding = check('error', { errorTypes: ['rounding'] });
-    expect(skillGoals(exercise('09'), run(firstShotHits(4, { check: rounding }))).isSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('09'), run(firstShotHits(4, { check: rounding }))).isSkillGoalMet).toBe(true);
     const side = check('error', { errorTypes: ['side'] });
-    expect(skillGoals(exercise('09'), run([...firstShotHits(3, { check: check('exact') }), shot({ targetIndex: 3, check: side })])).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('09'), run([...firstShotHits(3, { check: check('exact') }), shot({ targetIndex: 3, check: side })])).isSkillGoalMet).toBe(false);
   });
 
   it('10: every first-shot miss finished with the second; top — every call accurate', () => {
     const finished = [shot({ targetIndex: 0, isHit: false, isCallAccurate: true }), shot({ targetIndex: 0, isCallAccurate: true }), ...firstShotHits(2, { isCallAccurate: true }).map(record => ({ ...record, targetIndex: record.targetIndex + 1 }))];
-    expect(skillGoals(exercise('10'), run(finished))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: true });
+    expect(goalsMet(exercise('10'), run(finished))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: true });
     const unfinished = [shot({ targetIndex: 0, isHit: false, isCallAccurate: true }), shot({ targetIndex: 0, isHit: false, isCallAccurate: true }), shot({ targetIndex: 1, isCallAccurate: true }), shot({ targetIndex: 2, isCallAccurate: true })];
-    expect(skillGoals(exercise('10'), run(unfinished)).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('10'), run(unfinished)).isSkillGoalMet).toBe(false);
     const badCall = finished.map((record, index) => (index === 3 ? { ...record, isCallAccurate: false } : record));
-    expect(skillGoals(exercise('10'), run(badCall)).isTopSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('10'), run(badCall)).isTopSkillGoalMet).toBe(false);
   });
 
   it('11: at least 7 of 10 targets hit and no SIDE error; top — 10 of 10, ambush targets first shot', () => {
@@ -334,32 +339,87 @@ describe('skillGoals', () => {
       shot({ targetIndex, isHit: targetIndex < 7, check: check('exact') }),
       ...(targetIndex < 7 ? [] : [shot({ targetIndex, isHit: false, check: check('exact') })]),
     ]).flat();
-    expect(skillGoals(exercise('11'), run(sevenHit))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
+    expect(goalsMet(exercise('11'), run(sevenHit))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
     const sixHit = sevenHit.map(record => (record.targetIndex === 6 ? { ...record, isHit: false } : record));
-    expect(skillGoals(exercise('11'), run(sixHit)).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('11'), run(sixHit)).isSkillGoalMet).toBe(false);
     const sideError = sevenHit.map((record, index) => (index === 0 ? { ...record, check: check('error', { errorTypes: ['side'] }) } : record));
-    expect(skillGoals(exercise('11'), run(sideError)).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('11'), run(sideError)).isSkillGoalMet).toBe(false);
     const allHitAmbushSecond = [
       ...firstShotHits(9, { check: check('exact') }),
       shot({ targetIndex: 9, isHit: false, isAmbush: true, check: check('exact') }),
       shot({ targetIndex: 9, isAmbush: true, check: check('exact') }),
     ];
-    expect(skillGoals(exercise('11'), run(allHitAmbushSecond))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
+    expect(goalsMet(exercise('11'), run(allHitAmbushSecond))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
     const allHitTrackingSecond = allHitAmbushSecond.map(record => ({ ...record, isAmbush: false }));
-    expect(skillGoals(exercise('11'), run(allHitTrackingSecond)).isTopSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('11'), run(allHitTrackingSecond)).isTopSkillGoalMet).toBe(true);
     const nineHit = [...firstShotHits(9, { check: check('exact') }), shot({ targetIndex: 9, isHit: false, check: check('exact') }), shot({ targetIndex: 9, isHit: false, check: check('exact') })];
-    expect(skillGoals(exercise('11'), run(nineHit)).isTopSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('11'), run(nineHit)).isTopSkillGoalMet).toBe(false);
   });
 
   it('12: reference not opened; top — SAM hard', () => {
     const shots = firstShotHits(10);
-    expect(skillGoals(exercise('12'), run(shots, { mode: 'manual-easy' }))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
-    expect(skillGoals(exercise('12'), run(shots, { mode: 'manual-easy', hasOpenedReference: true })).isSkillGoalMet).toBe(false);
-    expect(skillGoals(exercise('12'), run(shots, { mode: 'manual-hard' })).isTopSkillGoalMet).toBe(true);
+    expect(goalsMet(exercise('12'), run(shots, { mode: 'manual-easy' }))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
+    expect(goalsMet(exercise('12'), run(shots, { mode: 'manual-easy', hasOpenedReference: true })).isSkillGoalMet).toBe(false);
+    expect(goalsMet(exercise('12'), run(shots, { mode: 'manual-hard' })).isTopSkillGoalMet).toBe(true);
   });
 
   it('an empty run meets nothing', () => {
-    expect(skillGoals(exercise('06'), run([]))).toEqual({ isSkillGoalMet: false, isTopSkillGoalMet: false });
+    expect(goalsMet(exercise('06'), run([]))).toEqual({ isSkillGoalMet: false, isTopSkillGoalMet: false });
+  });
+});
+
+describe('skillGoals — facts for the result sheet (A6.3)', () => {
+  it('a counted goal says how many of how many', () => {
+    const good = check('exact', { rowVerdicts: { 'reading-speed': 'exact', 'turret-windage': 'exact' } });
+    const misread = check('error', { rowVerdicts: { 'reading-speed': 'error', 'turret-windage': 'close' } });
+    const goals = skillGoals(exercise('04'), run([...firstShotHits(2, { check: good }), shot({ targetIndex: 2, check: misread })]));
+    expect(goals.skill).toEqual({ isMet: false, passed: 2, total: 3 });
+    expect(goals.top).toEqual({ isMet: false, passed: 2, total: 3 });
+  });
+
+  it('10 counts targets for the skill goal and shots for the call', () => {
+    const shots = [shot({ targetIndex: 0, isHit: false, isCallAccurate: false }), shot({ targetIndex: 0, isHit: false, isCallAccurate: true }), shot({ targetIndex: 1, isCallAccurate: true }), shot({ targetIndex: 2, isCallAccurate: true })];
+    const goals = skillGoals(exercise('10'), run(shots));
+    expect(goals.skill).toEqual({ isMet: false, passed: 2, total: 3 });
+    expect(goals.top).toEqual({ isMet: false, passed: 3, total: 4 });
+  });
+
+  it('02 gives the group size and the control shot distance in MIL against their limits', () => {
+    const shots = [
+      shot({ distanceM: 100, isColdBore: true, impact: point(0.9, 0.4) }),
+      shot({ distanceM: 100, impact: point(1, 1) }),
+      shot({ distanceM: 100, impact: point(1, 1.8) }),
+      shot({ distanceM: 100, impact: point(1, 1.4) }),
+      shot({ distanceM: 100, impact: point(0.3, 0.4) }),
+    ];
+    const goals = skillGoals(exercise('02'), run(shots));
+    expect(goals.skill.isMet).toBe(true);
+    expect(goals.skill.valueMil).toBeCloseTo(0.8, 9);
+    expect(goals.skill.limitMil).toBe(1);
+    expect(goals.top.isMet).toBe(false);
+    expect(goals.top.valueMil).toBeCloseTo(0.5, 9);
+    expect(goals.top.limitMil).toBe(0.3);
+  });
+
+  it('11 counts hit targets for both goals', () => {
+    const goals = skillGoals(exercise('11'), run(firstShotHits(8, { check: check('exact') })));
+    expect(goals.skill).toEqual({ isMet: true, passed: 8, total: 10 });
+    expect(goals.top).toEqual({ isMet: false, passed: 8, total: 10 });
+  });
+
+  it('12 and 01 have yes / no goals without a count', () => {
+    expect(skillGoals(exercise('12'), run(firstShotHits(10), { mode: 'manual-easy' }))).toEqual({ skill: { isMet: true }, top: { isMet: false } });
+    expect(skillGoals(exercise('01'), run(firstShotHits(3, { isDialExactFirstTry: true }))).top).toEqual({ isMet: true });
+  });
+
+  it('every exercise has the goal texts from COURSE; 01 has no 1st-class skill goal', () => {
+    for (const def of COURSE.filter(candidate => candidate.targets)) {
+      expect(def.goals.second.length, def.id).toBeGreaterThan(0);
+    }
+    expect(exercise('01').goals.first).toBeNull();
+    expect(exercise('04').goals).toEqual({ second: 'скорость перенесена без ошибки', first: 'вклад ветра учтён на всех' });
+    expect(exercise('04').novelty).toBe('ветер, метеостанция, флажок у бруствера');
+    expect(exercise('07').novelty).toBeNull();
   });
 });
 
@@ -402,6 +462,7 @@ describe('exerciseResult', () => {
     const normal = exerciseResult(exercise('06'), run(shots, { mode: 'manual-easy' }));
     const repeat = exerciseResult(exercise('06'), run(shots, { mode: 'manual-easy', isRepeatAfterRecalc: true }));
     expect(repeat.total).toBe(40 + 4 * 5);
+    expect(repeat.score.multiplier).toBe(1);
     expect(repeat.exerciseClass).toBe(normal.exerciseClass);
   });
 
@@ -428,7 +489,23 @@ describe('exerciseResult', () => {
   });
 
   it('the intro has no class and no admission', () => {
-    expect(exerciseResult(exercise('00'), run([]))).toEqual({ targetPoints: [], hitShare: 0, total: 0, exerciseClass: 0, isAdmitted: false });
+    const result = exerciseResult(exercise('00'), run([]));
+    expect([result.total, result.exerciseClass, result.isAdmitted]).toEqual([0, 0, false]);
+  });
+
+  it('the score parts: targets, calculation, multiplier and the reference penalty (A6.3)', () => {
+    const shots = [...firstShotHits(2, { check: check('exact') }), shot({ targetIndex: 2, isHit: false, check: check('close') }), shot({ targetIndex: 2, check: check('close') }), shot({ targetIndex: 3, isHit: false, check: check('close') }), shot({ targetIndex: 3, isHit: false, check: check('close') })];
+    const result = exerciseResult(exercise('06'), run(shots, { mode: 'manual-easy' }));
+    expect(result.score).toEqual({ targetSum: 25, calcSum: 30, multiplier: 1.5, referencePenalty: 0 });
+    expect(result.total).toBe(83);
+    const withReference = exerciseResult(exercise('06'), run(shots, { mode: 'manual-easy', hasOpenedReference: true }));
+    expect(withReference.score.referencePenalty).toBe(30);
+    expect(withReference.total).toBe(53);
+  });
+
+  it('the result carries the goals with their facts', () => {
+    const result = exerciseResult(exercise('03'), run(firstShotHits(5, { isBreathHeld: true })));
+    expect(result.goals.skill).toEqual({ isMet: true, passed: 5, total: 5 });
   });
 
   it('an empty run is not admitted', () => {

@@ -14,7 +14,7 @@ export interface RankHeader {
 
 export const ADMISSIONS_TOTAL = 12;
 
-const RANK_LABELS: Record<Rank, string> = {
+export const RANK_LABELS: Record<Rank, string> = {
   cadet: 'Курсант',
   rifleman: 'Стрелок',
   'senior-rifleman': 'Старший стрелок',
@@ -39,8 +39,14 @@ export function rankHeader(results: CourseResults): RankHeader {
   return { rankLabel: RANK_LABELS[progress.rank], admissions: progress.admissions, admissionsTotal: ADMISSIONS_TOTAL };
 }
 
-export function withExerciseResult(results: CourseResults, exerciseId: ExerciseId, exerciseClass: ExerciseClass): CourseResults {
-  return { ...results, bestClasses: { ...results.bestClasses, [exerciseId]: mergeBestClass(results.bestClasses[exerciseId], exerciseClass) } };
+export function withExerciseResult(results: CourseResults, exerciseId: ExerciseId, exerciseClass: ExerciseClass, total?: number): CourseResults {
+  const bestClasses = { ...results.bestClasses, [exerciseId]: mergeBestClass(results.bestClasses[exerciseId], exerciseClass) };
+  if (total === undefined) {
+    return { ...results, bestClasses };
+  }
+  const previousTotal = results.bestTotals?.[exerciseId];
+  const bestTotal = previousTotal === undefined ? total : Math.max(previousTotal, total);
+  return { ...results, bestClasses, bestTotals: { ...results.bestTotals, [exerciseId]: bestTotal } };
 }
 
 export function withIntroCompleted(results: CourseResults): CourseResults {
