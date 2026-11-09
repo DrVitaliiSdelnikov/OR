@@ -13,10 +13,11 @@ test.describe('навигация без вкладок', () => {
     }
   });
 
-  test('старой свободной игры нет: плитка «откроется позже», старые адреса ведут на главный', async ({ page }) => {
+  test('старой свободной игры нет: плитка ведёт на новую (A7.1), старые адреса — на главный', async ({ page }) => {
     await page.goto('/');
     await page.getByTestId('tile-free').click();
-    await expect(page.getByTestId('later-message')).toBeVisible();
+    await page.waitForURL('**/free');
+    await expect(page.getByTestId('free-play')).toBeVisible();
     for (const path of ['/weather', '/calc', '/calc/wind', '/dope', '/scope']) {
       await page.goto(path);
       await expect(page.getByTestId('tile-course')).toBeVisible();

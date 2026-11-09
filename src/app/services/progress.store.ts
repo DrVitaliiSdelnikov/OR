@@ -3,6 +3,7 @@ import { Preferences } from '@capacitor/preferences';
 import { ExerciseClass } from '../../core/exercise-scoring';
 import { CartridgeId, Correction } from '../../core/types';
 import { CourseResults, ExerciseId } from '../../sim/course';
+import { DEFAULT_FREE_PLAY, FreePlaySettings, knownFreePlay } from '../../sim/free-play';
 import { withExerciseResult, withIntroCompleted } from '../home/home.model';
 import { DopeNotes, withDopeNote } from '../review/review.model';
 
@@ -41,6 +42,7 @@ interface ProgressState {
   settings: Settings;
   shots: ShotRecord[];
   dopeNotes: DopeNotes;
+  freePlay: FreePlaySettings;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -55,12 +57,13 @@ const EMPTY_COURSE: CourseResults = { isIntroCompleted: false, bestClasses: {} }
 
 @Injectable({ providedIn: 'root' })
 export class ProgressStore {
-  private readonly state = signal<ProgressState>({ course: EMPTY_COURSE, settings: DEFAULT_SETTINGS, shots: [], dopeNotes: {} });
+  private readonly state = signal<ProgressState>({ course: EMPTY_COURSE, settings: DEFAULT_SETTINGS, shots: [], dopeNotes: {}, freePlay: DEFAULT_FREE_PLAY });
 
   readonly course = computed(() => this.state().course);
   readonly settings = computed(() => this.state().settings);
   readonly shots = computed(() => this.state().shots);
   readonly dopeNotes = computed(() => this.state().dopeNotes);
+  readonly freePlay = computed(() => this.state().freePlay);
 
   async load(): Promise<void> {
     const { value } = await Preferences.get({ key: PROGRESS_STORAGE_KEY });
@@ -74,6 +77,7 @@ export class ProgressStore {
         settings: knownSettings(stored.settings),
         shots: stored.shots ?? [],
         dopeNotes: stored.dopeNotes ?? {},
+        freePlay: knownFreePlay(stored.freePlay),
       });
     } catch {
       await Preferences.remove({ key: PROGRESS_STORAGE_KEY });
@@ -90,6 +94,10 @@ export class ProgressStore {
 
   addDopeNote(cartridgeId: CartridgeId, distanceM: number, elevationMil: number): void {
     this.update(state => ({ ...state, dopeNotes: withDopeNote(state.dopeNotes, cartridgeId, distanceM, elevationMil) }));
+  }
+
+  updateFreePlay(patch: Partial<FreePlaySettings>): void {
+    this.update(state => ({ ...state, freePlay: { ...state.freePlay, ...patch } }));
   }
 
   updateSettings(patch: Partial<Settings>): void {

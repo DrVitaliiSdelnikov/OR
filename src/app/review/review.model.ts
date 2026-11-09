@@ -3,7 +3,7 @@ import { DopeCard } from '../../core/dope-card';
 import { calcPoints, modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { rangeByMilling, roundToClicks } from '../../core/game-formulas';
 import { CartridgeId, Correction } from '../../core/types';
-import { ExerciseDef, ExerciseShotRecord } from '../../sim/course';
+import { ExerciseShotRecord, PositionTask } from '../../sim/course';
 import { factorContributions, Notebook, NotebookFactor, stepSheet, total } from '../../sim/notebook';
 import { CauseKind, MissBreakdown, MissCause } from '../../sim/miss-breakdown';
 import { analyseGroup, GroupShape, ShotDiagnosis, TurretCorrection } from '../../sim/shot-review';
@@ -159,7 +159,7 @@ export function checkSheet(check: ShotCheck, mode: NotebookMode): CheckSheetView
   };
 }
 
-export function targetPlaques(def: ExerciseDef, records: readonly ExerciseShotRecord[], current: { stageIndex: number; targetIndex: number }, isFinished: boolean): string[] {
+export function targetPlaques(def: PositionTask, records: readonly ExerciseShotRecord[], current: { stageIndex: number; targetIndex: number }, isFinished: boolean): string[] {
   const count = def.targets?.count ?? 0;
   const isPaper = def.stages.some(stage => !stage.closesOnHit);
   const plaques: string[] = [];

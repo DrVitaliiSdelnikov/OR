@@ -24,7 +24,7 @@ const INTRO_ID = '00';
 
         <nav class="menu">
           <a class="tile" routerLink="/course" data-test="tile-course"><span class="number">01</span>Снайперская подготовка</a>
-          <button class="tile" type="button" (click)="showLater()" data-test="tile-free"><span class="number">02</span>Свободная игра</button>
+          <a class="tile" routerLink="/free" data-test="tile-free"><span class="number">02</span>Свободная игра</a>
           <button class="tile" type="button" (click)="showLater()" data-test="tile-textbook"><span class="number">03</span>Учебник курсанта</button>
           <a class="tile" routerLink="/journal" data-test="tile-journal"><span class="number">04</span>Журнал стрелка</a>
         </nav>
@@ -92,7 +92,11 @@ export class HomePage {
 
   protected openContinue(): void {
     const card = this.card();
-    if (card.kind === 'free-play' || card.exerciseId === INTRO_ID) {
+    if (card.kind === 'free-play') {
+      void this.router.navigate(['/free']);
+      return;
+    }
+    if (card.exerciseId === INTRO_ID) {
       this.showLater();
       return;
     }

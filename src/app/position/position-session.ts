@@ -8,7 +8,7 @@ import { clockFromDeg, createScenario, gaugeWindAt, Scenario, windAt } from '../
 import { resolveShot, ShotResult } from '../../core/shot';
 import { CartridgeId, Correction, Target } from '../../core/types';
 import { BoltCycleResult, BoltEvent } from '../../sim/bolt';
-import { CheckRowKind, ExerciseDef, exerciseResult, ExerciseResult, ExerciseSetup, ExerciseShotRecord, setupExercise, ShotCheckSummary } from '../../sim/course';
+import { CheckRowKind, exerciseResult, ExerciseResult, ExerciseSetup, ExerciseShotRecord, isExerciseTask, PositionTask, setupTask, ShotCheckSummary } from '../../sim/course';
 import { FiringEvent, FiringLine } from '../../sim/firing-line';
 import { FlightPaths, flightPaths, flightSamples } from '../../sim/flight-path';
 import { groupPoint, mainCauseOf, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
@@ -54,7 +54,7 @@ import { TurretProgress, turretProgress } from '../../sim/turret-target';
 import { TurretAxis } from './position.model';
 
 export interface PositionStart {
-  def: ExerciseDef;
+  def: PositionTask;
   seed: number;
   engine: BallisticsEngine;
   accessibility: TriggerAccessibility;
@@ -126,7 +126,7 @@ export class PositionSession {
   };
 
   private constructor(
-    readonly def: ExerciseDef,
+    readonly def: PositionTask,
     readonly setup: ExerciseSetup,
     readonly scenario: Scenario,
     private readonly cards: ReadonlyMap<CartridgeId, DopeCard>,
@@ -143,7 +143,7 @@ export class PositionSession {
   }
 
   static async start(options: PositionStart): Promise<PositionSession> {
-    const setup = setupExercise(options.def, options.seed);
+    const setup = setupTask(options.def, options.seed);
     const cartridgeIds = [...new Set(options.def.stages.map(stage => stage.cartridgeId))];
     const cards = new Map<CartridgeId, DopeCard>();
     for (const cartridgeId of cartridgeIds) {
@@ -394,7 +394,7 @@ export class PositionSession {
   }
 
   result(): ExerciseResult | null {
-    if (!this.firingLine.isFinished) {
+    if (!isExerciseTask(this.def) || !this.firingLine.isFinished) {
       return null;
     }
     return exerciseResult(this.def, {
@@ -405,19 +405,26 @@ export class PositionSession {
     });
   }
 
-  private breakdownOf(notebook: Notebook, target: Target, timeS: number, outcome: FireOutcome, result: ShotResult): MissBreakdown {
-    const zones = windAt(this.scenario, timeS);
-    const trueWinds = zones.map(zone => ({ speedMps: zone.speedMps, clock: fractionalClock(zone.fromDeg) }));
-    const truth: FormulaInputs = {
+  trueCorrection(timeS: number): Correction {
+    return formulaCorrectionMil(this.currentNotebook, this.formulaTruth(this.currentNotebook, this.target, timeS));
+  }
+
+  private formulaTruth(notebook: Notebook, target: Target, timeS: number): FormulaInputs {
+    const trueWinds = windAt(this.scenario, timeS).map(zone => ({ speedMps: zone.speedMps, clock: fractionalClock(zone.fromDeg) }));
+    return {
       distanceM: target.distanceM,
       temperatureC: this.scenario.atmosphere.temperatureC,
       pressureHpa: this.scenario.atmosphere.pressureHpa,
       wind: trueWinds[0],
       flagCrosswindsMps: notebook.context.hasZones ? trueWinds.slice(1).map(signedCrosswindMps) : null,
     };
+  }
+
+  private breakdownOf(notebook: Notebook, target: Target, timeS: number, outcome: FireOutcome, result: ShotResult): MissBreakdown {
+    const truth = this.formulaTruth(notebook, target, timeS);
     const playerWind: FormulaInputs = {
       ...truth,
-      wind: notebook.readings.wind ?? { speedMps: 0, clock: trueWinds[0].clock },
+      wind: notebook.readings.wind ?? { speedMps: 0, clock: truth.wind.clock },
       flagCrosswindsMps: notebook.readings.flagCrosswindsMps,
     };
     const planned = total(notebook);

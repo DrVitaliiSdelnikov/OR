@@ -306,3 +306,8 @@
   left: 0;
   z-index: 20;
 }
+
+.instructor-line {
+  font: 500 var(--type-label) / 18px var(--font-mono);
+  color: var(--device-accent);
+}

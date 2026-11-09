@@ -21,6 +21,10 @@
       <div class="notice" data-test="position-unavailable">Упражнение пока недоступно</div>
     }
 
+    @if (state?.instructorLine; as line) {
+      <div class="instructor-line mono" data-test="instructor-line">{{ line }}</div>
+    }
+
     @if (state) {
       <div class="cells mono" data-test="correction-cells">
         @for (cell of state.cells; track cell.label) {

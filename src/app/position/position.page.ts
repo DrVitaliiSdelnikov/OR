@@ -8,7 +8,9 @@ import { impactSoundDelayS } from '../../core/field';
 import { lateralWindMps, windAt } from '../../core/scenario';
 import { Correction } from '../../core/types';
 import { BoltEvent } from '../../sim/bolt';
-import { exerciseById, ExerciseId } from '../../sim/course';
+import { courseProgress, ExerciseDef, exerciseById, ExerciseId, isExerciseTask, PositionTask } from '../../sim/course';
+import { allowedFreePlay, freePlayTask } from '../../sim/free-play';
+import { instructorLineText } from '../free/free-play.model';
 import { factorContributions, forgottenFactor, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
 import { Vector2 } from '../../sim/noise';
 import { TurretCorrection } from '../../sim/shot-review';
@@ -36,6 +38,7 @@ import { TurretDrumComponent } from './turret-drum.component';
 const MARKS_ON_GLASS = 8;
 const UI_REFRESH_S = 0.1;
 const RADIO_MS = 4000;
+const FREE_PLAY_ID = 'free';
 const INSTRUCTOR_ON = 'on';
 const STOP_BADGE_MS = 900;
 const PINCH_STEP_PT = 40;
@@ -83,7 +86,12 @@ export class PositionPage {
   private readonly glassCanvas = viewChild<ElementRef<HTMLCanvasElement>>('glass');
   private readonly positionRoot = viewChild<ElementRef<HTMLElement>>('positionRoot');
 
-  protected readonly def = computed(() => exerciseById(this.exerciseId() as ExerciseId) ?? null);
+  protected readonly isFreePlay = computed(() => this.exerciseId() === FREE_PLAY_ID);
+  protected readonly def = computed<PositionTask | null>(() =>
+    this.isFreePlay()
+      ? freePlayTask(allowedFreePlay(this.progress.freePlay(), courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks))
+      : (exerciseById(this.exerciseId() as ExerciseId) ?? null),
+  );
   protected readonly session = signal<PositionSession | null>(null);
   protected readonly uiTick = signal(0);
   protected readonly radio = signal<RadioLine | null>(null);
@@ -114,11 +122,11 @@ export class PositionPage {
     if (factor && !session.notebook.factorsOn[factor]) {
       return forgottenFactorTeaching(factor, factorContributions(session.notebook)[factor]);
     }
-    const script = teachingScript(session.def.id);
+    const script = isExerciseTask(session.def) ? teachingScript(session.def.id) : null;
     if (!script || this.instructor() !== INSTRUCTOR_ON || this.isTeachingSkipped() || session.isRepeatAfterRecalc) {
       return null;
     }
-    return nextTeaching(script, this.acknowledgedSteps(), this.instructorSnapshot(session));
+    return nextTeaching(script, this.acknowledgedSteps(), this.instructorSnapshot(session, session.def as ExerciseDef));
   });
   protected readonly isUnplayable = computed(() => {
     const def = this.def();
@@ -139,7 +147,8 @@ export class PositionPage {
     const dial = { elevation: session.scope.elevation.clicks, windageLeft: session.scope.windage.clicks };
     const distanceText = notebook.context.target.distanceM === null ? 'дистанция неизвестна' : `${notebook.context.target.distanceM} м`;
     return {
-      title: `Упр. ${session.def.id} · ${session.def.title}`,
+      title: isExerciseTask(session.def) ? `Упр. ${session.def.id} · ${session.def.title}` : session.def.title,
+      instructorLine: this.isFreePlay() && this.progress.freePlay().isInstructorNear ? instructorLineText(session.trueCorrection(this.scenarioTimeS(session))) : null,
       subtitle: `рубеж · ${distanceText} · цель ${session.firingLine.targetIndex + 1} / ${session.setup.targets.length}`,
       wind: wind ? [`${wind.speedMps.toFixed(1)} м/с`, clockText(wind.clock)] : [session.def.conditions.windScale === 0 ? 'штиль' : '—'],
       isWindUnfilled: !tabs(notebook).wind && session.def.conditions.windScale !== 0,
@@ -327,7 +336,7 @@ export class PositionPage {
     const session = this.session();
     this.reviewedShot.set(null);
     const result = session?.result();
-    if (session && result) {
+    if (session && result && isExerciseTask(session.def)) {
       const courseBefore = this.progress.course();
       this.progress.recordExerciseResult(session.def.id, result.exerciseClass, result.total);
       this.reviewFrame.set(this.fullFrame());
@@ -435,7 +444,7 @@ export class PositionPage {
       return;
     }
     const session = this.session();
-    if (session && session.hasFired && !session.isFinished) {
+    if (session && session.hasFired && !session.isFinished && !this.isFreePlay()) {
       this.isLeaveConfirmOpen.set(true);
       return;
     }
@@ -448,7 +457,7 @@ export class PositionPage {
 
   protected leave(): void {
     this.isLeaveConfirmOpen.set(false);
-    void this.router.navigate(['/course', this.exerciseId()]);
+    void this.router.navigate(this.isFreePlay() ? ['/free'] : ['/course', this.exerciseId()]);
   }
 
   protected toTrail(): void {
@@ -657,7 +666,7 @@ export class PositionPage {
   }
 
   private isFactorForgotten(session: PositionSession): boolean {
-    const factor = isFactorGuarded(session.def.id) && session.notebook.mode === 'auto' ? forgottenFactor(session.notebook) : null;
+    const factor = isExerciseTask(session.def) && isFactorGuarded(session.def.id) && session.notebook.mode === 'auto' ? forgottenFactor(session.notebook) : null;
     if (!factor) {
       return false;
     }
@@ -669,10 +678,10 @@ export class PositionPage {
     return true;
   }
 
-  private instructorSnapshot(session: PositionSession): InstructorSnapshot {
+  private instructorSnapshot(session: PositionSession, exercise: ExerciseDef): InstructorSnapshot {
     const entered = session.enteredTotal;
     return {
-      exerciseId: session.def.id,
+      exerciseId: exercise.id,
       sheetTab: this.sheetTab(),
       hasOpenedNotebook: this.hasOpenedNotebook(),
       isEntered: entered !== null,

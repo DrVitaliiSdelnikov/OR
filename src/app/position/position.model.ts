@@ -1,5 +1,5 @@
 import { BOLT_STEP_TRAVEL_PT, BOLT_STEPS, BoltStep } from '../../sim/bolt';
-import { ExerciseDef } from '../../sim/course';
+import { PositionTask } from '../../sim/course';
 import { Vector2 } from '../../sim/noise';
 import { NotebookTotal } from '../../sim/notebook';
 import { formatScopeValue, isHoldoverSettled, ScopeModel } from '../../sim/scope-model';
@@ -85,12 +85,12 @@ export function drumCounterText(axis: TurretAxis, progress: TurretProgress | nul
   return progress === null ? '' : drumCounter(axis, progress);
 }
 
-export function playability(def: ExerciseDef): Playability {
+export function playability(def: PositionTask): Playability {
   const missing = requiredFeatures(def).filter(feature => !IMPLEMENTED_FEATURES.has(feature));
   return missing.length === 0 ? { isPlayable: true, reason: null } : { isPlayable: false, reason: `откроется позже: ${missing.map(feature => FEATURE_NAMES[feature]).join(', ')}` };
 }
 
-function requiredFeatures(def: ExerciseDef): PositionFeature[] {
+function requiredFeatures(def: PositionTask): PositionFeature[] {
   if (!def.targets) {
     return ['intro'];
   }

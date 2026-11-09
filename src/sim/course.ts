@@ -42,8 +42,8 @@ export interface ExerciseStage {
   closesOnHit: boolean;
 }
 
-export interface ExerciseDef {
-  id: ExerciseId;
+export interface PositionTask {
+  kind: 'exercise' | 'free';
   title: string;
   targets: ExerciseTargets | null;
   stages: readonly ExerciseStage[];
@@ -54,9 +54,18 @@ export interface ExerciseDef {
   notebookMode: NotebookMode | null;
   scopeId: ScopeId;
   conditions: ScenarioOptions;
+}
+
+export interface ExerciseDef extends PositionTask {
+  kind: 'exercise';
+  id: ExerciseId;
   terms: readonly string[];
   goals: ExerciseGoalTexts;
   novelty: string | null;
+}
+
+export interface FreePlayTask extends PositionTask {
+  kind: 'free';
 }
 
 export interface ExerciseGoalTexts {
@@ -301,20 +310,23 @@ const SKILL_GOALS: Record<ExerciseId, (run: ExerciseRun) => SkillGoals> = {
   '12': run => ({ skill: { isMet: run.shots.length > 0 && !run.hasOpenedReference }, top: { isMet: run.mode === 'manual-hard' } }),
 };
 
+export function isExerciseTask(task: PositionTask): task is ExerciseDef {
+  return task.kind === 'exercise';
+}
+
 export function exerciseById(id: ExerciseId): ExerciseDef | undefined {
   return COURSE.find(def => def.id === id);
 }
 
-export function setupExercise(def: ExerciseDef, seed: number): ExerciseSetup {
+export function setupTask(def: PositionTask, seed: number): ExerciseSetup {
   const random = mulberry32(seed);
-  const targets = def.targets ? targetsFor(def, def.targets, random) : [];
+  const targets = def.targets ? targetsFor(def.targets, random) : [];
   return {
     targets,
-    plan: {
-      kind: 'exercise',
-      hasColdBore: def.hasColdBore,
-      stages: def.stages.map(stage => ({ ...stage, targetCount: targets.length })),
-    },
+    plan:
+      def.kind === 'free'
+        ? { kind: 'free', cartridgeId: def.stages[0].cartridgeId }
+        : { kind: 'exercise', hasColdBore: def.hasColdBore, stages: def.stages.map(stage => ({ ...stage, targetCount: targets.length })) },
     scenarioOptions: def.conditions,
     sightOffset: def.hasKnockedSight ? knockedSightOffset(random) : NO_OFFSET,
     ...(def.hasPatrol ? { patrol: patrolPlan(seed) } : {}),
@@ -400,8 +412,9 @@ export function courseProgress(results: CourseResults, isEverythingUnlocked = fa
   };
 }
 
-function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | null, fields: Partial<Omit<ExerciseDef, 'id' | 'title' | 'targets' | 'goals' | 'novelty'>>): ExerciseDef {
+function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | null, fields: Partial<Omit<ExerciseDef, 'kind' | 'id' | 'title' | 'targets' | 'goals' | 'novelty'>>): ExerciseDef {
   return {
+    kind: 'exercise',
     id,
     title,
     targets,
@@ -420,7 +433,7 @@ function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | n
   };
 }
 
-function targetsFor(def: ExerciseDef, targets: ExerciseTargets, random: RandomSource): Target[] {
+function targetsFor(targets: ExerciseTargets, random: RandomSource): Target[] {
   const distances = Array.from({ length: targets.count }, () => distanceFor(targets.distance, random));
   const ordered = targets.isOutAndBack ? outAndBack(distances) : distances;
   return ordered.map(distanceM => ({ distanceM, diameterM: targets.diameterM ?? gongDiameterM(distanceM) }));

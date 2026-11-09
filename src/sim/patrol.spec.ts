@@ -3,7 +3,7 @@ import { cartridgeById } from '../core/content';
 import { buildDopeCard, DopeCard } from '../core/dope-card';
 import { BallisticsEngine } from '../core/engine';
 import { patrolPositionM } from '../core/moving-target';
-import { exerciseById, setupExercise } from './course';
+import { exerciseById, setupTask } from './course';
 import { createNotebook, factorContributions } from './notebook';
 import { movementClockAt, movingShotOptions, PATROL_SPEEDS_MPS, patrolPlan, targetOffsetMil } from './patrol';
 import { scopeById } from './scope-model';
@@ -89,10 +89,10 @@ describe('course and notebook', () => {
   });
 
   it('exercise 11 gets the patrol plan; exercise 10 does not', () => {
-    const setup = setupExercise(exerciseById('11')!, 9);
+    const setup = setupTask(exerciseById('11')!, 9);
     expect(setup.patrol).toEqual(patrolPlan(9));
     expect(setup.targets).toHaveLength(10);
-    expect(setupExercise(exerciseById('10')!, 9).patrol).toBeUndefined();
+    expect(setupTask(exerciseById('10')!, 9).patrol).toBeUndefined();
   });
 
   it('the lead points the way the target walks now', () => {

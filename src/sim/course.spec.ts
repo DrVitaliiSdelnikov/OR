@@ -13,7 +13,7 @@ import {
   ExerciseRun,
   ExerciseShotRecord,
   mergeBestClass,
-  setupExercise,
+  setupTask,
   ShotCheckSummary,
   skillGoals,
 } from './course';
@@ -89,14 +89,14 @@ describe('COURSE catalog', () => {
   });
 });
 
-describe('setupExercise — targets', () => {
+describe('setupTask — targets', () => {
   it('03: five 0.35 m gongs at 300 m', () => {
-    const { targets } = setupExercise(exercise('03'), 1);
+    const { targets } = setupTask(exercise('03'), 1);
     expect(targets).toEqual(Array.from({ length: 5 }, () => ({ distanceM: 300, diameterM: 0.35 })));
   });
 
   it('02: one 0.5 m paper target at 100 m, five shots that hits do not close', () => {
-    const setup = setupExercise(exercise('02'), 1);
+    const setup = setupTask(exercise('02'), 1);
     expect(setup.targets).toEqual([{ distanceM: 100, diameterM: 0.5 }]);
     expect(setup.plan).toEqual({
       kind: 'exercise',
@@ -107,17 +107,17 @@ describe('setupExercise — targets', () => {
 
   it('gongs are 0.5 m up to 600 m and 0.7 m beyond', () => {
     for (const seed of SEEDS) {
-      for (const target of setupExercise(exercise('09'), seed).targets) {
+      for (const target of setupTask(exercise('09'), seed).targets) {
         expect(target.diameterM).toBe(target.distanceM > 600 ? 0.7 : 0.5);
       }
     }
-    expect(setupExercise(exercise('08'), 1).targets).toEqual([{ distanceM: 600, diameterM: 0.5 }]);
+    expect(setupTask(exercise('08'), 1).targets).toEqual([{ distanceM: 600, diameterM: 0.5 }]);
   });
 
   it('06: known distances from 400, 450 and 500 m', () => {
     const seen = new Set<number>();
     for (const seed of SEEDS) {
-      for (const target of setupExercise(exercise('06'), seed).targets) {
+      for (const target of setupTask(exercise('06'), seed).targets) {
         expect([400, 450, 500]).toContain(target.distanceM);
         seen.add(target.distanceM);
       }
@@ -127,7 +127,7 @@ describe('setupExercise — targets', () => {
 
   it('05: unknown distances in 300–600 m, multiples of 5 but never of 50', () => {
     for (const seed of SEEDS) {
-      const { targets } = setupExercise(exercise('05'), seed);
+      const { targets } = setupTask(exercise('05'), seed);
       expect(targets).toHaveLength(3);
       for (const target of targets) {
         expect(target.distanceM).toBeGreaterThanOrEqual(300);
@@ -140,7 +140,7 @@ describe('setupExercise — targets', () => {
 
   it('12: ten gongs in 200–700 m, out and back', () => {
     for (const seed of SEEDS) {
-      const distances = setupExercise(exercise('12'), seed).targets.map(target => target.distanceM);
+      const distances = setupTask(exercise('12'), seed).targets.map(target => target.distanceM);
       expect(distances).toHaveLength(10);
       expect(distances.every(distanceM => distanceM >= 200 && distanceM <= 700)).toBe(true);
       const outward = distances.slice(0, 5);
@@ -151,7 +151,7 @@ describe('setupExercise — targets', () => {
   });
 
   it('the plan shoots every target with two shots per target', () => {
-    expect(setupExercise(exercise('12'), 1).plan).toEqual({
+    expect(setupTask(exercise('12'), 1).plan).toEqual({
       kind: 'exercise',
       hasColdBore: true,
       stages: [{ cartridgeId: 'B', targetCount: 10, maxShotsPerTarget: 2, closesOnHit: true }],
@@ -159,16 +159,16 @@ describe('setupExercise — targets', () => {
   });
 
   it('the same seed gives the same setup, another seed other distances', () => {
-    expect(setupExercise(exercise('12'), 77)).toEqual(setupExercise(exercise('12'), 77));
-    const distancesBySeed = SEEDS.map(seed => setupExercise(exercise('12'), seed).targets.map(target => target.distanceM).join());
+    expect(setupTask(exercise('12'), 77)).toEqual(setupTask(exercise('12'), 77));
+    const distancesBySeed = SEEDS.map(seed => setupTask(exercise('12'), seed).targets.map(target => target.distanceM).join());
     expect(new Set(distancesBySeed).size).toBeGreaterThan(1);
   });
 });
 
-describe('setupExercise — conditions and sight', () => {
+describe('setupTask — conditions and sight', () => {
   it('07: a cold morning of −5…0 C and 1025–1035 hPa', () => {
     for (const seed of SEEDS) {
-      const { atmosphere } = createScenario(seed, setupExercise(exercise('07'), seed).scenarioOptions);
+      const { atmosphere } = createScenario(seed, setupTask(exercise('07'), seed).scenarioOptions);
       expect(atmosphere.temperatureC).toBeGreaterThanOrEqual(-5);
       expect(atmosphere.temperatureC).toBeLessThanOrEqual(0);
       expect(atmosphere.pressureHpa).toBeGreaterThanOrEqual(1025);
@@ -178,7 +178,7 @@ describe('setupExercise — conditions and sight', () => {
 
   it('04: one light wind from 3 or 9 o’clock', () => {
     for (const seed of SEEDS) {
-      const scenario = createScenario(seed, setupExercise(exercise('04'), seed).scenarioOptions);
+      const scenario = createScenario(seed, setupTask(exercise('04'), seed).scenarioOptions);
       expect([3, 9]).toContain(scenario.gauge.windClock);
       expect(scenario.isWindUniform).toBe(true);
       expect(scenario.gauge.windSpeedMps).toBeGreaterThanOrEqual(2);
@@ -188,7 +188,7 @@ describe('setupExercise — conditions and sight', () => {
 
   it('06: a moderate oblique wind', () => {
     for (const seed of SEEDS) {
-      const scenario = createScenario(seed, setupExercise(exercise('06'), seed).scenarioOptions);
+      const scenario = createScenario(seed, setupTask(exercise('06'), seed).scenarioOptions);
       expect([1, 2, 4, 5, 7, 8, 10, 11]).toContain(scenario.gauge.windClock);
       expect(scenario.gauge.windSpeedMps).toBeGreaterThanOrEqual(4);
       expect(scenario.gauge.windSpeedMps).toBeLessThanOrEqual(6);
@@ -196,26 +196,26 @@ describe('setupExercise — conditions and sight', () => {
   });
 
   it('01: calm standard day', () => {
-    const scenario = createScenario(5, setupExercise(exercise('01'), 5).scenarioOptions);
+    const scenario = createScenario(5, setupTask(exercise('01'), 5).scenarioOptions);
     expect(scenario.zones.every(zone => zone.speedMps === 0)).toBe(true);
     expect(scenario.atmosphere.temperatureC).toBe(15);
     expect(scenario.atmosphere.pressureHpa).toBe(1013);
   });
 
   it('09 and 12: wind differs by zone', () => {
-    expect(setupExercise(exercise('09'), 1).scenarioOptions.isWindUniform).toBe(false);
-    expect(setupExercise(exercise('12'), 1).scenarioOptions.isWindUniform).toBe(false);
+    expect(setupTask(exercise('09'), 1).scenarioOptions.isWindUniform).toBe(false);
+    expect(setupTask(exercise('12'), 1).scenarioOptions.isWindUniform).toBe(false);
   });
 
   it('02: the sight is knocked 0.5–1.5 MIL off; other exercises zero', () => {
     const directions = new Set<string>();
     for (const seed of SEEDS) {
-      const { sightOffset } = setupExercise(exercise('02'), seed);
+      const { sightOffset } = setupTask(exercise('02'), seed);
       const offsetMil = Math.hypot(sightOffset.upMrad, sightOffset.rightMrad);
       expect(offsetMil).toBeGreaterThanOrEqual(0.5);
       expect(offsetMil).toBeLessThanOrEqual(1.5);
       directions.add(`${Math.sign(sightOffset.upMrad)}${Math.sign(sightOffset.rightMrad)}`);
-      expect(setupExercise(exercise('03'), seed).sightOffset).toEqual({ upMrad: 0, rightMrad: 0 });
+      expect(setupTask(exercise('03'), seed).sightOffset).toEqual({ upMrad: 0, rightMrad: 0 });
     }
     expect(directions.size).toBe(4);
   });
