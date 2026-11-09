@@ -127,6 +127,14 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
   }
   await byTest('check-subtitle').scrollIntoViewIfNeeded();
   await snap(page, `36-review-check${suffix}`);
+  await byTest('causes').scrollIntoViewIfNeeded();
+  await snap(page, `39-review-causes${suffix}`);
+  await byTest('flight-view').scrollIntoViewIfNeeded();
+  await snap(page, `40-review-flight-side${suffix}`);
+  await byTest('flight-tab-top').click();
+  await snap(page, `41-review-flight-top${suffix}`);
+  await byTest('flight-tab-front').click();
+  await snap(page, `42-review-group${suffix}`);
 
   await page.goto(`${BASE_URL}/position/10`);
   await byTest('fire').waitFor();

@@ -4,6 +4,7 @@ import { dopeRowAt } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { gaugeWindAt } from '../../core/scenario';
 import { exerciseById } from '../../sim/course';
+import { CauseKind, groupPoint, MissBreakdown } from '../../sim/miss-breakdown';
 import { PositionSession } from './position-session';
 
 const engine = new BallisticsEngine();
@@ -639,5 +640,102 @@ describe('PositionSession — shot review (A6.1)', () => {
     expect(repeat.records).toHaveLength(0);
     expect(repeat.firingLine.targetIndex).toBe(0);
     expect(repeat.isRepeatAfterRecalc).toBe(true);
+  });
+});
+
+function causeOf(shot: { review: { breakdown: MissBreakdown } }, kind: CauseKind) {
+  return shot.review.breakdown.causes.find(cause => cause.kind === kind)!;
+}
+
+describe('PositionSession — why the bullet went there (A6.2)', () => {
+  it('the causes add up to the impact over seeds and exercises', async () => {
+    for (const id of ['01', '04', '05', '06'] as const) {
+      for (let seed = 1; seed <= 5; seed++) {
+        const session = await start(id, seed);
+        session.enterWind(2, 9);
+        session.enterOnTurrets();
+        session.turn('elevation', 3);
+        const shot = (await shoot(session, { x: 0.2, y: -0.1 }))!;
+        const sum = shot.review.breakdown.causes.reduce((total, cause) => ({ upMrad: total.upMrad + cause.vector.upMrad, rightMrad: total.rightMrad + cause.vector.rightMrad }), { upMrad: 0, rightMrad: 0 });
+        expect(Math.abs(sum.upMrad - shot.result.impact.upMrad)).toBeLessThan(0.02);
+        expect(Math.abs(sum.rightMrad - shot.result.impact.rightMrad)).toBeLessThan(0.02);
+      }
+    }
+  });
+
+  it('01: dialled as planned and held on the centre — no calculation, wind, hold or trigger error; the formula is within a click of the core', async () => {
+    const session = await start('01');
+    dialToTarget(session);
+    const shot = (await shoot(session, ON_TARGET))!;
+    for (const kind of ['calc', 'wind', 'hold', 'trigger'] as const) {
+      expect(causeOf(shot, kind).clicks).toBe(0);
+    }
+    expect(causeOf(shot, 'formula').clicks).toBeLessThanOrEqual(1);
+    expect(shot.review.breakdown.main).toBeNull();
+  });
+
+  it('04: no wind written down — the wind estimate takes the whole wind, not the calculation', async () => {
+    const session = await start('04');
+    dialToTarget(session);
+    const shot = (await shoot(session, ON_TARGET))!;
+    const wind = causeOf(shot, 'wind');
+    const formula = causeOf(shot, 'formula');
+    expect(Math.abs(shot.result.ideal.rightMrad)).toBeGreaterThan(0.2);
+    expect(wind.vector.rightMrad + formula.vector.rightMrad).toBeCloseTo(-shot.result.ideal.rightMrad, 1);
+    expect(causeOf(shot, 'calc').clicks).toBe(0);
+    expect(shot.review.breakdown.windVerdict).toBe('under');
+  });
+
+  it('a turret 5 clicks above the plan is a 5-click calculation error', async () => {
+    const session = await start('01');
+    dialToTarget(session);
+    session.turn('elevation', 5);
+    const shot = (await shoot(session, ON_TARGET))!;
+    expect(causeOf(shot, 'calc').clicks).toBe(5);
+    expect(causeOf(shot, 'calc').vector.upMrad).toBeCloseTo(0.5, 6);
+  });
+
+  it('the reticle off the centre is the hold', async () => {
+    const session = await start('01');
+    dialToTarget(session);
+    const shot = (await shoot(session, { x: 0.3, y: 0 }))!;
+    expect(causeOf(shot, 'hold').clicks).toBe(3);
+    expect(shot.review.breakdown.main).toBe('hold');
+  });
+
+  it('02: the cold bore is a grey cause; the knocked sight and turret beyond the plan are the zero', async () => {
+    const session = await start('02', 23);
+    session.turn('elevation', 3);
+    const shot = (await shoot(session, ON_TARGET))!;
+    const cold = causeOf(shot, 'cold-bore');
+    expect(cold.vector).toEqual(RIFLE.coldBoreShiftMil);
+    expect(cold.isPlayerError).toBe(false);
+    const zero = causeOf(shot, 'zero');
+    expect(zero.vector.upMrad).toBeCloseTo(session.setup.sightOffset.upMrad + 0.3, 6);
+    expect(zero.vector.rightMrad).toBeCloseTo(session.setup.sightOffset.rightMrad, 6);
+    expect(causeOf(shot, 'calc').clicks).toBe(0);
+  });
+
+  it('the flight paths end at the impact and at the centre', async () => {
+    const session = await start('01');
+    const shot = (await shoot(session, ON_TARGET))!;
+    const bulletEnd = shot.review.flight.bullet.at(-1)!;
+    expect(bulletEnd.distanceM).toBe(300);
+    expect(bulletEnd.heightCm).toBeCloseTo(shot.result.impact.upMrad * 30, 6);
+    expect(shot.review.flight.centre.at(-1)!.heightCm).toBeCloseTo(0, 6);
+  });
+
+  it('the group gathers this run’s shots without data errors and cold bore; «пересчитать» starts it again', async () => {
+    const session = await start('02', 23);
+    const shots = [];
+    for (let shot = 0; shot < 3; shot++) {
+      shots.push((await shoot(session, ON_TARGET))!);
+    }
+    expect(shots.map(shot => shot.review.group.length)).toEqual([1, 2, 3]);
+    const first = shots[0];
+    expect(first.review.group[0]).toEqual(groupPoint(first.review.breakdown));
+    expect(first.review.group[0].upMrad).toBeCloseTo(first.review.warmImpact.upMrad - causeOf(first, 'calc').vector.upMrad - causeOf(first, 'wind').vector.upMrad - causeOf(first, 'formula').vector.upMrad, 2);
+    const repeat = await session.restartForRecalc(engine);
+    expect((await shoot(repeat, ON_TARGET))!.review.group).toHaveLength(1);
   });
 });

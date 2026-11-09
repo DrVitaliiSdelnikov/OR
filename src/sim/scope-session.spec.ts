@@ -84,7 +84,8 @@ describe('ScopeSession', () => {
     expect(hasFired).toBe(true);
     const outcome = session.fire();
     expect(outcome).not.toBeNull();
-    expect(outcome!.triggerQuality).toBeGreaterThan(0);
+    expect(outcome!.hold.upMrad).toBeCloseTo(outcome!.reticle.upMrad + outcome!.triggerSpread.upMrad, 9);
+    expect(outcome!.hold.rightMrad).toBeCloseTo(outcome!.reticle.rightMrad + outcome!.triggerSpread.rightMrad, 9);
     expect(session.bolt.chamberState).toBe('spent');
     expect(session.startTrigger()).toBe(false);
   });
@@ -96,6 +97,8 @@ describe('ScopeSession', () => {
     const outcome = session.fire()!;
     expect(outcome.hold.rightMrad).toBeCloseTo(cross.x, 9);
     expect(outcome.hold.upMrad).toBeCloseTo(cross.y, 9);
+    expect(outcome.reticle).toEqual({ upMrad: cross.y, rightMrad: cross.x });
+    expect(outcome.triggerSpread).toEqual({ upMrad: 0, rightMrad: 0 });
   });
 
   it('cannot fire again before the bolt is cycled', () => {

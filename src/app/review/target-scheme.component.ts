@@ -44,6 +44,9 @@ interface ScenePoint {
           <line [attr.x1]="mark.x" [attr.y1]="mark.y - 7" [attr.x2]="mark.x" [attr.y2]="mark.y + 7" />
         </g>
       }
+      @for (point of groupScenePoints(); track $index) {
+        <circle class="group-point" [attr.cx]="point.x" [attr.cy]="point.y" r="4" data-test="scheme-group-point" />
+      }
       @if (impactPoint(); as impact) {
         <circle class="impact" [class.clamped]="impact.isClamped" [attr.cx]="impact.x" [attr.cy]="impact.y" r="5" data-test="scheme-impact" />
       }
@@ -58,6 +61,7 @@ interface ScenePoint {
     .call line { stroke: var(--paper-ink); stroke-width: 2; }
     .player-call line { stroke: var(--paper-red-pencil); stroke-width: 2; }
     .impact { fill: var(--paper-ink); }
+    .group-point { fill: none; stroke: var(--paper-ink); stroke-width: 2; }
     .impact.clamped { fill: var(--paper-red-pencil); }
   `,
 })
@@ -66,6 +70,7 @@ export class TargetSchemeComponent {
   readonly call = input<Correction | null>(null);
   readonly impact = input<Correction | null>(null);
   readonly playerCall = input<Correction | null>(null);
+  readonly groupPoints = input<readonly Correction[]>([]);
   readonly isPicking = input(false);
   readonly pick = output<Correction>();
 
@@ -77,6 +82,7 @@ export class TargetSchemeComponent {
   protected readonly callPoint = computed(() => this.toScene(this.call()));
   protected readonly impactPoint = computed(() => this.toScene(this.impact()));
   protected readonly playerCallPoint = computed(() => this.toScene(this.playerCall()));
+  protected readonly groupScenePoints = computed(() => this.groupPoints().map(point => this.toScene(point)!));
   protected readonly gridLines = computed(() => {
     const stepPt = GRID_STEP_MIL * 5 * this.ptPerMil();
     const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];

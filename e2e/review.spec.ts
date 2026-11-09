@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { centreReticle, clicksToTarget, dialElevation, enterTotalOnTurrets, seedProgress } from './helpers';
+import { centreReticle, clicksToTarget, dialElevation, enterTotalOnTurrets, seedProgress, setWindSpeed } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 const PASSED_TO_10 = { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3, '06': 3, '07': 3, '08': 3, '09': 3 };
@@ -63,9 +63,7 @@ test.describe('разбор выстрела (A6.1)', () => {
     await page.getByTestId('tab-wind').click();
     const dial = (await page.getByTestId('wind-clock').boundingBox())!;
     await page.mouse.click(dial.x + dial.width * 0.23, dial.y + dial.height * 0.52);
-    for (let step = 0; step < 90; step++) {
-      await page.getByTestId('speed-plus').click();
-    }
+    await setWindSpeed(page, 9);
     await page.getByTestId('enter-turrets').click();
     await pressureShot(page);
     await openCheck(page);
@@ -161,3 +159,69 @@ test.describe('разбор выстрела (A6.1)', () => {
     }
   });
 });
+
+test.describe('разбор: почему ушла пуля, траектории и группа (A6.2)', () => {
+  test('01: недокрученный барабан — лепестки игрока в кликах, главный — расчёт, фраза-вывод', async ({ page }) => {
+    await toPosition(page, '01');
+    await enterTotalOnTurrets(page);
+    await tapShot(page);
+    await expect(page.getByTestId('causes')).toBeVisible();
+    for (const kind of ['calc', 'wind', 'hold', 'trigger']) {
+      await expect(page.getByTestId(`cause-${kind}`)).toBeVisible();
+    }
+    await expect(page.getByTestId('cause-calc')).toContainText(/↓ \d+ кл\./);
+    await expect(page.getByTestId('cause-calc')).toHaveClass(/main/);
+    await expect(page.getByTestId('causes-conclusion')).toHaveText(/^Расчёт увёл пулю ↓ на \d+ кл\./);
+  });
+
+  test('04: ветер записан неверно — лепесток ветра в кликах', async ({ page }) => {
+    await toPosition(page, '04');
+    await page.getByTestId('tile-notebook').click();
+    await page.getByTestId('tab-wind').click();
+    const dial = (await page.getByTestId('wind-clock').boundingBox())!;
+    await page.mouse.click(dial.x + dial.width * 0.23, dial.y + dial.height * 0.52);
+    await setWindSpeed(page, 9);
+    await page.getByTestId('enter-turrets').click();
+    await pressureShot(page);
+    await expect(page.getByTestId('cause-wind')).toContainText(/\d+ кл\./);
+  });
+
+  test('переключатель: «сбоку» и «сверху» рисуют линию и пунктир, «спереди» — точки группы', async ({ page }) => {
+    await toPosition(page, '01');
+    await tapShot(page);
+    await expect(page.getByTestId('flight-plot-side')).toBeVisible();
+    await expect(page.getByTestId('flight-bullet')).toHaveAttribute('points', /\d/);
+    await expect(page.getByTestId('flight-centre')).toHaveAttribute('points', /\d/);
+    await page.getByTestId('flight-tab-top').click();
+    await expect(page.getByTestId('flight-plot-top')).toBeVisible();
+    await expect(page.getByTestId('flight-plot-side')).toHaveCount(0);
+    await page.getByTestId('flight-tab-front').click();
+    await expect(page.getByTestId('scheme-group-point')).toHaveCount(1);
+    await expect(page.getByTestId('scheme-group-point').first()).toBeVisible();
+    await expect(page.getByTestId('group-text')).toHaveText('Диагноз группы — от 3 выстрелов');
+  });
+
+  test('02: после третьего выстрела — диагноз группы', async ({ page }) => {
+    await toPosition(page, '02');
+    for (let shot = 0; shot < 3; shot++) {
+      await tapShot(page);
+      if (shot < 2) {
+        await page.getByTestId('review-next').click();
+        await expect(page.getByTestId('review-sheet')).toHaveCount(0);
+      }
+    }
+    await page.getByTestId('flight-tab-front').click();
+    await expect(page.getByTestId('scheme-group-point')).toHaveCount(3);
+    await expect(page.getByTestId('scheme-group-point').first()).toBeVisible();
+    await expect(page.getByTestId('group-text')).toHaveText(/^(Разброс|Вертикальная|Горизонтальная|Низко-вправо|Плотная)/);
+  });
+
+  test('касание не меньше 44 в переключателе видов', async ({ page }) => {
+    await toPosition(page, '01');
+    await tapShot(page);
+    for (const id of ['flight-tab-front', 'flight-tab-side', 'flight-tab-top']) {
+      expect((await page.getByTestId(id).boundingBox())!.height, id).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
+    }
+  });
+});
+

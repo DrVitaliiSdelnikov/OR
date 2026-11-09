@@ -124,6 +124,8 @@ flowchart LR
 
 Разбор выстрела (A6.1): ![Промах](screens/35-review-miss.png) ![Проверка АВТО](screens/36-review-check.png) ![Вызов в 10](screens/37-review-call.png) ![Вызов открыт](screens/38-review-call-revealed.png)
 
+Почему ушла пуля, траектории и группа (A6.2): ![Лепестки](screens/39-review-causes.png) ![Сбоку](screens/40-review-flight-side.png) ![Сверху](screens/41-review-flight-top.png) ![Группа](screens/42-review-group.png)
+
 По брифу 08 на токенах A1. Ниже — описание старого хаба, оставлено как история.
 
 Сверху вниз:

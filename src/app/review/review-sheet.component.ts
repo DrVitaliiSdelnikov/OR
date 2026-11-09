@@ -1,7 +1,9 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { Correction } from '../../core/types';
 import { PositionSession, PositionShot } from '../position/position-session';
+import { CausesComponent } from './causes.component';
 import { CheckSheetComponent } from './check-sheet.component';
+import { FlightViewComponent } from './flight-view.component';
 import { checkSheet, correctionText, diagnosisText, shotPointsText, targetPlaques } from './review.model';
 import { TargetSchemeComponent } from './target-scheme.component';
 
@@ -9,7 +11,7 @@ const CALL_DISTANCE_DECIMALS = 1;
 
 @Component({
   selector: 'or-review-sheet',
-  imports: [TargetSchemeComponent, CheckSheetComponent],
+  imports: [TargetSchemeComponent, CheckSheetComponent, CausesComponent, FlightViewComponent],
   template: `
     @let state = view();
     <section class="review" role="dialog" aria-label="Разбор выстрела" data-test="review-sheet">
@@ -55,6 +57,8 @@ const CALL_DISTANCE_DECIMALS = 1;
           } @else {
             <div class="no-check mono" data-test="review-no-check">{{ state.noCheckText }}</div>
           }
+          <or-causes [breakdown]="shot().review.breakdown" />
+          <or-flight-view [flight]="shot().review.flight" [group]="shot().review.group" [radiusMil]="shot().review.targetRadiusMil" [distanceM]="shot().review.distanceM" />
         }
       </div>
 

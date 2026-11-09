@@ -12,8 +12,9 @@ export const BOLT_KNOCK_MIL = 0.15;
 
 export interface FireOutcome {
   hold: Correction;
+  reticle: Correction;
+  triggerSpread: Correction;
   dial: Correction;
-  triggerQuality: number;
 }
 
 export class ScopeSession {
@@ -132,15 +133,15 @@ export class ScopeSession {
     const cross = this.crossOffsetMil;
     const bpm = this.heart.bpm;
     const spread = this.trigger ? this.trigger.extraSpread(bpm, this.seed + this.shotCounter * 7) : { upMrad: 0, rightMrad: 0 };
-    const triggerQuality = this.trigger ? this.trigger.quality(bpm) : 1;
     this.bolt.fire();
     this.sway.fireRecoil();
     this.trigger = null;
     this.shotCounter++;
     return {
       hold: { upMrad: cross.y + spread.upMrad, rightMrad: cross.x + spread.rightMrad },
+      reticle: { upMrad: cross.y, rightMrad: cross.x },
+      triggerSpread: spread,
       dial: this.dial,
-      triggerQuality,
     };
   }
 

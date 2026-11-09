@@ -5,7 +5,8 @@ import { rangeByMilling, roundToClicks } from '../../core/game-formulas';
 import { CartridgeId, Correction } from '../../core/types';
 import { ExerciseDef, ExerciseShotRecord } from '../../sim/course';
 import { factorContributions, Notebook, NotebookFactor, stepSheet, total } from '../../sim/notebook';
-import { ShotDiagnosis, TurretCorrection } from '../../sim/shot-review';
+import { CauseKind, MissBreakdown, MissCause } from '../../sim/miss-breakdown';
+import { analyseGroup, GroupShape, ShotDiagnosis, TurretCorrection } from '../../sim/shot-review';
 import { SLOT_LABELS, STEP_TITLES } from '../notebook/calc-sheet.model';
 import { clockText, FACTOR_NAMES } from '../notebook/notebook.model';
 import { ShotCheck } from '../position/position-session';
@@ -39,6 +40,20 @@ export interface DopeNote {
 
 export type DopeNotes = Partial<Record<CartridgeId, DopeNote[]>>;
 
+export interface CauseRowView {
+  kind: CauseKind;
+  name: string;
+  text: string;
+  isPlayerError: boolean;
+  isMain: boolean;
+  share: number;
+}
+
+export interface CausesView {
+  conclusion: string;
+  rows: CauseRowView[];
+}
+
 const STAMPS: Record<CheckVerdict, CheckStamp> = { exact: 'ТОЧНО', close: 'ПОЧТИ', error: 'ОШИБКА' };
 const ERROR_LABELS: Record<CheckErrorType, string> = {
   substitution: 'ПОДСТАНОВКА',
@@ -60,6 +75,26 @@ const PREPARATION_LABELS: Record<PreparationRowInput['row'], string> = {
 };
 const VERTICAL_STEPS: ReadonlySet<string> = new Set(['dope', 'atmosphere']);
 const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', 'lead'];
+const CAUSE_NAMES: Record<CauseKind, string> = {
+  calc: 'Расчёт',
+  wind: 'Оценка ветра',
+  hold: 'Удержание',
+  trigger: 'Спуск',
+  zero: 'Ноль прицела',
+  formula: 'Упрощение формулы',
+  rifle: 'Винтовка',
+  'cold-bore': 'Холодный ствол',
+};
+const ARROWS_FROM_RIGHT = ['→', '↗', '↑', '↖', '←', '↙', '↓', '↘'];
+const ARROW_SECTOR_RAD = Math.PI / 4;
+const GROUP_TEXTS: Record<GroupShape, string> = {
+  scattered: 'Разброс — позиция, окуляр',
+  'vertical-string': 'Вертикальная струна — дыхание',
+  'horizontal-string': 'Горизонтальная струна — завал оружия',
+  'low-right': 'Низко-вправо — кисть, спуск',
+  offset: 'Плотная, но не в центре — ноль прицела',
+  tight: 'Плотная группа — основы в порядке',
+};
 const MOA_PER_MIL = 3.44;
 const DECIMALS = 100;
 
@@ -329,4 +364,58 @@ function autoSubtitle(rows: readonly CheckRowView[]): string {
 
 function trimmed(value: number): string {
   return String(Math.round(value * DECIMALS) / DECIMALS);
+}
+
+export function directionArrow(vector: Correction): string {
+  if (vector.upMrad === 0 && vector.rightMrad === 0) {
+    return '';
+  }
+  const sector = Math.round(Math.atan2(vector.upMrad, vector.rightMrad) / ARROW_SECTOR_RAD);
+  return ARROWS_FROM_RIGHT[(sector + ARROWS_FROM_RIGHT.length) % ARROWS_FROM_RIGHT.length];
+}
+
+export function causesView(breakdown: MissBreakdown): CausesView {
+  const shown = breakdown.causes.filter(cause => cause.isShown);
+  const largestClicks = Math.max(1, ...shown.map(cause => cause.clicks));
+  return {
+    conclusion: conclusionText(breakdown),
+    rows: shown.map(cause => ({
+      kind: cause.kind,
+      name: CAUSE_NAMES[cause.kind],
+      text: cause.clicks === 0 ? 'чисто' : `${directionArrow(cause.vector)} ${cause.clicks} кл.`,
+      isPlayerError: cause.isPlayerError,
+      isMain: cause.kind === breakdown.main,
+      share: cause.clicks / largestClicks,
+    })),
+  };
+}
+
+export function groupText(points: readonly Correction[]): string {
+  const group = analyseGroup(points);
+  return group ? GROUP_TEXTS[group.shape] : 'Диагноз группы — от 3 выстрелов';
+}
+
+function conclusionText(breakdown: MissBreakdown): string {
+  const main = breakdown.causes.find(cause => cause.kind === breakdown.main);
+  if (!main) {
+    return breakdown.causes.some(cause => !cause.isPlayerError && cause.isShown) ? 'Твоих ошибок нет — это разброс винтовки' : 'Чисто';
+  }
+  const phrase = mainCausePhrase(main, breakdown);
+  return main.kind !== 'trigger' && breakdown.isTriggerClean ? `${phrase}, спуск чистый` : phrase;
+}
+
+function mainCausePhrase(main: MissCause, breakdown: MissBreakdown): string {
+  const shift = `${directionArrow(main.vector)} ${main.clicks} кл.`;
+  switch (main.kind) {
+    case 'wind':
+      return `${breakdown.windVerdict === 'under' ? 'Недокрут' : 'Перекрут'} по ветру ${main.clicks} кл.`;
+    case 'calc':
+      return `Расчёт увёл пулю ${directionArrow(main.vector)} на ${main.clicks} кл.`;
+    case 'hold':
+      return `Сетку увело ${directionArrow(main.vector)} на ${main.clicks} кл.`;
+    case 'trigger':
+      return `Сорвал спуск: ${shift}`;
+    default:
+      return `Ноль прицела: СТП ${shift}`;
+  }
 }

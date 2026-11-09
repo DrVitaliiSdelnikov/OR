@@ -8,7 +8,9 @@ import { exerciseById, ExerciseShotRecord } from '../../sim/course';
 import { CheckTruth, checkInputs, createNotebook, enterWind, Notebook, placeChip, recordStation, recordStep, setSign, toggleFactor, typeTape } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
 import { ShotCheck } from '../position/position-session';
-import { checkSheet, correctionText, diagnosisText, dopeNoteTexts, shotPointsText, targetPlaques, withDopeNote } from './review.model';
+import { CauseKind, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
+import { Correction } from '../../core/types';
+import { causesView, checkSheet, correctionText, diagnosisText, directionArrow, dopeNoteTexts, groupText, shotPointsText, targetPlaques, withDopeNote } from './review.model';
 
 const scope = scopeById('course-dot');
 let card: DopeCard;
@@ -161,5 +163,93 @@ describe('DOPE notes (Б7)', () => {
     expect(texts.get(300)).toBe('↑ 1.7');
     expect(texts.get(500)).toBe('↑ 3.5 · 450 м');
     expect(texts.get(400)).toBeUndefined();
+  });
+});
+
+function breakdownWith(vectors: Partial<Record<CauseKind, [number, number]>>): MissBreakdown {
+  const zero: Correction = { upMrad: 0, rightMrad: 0 };
+  return missBreakdown({
+    ideal: zero,
+    formulaTruth: vectors.formula ? { upMrad: vectors.formula[0], rightMrad: vectors.formula[1] } : zero,
+    formulaPlayerWind: { upMrad: (vectors.formula?.[0] ?? 0) + (vectors.wind?.[0] ?? 0), rightMrad: (vectors.formula?.[1] ?? 0) + (vectors.wind?.[1] ?? 0) },
+    dial: {
+      upMrad: (vectors.formula?.[0] ?? 0) + (vectors.wind?.[0] ?? 0) + (vectors.calc?.[0] ?? 0),
+      rightMrad: (vectors.formula?.[1] ?? 0) + (vectors.wind?.[1] ?? 0) + (vectors.calc?.[1] ?? 0),
+    },
+    plannedHold: zero,
+    reticle: vectors.hold ? { upMrad: vectors.hold[0], rightMrad: vectors.hold[1] } : zero,
+    triggerSpread: vectors.trigger ? { upMrad: vectors.trigger[0], rightMrad: vectors.trigger[1] } : zero,
+    velocitySpread: vectors.rifle ? { upMrad: vectors.rifle[0], rightMrad: vectors.rifle[1] } : zero,
+    rifleGroup: zero,
+    coldBore: vectors['cold-bore'] ? { upMrad: vectors['cold-bore'][0], rightMrad: vectors['cold-bore'][1] } : zero,
+    sightOffset: vectors.zero ? { upMrad: vectors.zero[0], rightMrad: vectors.zero[1] } : zero,
+    hasKnockedSight: vectors.zero !== undefined,
+    clickMil: 0.1,
+  });
+}
+
+describe('directionArrow', () => {
+  it('eight directions; nothing for no shift', () => {
+    expect(directionArrow({ upMrad: 0.3, rightMrad: 0 })).toBe('↑');
+    expect(directionArrow({ upMrad: 0.1, rightMrad: 0.1 })).toBe('↗');
+    expect(directionArrow({ upMrad: 0, rightMrad: 0.2 })).toBe('→');
+    expect(directionArrow({ upMrad: -0.2, rightMrad: 0.2 })).toBe('↘');
+    expect(directionArrow({ upMrad: -0.4, rightMrad: 0.05 })).toBe('↓');
+    expect(directionArrow({ upMrad: -0.2, rightMrad: -0.2 })).toBe('↙');
+    expect(directionArrow({ upMrad: 0, rightMrad: -0.2 })).toBe('←');
+    expect(directionArrow({ upMrad: 0.2, rightMrad: -0.2 })).toBe('↖');
+    expect(directionArrow({ upMrad: 0, rightMrad: 0 })).toBe('');
+  });
+});
+
+describe('causesView', () => {
+  it('rows: player causes first, «чисто» at zero; grey from 1 click; the main one is marked', () => {
+    const view = causesView(breakdownWith({ wind: [0, -0.3], 'cold-bore': [0.15, 0.05], formula: [0.02, 0] }));
+    expect(view.rows.map(row => [row.name, row.text, row.isPlayerError, row.isMain])).toEqual([
+      ['Расчёт', 'чисто', true, false],
+      ['Оценка ветра', '← 3 кл.', true, true],
+      ['Удержание', 'чисто', true, false],
+      ['Спуск', 'чисто', true, false],
+      ['Холодный ствол', '↑ 2 кл.', false, false],
+    ]);
+  });
+
+  it('the bar width follows the clicks against the largest row', () => {
+    const view = causesView(breakdownWith({ calc: [0.4, 0], hold: [0, 0.2] }));
+    expect(view.rows.find(row => row.kind === 'calc')!.share).toBe(1);
+    expect(view.rows.find(row => row.kind === 'hold')!.share).toBe(0.5);
+    expect(view.rows.find(row => row.kind === 'trigger')!.share).toBe(0);
+  });
+
+  it('the conclusion names the main cause, then «спуск чистый» when the trigger was clean', () => {
+    expect(causesView(breakdownWith({ formula: [0, 0.3], wind: [0, -0.1] })).conclusion).toBe('Недокрут по ветру 1 кл., спуск чистый');
+    expect(causesView(breakdownWith({ wind: [0, 0.4] })).conclusion).toBe('Перекрут по ветру 4 кл., спуск чистый');
+    expect(causesView(breakdownWith({ calc: [-0.4, 0] })).conclusion).toBe('Расчёт увёл пулю ↓ на 4 кл., спуск чистый');
+    expect(causesView(breakdownWith({ hold: [0.2, 0.2] })).conclusion).toBe('Сетку увело ↗ на 3 кл., спуск чистый');
+    expect(causesView(breakdownWith({ trigger: [-0.2, 0.2], hold: [0.1, 0] })).conclusion).toBe('Сорвал спуск: ↘ 3 кл.');
+    expect(causesView(breakdownWith({ zero: [-0.6, -0.6] })).conclusion).toBe('Ноль прицела: СТП ↙ 8 кл., спуск чистый');
+    expect(causesView(breakdownWith({ wind: [0, 0.3], trigger: [0.1, 0] })).conclusion).toBe('Перекрут по ветру 3 кл.');
+  });
+
+  it('no player error from a click: the rifle when grey causes show, otherwise clean', () => {
+    expect(causesView(breakdownWith({ rifle: [0.2, 0] })).conclusion).toBe('Твоих ошибок нет — это разброс винтовки');
+    expect(causesView(breakdownWith({})).conclusion).toBe('Чисто');
+  });
+});
+
+describe('groupText', () => {
+  const at = (upMrad: number, rightMrad: number): Correction => ({ upMrad, rightMrad });
+
+  it('fewer than 3 shots — no diagnosis yet', () => {
+    expect(groupText([at(0, 0), at(0.1, 0)])).toBe('Диагноз группы — от 3 выстрелов');
+  });
+
+  it('3 shots and more — the fundamentals by the group shape', () => {
+    expect(groupText([at(0.3, 0), at(-0.3, 0.02), at(0, -0.02)])).toBe('Вертикальная струна — дыхание');
+    expect(groupText([at(0, 0.3), at(0.02, -0.3), at(-0.02, 0)])).toBe('Горизонтальная струна — завал оружия');
+    expect(groupText([at(1, 1), at(-1, -1), at(0.5, -0.8)])).toBe('Разброс — позиция, окуляр');
+    expect(groupText([at(-0.3, 0.3), at(-0.32, 0.28), at(-0.28, 0.31)])).toBe('Низко-вправо — кисть, спуск');
+    expect(groupText([at(0.4, 0), at(0.42, 0.02), at(0.38, -0.02)])).toBe('Плотная, но не в центре — ноль прицела');
+    expect(groupText([at(0.05, 0), at(-0.03, 0.02), at(0, -0.04)])).toBe('Плотная группа — основы в порядке');
   });
 });

@@ -33,7 +33,9 @@ import {
   setUnits,
   openReference,
   stepHasSide,
+  formulaCorrectionMil,
 } from './notebook';
+import { atmosphereCorrectionMil, windCorrectionMil } from '../core/game-formulas';
 import { scopeById } from './scope-model';
 
 const CLICK_MIL = 0.1;
@@ -429,5 +431,38 @@ describe('more cases', () => {
     const notebook = createNotebook(context(), 'manual-hard');
     expect(notebook.hasOpenedReference).toBe(false);
     expect(openReference(notebook).hasOpenedReference).toBe(true);
+  });
+});
+
+describe('formulaCorrectionMil (A6.2)', () => {
+  const truth = { distanceM: 300, temperatureC: 5, pressureHpa: 1000, wind: { speedMps: 4, clock: 3 }, flagCrosswindsMps: null };
+
+  it('is the game formula with the given inputs: DOPE row, atmosphere and wind, all factors on', () => {
+    const row = dopeRowAt(cards.get('B')!, 300);
+    const formula = formulaCorrectionMil(createNotebook(context(), 'manual-hard'), truth);
+    expect(formula.upMrad).toBeCloseTo(row.elevationMil + atmosphereCorrectionMil(row, 5, 1000), 9);
+    expect(formula.rightMrad).toBeCloseTo(windCorrectionMil(4, 3, 300, row.windConstant), 9);
+  });
+
+  it('ignores the player distance, readings and switched-off factors', () => {
+    let notebook = createNotebook(context({ target: { sizeM: 0.5, distanceM: null } }), 'auto');
+    notebook = measureRange(notebook, 2);
+    notebook = enterWind(notebook, 1, 9);
+    notebook = toggleFactor(notebook, 'dope');
+    expect(formulaCorrectionMil(notebook, truth)).toEqual(formulaCorrectionMil(createNotebook(context(), 'auto'), truth));
+  });
+
+  it('a fractional clock goes into the formula as is', () => {
+    const row = dopeRowAt(cards.get('B')!, 300);
+    const formula = formulaCorrectionMil(createNotebook(context(), 'auto'), { ...truth, wind: { speedMps: 4, clock: 2.4 } });
+    expect(formula.rightMrad).toBeCloseTo(windCorrectionMil(4, 2.4, 300, row.windConstant), 9);
+  });
+
+  it('with zones it averages the given flag crosswinds', () => {
+    const zoned = context({ hasZones: true });
+    const withFlags = formulaCorrectionMil(createNotebook(zoned, 'auto'), { ...truth, flagCrosswindsMps: [2, 2, 2] });
+    const reference = total(readFlags(enterWind(recordStation(createNotebook(zoned, 'auto'), station({ temperatureC: 5, pressureHpa: 1000 }), 3, 0), 4, 3), [2, 2, 2]));
+    expect(withFlags.rightMrad).toBeCloseTo(reference.rightMil, 9);
+    expect(withFlags.rightMrad).not.toBeCloseTo(formulaCorrectionMil(createNotebook(zoned, 'auto'), truth).rightMrad, 3);
   });
 });

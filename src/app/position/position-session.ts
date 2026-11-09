@@ -10,6 +10,8 @@ import { CartridgeId, Correction, Target } from '../../core/types';
 import { BoltCycleResult, BoltEvent } from '../../sim/bolt';
 import { CheckRowKind, ExerciseDef, exerciseResult, ExerciseResult, ExerciseSetup, ExerciseShotRecord, setupExercise, ShotCheckSummary } from '../../sim/course';
 import { FiringEvent, FiringLine } from '../../sim/firing-line';
+import { FlightPaths, flightPaths, flightSamples } from '../../sim/flight-path';
+import { groupPoint, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
 import { Vector2 } from '../../sim/noise';
 import {
   changeContext,
@@ -18,6 +20,8 @@ import {
   ChipKind,
   createNotebook,
   enterWind,
+  formulaCorrectionMil,
+  FormulaInputs,
   measureRange,
   Notebook,
   NotebookCheckInputs,
@@ -32,6 +36,7 @@ import {
   removeChip,
   setSign,
   setUnits,
+  signedCrosswindMps,
   softHint,
   StaleReason,
   staleness,
@@ -42,7 +47,7 @@ import {
   typeTape,
 } from '../../sim/notebook';
 import { scopeById, TurretMove } from '../../sim/scope-model';
-import { ScopeSession } from '../../sim/scope-session';
+import { FireOutcome, ScopeSession } from '../../sim/scope-session';
 import { diagnoseShot, dopeNoteElevationMil, isCallAccurate, secondShotCorrection, ShotDiagnosis, TurretCorrection, warmImpact } from '../../sim/shot-review';
 import { TriggerAccessibility } from '../../sim/trigger';
 import { TurretProgress, turretProgress } from '../../sim/turret-target';
@@ -75,6 +80,9 @@ export interface ShotReview {
   targetRadiusMil: number;
   distanceM: number;
   cartridgeId: CartridgeId;
+  breakdown: MissBreakdown;
+  flight: FlightPaths;
+  group: Correction[];
 }
 
 export interface PositionShot {
@@ -98,6 +106,8 @@ const FULL_MEASUREMENT_S = 3;
 const FULL_MEASUREMENT_NOISE_MPS = 0.1;
 const SHORT_MEASUREMENT_NOISE_MPS = 0.3;
 const STATION_SPEED_DECIMALS = 10;
+const FLIGHT_SAMPLES = 10;
+const DEG_PER_CLOCK_HOUR = 30;
 
 export class PositionSession {
   readonly scope: ScopeSession;
@@ -108,6 +118,7 @@ export class PositionSession {
   private stationMeasurements = 0;
   private lastCall: Correction | null = null;
   private readonly shotRecords: ExerciseShotRecord[] = [];
+  private readonly groupPoints: Correction[] = [];
   private readonly dialTracking: Record<TurretAxis, DialTracking> = {
     elevation: { startClicks: 0, hasOvershot: false },
     windage: { startClicks: 0, hasOvershot: false },
@@ -304,6 +315,7 @@ export class PositionSession {
     const shotCheck = this.shotCheck(timeS);
     const check = shotCheck ? summaryOf(shotCheck) : null;
     const dialUpMil = this.scope.elevation.clicks * this.currentNotebook.context.card.clickMil;
+    const notebookAtShot = this.currentNotebook;
     const rangeEstimateM = this.currentNotebook.readings.reticleMil !== null ? this.currentNotebook.distanceM ?? undefined : undefined;
     const stageIndex = this.firingLine.stageIndex;
     const targetIndex = this.firingLine.targetIndex;
@@ -318,6 +330,9 @@ export class PositionSession {
       isColdBore,
       sightOffset: this.setup.sightOffset,
     });
+    const breakdown = this.breakdownOf(notebookAtShot, target, timeS, outcome, result);
+    this.groupPoints.push(groupPoint(breakdown));
+    const flight = await this.flightOf(target, timeS, result);
     const isFirstShotAtTarget = !this.shotRecords.some(record => record.stageIndex === stageIndex && record.targetIndex === targetIndex);
     const diagnosis = diagnoseShot(outcome.hold, result.isHit);
     const record: ExerciseShotRecord = {
@@ -350,6 +365,9 @@ export class PositionSession {
       targetRadiusMil: targetRadiusMrad(target),
       distanceM: target.distanceM,
       cartridgeId: this.firingLine.cartridgeId,
+      breakdown,
+      flight,
+      group: [...this.groupPoints],
     };
     const boltEvents = this.isTapTrigger ? this.scope.bolt.cycle() : [];
     if (events.includes('next-target') || events.includes('stage-done')) {
@@ -374,6 +392,51 @@ export class PositionSession {
       shots: this.shotRecords,
       isRepeatAfterRecalc: this.isRepeatAfterRecalc,
     });
+  }
+
+  private breakdownOf(notebook: Notebook, target: Target, timeS: number, outcome: FireOutcome, result: ShotResult): MissBreakdown {
+    const zones = windAt(this.scenario, timeS);
+    const trueWinds = zones.map(zone => ({ speedMps: zone.speedMps, clock: fractionalClock(zone.fromDeg) }));
+    const truth: FormulaInputs = {
+      distanceM: target.distanceM,
+      temperatureC: this.scenario.atmosphere.temperatureC,
+      pressureHpa: this.scenario.atmosphere.pressureHpa,
+      wind: trueWinds[0],
+      flagCrosswindsMps: notebook.context.hasZones ? trueWinds.slice(1).map(signedCrosswindMps) : null,
+    };
+    const playerWind: FormulaInputs = {
+      ...truth,
+      wind: notebook.readings.wind ?? { speedMps: 0, clock: trueWinds[0].clock },
+      flagCrosswindsMps: notebook.readings.flagCrosswindsMps,
+    };
+    const planned = total(notebook);
+    const clickMil = notebook.context.card.clickMil;
+    return missBreakdown({
+      ideal: result.ideal,
+      formulaTruth: formulaCorrectionMil(notebook, truth),
+      formulaPlayerWind: formulaCorrectionMil(notebook, playerWind),
+      dial: outcome.dial,
+      plannedHold: { upMrad: planned.holdUpMil, rightMrad: planned.holdRightMil },
+      reticle: outcome.reticle,
+      triggerSpread: outcome.triggerSpread,
+      velocitySpread: result.velocitySpread,
+      rifleGroup: result.group,
+      coldBore: result.coldBore,
+      sightOffset: result.sightOffset,
+      hasKnockedSight: this.def.hasKnockedSight,
+      clickMil,
+    });
+  }
+
+  private async flightOf(target: Target, timeS: number, result: ShotResult): Promise<FlightPaths> {
+    const points = await this.engine.trajectory(
+      cartridgeById(this.firingLine.cartridgeId),
+      this.scenario.atmosphere,
+      windAt(this.scenario, timeS),
+      result.actualMuzzleVelocityMps,
+      target.distanceM / FLIGHT_SAMPLES,
+    );
+    return flightPaths(flightSamples(points, target.distanceM), result.impact);
   }
 
   private isDialExact(): boolean {
@@ -433,6 +496,11 @@ export class PositionSession {
     }
     return axis === 'elevation' ? this.entered.elevation.targetClicks : this.entered.windageLeft.targetClicks;
   }
+}
+
+function fractionalClock(fromDeg: number): number {
+  const hours = ((((360 - fromDeg) % 360) + 360) % 360) / DEG_PER_CLOCK_HOUR;
+  return hours === 0 ? 12 : hours;
 }
 
 function summaryOf(check: ShotCheck): ShotCheckSummary {

@@ -4,6 +4,7 @@ import { NotebookMode } from '../core/exercise-scoring';
 import { atmosphereCorrectionMil, averageCrosswindMps, crosswindMps, leadMil, rangeByMilling, roundToClicks, windCorrectionMil } from '../core/game-formulas';
 import { mulberry32 } from '../core/rng';
 import { GaugeReading } from '../core/scenario';
+import { Correction } from '../core/types';
 import { ScopeModel, Turret } from './scope-model';
 import { TurretTarget, turretTarget } from './turret-target';
 
@@ -130,6 +131,14 @@ export interface CheckTruth {
   trueWindClock: number;
   dialedElevationClicks: number;
   dialedWindageLeftClicks: number;
+}
+
+export interface FormulaInputs {
+  distanceM: number;
+  temperatureC: number;
+  pressureHpa: number;
+  wind: { speedMps: number; clock: number };
+  flagCrosswindsMps: readonly number[] | null;
 }
 
 export interface NotebookCheckInputs {
@@ -405,6 +414,27 @@ export function total(notebook: Notebook): NotebookTotal {
   };
 }
 
+export function formulaCorrectionMil(notebook: Notebook, inputs: FormulaInputs): Correction {
+  const station: StationRecord = {
+    temperatureC: inputs.temperatureC,
+    pressureHpa: inputs.pressureHpa,
+    relativeHumidity: notebook.readings.station?.relativeHumidity ?? 0.5,
+    windSpeedMps: inputs.wind.speedMps,
+    windClock: inputs.wind.clock,
+    timeS: 0,
+    isShort: false,
+  };
+  const probe: Notebook = {
+    ...notebook,
+    mode: 'auto',
+    distanceM: inputs.distanceM,
+    factorsOn: { dope: true, conditions: true, wind: true, lead: true },
+    readings: { ...notebook.readings, station, wind: inputs.wind, flagCrosswindsMps: inputs.flagCrosswindsMps },
+  };
+  const formula = total(probe);
+  return { upMrad: formula.upMil, rightMrad: formula.rightMil };
+}
+
 export function checkInputs(notebook: Notebook, truth: CheckTruth): NotebookCheckInputs {
   if (notebook.mode !== 'auto') {
     const steps = STEP_ORDER.flatMap(step => {
@@ -567,7 +597,7 @@ function playerCrosswindMps(notebook: Notebook): number | null {
   return wind ? signedCrosswindMps(wind) : null;
 }
 
-function signedCrosswindMps(wind: { speedMps: number; clock: number }): number {
+export function signedCrosswindMps(wind: { speedMps: number; clock: number }): number {
   const fromLeftSign = normalizedClock(wind.clock) > CLOCK_HALF_TURN ? 1 : -1;
   return fromLeftSign * crosswindMps(wind.speedMps, wind.clock);
 }
