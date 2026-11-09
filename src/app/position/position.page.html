@@ -185,13 +185,8 @@
           (next)="toTrail()"
           (repeat)="toBriefing()"
           (journal)="toJournal()"
-          (termOpen)="openTerm.set($event)"
         />
       }
-    }
-
-    @if (openTerm(); as term) {
-      <or-term-sheet [openTerm]="term" (close)="openTerm.set(null)" />
     }
 
     @if (radio(); as line) {

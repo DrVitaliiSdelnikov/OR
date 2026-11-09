@@ -3,6 +3,7 @@ import { Correction } from '../../core/types';
 import { groupText } from '../review/review.model';
 import { TargetSchemeComponent } from '../review/target-scheme.component';
 import { FeedbackService } from '../services/feedback.service';
+import { TermSheetService } from '../textbook/term-sheet.service';
 import { ResultSheetView } from './result.model';
 
 @Component({
@@ -52,7 +53,7 @@ import { ResultSheetView } from './result.model';
               <div class="terms-label mono">новые термины</div>
               <div class="terms">
                 @for (term of sheet.newTerms; track term) {
-                  <button class="term mono" type="button" [style.animation-delay.ms]="$index * 250" (click)="termOpen.emit(term)" data-test="result-term">{{ term }}</button>
+                  <button class="term mono" type="button" [style.animation-delay.ms]="$index * 250" (click)="termSheet.open(term)" data-test="result-term">{{ term }}</button>
                 }
               </div>
             }
@@ -125,9 +126,9 @@ export class ResultSheetComponent implements OnInit {
   readonly next = output<void>();
   readonly repeat = output<void>();
   readonly journal = output<void>();
-  readonly termOpen = output<string>();
 
   private readonly feedback = inject(FeedbackService);
+  protected readonly termSheet = inject(TermSheetService);
   protected readonly groupLine = computed(() => groupText(this.group()));
 
   ngOnInit(): void {

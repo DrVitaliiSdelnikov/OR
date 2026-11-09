@@ -1,13 +1,13 @@
-import { Component, computed, ElementRef, inject, signal, viewChildren } from '@angular/core';
+import { Component, computed, ElementRef, inject, viewChildren } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { ProgressStore } from '../services/progress.store';
-import { TermSheetComponent } from './term-sheet.component';
+import { TermSheetService } from './term-sheet.service';
 import { TermTile, textbookView } from './textbook.model';
 
 @Component({
   selector: 'or-textbook',
-  imports: [IonContent, RouterLink, TermSheetComponent],
+  imports: [IonContent, RouterLink],
   template: `
     <ion-content>
       <div class="textbook" data-test="textbook">
@@ -45,9 +45,6 @@ import { TermTile, textbookView } from './textbook.model';
       </div>
     </ion-content>
 
-    @if (openTerm(); as term) {
-      <or-term-sheet [openTerm]="term" (close)="openTerm.set(null)" />
-    }
   `,
   styles: `
     .textbook { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--gutter) var(--space-6); }
@@ -67,13 +64,13 @@ import { TermTile, textbookView } from './textbook.model';
 })
 export class TextbookPage {
   private readonly progress = inject(ProgressStore);
+  private readonly termSheet = inject(TermSheetService);
   private readonly chapterSections = viewChildren<ElementRef<HTMLElement>>('chapter');
 
   protected readonly view = computed(() => textbookView(this.progress.course(), this.progress.settings().isEverythingUnlocked));
-  protected readonly openTerm = signal<string | null>(null);
 
   protected open(tile: TermTile): void {
-    this.openTerm.set(tile.term);
+    this.termSheet.open(tile.term);
   }
 
   protected toChapter(index: number): void {

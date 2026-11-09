@@ -1,8 +1,10 @@
+import { TermTextComponent } from '../textbook/term-text.component';
 import { Component, effect, input, signal } from '@angular/core';
 import { CheckSheetView } from './review.model';
 
 @Component({
   selector: 'or-check-sheet',
+  imports: [TermTextComponent],
   template: `
     @let sheet = view();
     <section class="check" [class.collapsed]="!isOpen()" data-test="check-sheet">
@@ -34,8 +36,8 @@ import { CheckSheetView } from './review.model';
         </table>
         @if (sheet.mainError; as main) {
           <div class="margin-note" data-test="check-main-error">
-            <div class="label mono">{{ main.label }}</div>
-            <div class="phrase">{{ main.phrase }}</div>
+            <div class="label mono"><or-term-text [text]="main.label" [term]="main.term" /></div>
+            <div class="phrase"><or-term-text [text]="main.phrase" /></div>
             @if (sheet.others; as others) {
               <div class="others mono" data-test="check-others">{{ others }}</div>
             }

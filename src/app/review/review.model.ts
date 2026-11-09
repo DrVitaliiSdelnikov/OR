@@ -1,3 +1,4 @@
+import { CHECK_ERROR_TERMS } from '../textbook/term-links';
 import { CalcStepInput, CheckedRow, CheckErrorType, CheckVerdict, PreparationRowInput } from '../../core/calc-check';
 import { DopeCard } from '../../core/dope-card';
 import { calcPoints, modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
@@ -27,7 +28,7 @@ export interface CheckSheetView {
   subtitle: string;
   isAuto: boolean;
   rows: CheckRowView[];
-  mainError: { label: string; phrase: string } | null;
+  mainError: { label: string; phrase: string; term: string } | null;
   others: string | null;
   pointsText: string;
   dialed: string;
@@ -152,7 +153,7 @@ export function checkSheet(check: ShotCheck, mode: NotebookMode): CheckSheetView
     subtitle: isAuto ? autoSubtitle(rows) : manualSubtitle(result.counts, rows.length),
     isAuto,
     rows,
-    mainError: main ? { label: errorLabel(isAuto, rows[main.rowIndex].label, main.rowIndex, main.type), phrase: errorPhrase(check, main.rowIndex, main.type) } : null,
+    mainError: main ? { label: errorLabel(isAuto, rows[main.rowIndex].label, main.rowIndex, main.type), phrase: errorPhrase(check, main.rowIndex, main.type), term: CHECK_ERROR_TERMS[main.type] } : null,
     others: result.otherErrorsCount > 0 && otherLabels.length > 0 ? `ещё ${result.otherErrorsCount} · ${otherLabels.join(', ')}` : null,
     pointsText: `+${Math.round(calcPoints(result.verdict) * multiplier)} за расчёт · ×${multiplier}`,
     dialed: dialedText(notebook, check.truth.dialedElevationClicks, check.truth.dialedWindageLeftClicks),

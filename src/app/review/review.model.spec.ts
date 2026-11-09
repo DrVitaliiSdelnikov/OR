@@ -72,7 +72,7 @@ describe('check sheet, SAM', () => {
     const sheet = checkSheet(windSheet('speed', 1.4), 'manual-hard');
     expect(sheet.stamp).toBe('ОШИБКА');
     expect(sheet.rows[0]).toMatchObject({ label: 'Ветер', player: '← 1.4', reference: '← 0.7', diff: '7 кл.', status: 'error' });
-    expect(sheet.mainError).toEqual({ label: 'ШАГ 1 · ПОДСТАНОВКА', phrase: 'В слот V⊥ поставлено 3.2, а нужно 1.6' });
+    expect(sheet.mainError).toEqual({ label: 'ШАГ 1 · ПОДСТАНОВКА', phrase: 'В слот V⊥ поставлено 3.2, а нужно 1.6', term: 'САМ' });
     expect(sheet.subtitle).toBe('1 ошибка');
     expect(sheet.pointsText).toBe('+0 за расчёт · ×2');
   });
@@ -116,7 +116,7 @@ describe('check sheet, AUTO', () => {
     ]);
     expect(sheet.rows[0]).toMatchObject({ player: '2.4 м/с', reference: '3.2 м/с' });
     expect(sheet.rows[3].reference).toBe('итог ↑ 5.7');
-    expect(sheet.mainError).toEqual({ label: 'ВЕТЕР: СКОРОСТЬ · ПОКАЗАНИЯ', phrase: 'Станция показала 3.2 м/с, ты ввёл 2.4' });
+    expect(sheet.mainError).toEqual({ label: 'ВЕТЕР: СКОРОСТЬ · ПОКАЗАНИЯ', phrase: 'Станция показала 3.2 м/с, ты ввёл 2.4', term: 'метеостанция' });
     expect(sheet.others).toBe('ещё 1 · Учтённые факторы');
     expect(sheet.subtitle).toBe('Ветер: скорость 4 кл. · Учтённые факторы 3 кл.');
     expect(sheet.pointsText).toBe('+0 за расчёт · ×1');
@@ -125,7 +125,7 @@ describe('check sheet, AUTO', () => {
   it('a turret error label does not repeat the type', () => {
     const notebook = toggleFactor(enterWind(notebookAt(300, 'auto'), 0, 12), 'conditions');
     const sheet = checkSheet(snapshot(notebook, { trueWindClock: 12, dialedElevationClicks: 0, dialedWindageLeftClicks: 0 }), 'auto');
-    expect(sheet.mainError).toEqual({ label: 'БАРАБАН ВЕРТ', phrase: 'В блокноте ↑ 1.6, на барабане ↑ 0.0: 16 кл.' });
+    expect(sheet.mainError).toEqual({ label: 'БАРАБАН ВЕРТ', phrase: 'В блокноте ↑ 1.6, на барабане ↑ 0.0: 16 кл.', term: 'барабан' });
   });
 
   it('exact preparation: the short subtitle and the dialled line', () => {

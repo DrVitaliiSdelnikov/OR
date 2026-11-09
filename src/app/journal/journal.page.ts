@@ -5,6 +5,8 @@ import { cartridgeById, CARTRIDGES } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { ProgressStore } from '../services/progress.store';
+import { CHECK_ERROR_TERMS, MAIN_CAUSE_TERMS } from '../textbook/term-links';
+import { TermTextComponent } from '../textbook/term-text.component';
 import { achievementsView, cardsView, errorsView, feedView, STATS_MIN_SHOTS, statsView } from './journal.model';
 
 type JournalTab = 'feed' | 'errors' | 'cards' | 'stats' | 'achievements';
@@ -21,7 +23,7 @@ const PERCENT = 100;
 
 @Component({
   selector: 'or-journal',
-  imports: [IonContent, RouterLink],
+  imports: [IonContent, RouterLink, TermTextComponent],
   template: `
     <ion-content>
       <div class="journal" data-test="journal">
@@ -65,7 +67,7 @@ const PERCENT = 100;
               <section class="sheet">
                 @for (row of errors(); track row.key) {
                   <div class="error-row" [class.top]="row.isTop" data-test="journal-error">
-                    <span class="error-label">{{ row.label }}</span>
+                    <span class="error-label"><or-term-text [text]="row.label" [term]="termOf(row.key)" /></span>
                     <span class="mono">{{ row.count }} · {{ row.last }}</span>
                   </div>
                 } @empty {
@@ -182,6 +184,10 @@ export class JournalPage {
 
   protected toggle(seriesId: string): void {
     this.openSeries.update(open => (open === seriesId ? null : seriesId));
+  }
+
+  protected termOf(key: string): string | null {
+    return CHECK_ERROR_TERMS[key as keyof typeof CHECK_ERROR_TERMS] ?? MAIN_CAUSE_TERMS[key as keyof typeof MAIN_CAUSE_TERMS] ?? null;
   }
 
   protected round(value: number): number {

@@ -1,18 +1,21 @@
 import { Component, computed, input } from '@angular/core';
 import { MissBreakdown } from '../../sim/miss-breakdown';
+import { CAUSE_TERMS } from '../textbook/term-links';
+import { TermTextComponent } from '../textbook/term-text.component';
 import { causesView } from './review.model';
 
 @Component({
   selector: 'or-causes',
+  imports: [TermTextComponent],
   template: `
     @let state = view();
     <section class="causes" data-test="causes">
       <div class="title">Почему ушла пуля</div>
-      <div class="conclusion" data-test="causes-conclusion">{{ state.conclusion }}</div>
+      <div class="conclusion" data-test="causes-conclusion"><or-term-text [text]="state.conclusion" /></div>
       <ul class="rows">
         @for (row of state.rows; track row.kind) {
           <li class="row" [class.grey]="!row.isPlayerError" [class.main]="row.isMain" [attr.data-test]="'cause-' + row.kind">
-            <span class="name">{{ row.name }}</span>
+            <span class="name"><or-term-text [text]="row.name" [term]="causeTerms[row.kind]" /></span>
             <span class="bar"><span class="fill" [style.width.%]="row.share * 100"></span></span>
             <span class="value mono">{{ row.text }}</span>
           </li>
@@ -40,6 +43,7 @@ import { causesView } from './review.model';
   `,
 })
 export class CausesComponent {
+  protected readonly causeTerms = CAUSE_TERMS;
   readonly breakdown = input.required<MissBreakdown>();
   protected readonly view = computed(() => causesView(this.breakdown()));
   protected readonly hasGrey = computed(() => this.view().rows.some(row => !row.isPlayerError));

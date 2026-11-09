@@ -4,6 +4,7 @@ import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { playability } from '../position/position.model';
 import { ProgressStore } from '../services/progress.store';
+import { TermTextComponent } from '../textbook/term-text.component';
 import { briefingCard } from './briefing.model';
 
 const SCHEME_WIDTH = 300;
@@ -15,7 +16,7 @@ const GROUND_Y = 66;
 
 @Component({
   selector: 'or-exercise-sheet',
-  imports: [IonContent, IonToggle, RouterLink],
+  imports: [IonContent, IonToggle, RouterLink, TermTextComponent],
   template: `
     <ion-content>
       <div class="briefing-screen">
@@ -85,7 +86,7 @@ const GROUND_Y = 66;
           </article>
 
           @if (briefing.termsLine; as terms) {
-            <div class="terms mono" data-test="sheet-terms">{{ terms }}</div>
+            <div class="terms mono" data-test="sheet-terms"><or-term-text [text]="terms" /></div>
           }
           @if (availability()?.reason; as reason) {
             <div class="note" data-test="to-position-reason">{{ reason }}</div>

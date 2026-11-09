@@ -2,6 +2,7 @@ import { Component, computed, input, output, signal } from '@angular/core';
 import { Correction } from '../../core/types';
 import { PositionSession, PositionShot } from '../position/position-session';
 import { CausesComponent } from './causes.component';
+import { TermTextComponent } from '../textbook/term-text.component';
 import { CheckSheetComponent } from './check-sheet.component';
 import { FlightViewComponent } from './flight-view.component';
 import { checkSheet, correctionText, diagnosisText, shotPointsText, targetPlaques } from './review.model';
@@ -11,7 +12,7 @@ const CALL_DISTANCE_DECIMALS = 1;
 
 @Component({
   selector: 'or-review-sheet',
-  imports: [TargetSchemeComponent, CheckSheetComponent, CausesComponent, FlightViewComponent],
+  imports: [TargetSchemeComponent, CheckSheetComponent, CausesComponent, FlightViewComponent, TermTextComponent],
   template: `
     @let state = view();
     <section class="review" role="dialog" aria-label="Разбор выстрела" data-test="review-sheet">
@@ -48,7 +49,7 @@ const CALL_DISTANCE_DECIMALS = 1;
         </div>
 
         @if (!isCallPending()) {
-          <div class="diagnosis" data-test="review-diagnosis">{{ state.diagnosis }}</div>
+          <div class="diagnosis" data-test="review-diagnosis"><or-term-text [text]="state.diagnosis" /></div>
           @if (state.correction; as correction) {
             <div class="correction mono" data-test="review-correction" data-hint="review-correction">{{ correction }}</div>
           }

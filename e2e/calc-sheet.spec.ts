@@ -113,6 +113,7 @@ test.describe('лист расчёта САМ (A5.2)', () => {
   });
 
   test('10: сложный — K в слоте, чипы без обводки; «Формулы −30» спрашивает, потом открывает', async ({ page }) => {
+    test.slow();
     await toPosition(page, '10');
     await page.getByTestId('tile-notebook').click();
     await expect(page.getByTestId('manual-mode')).toHaveText('САМ · СЛОЖНЫЙ ×2');

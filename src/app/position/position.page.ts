@@ -29,7 +29,6 @@ import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
 import { ReviewSheetComponent } from '../review/review-sheet.component';
 import { ResultSheetComponent } from '../result/result-sheet.component';
-import { TermSheetComponent } from '../textbook/term-sheet.component';
 import { resultSheet, ResultSheetView } from '../result/result.model';
 import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
@@ -71,7 +70,6 @@ const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
     NotebookSheetComponent,
     ReviewSheetComponent,
     ResultSheetComponent,
-    TermSheetComponent,
     RadioPlateComponent,
     TeachingOverlayComponent,
   ],
@@ -101,7 +99,6 @@ export class PositionPage {
   protected readonly stopBadge = signal<string | null>(null);
   protected readonly end = signal<ResultSheetView | null>(null);
   protected readonly isLeaveConfirmOpen = signal(false);
-  protected readonly openTerm = signal<string | null>(null);
   protected readonly sheetTab = signal<NotebookTab | null>(null);
   protected readonly reviewedShot = signal<PositionShot | null>(null);
   protected readonly reviewFrame = signal<{ topPt: number; heightPt: number } | null>(null);
