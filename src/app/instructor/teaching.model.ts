@@ -31,6 +31,15 @@ const AIM_TOLERANCE_MIL = 0.3;
 const hasFired = (state: InstructorSnapshot): boolean => state.shotsFired > 0;
 const isScreenFree = (state: InstructorSnapshot): boolean => state.sheetTab === null && !state.isReviewOpen;
 const always = (): boolean => true;
+const isSheetOpen = (state: InstructorSnapshot): boolean => state.sheetTab !== null;
+const isWindWritten = (state: InstructorSnapshot): boolean => (state.windSpeedMps ?? 0) > 0;
+const isRangeMeasured = (state: InstructorSnapshot): boolean => state.reticleMil !== null;
+const isWindStepRecorded = (state: InstructorSnapshot): boolean => state.recordedSteps.includes('wind');
+const isFirstReviewClosed = (state: InstructorSnapshot): boolean => state.shotsFired > 1 || (hasFired(state) && !state.isReviewOpen);
+
+function metresText(metres: number): string {
+  return String(metres).replace('.', ',');
+}
 
 function fixed(text: string): () => string {
   return () => text;
@@ -200,7 +209,151 @@ const BREATH_AND_TRIGGER: readonly TeachingStep[] = [
   },
 ];
 
-const SCRIPTS: Partial<Record<ExerciseId, readonly TeachingStep[]>> = { '01': FIRST_CLICKS, '02': ZEROING, '03': BREATH_AND_TRIGGER };
+const WIND_AND_STATION: readonly TeachingStep[] = [
+  {
+    id: 'wind',
+    kind: 'action',
+    anchor: fixed('wind-tile'),
+    text: fixed('Ветер. Сначала замерь его станцией'),
+    isDue: always,
+    isDone: state => state.hasOpenedNotebook || state.isStationMeasured || isWindWritten(state) || hasFired(state),
+  },
+  {
+    id: 'station-tab',
+    kind: 'action',
+    anchor: fixed('tab-conditions'),
+    text: fixed('Станция — во вкладке «Условия»'),
+    isDue: isSheetOpen,
+    isDone: state => state.sheetTab === 'conditions' || state.isStationMeasured || isWindWritten(state) || hasFired(state),
+  },
+  {
+    id: 'measure',
+    kind: 'action',
+    anchor: fixed('measure'),
+    text: fixed('Держи «Замер» 3 с'),
+    isDue: state => state.sheetTab === 'conditions',
+    isDone: state => state.isStationMeasured || isWindWritten(state) || hasFired(state),
+  },
+  {
+    id: 'wind-tab',
+    kind: 'action',
+    anchor: fixed('tab-wind'),
+    text: fixed('Скорость есть. Теперь «Ветер»'),
+    isDue: isSheetOpen,
+    isDone: state => state.sheetTab === 'wind' || isWindWritten(state) || hasFired(state),
+  },
+  {
+    id: 'clock',
+    kind: 'explain',
+    anchor: fixed('wind-clock'),
+    text: state => `Стрелка — откуда дует, по флажку у бруствера. Скорость — ${(state.stationSpeedMps ?? 0).toFixed(1)}, со станции`,
+    isDue: state => state.sheetTab === 'wind',
+    isDone: state => isWindWritten(state) || hasFired(state),
+  },
+];
+
+const MILLING: readonly TeachingStep[] = [
+  {
+    ...notebookStep('Открой блокнот: дистанция неизвестна'),
+    isDone: state => state.hasOpenedNotebook || isRangeMeasured(state) || hasFired(state),
+  },
+  {
+    id: 'distance-tab',
+    kind: 'action',
+    anchor: fixed('tab-distance'),
+    text: fixed('Меряй гонг сеткой — вкладка «Дистанция»'),
+    isDue: isSheetOpen,
+    isDone: state => state.sheetTab === 'distance' || isRangeMeasured(state) || hasFired(state),
+  },
+  {
+    id: 'milling',
+    kind: 'action',
+    anchor: fixed('milling'),
+    text: state => `Гонг ${metresText(state.targetSizeM)} м. Коснись верхнего и нижнего края, затем «Посчитать»`,
+    isDue: state => state.sheetTab === 'distance',
+    isDone: state => isRangeMeasured(state) || hasFired(state),
+  },
+  {
+    id: 'result',
+    kind: 'explain',
+    anchor: fixed('milling-result'),
+    text: state => `Д = ${metresText(state.targetSizeM)} × 1000 / ${(state.reticleMil ?? 0).toFixed(2)} = ${Math.round(state.measuredDistanceM ?? 0)} м`,
+    isDue: state => state.sheetTab === 'distance',
+    isDone: hasFired,
+  },
+];
+
+const MANUAL_EASY: readonly TeachingStep[] = [
+  { ...notebookStep('Теперь считаешь сам. Открой блокнот'), isDone: state => state.hasOpenedNotebook || isWindStepRecorded(state) || hasFired(state) },
+  {
+    id: 'wind-first',
+    kind: 'explain',
+    anchor: fixed('tab-wind'),
+    text: fixed('Сначала ветер — как в 04: станция и часы'),
+    isDue: isSheetOpen,
+    isDone: state => isWindWritten(state) || isWindStepRecorded(state) || hasFired(state),
+  },
+  {
+    id: 'sam',
+    kind: 'action',
+    anchor: fixed('wind-step-link'),
+    text: fixed('Ветер записан. Теперь посчитай его сам'),
+    isDue: state => isWindWritten(state) && state.sheetTab === 'wind',
+    isDone: state => state.openCalcStep === 'wind' || isWindStepRecorded(state) || hasFired(state),
+  },
+  { id: 'chips', kind: 'explain', anchor: fixed('calc-formula'), text: fixed('Тапни слот формулы и положи чип: V⊥, потом D'), isDue: always, isDone: state => isWindStepRecorded(state) || hasFired(state) },
+  { id: 'tape', kind: 'explain', anchor: fixed('calc-tape'), text: fixed('Набери по формуле V⊥ × D ÷ K и запиши шаг'), isDue: always, isDone: state => isWindStepRecorded(state) || hasFired(state) },
+];
+
+const CARTRIDGE_CHANGE: readonly TeachingStep[] = [
+  {
+    id: 'magazine',
+    kind: 'action',
+    anchor: fixed('change-magazine'),
+    text: state => `Магазин пуст. Дальше — патрон ${state.nextCartridgeLetter ?? ''}`,
+    isDue: state => state.isMagazineChangeDue,
+    isDone: state => state.stageIndex > 0,
+  },
+  {
+    id: 'card',
+    kind: 'explain',
+    anchor: fixed('tile-dope'),
+    text: state => `У патрона ${state.cartridgeLetter} своя карточка ДОПЕ — пересчитай`,
+    isDue: isScreenFree,
+    isDone: state => state.stageIndex > 1,
+  },
+];
+
+const MANUAL_HARD: readonly TeachingStep[] = [
+  { id: 'traps', kind: 'explain', anchor: fixed('manual-mode'), text: fixed('Сложный: среди чипов — ловушки, константа — в слоте'), isDue: isSheetOpen, isDone: hasFired },
+  {
+    id: 'call',
+    kind: 'action',
+    anchor: fixed('call-pick'),
+    text: fixed('Где была сетка при выстреле? Отметь сам'),
+    isDue: state => state.isReviewOpen,
+    isDone: state => state.isCallMarked || isFirstReviewClosed(state),
+  },
+  {
+    id: 'dope-note',
+    kind: 'explain',
+    anchor: fixed('review-dope'),
+    text: fixed('Поправка по второму — запиши карандашом в ДОПЕ'),
+    isDue: state => state.isReviewOpen,
+    isDone: state => state.isDopeNoted || isFirstReviewClosed(state),
+  },
+];
+
+const SCRIPTS: Partial<Record<ExerciseId, readonly TeachingStep[]>> = {
+  '01': FIRST_CLICKS,
+  '02': ZEROING,
+  '03': BREATH_AND_TRIGGER,
+  '04': WIND_AND_STATION,
+  '05': MILLING,
+  '06': MANUAL_EASY,
+  '08': CARTRIDGE_CHANGE,
+  '10': MANUAL_HARD,
+};
 
 export function teachingScript(exerciseId: ExerciseId): readonly TeachingStep[] | null {
   return SCRIPTS[exerciseId] ?? null;

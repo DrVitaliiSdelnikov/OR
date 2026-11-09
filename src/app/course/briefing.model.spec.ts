@@ -62,7 +62,8 @@ describe('briefingCard', () => {
     expect(card('01').instructor).toEqual({ isDefaultOn: true });
     expect(card('03', { isIntroCompleted: true, bestClasses: { '03': 2 } }).instructor).toEqual({ isDefaultOn: false });
     expect(card('02', { isIntroCompleted: true, bestClasses: { '02': 0 } }).instructor).toEqual({ isDefaultOn: true });
-    expect(card('04').instructor).toBeNull();
+    expect(card('06').instructor).toEqual({ isDefaultOn: true });
+    expect(card('07').instructor).toBeNull();
   });
 
   it('the facts stay from the sheet', () => {

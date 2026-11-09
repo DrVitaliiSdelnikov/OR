@@ -23,7 +23,7 @@ import { KeypadComponent } from './keypad.component';
         @if (state.missing; as missing) {
           <div class="missing mono" data-test="calc-missing">{{ missing }}</div>
         }
-        <div class="substitution mono" data-test="calc-formula">
+        <div class="substitution mono" data-test="calc-formula" data-hint="calc-formula">
           @for (token of state.tokens; track $index) {
             @if (token.kind === 'text') {
               <span class="print">{{ token.text }}</span>
@@ -47,7 +47,7 @@ import { KeypadComponent } from './keypad.component';
           }
         </div>
 
-        <div class="tape">
+        <div class="tape" data-hint="calc-tape">
           @for (label of state.tapeLabels; track $index) {
             <div class="tape-row mono">
               <span>{{ label }}</span>

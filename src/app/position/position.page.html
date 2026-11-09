@@ -7,7 +7,7 @@
         <div class="title" data-test="position-title">{{ state?.title ?? def()?.title ?? '' }}</div>
         <div class="subtitle mono" data-test="position-subtitle">{{ state?.subtitle ?? '' }}</div>
       </div>
-      <button class="wind-tile mono" type="button" [disabled]="!state" (click)="openSheet('wind')" data-test="wind-tile">
+      <button class="wind-tile mono" type="button" [disabled]="!state" (click)="openSheet('wind')" data-test="wind-tile" data-hint="wind-tile">
         @for (line of state?.wind ?? ['—']; track $index) {
           <span>{{ line }}</span>
         }
@@ -96,7 +96,7 @@
 
     @if (state) {
       <div class="tiles">
-        <button class="tile mono" type="button" (click)="openSheet('dope')" data-test="tile-dope">{{ state.dope }}</button>
+        <button class="tile mono" type="button" (click)="openSheet('dope')" data-test="tile-dope" data-hint="tile-dope">{{ state.dope }}</button>
         <button class="tile" type="button" (click)="openSheet('total')" data-test="tile-notebook" data-hint="tile-notebook">
           Блокнот
           @if (state.isNotEntered) {
@@ -110,7 +110,7 @@
       } @else if (state.isMagazineChangeDue) {
         <div class="fire-row">
           <span class="rounds mono" data-test="rounds">{{ state.rounds }}</span>
-          <button data-own-feedback class="change-magazine" type="button" (click)="changeMagazine()" data-test="change-magazine">Сменить магазин</button>
+          <button data-own-feedback class="change-magazine" type="button" (click)="changeMagazine()" data-test="change-magazine" data-hint="change-magazine">Сменить магазин</button>
         </div>
       } @else {
         <or-fire-control
@@ -148,6 +148,7 @@
           (enter)="enterOnTurrets()"
           (close)="closeSheet()"
           (expandedChange)="setSheetExpanded($event)"
+          (calcStepChange)="openCalcStep.set($event)"
         />
       }
     }

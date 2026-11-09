@@ -12,7 +12,7 @@ const HASH_STEP_MIL = 0.5;
     @if (knownText(); as known) {
       <div class="known mono" data-test="distance-known">{{ known }}</div>
     } @else {
-      <div class="milling">
+      <div class="milling" data-hint="milling">
         <svg
           class="grid"
           [attr.viewBox]="'0 0 ' + gridWidth + ' ' + gridHeight"
@@ -35,7 +35,7 @@ const HASH_STEP_MIL = 0.5;
           <div data-test="milling-size">{{ sizeText() }}</div>
           <button class="count" type="button" [disabled]="sizeMil() === null" (click)="count()" data-test="milling-count">{{ isManual() ? 'К расчёту: шаг Дистанция →' : 'Посчитать' }}</button>
           @if (!isManual() && resultText(); as result) {
-            <div class="result" data-test="milling-result">{{ result }}</div>
+            <div class="result" data-test="milling-result" data-hint="milling-result">{{ result }}</div>
           }
         </div>
       </div>

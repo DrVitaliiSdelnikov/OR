@@ -50,6 +50,7 @@ const RING_RADIUS = 30;
             (pointerleave)="release()"
             (pointercancel)="release()"
             data-test="measure"
+            data-hint="measure"
           >Замер</button>
         </div>
       </div>

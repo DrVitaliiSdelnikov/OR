@@ -35,6 +35,7 @@ interface DialTick {
       (pointerup)="up()"
       (pointercancel)="up()"
       data-test="wind-clock"
+      data-hint="wind-clock"
     >
       <text class="aim" x="130" y="12">ЦЕЛЬ</text>
       <g transform="translate(0 10)">

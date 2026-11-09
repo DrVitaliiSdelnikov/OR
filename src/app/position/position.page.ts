@@ -9,7 +9,7 @@ import { lateralWindMps, windAt } from '../../core/scenario';
 import { Correction } from '../../core/types';
 import { BoltEvent } from '../../sim/bolt';
 import { exerciseById, ExerciseId } from '../../sim/course';
-import { factorContributions, forgottenFactor, NotebookFactor, tabs } from '../../sim/notebook';
+import { factorContributions, forgottenFactor, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
 import { Vector2 } from '../../sim/noise';
 import { TurretCorrection } from '../../sim/shot-review';
 import { formatScopeValue, reticleSubtensionScale, TurretMove } from '../../sim/scope-model';
@@ -19,7 +19,7 @@ import { forgottenFactorRadio, offMarksRadio, RADIO_EMPTY_CHAMBER, RadioLine } f
 import { TeachingOverlayComponent } from '../instructor/teaching-overlay.component';
 import { forgottenFactorTeaching, isFactorGuarded, nextTeaching, teachingScript, TeachingView } from '../instructor/teaching.model';
 import { NotebookSheetComponent } from '../notebook/notebook-sheet.component';
-import { clockText, NotebookTab } from '../notebook/notebook.model';
+import { CARTRIDGE_LETTERS, clockText, NotebookTab } from '../notebook/notebook.model';
 import { aimLimitsMil } from '../scene/scene.model';
 import { ScopeRenderer } from '../scene/scope-renderer';
 import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
@@ -99,6 +99,8 @@ export class PositionPage {
   });
   protected readonly sheetFrame = signal<{ topPt: number; heightPt: number } | null>(null);
   private readonly hasOpenedNotebook = signal(false);
+  private readonly hasNotedDope = signal(false);
+  protected readonly openCalcStep = signal<NotebookStepId | null>(null);
   private readonly acknowledgedSteps = signal<ReadonlySet<string>>(new Set());
   private readonly isTeachingSkipped = signal(false);
   private readonly guardedFactor = signal<NotebookFactor | null>(null);
@@ -252,6 +254,7 @@ export class PositionPage {
 
   protected closeSheet(): void {
     this.sheetTab.set(null);
+    this.openCalcStep.set(null);
   }
 
   protected setSheetExpanded(isExpanded: boolean): void {
@@ -350,6 +353,7 @@ export class PositionPage {
   protected saveDopeNote(): void {
     const review = this.reviewedShot()?.review;
     if (review && review.dopeNoteMil !== null) {
+      this.hasNotedDope.set(true);
       this.progress.addDopeNote(review.cartridgeId, review.distanceM, review.dopeNoteMil);
     }
   }
@@ -685,6 +689,47 @@ export class PositionPage {
         rightClicks: this.dialAtLastShot.windageLeft - session.scope.windage.clicks,
       },
       aimOffMil: Math.hypot(session.scope.aim.x, session.scope.aim.y),
+      ...this.notebookFacts(session),
+    };
+  }
+
+  private notebookFacts(session: PositionSession): Pick<
+    InstructorSnapshot,
+    | 'isStationMeasured'
+    | 'stationSpeedMps'
+    | 'windSpeedMps'
+    | 'reticleMil'
+    | 'measuredDistanceM'
+    | 'targetSizeM'
+    | 'recordedSteps'
+    | 'stageIndex'
+    | 'isMagazineChangeDue'
+    | 'cartridgeLetter'
+    | 'nextCartridgeLetter'
+    | 'isCallMarked'
+    | 'isDopeNoted'
+    | 'openCalcStep'
+  > {
+    const notebook = session.notebook;
+    const station = notebook.readings.station;
+    const stageIndex = session.firingLine.stageIndex;
+    const nextStage = session.def.stages[stageIndex + 1];
+    const lastRecord = session.records[session.records.length - 1];
+    return {
+      isStationMeasured: station !== null && !station.isShort,
+      stationSpeedMps: station?.windSpeedMps ?? null,
+      windSpeedMps: notebook.readings.wind?.speedMps ?? null,
+      reticleMil: notebook.readings.reticleMil,
+      measuredDistanceM: notebook.readings.reticleMil !== null ? notebook.distanceM : null,
+      targetSizeM: notebook.context.target.sizeM,
+      recordedSteps: (Object.keys(notebook.steps) as NotebookStepId[]).filter(step => notebook.steps[step].isRecorded),
+      stageIndex,
+      isMagazineChangeDue: session.isMagazineChangeDue,
+      cartridgeLetter: CARTRIDGE_LETTERS[session.firingLine.cartridgeId],
+      nextCartridgeLetter: nextStage ? CARTRIDGE_LETTERS[nextStage.cartridgeId] : null,
+      isCallMarked: lastRecord?.isCallAccurate !== undefined,
+      isDopeNoted: this.hasNotedDope(),
+      openCalcStep: this.openCalcStep(),
     };
   }
 

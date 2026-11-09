@@ -68,7 +68,7 @@ test.describe('итог упражнения и брифинг (A6.3)', () => {
     await expect(page.getByTestId('sheet-terms')).toContainText('узнаешь: ветер');
     await expect(page.getByTestId('to-position')).toBeInViewport();
     await page.getByTestId('to-position').click();
-    await page.waitForURL('**/position/04');
+    await page.waitForURL(/\/position\/04(\?|$)/);
   });
 
   test('касание не меньше 44 на итоге и брифинге', async ({ page }) => {

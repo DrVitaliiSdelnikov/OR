@@ -1,4 +1,4 @@
-import { Component, computed, ElementRef, inject, input, output } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, output } from '@angular/core';
 import { RADIO_CALLSIGN } from './radio.model';
 import { TeachingView } from './teaching.model';
 
@@ -65,6 +65,16 @@ export class TeachingOverlayComponent {
   protected readonly viewportHeight = computed(() => {
     this.revision();
     return this.host.nativeElement.getBoundingClientRect().height;
+  });
+  private scrolledHintId: string | null = null;
+  private readonly bringAnchorIntoView = effect(() => {
+    this.revision();
+    const view = this.view();
+    const anchor = document.querySelector(`[data-hint="${view.anchor}"]`);
+    if (anchor && view.id !== this.scrolledHintId) {
+      this.scrolledHintId = view.id;
+      anchor.scrollIntoView({ block: 'center', behavior: 'instant' });
+    }
   });
   protected readonly cutout = computed<CutoutFrame | null>(() => {
     this.revision();

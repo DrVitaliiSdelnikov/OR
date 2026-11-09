@@ -85,3 +85,4 @@
 | app · подсказки инструктора: рация, обучение 01–03, забытый фактор (A6.4) | [specs/app-instructor.md](specs/app-instructor.md) | реализовано, слито в `master` 9.11 |
 | app · сцена в стекле из фото, пределы наведения (A9.1) | [specs/app-scene-photos.md](specs/app-scene-photos.md) | реализовано, слито в `master` 9.11 |
 | app · звук и вибрация по TOKENS (A4) | [specs/app-feedback.md](specs/app-feedback.md) | реализовано, слито в `master` 9.11 |
+| app · обучающие подсказки для новинок 04–10 (A6.5) | [specs/app-instructor-novelties.md](specs/app-instructor-novelties.md) | реализовано, слито в `master` 9.11; 09 и 11 — вместе с их механиками |

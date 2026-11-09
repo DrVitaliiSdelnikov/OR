@@ -21,7 +21,7 @@ const CALL_DISTANCE_DECIMALS = 1;
       </header>
 
       <div class="body">
-        <div class="scheme-row">
+        <div class="scheme-row" data-hint="call-pick">
           <or-target-scheme
             [radiusMil]="shot().review.targetRadiusMil"
             [call]="isCallPending() ? null : shot().review.call"
@@ -69,7 +69,7 @@ const CALL_DISTANCE_DECIMALS = 1;
           }
         </div>
         @if (state.canSaveDope && !isCallPending()) {
-          <button class="dope-link mono" type="button" [disabled]="isDopeSaved()" (click)="saveToDope()" data-test="review-dope">{{ isDopeSaved() ? 'записано в ДОПЕ' : 'в ДОПЕ →' }}</button>
+          <button class="dope-link mono" type="button" [disabled]="isDopeSaved()" (click)="saveToDope()" data-hint="review-dope" data-test="review-dope">{{ isDopeSaved() ? 'записано в ДОПЕ' : 'в ДОПЕ →' }}</button>
         }
         <div class="actions">
           <button class="recalc mono" type="button" [disabled]="isCallPending()" (click)="recalc.emit()" data-test="review-recalc">Пересчитать и повторить</button>

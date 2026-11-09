@@ -45,7 +45,7 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
         <button class="handle" type="button" (click)="close.emit()" aria-label="Закрыть блокнот" data-test="sheet-handle"><span class="grip"></span></button>
         <nav class="tabs" data-test="notebook-tabs">
           @for (item of tabItems; track item.id) {
-            <button class="tab" type="button" [class.active]="tab() === item.id" (click)="selectTab(item.id)" [attr.aria-pressed]="tab() === item.id" [attr.data-test]="'tab-' + item.id">
+            <button class="tab" type="button" [class.active]="tab() === item.id" (click)="selectTab(item.id)" [attr.aria-pressed]="tab() === item.id" [attr.data-test]="'tab-' + item.id" [attr.data-hint]="'tab-' + item.id">
               {{ item.label }}
               @if (!state.filled[item.id]) {
                 <span class="dot" [attr.data-test]="'dot-' + item.id" aria-label="не заполнено"></span>
@@ -139,6 +139,7 @@ export class NotebookSheetComponent {
   readonly enter = output<void>();
   readonly close = output<void>();
   readonly expandedChange = output<boolean>();
+  readonly calcStepChange = output<NotebookStepId | null>();
 
   private readonly paper = viewChild<ElementRef<HTMLElement>>('paper');
 
@@ -237,11 +238,13 @@ export class NotebookSheetComponent {
 
   protected openStep(step: NotebookStepId): void {
     this.calcStep.set(step);
+    this.calcStepChange.emit(step);
     this.expandedChange.emit(true);
   }
 
   protected closeStep(): void {
     this.calcStep.set(null);
+    this.calcStepChange.emit(null);
     this.tab.set('total');
     this.expandedChange.emit(false);
   }

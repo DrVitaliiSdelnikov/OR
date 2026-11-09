@@ -19,7 +19,7 @@ export interface WindInput {
       </div>
       <div class="station mono" data-test="wind-station">{{ stationText() }}</div>
       @if (stepLinkText(); as link) {
-        <button class="step-link mono" type="button" (click)="toStep.emit()" data-test="wind-step-link">{{ link }}</button>
+        <button class="step-link mono" type="button" (click)="toStep.emit()" data-test="wind-step-link" data-hint="wind-step-link">{{ link }}</button>
       } @else {
         <div class="correction mono" data-test="wind-correction">{{ correctionText() }}</div>
       }

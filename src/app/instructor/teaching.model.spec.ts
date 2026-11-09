@@ -20,6 +20,20 @@ function snapshot(exerciseId: ExerciseId, fields: Partial<InstructorSnapshot> = 
     lastCorrection: null,
     turnedSinceShot: { upClicks: 0, rightClicks: 0 },
     aimOffMil: 1.1,
+    isStationMeasured: false,
+    stationSpeedMps: null,
+    windSpeedMps: null,
+    reticleMil: null,
+    measuredDistanceM: null,
+    targetSizeM: 0.5,
+    recordedSteps: [],
+    stageIndex: 0,
+    isMagazineChangeDue: false,
+    cartridgeLetter: 'Б',
+    nextCartridgeLetter: null,
+    isCallMarked: false,
+    isDopeNoted: false,
+    openCalcStep: null,
     ...fields,
   };
 }
@@ -123,6 +137,86 @@ describe('teaching — aiming before the shot', () => {
   });
 });
 
+describe('teaching — 04 wind and the station', () => {
+  it('wind tile → «Условия» → «Замер» → «Ветер» → the clock, in order', () => {
+    expect(next(snapshot('04'))!.anchor).toBe('wind-tile');
+    const opened = snapshot('04', { hasOpenedNotebook: true, sheetTab: 'total' });
+    expect([next(opened)!.anchor, next(opened)!.number, next(opened)!.count]).toEqual(['tab-conditions', 2, 5]);
+    expect(next({ ...opened, sheetTab: 'conditions' })!.anchor).toBe('measure');
+    const measured = { ...opened, sheetTab: 'conditions' as const, isStationMeasured: true, stationSpeedMps: 3.2 };
+    expect(next(measured)!.anchor).toBe('tab-wind');
+    expect(next({ ...measured, sheetTab: 'wind' })!.anchor).toBe('wind-clock');
+  });
+
+  it('measured before the hint — straight to «Ветер»; the clock hint shows the station speed', () => {
+    const measured = snapshot('04', { hasOpenedNotebook: true, sheetTab: 'total', isStationMeasured: true, stationSpeedMps: 3.2 });
+    expect(next(measured)!.anchor).toBe('tab-wind');
+    expect(next({ ...measured, sheetTab: 'wind' })!.text).toBe('Стрелка — откуда дует, по флажку у бруствера. Скорость — 3.2, со станции');
+    expect(next({ ...measured, sheetTab: 'wind', stationSpeedMps: 2.4 })!.text).toContain('Скорость — 2.4');
+  });
+
+  it('a tab hint waits for the sheet; the wind written with its speed ends the script', () => {
+    expect(next(snapshot('04', { hasOpenedNotebook: true }))).toBeNull();
+    expect(next(snapshot('04', { hasOpenedNotebook: true, sheetTab: 'wind', isStationMeasured: true, windSpeedMps: 0 }))!.anchor).toBe('wind-clock');
+    expect(next(snapshot('04', { hasOpenedNotebook: true, sheetTab: 'wind', isStationMeasured: true, windSpeedMps: 3.2 }))).toBeNull();
+  });
+});
+
+describe('teaching — 05 milling', () => {
+  it('notebook → «Дистанция» → two touches on the gong → the formula with the numbers', () => {
+    expect(next(snapshot('05'))!.anchor).toBe('tile-notebook');
+    expect(next(snapshot('05', { hasOpenedNotebook: true, sheetTab: 'total' }))!.anchor).toBe('tab-distance');
+    const onTab = snapshot('05', { hasOpenedNotebook: true, sheetTab: 'distance' });
+    expect([next(onTab)!.anchor, next(onTab)!.text]).toEqual(['milling', 'Гонг 0,5 м. Коснись верхнего и нижнего края, затем «Посчитать»']);
+    const counted = { ...onTab, reticleMil: 1.62, measuredDistanceM: 308.6 };
+    expect([next(counted)!.anchor, next(counted)!.text, next(counted)!.kind]).toEqual(['milling-result', 'Д = 0,5 × 1000 / 1.62 = 309 м', 'explain']);
+    expect(next(counted, ['result'])).toBeNull();
+    const small = { ...counted, targetSizeM: 0.35, reticleMil: 1.17, measuredDistanceM: 299.1 };
+    expect(next({ ...onTab, targetSizeM: 0.35 })!.text).toBe('Гонг 0,35 м. Коснись верхнего и нижнего края, затем «Посчитать»');
+    expect(next(small)!.text).toBe('Д = 0,35 × 1000 / 1.17 = 299 м');
+  });
+});
+
+describe('teaching — 06 SAM', () => {
+  it('wind first, then the wind step, chips, tape; nothing blocks the sheet while it is filled; the recorded step ends it', () => {
+    expect(next(snapshot('06'))!.anchor).toBe('tile-notebook');
+    const open = snapshot('06', { hasOpenedNotebook: true, sheetTab: 'total' });
+    expect([next(open)!.anchor, next(open)!.count, next(open)!.kind]).toEqual(['tab-wind', 5, 'explain']);
+    expect(next({ ...open, windSpeedMps: 3.1 })).toBeNull();
+    expect(next({ ...open, windSpeedMps: 3.1, sheetTab: 'wind' })!.anchor).toBe('wind-step-link');
+    expect(next({ ...open, sheetTab: 'wind' }, ['wind-first'])).toBeNull();
+    const stepOpen = { ...open, windSpeedMps: 3.1, openCalcStep: 'wind' as const };
+    expect(next(stepOpen)!.anchor).toBe('calc-formula');
+    expect(next(stepOpen, ['chips'])!.anchor).toBe('calc-tape');
+    expect(next(stepOpen, ['chips', 'tape'])).toBeNull();
+    expect(next({ ...open, openCalcStep: 'distance' as const }, ['wind-first'])).toBeNull();
+    expect(next({ ...open, recordedSteps: ['wind'] })).toBeNull();
+  });
+});
+
+describe('teaching — 08 cartridge change', () => {
+  it('waits for the empty magazine, names the next cartridge, then its own card', () => {
+    expect(next(snapshot('08', { shotsFired: 1 }))).toBeNull();
+    const empty = snapshot('08', { shotsFired: 2, isMagazineChangeDue: true, nextCartridgeLetter: 'В' });
+    expect([next(empty)!.anchor, next(empty)!.text]).toEqual(['change-magazine', 'Магазин пуст. Дальше — патрон В']);
+    const changed = snapshot('08', { shotsFired: 2, stageIndex: 1, cartridgeLetter: 'В' });
+    expect([next(changed)!.anchor, next(changed)!.text]).toEqual(['tile-dope', 'У патрона В своя карточка ДОПЕ — пересчитай']);
+    expect(next(changed, ['card'])).toBeNull();
+  });
+});
+
+describe('teaching — 10 call and pencil', () => {
+  it('traps first; the call waits for the review; «в ДОПЕ» after the call, gone once noted', () => {
+    expect(next(snapshot('10', { hasOpenedNotebook: true, sheetTab: 'total' }))!.anchor).toBe('manual-mode');
+    const review = snapshot('10', { shotsFired: 1, isReviewOpen: true });
+    expect(next(review, ['traps'])!.anchor).toBe('call-pick');
+    expect(next({ ...review, isCallMarked: true }, ['traps'])!.anchor).toBe('review-dope');
+    expect(next({ ...review, isCallMarked: true, isDopeNoted: true }, ['traps'])).toBeNull();
+    expect(next(snapshot('10', { shotsFired: 1 }), ['traps'])).toBeNull();
+    expect(next(snapshot('10'), ['traps'])).toBeNull();
+  });
+});
+
 describe('teaching — 02 and 03 moments', () => {
   it('02: the correction in the 4th review; skipped with no correction', () => {
     const review = snapshot('02', { shotsFired: 4, isReviewOpen: true, lastCorrection: { upClicks: 2, rightClicks: 0 } });
@@ -152,9 +246,9 @@ describe('teaching — 02 and 03 moments', () => {
     expect(next({ ...fired, isBoltCycleDue: false, shotsFired: 2 }, ['breath'])).toBeNull();
   });
 
-  it('only 01–03 have a script', () => {
-    expect(teachingScript('04')).toBeNull();
-    expect(teachingScript('00')).toBeNull();
+  it('scripts: 01–06, 08, 10; none for 00, 07, 09, 11, 12', () => {
+    expect((['01', '02', '03', '04', '05', '06', '08', '10'] as ExerciseId[]).every(id => teachingScript(id) !== null)).toBe(true);
+    expect((['00', '07', '09', '11', '12'] as ExerciseId[]).map(teachingScript)).toEqual([null, null, null, null, null]);
   });
 });
 
@@ -172,14 +266,27 @@ describe('forgotten factor', () => {
 });
 
 describe('every cut-out has its element', () => {
-  const markup = ['../position/position.page.html', '../position/fire-control.component.ts', '../notebook/notebook-sheet.component.ts', '../notebook/total-tab.component.ts', '../review/review-sheet.component.ts']
+  const markup = [
+    '../position/position.page.html',
+    '../position/fire-control.component.ts',
+    '../notebook/notebook-sheet.component.ts',
+    '../notebook/total-tab.component.ts',
+    '../review/review-sheet.component.ts',
+    '../notebook/conditions-tab.component.ts',
+    '../notebook/wind-clock.component.ts',
+    '../notebook/distance-tab.component.ts',
+    '../notebook/manual-hub.component.ts',
+    '../notebook/chip-tray.component.ts',
+    '../notebook/calc-sheet.component.ts',
+    '../notebook/wind-tab.component.ts',
+  ]
     .map(path => readFileSync(new URL(path, import.meta.url), 'utf-8'))
     .join('\n');
 
   it('each anchor of 01–03 is marked with data-hint', () => {
     const samples = [snapshot('02', { lastCorrection: { upClicks: 3, rightClicks: 0 } }), snapshot('02', { lastCorrection: { upClicks: 0, rightClicks: 3 } })];
-    const anchors = new Set((['01', '02', '03'] as ExerciseId[]).flatMap(id => teachingScript(id)!.flatMap(step => samples.map(sample => step.anchor(sample)))));
-    for (const anchor of [...anchors].filter(name => !name.startsWith('factor-'))) {
+    const anchors = new Set((['01', '02', '03', '04', '05', '06', '08', '10'] as ExerciseId[]).flatMap(id => teachingScript(id)!.flatMap(step => samples.map(sample => step.anchor(sample)))));
+    for (const anchor of [...anchors].filter(name => !name.startsWith('factor-') && !name.startsWith('tab-') && !name.startsWith('step-'))) {
       expect(markup.includes(`data-hint="${anchor}"`), anchor).toBe(true);
     }
   });
@@ -187,5 +294,7 @@ describe('every cut-out has its element', () => {
   it('the factor rows and switches are marked for every factor', () => {
     expect(markup).toContain(`[attr.data-hint]="'factor-' + row.factor"`);
     expect(markup).toContain(`[attr.data-hint]="'toggle-' + row.factor"`);
+    expect(markup).toContain(`[attr.data-hint]="'tab-' + item.id"`);
+    expect(markup).toContain(`[attr.data-hint]="'step-' + row.step"`);
   });
 });

@@ -6,12 +6,12 @@ import { HubRow } from './calc-sheet.model';
   selector: 'or-manual-hub',
   template: `
     <div class="head">
-      <span class="badge mono" data-test="manual-mode">{{ badge() }}</span>
+      <span class="badge mono" data-test="manual-mode" data-hint="manual-mode">{{ badge() }}</span>
       <button class="formulas mono" type="button" (click)="formulas.emit()" data-test="hub-formulas">{{ formulasLabel() }}</button>
     </div>
     <div class="steps">
       @for (row of rows(); track row.step) {
-        <button class="step" type="button" [class.recorded]="row.state === 'recorded'" [class.stale]="row.state === 'stale'" (click)="openStep.emit(row.step)" [attr.data-test]="'step-' + row.step">
+        <button class="step" type="button" [class.recorded]="row.state === 'recorded'" [class.stale]="row.state === 'stale'" (click)="openStep.emit(row.step)" [attr.data-test]="'step-' + row.step" [attr.data-hint]="'step-' + row.step">
           <span class="number mono">{{ row.number }}</span>
           <span class="text">
             <span class="title">{{ row.title }}</span>
