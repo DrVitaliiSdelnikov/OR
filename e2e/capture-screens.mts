@@ -3,6 +3,18 @@ import { chromium, Page } from '@playwright/test';
 const BASE_URL = 'http://localhost:4310';
 const OUTPUT_DIR = 'docs/design/screens';
 const PROGRESS_KEY = 'CapacitorStorage.or.progress.v1';
+const JOURNAL_SERIES = [
+  {
+    id: 's1', startedAtIso: '2026-11-09T10:00:00.000Z', kind: 'exercise', exerciseId: '06', title: 'Часы ветра', mode: 'manual-easy',
+    cartridgeIds: ['B'], exerciseClass: 2, total: 35, isInterrupted: false,
+    shots: [
+      { distanceM: 400, isHit: false, isFirstAtTarget: true, mainCause: 'calc', errorTypes: ['side'], windSpeedMps: 3, mode: 'manual-easy' },
+      { distanceM: 400, isHit: true, isFirstAtTarget: false, mainCause: null, errorTypes: [], windSpeedMps: 3, mode: 'manual-easy' },
+      { distanceM: 400, isHit: true, isFirstAtTarget: true, mainCause: null, errorTypes: [], windSpeedMps: 4, mode: 'manual-easy' },
+      { distanceM: 400, isHit: false, isFirstAtTarget: true, mainCause: 'hold', errorTypes: [], windSpeedMps: 4, mode: 'manual-easy' },
+    ],
+  },
+];
 
 async function seed(page: Page): Promise<void> {
   await page.addInitScript(
@@ -16,7 +28,7 @@ async function seed(page: Page): Promise<void> {
       PROGRESS_KEY,
       JSON.stringify({
         course: { isIntroCompleted: true, bestClasses: { '01': 1, '02': 2, '03': 3, '04': 2, '05': 2, '06': 2, '07': 2, '08': 2, '09': 2 } },
-        shots: [],
+        series: JOURNAL_SERIES,
         settings: { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: false, isMarkerDriftOff: true, isEverythingUnlocked: false },
       }),
     ] as const,
@@ -184,7 +196,9 @@ async function captureScreens(suffix: string, isFull: boolean): Promise<void> {
 
   if (isFull) {
     await page.goto(`${BASE_URL}/journal`);
-    await snap(page, `15-log${suffix}`);
+    await snap(page, `15-journal${suffix}`);
+    await page.goto(`${BASE_URL}/free`);
+    await snap(page, `16-free-play${suffix}`);
     await page.goto(`${BASE_URL}/settings`);
     await snap(page, `17-settings${suffix}`);
   }

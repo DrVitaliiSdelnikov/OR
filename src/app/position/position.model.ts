@@ -27,7 +27,7 @@ export interface Playability {
 
 type PositionFeature = 'intro' | 'pressure-trigger' | 'notebook-input' | 'manual-calc' | 'zone-flags' | 'moving-targets';
 
-// Что из позиции уже сделано; список растёт с A7 (вводное), A9 (сцена) и уходит, когда играбельно всё.
+// Что из позиции уже сделано; список растёт с A7.5 (вводное), A9.3 (флажки по трассе, движущиеся цели) и уходит, когда играбельно всё.
 const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['pressure-trigger', 'notebook-input', 'manual-calc']);
 const FEATURE_NAMES: Record<PositionFeature, string> = {
   intro: 'вводное',
