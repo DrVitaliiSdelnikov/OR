@@ -49,3 +49,7 @@ Thumbs.db
 
 # scene preparation checks (tools/scene/prepare.py)
 tools/scene/*-check.png
+
+# image intake output (tools/assets/check_inbox.py)
+/assets-inbox/_ready/
+/assets-inbox/_report.md
