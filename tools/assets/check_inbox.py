@@ -34,11 +34,30 @@ SEAM_MAX_COLOUR_STEP = 18
 HORIZON_MAX_WOBBLE = 0.01
 EMPTY_GREEN_SHARE = 0.98
 BORDER_GREEN_SHARE = 0.95
+CHROMA_GREEN = (0, 255, 0)
+GREENISH_MARGIN = 20
+MIN_GREEN_TOP_SHARE = 0.5
+BACKGROUND_MAX_DISTANCE = 70
 
 
-def is_chroma_green(pixel):
+def is_greenish(pixel):
     red, green, blue = pixel[:3]
-    return green > 150 and green - max(red, blue) > 70
+    return green - max(red, blue) > GREENISH_MARGIN
+
+
+def background_reference(image):
+    """Generators rarely give pure #00FF00: the key colour is the median green of the top row."""
+    rgb = image.convert('RGB')
+    top_row = [rgb.getpixel((x, 0)) for x in range(0, rgb.width, max(1, rgb.width // 128))]
+    greens = [pixel for pixel in top_row if is_greenish(pixel)]
+    if len(greens) < len(top_row) * MIN_GREEN_TOP_SHARE:
+        return CHROMA_GREEN
+    return tuple(sorted(pixel[channel] for pixel in greens)[len(greens) // 2] for channel in range(3))
+
+
+def is_background(pixel, reference):
+    distance = math.sqrt(sum((a - b) ** 2 for a, b in zip(pixel[:3], reference)))
+    return is_greenish(pixel) and distance <= BACKGROUND_MAX_DISTANCE
 
 
 @dataclass
@@ -104,8 +123,9 @@ def downsampled(image):
 
 def green_mask(image):
     width, height = image.size
+    reference = background_reference(image)
     pixels = list(image.convert('RGB').getdata())
-    return [[is_chroma_green(pixels[y * width + x]) for x in range(width)] for y in range(height)]
+    return [[is_background(pixels[y * width + x], reference) for x in range(width)] for y in range(height)]
 
 
 def share(values):
@@ -126,12 +146,13 @@ def check_size(verdict, image, spec):
 
 def check_seam(verdict, image):
     rgb = image.convert('RGB')
+    reference = background_reference(rgb)
     width, height = rgb.size
     steps = []
     for y in range(0, height, max(1, height // 64)):
         left = rgb.getpixel((0, y))
         right = rgb.getpixel((width - 1, y))
-        if is_chroma_green(left) and is_chroma_green(right):
+        if is_background(left, reference) and is_background(right, reference):
             continue
         steps.append(sum(abs(a - b) for a, b in zip(left, right)) / 3)
     mean_step = share(steps)
@@ -285,9 +306,10 @@ def check_icon(verdict, image):
 
 def cutout(image):
     rgba = image.convert('RGBA')
+    reference = background_reference(rgba)
     pixels = []
     for red, green, blue, alpha in rgba.getdata():
-        if is_chroma_green((red, green, blue)):
+        if is_background((red, green, blue), reference):
             pixels.append((0, 0, 0, 0))
             continue
         spill_free_green = min(green, max(red, blue))

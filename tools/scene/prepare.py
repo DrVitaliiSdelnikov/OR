@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """Prepares the generated scene photos (docs/design/img) for the scope renderer (public/scene).
 
-Run once after new photos arrive: python tools/scene/prepare.py
+Run once after new photos arrive: python tools/scene/prepare.py [layer ...]
 It prints the measured geometry; scene-layout.ts constants come from that output.
 """
+import sys
 from pathlib import Path
 
 from PIL import Image, ImageFilter
@@ -16,11 +17,17 @@ FILES = {
     'ground': 'Gemini_Generated_Image_e87ywue87ywue87y(3).jpg',
     'gong': 'Gemini_Generated_Image_e87ywue87ywue87y(1).jpg',
     'marks': 'Gemini_Generated_Image_1iaghz1iaghz1iag(1).jpg',
-    'grass': 'Gemini_Generated_Image_e87ywue87ywue87y(2).jpg',
+    'grass': 'dry_grass_stems_and_wheat_seed_heads_rising_from_the_bottom_e_15045f66-683b-45d8-91a5-82ababb012de_1.png',
 }
 WEBP_QUALITY = 86
 # The paint around the generated marks is light grey; it must turn pure white, or 'multiply' darkens the plate in a square.
 MARK_PAINT_LEVEL = 222
+# Brief 15 asks for #00FF00, generators give a dull green: key by distance to the backdrop's own colour.
+KEY_SOLID_DISTANCE = 34
+KEY_SOFT_DISTANCE = 70
+TILE_OVERLAP_SHARE = 0.12
+# The new stems are thin: a stronger blur turns them into ghosts.
+NEAR_GRASS_BLUR_PX = 2.5
 
 
 def load(key):
@@ -175,17 +182,57 @@ def prepare_marks():
     print(f'marks: {len(centres)} sprites {half * 2}x{half * 2} px')
 
 
+def backdrop_green(image):
+    top_row = sorted((image.getpixel((x, 0)) for x in range(0, image.width, 4)), key=lambda pixel: pixel[1])
+    return top_row[len(top_row) // 2][:3]
+
+
+def backdrop_to_alpha(image):
+    rgba = image.convert('RGBA')
+    backdrop = backdrop_green(rgba)
+    pixels = rgba.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            red, green, blue, _ = pixels[x, y]
+            distance = sum((a - b) ** 2 for a, b in zip((red, green, blue), backdrop)) ** 0.5
+            if distance >= KEY_SOFT_DISTANCE:
+                continue
+            despilled = min(green, max(red, blue))
+            alpha = 0 if distance <= KEY_SOLID_DISTANCE else int(255 * (distance - KEY_SOLID_DISTANCE) / (KEY_SOFT_DISTANCE - KEY_SOLID_DISTANCE))
+            pixels[x, y] = (red, despilled, blue, alpha)
+    return rgba
+
+
+def tileable(image):
+    """Cross-fades the right edge into the left one, so copies side by side have no seam."""
+    overlap = int(image.width * TILE_OVERLAP_SHARE)
+    width = image.width - overlap
+    result = image.crop((0, 0, width, image.height))
+    tail = image.crop((width, 0, image.width, image.height))
+    head = image.crop((0, 0, overlap, image.height))
+    ramp = Image.linear_gradient('L').rotate(90).resize((overlap, image.height))
+    result.paste(Image.composite(head, tail, ramp.transpose(Image.FLIP_LEFT_RIGHT)), (0, 0))
+    return result
+
+
 def prepare_grass():
-    grass = chroma_to_alpha(load('grass'))
-    grass = grass.filter(ImageFilter.GaussianBlur(6))
+    grass = tileable(backdrop_to_alpha(load('grass')))
+    grass = grass.filter(ImageFilter.GaussianBlur(NEAR_GRASS_BLUR_PX))
     save(grass, 'grass')
     print(f'grass: {grass.width}x{grass.height}, blurred')
 
 
+
+LAYERS = {
+    'sky': lambda: prepare_sky(),
+    'berm': lambda: prepare_berm(),
+    'ground': lambda: prepare_ground(),
+    'gong': lambda: prepare_gong(),
+    'marks': lambda: prepare_marks(),
+    'grass': lambda: prepare_grass(),
+}
+
+
 if __name__ == '__main__':
-    prepare_sky()
-    prepare_berm()
-    prepare_ground()
-    prepare_gong()
-    prepare_marks()
-    prepare_grass()
+    for layer in sys.argv[1:] or LAYERS:
+        LAYERS[layer]()

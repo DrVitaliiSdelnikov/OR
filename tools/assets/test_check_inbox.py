@@ -13,13 +13,14 @@ import check_inbox as inbox  # noqa: E402
 GREEN = (0, 255, 0)
 FLAG_RED = (224, 72, 47)
 POLE_DARK = (30, 30, 30)
+DARK_GENERATOR_GREEN = (25, 105, 60)
 FLAG_LENGTH_PX = 600
 FLAG_WIDTH_PX = 360
 FOLDS_WIDTH_PX = 60
 
 
-def flag_image(angle_deg, attach=(160, 160), wave_px=0):
-    image = Image.new('RGB', (1024, 1024), GREEN)
+def flag_image(angle_deg, attach=(160, 160), wave_px=0, background=GREEN):
+    image = Image.new('RGB', (1024, 1024), background)
     draw = ImageDraw.Draw(image)
     attach_x, attach_y = attach
     draw.rectangle([attach_x - 4, 0, attach_x + 4, 1023], fill=POLE_DARK)
@@ -49,6 +50,11 @@ class FlagTest(unittest.TestCase):
             result = verdict()
             inbox.check_flag(result, flag_image(angle), f'F1-flag-{angle}-a')
             self.assertEqual(failed(result), set(), (angle, [check.detail for check in result.checks]))
+
+    def test_flag_on_dark_generator_green_passes(self):
+        result = verdict()
+        inbox.check_flag(result, flag_image(45, background=DARK_GENERATOR_GREEN), 'F1-flag-45-a')
+        self.assertEqual(failed(result), set(), [check.detail for check in result.checks])
 
     def test_wrong_angle_fails(self):
         result = verdict()
@@ -153,6 +159,11 @@ class FrameTest(unittest.TestCase):
         cut = inbox.cutout(image)
         self.assertEqual(cut.getpixel((0, 0))[3], 0)
         self.assertEqual(cut.getpixel((1, 0)), FLAG_RED + (255,))
+        lime = Image.new('RGB', (4, 1), (120, 200, 90))
+        lime.putpixel((1, 0), FLAG_RED)
+        lime_cut = inbox.cutout(lime)
+        self.assertEqual(lime_cut.getpixel((0, 0))[3], 0)
+        self.assertEqual(lime_cut.getpixel((1, 0))[3], 255)
 
     def test_task_of_name(self):
         self.assertEqual(inbox.task_of('F2-rail-a'), 'F2-rail')

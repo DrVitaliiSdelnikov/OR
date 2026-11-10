@@ -24,7 +24,7 @@ export const PHOTO = {
   berm: { width: 1792, height: 447, topPx: 8, basePx: 386 },
   ground: { width: 1792, height: 355, bermPx: 112 },
   gong: { width: 695, height: 901, plateDiameterPx: 389, plateCentrePx: { x: 350, y: 322 }, standBottomPx: 899 },
-  grass: { width: 2064, height: 512 },
+  grass: { width: 1915, height: 544 },
 } as const;
 
 export const HIT_MARK_COUNT = 5;
