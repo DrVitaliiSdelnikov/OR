@@ -29,49 +29,53 @@ const GROUND_Y = 66;
             <div class="order-header mono" data-test="briefing-header">{{ briefing.header }}</div>
             <h1 data-test="sheet-title">{{ briefing.title }}</h1>
 
-            <svg class="scheme" [attr.viewBox]="'0 0 ' + schemeWidth + ' ' + schemeHeight" role="img" [attr.aria-label]="'Схема: ты — цели, ' + briefing.scheme.distanceText" data-test="briefing-scheme">
-              <line class="ground" x1="8" [attr.y1]="groundY" [attr.x2]="schemeWidth - 8" [attr.y2]="groundY" />
-              <circle class="shooter" [attr.cx]="shooterX" [attr.cy]="groundY - 10" r="6" />
-              <text class="scheme-caption" [attr.x]="shooterX" [attr.y]="groundY + 16">ты</text>
-              @if (briefing.scheme.hasFlag) {
-                <g class="flag" data-test="briefing-flag">
-                  <line [attr.x1]="shooterX + 24" [attr.y1]="groundY" [attr.x2]="shooterX + 24" [attr.y2]="groundY - 30" />
-                  <path [attr.d]="'M' + (shooterX + 24) + ' ' + (groundY - 30) + ' l16 5 l-16 5 z'" />
-                </g>
-              }
-              <line class="line-of-fire" [attr.x1]="shooterX + 8" [attr.y1]="groundY - 10" [attr.x2]="targetXs()[0]" [attr.y2]="groundY - 14" />
-              @for (x of targetXs(); track $index) {
-                @if (briefing.scheme.isPaper) {
-                  <rect class="target paper" [attr.x]="x - 6" [attr.y]="groundY - 26" width="12" height="16" />
-                } @else {
-                  <circle class="target" [attr.cx]="x" [attr.cy]="groundY - 14" r="5" />
+            @if (briefing.introLine; as introLine) {
+              <p class="intro-line" data-test="briefing-intro">{{ introLine }}</p>
+            } @else {
+              <svg class="scheme" [attr.viewBox]="'0 0 ' + schemeWidth + ' ' + schemeHeight" role="img" [attr.aria-label]="'Схема: ты — цели, ' + briefing.scheme.distanceText" data-test="briefing-scheme">
+                <line class="ground" x1="8" [attr.y1]="groundY" [attr.x2]="schemeWidth - 8" [attr.y2]="groundY" />
+                <circle class="shooter" [attr.cx]="shooterX" [attr.cy]="groundY - 10" r="6" />
+                <text class="scheme-caption" [attr.x]="shooterX" [attr.y]="groundY + 16">ты</text>
+                @if (briefing.scheme.hasFlag) {
+                  <g class="flag" data-test="briefing-flag">
+                    <line [attr.x1]="shooterX + 24" [attr.y1]="groundY" [attr.x2]="shooterX + 24" [attr.y2]="groundY - 30" />
+                    <path [attr.d]="'M' + (shooterX + 24) + ' ' + (groundY - 30) + ' l16 5 l-16 5 z'" />
+                  </g>
                 }
-              }
-              <text class="scheme-caption" [attr.x]="targetsMidX" [attr.y]="groundY + 16" data-test="briefing-distance">{{ briefing.scheme.distanceText }}</text>
-            </svg>
+                <line class="line-of-fire" [attr.x1]="shooterX + 8" [attr.y1]="groundY - 10" [attr.x2]="targetXs()[0]" [attr.y2]="groundY - 14" />
+                @for (x of targetXs(); track $index) {
+                  @if (briefing.scheme.isPaper) {
+                    <rect class="target paper" [attr.x]="x - 6" [attr.y]="groundY - 26" width="12" height="16" />
+                  } @else {
+                    <circle class="target" [attr.cx]="x" [attr.cy]="groundY - 14" r="5" />
+                  }
+                }
+                <text class="scheme-caption" [attr.x]="targetsMidX" [attr.y]="groundY + 16" data-test="briefing-distance">{{ briefing.scheme.distanceText }}</text>
+              </svg>
 
-            <dl class="facts">
-              <dt>Цели</dt>
-              <dd data-test="sheet-targets">{{ briefing.facts.targets }}</dd>
-              <dt>Выстрелы</dt>
-              <dd data-test="sheet-shots">{{ briefing.facts.shots }}</dd>
-              <dt>Ветер</dt>
-              <dd data-test="sheet-wind">{{ briefing.facts.wind }}</dd>
-              <dt>Условия</dt>
-              <dd data-test="sheet-atmosphere">{{ briefing.facts.atmosphere }}</dd>
-              <dt>Режим</dt>
-              <dd data-test="sheet-mode">{{ briefing.mode }}</dd>
-            </dl>
+              <dl class="facts">
+                <dt>Цели</dt>
+                <dd data-test="sheet-targets">{{ briefing.facts.targets }}</dd>
+                <dt>Выстрелы</dt>
+                <dd data-test="sheet-shots">{{ briefing.facts.shots }}</dd>
+                <dt>Ветер</dt>
+                <dd data-test="sheet-wind">{{ briefing.facts.wind }}</dd>
+                <dt>Условия</dt>
+                <dd data-test="sheet-atmosphere">{{ briefing.facts.atmosphere }}</dd>
+                <dt>Режим</dt>
+                <dd data-test="sheet-mode">{{ briefing.mode }}</dd>
+              </dl>
 
-            <div class="section-title mono">Зачёт</div>
-            <ul class="standards">
-              @for (row of briefing.classRows; track $index) {
-                <li class="standard" [attr.data-test]="'briefing-class-' + $index">
-                  <span [class]="'marker class-' + (3 - $index)"></span>
-                  <span>{{ row }}</span>
-                </li>
-              }
-            </ul>
+              <div class="section-title mono">Зачёт</div>
+              <ul class="standards">
+                @for (row of briefing.classRows; track $index) {
+                  <li class="standard" [attr.data-test]="'briefing-class-' + $index">
+                    <span [class]="'marker class-' + (3 - $index)"></span>
+                    <span>{{ row }}</span>
+                  </li>
+                }
+              </ul>
+            }
 
             @if (briefing.novelty; as novelty) {
               <div class="novelty" data-test="briefing-novelty">{{ novelty }}</div>
@@ -92,7 +96,7 @@ const GROUND_Y = 66;
             <div class="note" data-test="to-position-reason">{{ reason }}</div>
           }
           <div class="dock">
-            <button class="to-position" type="button" [disabled]="!availability()?.isPlayable" (click)="toPosition()" data-test="to-position">На позицию</button>
+            <button class="to-position" type="button" [disabled]="!availability()?.isPlayable" (click)="toPosition()" data-test="to-position">{{ briefing.introLine ? 'Начать' : 'На позицию' }}</button>
           </div>
         } @else {
           <div class="note" data-test="sheet-missing">Такого упражнения нет</div>
@@ -135,6 +139,7 @@ const GROUND_Y = 66;
     .dock { position: sticky; bottom: 0; margin-top: auto; padding: var(--space-3) 0 calc(var(--space-3) + env(safe-area-inset-bottom)); background: var(--device-bg); }
     .to-position { width: 100%; min-height: var(--button-main-height); border: 0; border-radius: var(--radius-device); background: var(--device-accent); color: var(--device-on-accent); font: 700 var(--type-value) / 22px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; }
     .to-position:disabled { opacity: 0.45; }
+    .intro-line { margin: 0; font: 500 var(--type-body) / 1.4 var(--font-text); }
   `,
 })
 export class ExerciseSheetPage {
@@ -164,6 +169,10 @@ export class ExerciseSheetPage {
   });
 
   protected toPosition(): void {
+    if (this.card()?.introLine) {
+      void this.router.navigate(['/intro']);
+      return;
+    }
     const isWithInstructor = this.card()?.instructor !== null && this.isInstructorOn();
     void this.router.navigate(['/position', this.exerciseId()], isWithInstructor ? { queryParams: { instructor: 'on' } } : {});
   }

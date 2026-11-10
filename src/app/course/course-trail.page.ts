@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { rankHeader } from '../home/home.model';
@@ -20,10 +20,6 @@ const STAMP_LABELS: Record<ClassStamp, string> = { gold: '1 кл.', silver: '2 �
             <div class="meta" data-test="trail-progress">пройдено {{ header().admissions }} / {{ header().admissionsTotal }} · {{ header().rankLabel }}</div>
           </div>
         </header>
-
-        @if (laterMessage()) {
-          <div class="later" data-test="later-message">Откроется позже</div>
-        }
 
         <ol class="trail">
           @for (node of nodes(); track node.id) {
@@ -60,7 +56,7 @@ const STAMP_LABELS: Record<ClassStamp, string> = { gold: '1 кл.', silver: '2 �
     .trail-screen { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--gutter) var(--space-6); }
     .header { display: flex; align-items: center; gap: var(--space-3); }
     h1 { margin: 0; font: 700 var(--type-title) / 26px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; }
-    .meta, .later { font: 500 var(--type-label) / 18px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--device-text-muted); }
+    .meta { font: 500 var(--type-label) / 18px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--device-text-muted); }
     .back { display: grid; place-items: center; min-width: var(--touch-min); min-height: var(--touch-min); border: var(--border-width) solid var(--device-line); border-radius: var(--radius-device); color: var(--device-text); text-decoration: none; }
     .trail { list-style: none; margin: 0; padding: 0 0 0 var(--space-3); border-left: 2px solid var(--device-line-strong); display: flex; flex-direction: column; gap: var(--space-2); }
     .node { display: grid; grid-template-columns: 32px 1fr auto; align-items: center; gap: var(--space-2); width: 100%; min-height: var(--button-main-height); padding: var(--space-2) var(--space-3); border: var(--border-width) solid var(--device-line); border-radius: var(--radius-device); background: var(--device-surface); color: var(--device-text); text-align: left; cursor: pointer; }
@@ -82,7 +78,6 @@ export class CourseTrailPage {
   private readonly progress = inject(ProgressStore);
   private readonly router = inject(Router);
 
-  protected readonly laterMessage = signal(false);
   protected readonly header = computed(() => rankHeader(this.progress.course()));
   protected readonly nodes = computed(() => trailNodes(this.progress.course(), this.progress.settings().isEverythingUnlocked));
 
@@ -92,10 +87,6 @@ export class CourseTrailPage {
 
   protected open(node: TrailNode): void {
     if (node.state === 'locked') {
-      return;
-    }
-    if (node.isIntro) {
-      this.laterMessage.set(true);
       return;
     }
     void this.router.navigate(['/course', node.id]);

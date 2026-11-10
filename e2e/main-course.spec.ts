@@ -70,7 +70,7 @@ test.describe('главный экран и курс-тропа', () => {
     await expect(page).toHaveURL(/\/journal$/);
     await page.goto('/course');
     await page.getByTestId('node-00').click();
-    await expect(page.getByTestId('later-message')).toBeVisible();
+    await expect(page.getByTestId('briefing-intro')).toBeVisible();
   });
 
   test('касание не меньше 44 на главном и тропе', async ({ page }) => {

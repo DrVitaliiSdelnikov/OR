@@ -1,10 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { ProgressStore } from '../services/progress.store';
 import { continueCard, rankHeader } from './home.model';
 
-const INTRO_ID = '00';
 
 @Component({
   selector: 'or-home',
@@ -28,10 +27,6 @@ const INTRO_ID = '00';
           <a class="tile" routerLink="/textbook" data-test="tile-textbook"><span class="number">03</span>Учебник курсанта</a>
           <a class="tile" routerLink="/journal" data-test="tile-journal"><span class="number">04</span>Журнал стрелка</a>
         </nav>
-
-        @if (laterMessage()) {
-          <div class="later" data-test="later-message">Откроется позже</div>
-        }
 
         <button class="continue" type="button" (click)="openContinue()" data-test="continue-card">
           @switch (card().kind) {
@@ -63,7 +58,6 @@ const INTRO_ID = '00';
     .menu { display: flex; flex-direction: column; gap: var(--space-2); }
     .tile { display: flex; align-items: center; gap: var(--space-3); min-height: var(--button-main-height); padding: 0 var(--space-4); border: var(--border-width) solid var(--device-line-strong); border-radius: var(--radius-device); background: var(--device-surface); color: var(--device-text); font: 700 var(--type-value) / 22px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; text-align: left; text-decoration: none; cursor: pointer; }
     .number { font: 700 var(--type-label) / 16px var(--font-mono); color: var(--device-accent); }
-    .later { font: 500 var(--type-label) / 18px var(--font-mono); color: var(--device-text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label); }
     .continue { display: flex; flex-direction: column; gap: var(--space-1); margin-top: auto; min-height: var(--button-main-height); padding: var(--space-3) var(--space-4); border: 0; border-radius: var(--radius-device); background: var(--device-accent); color: var(--device-on-accent); text-align: left; cursor: pointer; }
     .continue-label { font: 700 var(--type-label) / 16px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; }
     .continue-title { font: 700 var(--type-value) / 22px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; }
@@ -74,7 +68,6 @@ export class HomePage {
   private readonly progress = inject(ProgressStore);
   private readonly router = inject(Router);
 
-  protected readonly laterMessage = signal(false);
   protected readonly header = computed(() => rankHeader(this.progress.course()));
   protected readonly card = computed(() => continueCard(this.progress.course()));
   protected readonly cardExercise = computed(() => {
@@ -86,18 +79,10 @@ export class HomePage {
     return card.kind === 'continue' && card.status === 'not-admitted' ? 'не зачтено' : 'новое';
   });
 
-  protected showLater(): void {
-    this.laterMessage.set(true);
-  }
-
   protected openContinue(): void {
     const card = this.card();
     if (card.kind === 'free-play') {
       void this.router.navigate(['/free']);
-      return;
-    }
-    if (card.exerciseId === INTRO_ID) {
-      this.showLater();
       return;
     }
     void this.router.navigate(['/course', card.exerciseId]);

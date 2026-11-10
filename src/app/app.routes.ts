@@ -8,6 +8,7 @@ export const routes: Routes = [
   { path: 'free', loadComponent: () => import('./free/free-play.page').then(module => module.FreePlayPage) },
   { path: 'settings', loadComponent: () => import('./settings/settings.page').then(module => module.SettingsPage) },
   { path: 'journal', loadComponent: () => import('./journal/journal.page').then(module => module.JournalPage) },
+  { path: 'intro', loadComponent: () => import('./intro/intro.page').then(module => module.IntroPage) },
   { path: 'textbook', loadComponent: () => import('./textbook/textbook.page').then(module => module.TextbookPage) },
   { path: '**', redirectTo: '' },
 ];

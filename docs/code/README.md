@@ -91,6 +91,7 @@
 | app · подсказки инструктора: рация, обучение 01–03, забытый фактор (A6.4) | [specs/app-instructor.md](specs/app-instructor.md) | реализовано, слито в `master` 9.11 |
 | app · сцена в стекле из фото, пределы наведения (A9.1) | [specs/app-scene-photos.md](specs/app-scene-photos.md) | реализовано, слито в `master` 9.11 |
 | app · звук и вибрация по TOKENS (A4) | [specs/app-feedback.md](specs/app-feedback.md) | реализовано, слито в `master` 9.11 |
+| app · упр. 00 «Винтовка и прицел» (A7.5) | [specs/app-rifle-intro.md](specs/app-rifle-intro.md) | реализовано, слито в `master` 10.11 |
 | app · настройки (A7.4) | [specs/app-settings.md](specs/app-settings.md) | реализовано, слито в `master` 10.11 |
 | app · учебник: ссылки, схемы, песочница (A7.3b) | [specs/app-textbook-extras.md](specs/app-textbook-extras.md) | реализовано, слито в `master`: b1 — 9.11, b2 и b3 — 10.11 |
 | app · учебник курсанта (A7.3) | [specs/app-textbook.md](specs/app-textbook.md) | реализовано, слито в `master` 9.11 |

@@ -100,7 +100,7 @@ interface DialTracking {
 
 export const POSITION_RESTING_BPM = 65;
 // На холсте «назад» — влево, в `sim/bolt` — по +x: экранный жест зеркалится по X.
-const BOLT_SCREEN_X_MIRROR = -1;
+export const BOLT_SCREEN_X_MIRROR = -1;
 const CARD_CLICK_MIL = 0.1;
 const FULL_MEASUREMENT_S = 3;
 const FULL_MEASUREMENT_NOISE_MPS = 0.1;

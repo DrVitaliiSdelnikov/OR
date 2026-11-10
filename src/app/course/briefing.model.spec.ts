@@ -9,6 +9,15 @@ function card(id: ExerciseId, course: CourseResults = FRESH) {
 }
 
 describe('briefingCard', () => {
+  it('00 — вводное: без схемы стрельбы, без зачёта и режима; строка о шагах', () => {
+    const card = briefingCard(exerciseById('00')!, { isIntroCompleted: false, bestClasses: {} });
+    expect(card.header).toBe('ЗАДАНИЕ 00 · ВВОДНОЕ');
+    expect(card.introLine).toBe('Без стрельбы и оценки. Семь шагов: винтовка, прицел, барабан, кратность, сетки, патроны, затвор');
+    expect(card.classRows).toEqual([]);
+    expect(card.instructor).toBeNull();
+    expect(briefingCard(exerciseById('04')!, { isIntroCompleted: true, bestClasses: {} }).introLine).toBeNull();
+  });
+
   it('04: header, the class standards from COURSE, the mode with its multiplier, what is new', () => {
     const briefing = card('04');
     expect(briefing.header).toBe('ЗАДАНИЕ 04 · УЧЕБНОЕ');

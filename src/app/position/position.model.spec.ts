@@ -67,8 +67,8 @@ describe('drum counter', () => {
 });
 
 describe('playability', () => {
-  it('01-08 and 10 are playable now', () => {
-    for (const id of ['01', '02', '03', '04', '05', '06', '07', '08', '10'] as const) {
+  it('00-08 and 10 are playable now', () => {
+    for (const id of ['00', '01', '02', '03', '04', '05', '06', '07', '08', '10'] as const) {
       expect(playability(exerciseById(id)!), id).toEqual({ isPlayable: true, reason: null });
     }
   });
@@ -78,7 +78,6 @@ describe('playability', () => {
     expect(reason('09')).toBe('откроется позже: флажки по трассе');
     expect(reason('11')).toBe('откроется позже: движущиеся цели');
     expect(reason('12')).toBe('откроется позже: флажки по трассе');
-    expect(reason('00')).toBe('откроется позже: вводное');
   });
 });
 

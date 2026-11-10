@@ -39,7 +39,9 @@ const LABEL_POSITIONS: readonly Vector2[] = [
         />
         <circle class="handle-core" [attr.cx]="handle().x" [attr.cy]="handle().y" r="10" />
       </svg>
-      <button data-own-feedback class="waiting" type="button" (click)="waitingTap.emit()" data-test="fire-waiting">Огонь · ждёт затвор</button>
+      @if (isFireWaitingShown()) {
+        <button data-own-feedback class="waiting" type="button" (click)="waitingTap.emit()" data-test="fire-waiting">Огонь · ждёт затвор</button>
+      }
     </div>
   `,
   styles: `
@@ -61,6 +63,7 @@ const LABEL_POSITIONS: readonly Vector2[] = [
 export class BoltTrackComponent {
   readonly step = input.required<BoltStep>();
   readonly progress = input.required<number>();
+  readonly isFireWaitingShown = input(true);
   readonly drag = output<Vector2>();
   readonly waitingTap = output<void>();
 
