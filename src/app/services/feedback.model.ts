@@ -62,6 +62,15 @@ export const FEEDBACK_PLAN: Record<FeedbackEvent, FeedbackStep> = {
   sheet: { haptic: null, sound: 'sheet' },
 };
 
+const DRUM_EVENTS: readonly FeedbackEvent[] = ['drum-click', 'drum-whole-mil', 'drum-turn', 'drum-stop'];
+
+export function soundOf(event: FeedbackEvent, settings: { volume: number; isDrumClicksOn: boolean }): SoundKind | null {
+  if (settings.volume === 0 || (!settings.isDrumClicksOn && DRUM_EVENTS.includes(event))) {
+    return null;
+  }
+  return FEEDBACK_PLAN[event].sound;
+}
+
 export const SELECTION_IDLE_MS = 300;
 
 export interface SelectionAdapter {

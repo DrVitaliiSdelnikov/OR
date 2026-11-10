@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
-import { FEEDBACK_PLAN, FeedbackEvent, HapticKind, SelectionHaptics, SoundKind } from './feedback.model';
+import { FEEDBACK_PLAN, FeedbackEvent, HapticKind, SelectionHaptics, SoundKind, soundOf } from './feedback.model';
 import { ProgressStore } from './progress.store';
 
 export type { FeedbackEvent } from './feedback.model';
@@ -19,6 +19,7 @@ function quietly(action: () => Promise<void>): void {
 export class FeedbackService {
   private readonly progress = inject(ProgressStore);
   private audioContext: AudioContext | null = null;
+  private masterVolume: GainNode | null = null;
   // Start, changed and end must reach the plugin in order: the web plugin loads lazily and would see "changed" before "start".
   private selectionQueue: Promise<void> = Promise.resolve();
   private readonly selection = new SelectionHaptics({
@@ -32,7 +33,10 @@ export class FeedbackService {
     if (step.haptic) {
       this.vibrate(step.haptic);
     }
-    this.sound(step.sound);
+    const sound = soundOf(event, this.progress.settings());
+    if (sound) {
+      this.sound(sound);
+    }
   }
 
   scheduleImpact(isHit: boolean, delayS: number): void {
@@ -131,7 +135,7 @@ export class FeedbackService {
   }
 
   private context(): AudioContext | null {
-    if (!this.progress.settings().isSoundOn || typeof AudioContext === 'undefined') {
+    if (this.progress.settings().volume === 0 || typeof AudioContext === 'undefined') {
       return null;
     }
     this.audioContext ??= new AudioContext();
@@ -139,6 +143,15 @@ export class FeedbackService {
       void this.audioContext.resume();
     }
     return this.audioContext;
+  }
+
+  private output(context: AudioContext): GainNode {
+    if (!this.masterVolume) {
+      this.masterVolume = context.createGain();
+      this.masterVolume.connect(context.destination);
+    }
+    this.masterVolume.gain.value = this.progress.settings().volume;
+    return this.masterVolume;
   }
 
   private tone(context: AudioContext, startS: number, fromHz: number, toHz: number, durationS: number, type: OscillatorType, gain: number): void {
@@ -149,7 +162,7 @@ export class FeedbackService {
     oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, toHz), startS + durationS);
     envelope.gain.setValueAtTime(gain, startS);
     envelope.gain.exponentialRampToValueAtTime(0.0001, startS + durationS);
-    oscillator.connect(envelope).connect(context.destination);
+    oscillator.connect(envelope).connect(this.output(context));
     oscillator.start(startS);
     oscillator.stop(startS + durationS + 0.02);
   }
@@ -168,7 +181,7 @@ export class FeedbackService {
     filter.frequency.value = cutoffHz;
     envelope.gain.setValueAtTime(gain, startS);
     envelope.gain.exponentialRampToValueAtTime(0.001, startS + durationS);
-    source.connect(filter).connect(envelope).connect(context.destination);
+    source.connect(filter).connect(envelope).connect(this.output(context));
     source.start(startS);
   }
 
@@ -185,7 +198,7 @@ export class FeedbackService {
       envelope.gain.setValueAtTime(0.0001, startS);
       envelope.gain.exponentialRampToValueAtTime(0.25 * weight, startS + 0.004);
       envelope.gain.exponentialRampToValueAtTime(0.0001, startS + 1.6);
-      oscillator.connect(envelope).connect(context.destination);
+      oscillator.connect(envelope).connect(this.output(context));
       oscillator.start(startS);
       oscillator.stop(startS + 1.7);
     }

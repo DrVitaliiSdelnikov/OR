@@ -31,6 +31,7 @@ export interface JournalSeries {
   exerciseClass: ExerciseClass | null;
   total: number | null;
   isInterrupted: boolean;
+  isTapTrigger?: boolean;
   shots: JournalShot[];
 }
 
@@ -40,6 +41,7 @@ export interface SeriesInput {
   startedAtIso: string;
   records: readonly ExerciseShotRecord[];
   result: ExerciseResult | null;
+  isTapTriggerChosen?: boolean;
 }
 
 export interface FeedItemView {
@@ -128,6 +130,7 @@ export function journalSeries(input: SeriesInput): JournalSeries | null {
     exerciseClass: input.result?.exerciseClass ?? null,
     total: input.result?.total ?? null,
     isInterrupted: isExercise && input.result === null,
+    isTapTrigger: (input.isTapTriggerChosen ?? false) && task.trigger === 'pressure',
     shots: input.records.map(record => {
       const key = `${record.stageIndex}:${record.targetIndex}`;
       const isFirstAtTarget = !seen.has(key);
@@ -181,7 +184,7 @@ export function feedView(journal: readonly JournalSeries[]): FeedItemView[] {
   return journal.map(series => ({
     id: series.id,
     title: seriesTitle(series),
-    meta: `патрон ${series.cartridgeIds.map(id => CARTRIDGE_LETTERS[id]).join(', ')} · ${MODE_LABELS[series.mode]} · ${timeText(series.startedAtIso)}`,
+    meta: `патрон ${series.cartridgeIds.map(id => CARTRIDGE_LETTERS[id]).join(', ')} · ${MODE_LABELS[series.mode]}${series.isTapTrigger ? ' · спуск тапом' : ''} · ${timeText(series.startedAtIso)}`,
     stamp: seriesStamp(series),
     stampTone: series.isInterrupted || series.exerciseClass === null ? 'graphite' : STAMP_TONES[series.exerciseClass],
     shots: series.shots.map((shot, index) => {

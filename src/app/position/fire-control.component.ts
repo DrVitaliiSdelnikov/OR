@@ -8,7 +8,7 @@ const HOLD_RING_RADIUS = 48;
 @Component({
   selector: 'or-fire-control',
   template: `
-    <div class="fire-control">
+    <div class="fire-control" [class.left-handed]="isLeftHanded()">
       <div class="hold-wrap">
         <svg class="ring" viewBox="0 0 114 114" aria-hidden="true">
           <circle class="ring-track" cx="57" cy="57" [attr.r]="holdRadius" />
@@ -57,6 +57,9 @@ const HOLD_RING_RADIUS = 48;
   styles: `
     :host { display: block; }
     .fire-control { display: flex; align-items: center; justify-content: space-between; }
+    .fire-control.left-handed { flex-direction: row-reverse; }
+    .left-handed .pressure { right: auto; left: 100%; margin: 0 0 0 var(--space-2); }
+    .left-handed .rounds { right: auto; left: 0; }
     .hold-wrap, .fire-wrap { position: relative; display: grid; place-items: center; }
     .hold-wrap { width: 114px; height: 114px; }
     .fire-wrap { width: 138px; height: 138px; }
@@ -77,6 +80,7 @@ const HOLD_RING_RADIUS = 48;
 })
 export class FireControlComponent {
   readonly mode = input.required<'tap' | 'pressure'>();
+  readonly isLeftHanded = input(false);
   readonly pressure = input(0);
   readonly pressureLabel = input('');
   readonly breath = input.required<BreathRing>();

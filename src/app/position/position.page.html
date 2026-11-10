@@ -44,6 +44,7 @@
         <or-turret-drum
           class="top-drum"
           data-hint="drum-elevation"
+          [ptPerClick]="drumPtPerClick()"
           axis="elevation"
           [clicks]="state.elevation.clicks"
           [targetClicks]="state.elevation.target"
@@ -79,6 +80,7 @@
           <or-turret-drum
             class="side-drum"
             data-hint="drum-windage"
+            [ptPerClick]="drumPtPerClick()"
             axis="windage"
             [clicks]="state.windage.clicks"
             [targetClicks]="state.windage.target"
@@ -120,6 +122,7 @@
         <or-fire-control
           data-hint="fire-control"
           [mode]="state.triggerMode"
+          [isLeftHanded]="isLeftHanded()"
           [pressure]="state.pressure"
           [pressureLabel]="state.pressureLabel"
           [breath]="state.breath"

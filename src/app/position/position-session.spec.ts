@@ -241,7 +241,7 @@ describe('PositionSession — trigger with pressure and the manual bolt (03)', (
 
   it('03 uses the pressure trigger; the trigger cannot start with an empty chamber', async () => {
     const session = await start03();
-    expect(session.isTapTrigger).toBe(false);
+    expect(session.isBoltAutomatic).toBe(false);
     await pressureShot(session);
     expect(session.startTrigger()).toBe(false);
   });

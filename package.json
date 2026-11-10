@@ -1,6 +1,6 @@
 {
   "name": "ognevoy-rubezh",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "scripts": {
     "start": "ng serve",
     "start:lan": "ng serve --host 0.0.0.0",

@@ -61,3 +61,10 @@
   --motion-stamp: 120ms;
   --motion-hint: 160ms;
 }
+
+:root[data-text='large'] {
+  --type-label: 15px;
+  --type-body: 17px;
+  --type-value: 20px;
+  --type-title: 25px;
+}

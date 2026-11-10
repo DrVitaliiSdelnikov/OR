@@ -7,16 +7,9 @@ import { DEFAULT_FREE_PLAY, FreePlaySettings, knownFreePlay } from '../../sim/fr
 import { withExerciseResult, withIntroCompleted } from '../home/home.model';
 import { JournalSeries, withSeries } from '../journal/journal.model';
 import { DopeNotes, withDopeNote } from '../review/review.model';
+import { DEFAULT_SETTINGS, knownSettings, Settings } from '../settings/settings.model';
 
 export const PROGRESS_STORAGE_KEY = 'or.progress.v1';
-
-export interface Settings {
-  isSoundOn: boolean;
-  isHapticsOn: boolean;
-  isTriggerZoneLarger: boolean;
-  isMarkerDriftOff: boolean;
-  isEverythingUnlocked: boolean;
-}
 
 interface ProgressState {
   course: CourseResults;
@@ -25,14 +18,6 @@ interface ProgressState {
   dopeNotes: DopeNotes;
   freePlay: FreePlaySettings;
 }
-
-export const DEFAULT_SETTINGS: Settings = {
-  isSoundOn: true,
-  isHapticsOn: true,
-  isTriggerZoneLarger: false,
-  isMarkerDriftOff: false,
-  isEverythingUnlocked: false,
-};
 
 const EMPTY_COURSE: CourseResults = { isIntroCompleted: false, bestClasses: {} };
 
@@ -52,7 +37,7 @@ export class ProgressStore {
       return;
     }
     try {
-      const stored = JSON.parse(value) as Partial<ProgressState>;
+      const stored = JSON.parse(value) as Partial<ProgressState> & { settings?: Record<string, unknown> };
       this.state.set({
         course: stored.course ?? EMPTY_COURSE,
         settings: knownSettings(stored.settings),
@@ -97,14 +82,4 @@ export class ProgressStore {
     this.state.update(change);
     void Preferences.set({ key: PROGRESS_STORAGE_KEY, value: JSON.stringify(this.state()) });
   }
-}
-
-function knownSettings(stored: Partial<Settings> | undefined): Settings {
-  const settings: Settings = { ...DEFAULT_SETTINGS };
-  for (const key of Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]) {
-    if (typeof stored?.[key] === 'boolean') {
-      settings[key] = stored[key];
-    }
-  }
-  return settings;
 }

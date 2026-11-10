@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 const TOKENS_DOC = readFileSync(new URL('../../docs/design/TOKENS.md', import.meta.url), 'utf-8');
 const TOKENS_SCSS = readFileSync(new URL('./_tokens.scss', import.meta.url), 'utf-8');
-const LEGACY_ALIASES_SCSS = readFileSync(new URL('./_legacy-aliases.scss', import.meta.url), 'utf-8');
+const STYLES_SCSS = readFileSync(new URL('../styles.scss', import.meta.url), 'utf-8');
+const LARGE_TEXT_SCALE = 1.15;
 
 const MIN_TEXT_CONTRAST = 4.5;
 const MIN_LARGE_CONTRAST = 3;
@@ -101,12 +102,31 @@ describe('contrast promised by TOKENS.md (WCAG)', () => {
   });
 });
 
-describe('legacy --hub-* variables', () => {
-  it('are only aliases of tokens, with no colours of their own', () => {
-    const declarations = [...LEGACY_ALIASES_SCSS.matchAll(/(--hub-[a-z0-9-]+):\s*([^;]+);/g)];
-    expect(declarations.length).toBeGreaterThan(10);
-    for (const [, name, value] of declarations) {
-      expect(value.trim(), name).toMatch(/^var\(--(device|paper)-[a-z0-9-]+\)$|^none$/);
+describe('крупный текст (U4)', () => {
+  const largeBlock = TOKENS_SCSS.slice(TOKENS_SCSS.indexOf(":root[data-text='large']"));
+  const sizeIn = (css: string, token: string): number | null => {
+    const match = css.match(new RegExp(`--type-${token}:\\s*(\\d+)px`));
+    return match ? Number(match[1]) : null;
+  };
+
+  it('подписи, текст, значения и заголовки — в 1,15 раза крупнее, с округлением', () => {
+    for (const token of ['label', 'body', 'value', 'title']) {
+      expect(sizeIn(largeBlock, token), token).toBe(Math.round(sizeIn(TOKENS_SCSS, token)! * LARGE_TEXT_SCALE));
+    }
+  });
+
+  it('крупные числа прибора и нижняя граница не растут', () => {
+    for (const token of ['min', 'big', 'hero']) {
+      expect(sizeIn(largeBlock, token), token).toBeNull();
+    }
+  });
+});
+
+describe('старые стили удалены (U6)', () => {
+  it('нет --hub-* и старых глобальных классов', () => {
+    expect(STYLES_SCSS).not.toMatch(/legacy-aliases|--hub-/);
+    for (const oldClass of ['.screen', '.card', '.button', '.top-bar', '.chip']) {
+      expect(STYLES_SCSS.includes(`\n${oldClass} {`), oldClass).toBe(false);
     }
   });
 });

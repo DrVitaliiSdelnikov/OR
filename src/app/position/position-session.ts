@@ -272,7 +272,7 @@ export class PositionSession {
     return !this.firingLine.isFinished && this.firingLine.magazineLeft === 0;
   }
 
-  get isTapTrigger(): boolean {
+  get isBoltAutomatic(): boolean {
     return this.def.trigger === 'tap';
   }
 
@@ -381,7 +381,7 @@ export class PositionSession {
       flight,
       group: [...this.groupPoints],
     };
-    const boltEvents = this.isTapTrigger ? this.scope.bolt.cycle() : [];
+    const boltEvents = this.isBoltAutomatic ? this.scope.bolt.cycle() : [];
     if (events.includes('next-target') || events.includes('stage-done')) {
       this.followNewTarget(this.target !== target);
     }
@@ -391,7 +391,7 @@ export class PositionSession {
   changeMagazine(): BoltEvent[] {
     this.firingLine.changeMagazine();
     const events = this.scope.bolt.insertMagazine(this.firingLine.magazineLoaded);
-    return this.isTapTrigger ? [...events, ...this.scope.bolt.cycle()] : events;
+    return this.isBoltAutomatic ? [...events, ...this.scope.bolt.cycle()] : events;
   }
 
   result(): ExerciseResult | null {

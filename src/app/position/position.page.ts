@@ -107,6 +107,8 @@ export class PositionPage {
       : (exerciseById(this.exerciseId() as ExerciseId) ?? null);
   });
   protected readonly session = signal<PositionSession | null>(null);
+  protected readonly drumPtPerClick = computed(() => this.progress.settings().drumPtPerClick);
+  protected readonly isLeftHanded = computed(() => this.progress.settings().isLeftHanded);
   protected readonly uiTick = signal(0);
   protected readonly radio = signal<RadioLine | null>(null);
   protected readonly stopBadge = signal<string | null>(null);
@@ -190,10 +192,10 @@ export class PositionPage {
       dope: playerDistanceM === null ? 'ДОПЕ · —' : `ДОПЕ · ${playerDistanceM} м ↑ ${dopeRowAt(notebook.context.card, notebook.distanceM!).elevationMil.toFixed(1)}`,
       rounds: `${session.firingLine.magazineLeft} / ${session.firingLine.magazineLoaded}`,
       isMagazineChangeDue: session.isMagazineChangeDue,
-      isBoltCycleDue: !session.isTapTrigger && session.isBoltCycleDue && this.end() === null,
+      isBoltCycleDue: !session.isBoltAutomatic && session.isBoltCycleDue && this.end() === null,
       boltStep: session.scope.bolt.currentStep,
       boltProgress: session.scope.bolt.progress,
-      triggerMode: session.def.trigger,
+      triggerMode: this.progress.settings().isTapTrigger ? 'tap' : session.def.trigger,
       pressure: session.scope.trigger?.pressure ?? 0,
       pressureLabel: pressureText(session.scope.trigger?.pressure ?? 0),
       breath: breathRing(session.scope.sway.breath.state, session.scope.sway.breath.heldS),
@@ -594,6 +596,7 @@ export class PositionPage {
       startedAtIso: this.seriesStartedAtIso,
       records: session.records,
       result: session.result(),
+      isTapTriggerChosen: this.progress.settings().isTapTrigger,
     });
     if (series) {
       this.savedSeriesSession = session;
@@ -740,7 +743,7 @@ export class PositionPage {
       shotsFired: session.records.length,
       isReviewOpen: this.reviewedShot() !== null,
       isResultOpen: this.end() !== null,
-      isBoltCycleDue: !session.isTapTrigger && session.isBoltCycleDue,
+      isBoltCycleDue: !session.isBoltAutomatic && session.isBoltCycleDue,
       lastCorrection: this.lastCorrection,
       turnedSinceShot: {
         upClicks: session.scope.elevation.clicks - this.dialAtLastShot.elevation,

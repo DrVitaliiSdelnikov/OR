@@ -6,7 +6,7 @@ interface DrumTick {
   isMajor: boolean;
 }
 
-const PT_PER_CLICK = 12;
+const DEFAULT_PT_PER_CLICK = 12;
 const VISIBLE_CLICKS = 14;
 const CLICKS_PER_MAJOR = 10;
 const TAP_MAX_MOVE_PT = 6;
@@ -98,6 +98,7 @@ const INERTIA_FRICTION = 0.92;
 })
 export class TurretDrumComponent {
   readonly axis = input.required<TurretAxis>();
+  readonly ptPerClick = input(DEFAULT_PT_PER_CLICK);
   readonly clicks = input.required<number>();
   readonly targetClicks = input<number | null>(null);
   readonly minClicks = input.required<number>();
@@ -107,7 +108,7 @@ export class TurretDrumComponent {
 
   protected readonly isLoupeOpen = signal(false);
   protected readonly isVertical = computed(() => this.axis() === 'windage');
-  protected readonly halfLength = computed(() => VISIBLE_CLICKS * PT_PER_CLICK);
+  protected readonly halfLength = computed(() => VISIBLE_CLICKS * this.ptPerClick());
   protected readonly viewBox = computed(() => (this.isVertical() ? `0 0 40 ${2 * this.halfLength()}` : `0 0 ${2 * this.halfLength()} 40`));
   protected readonly stepClicks = computed<[number, number]>(() => (this.isVertical() ? [1, -1] : [-1, 1]));
   protected readonly stepLabels = computed<[string, string]>(() => (this.isVertical() ? ['L', 'R'] : ['−', '+']));
@@ -196,7 +197,7 @@ export class TurretDrumComponent {
   }
 
   private positionPt(offsetClicks: number): number {
-    const along = offsetClicks * PT_PER_CLICK;
+    const along = offsetClicks * this.ptPerClick();
     return this.halfLength() + (this.isVertical() ? -along : along);
   }
 
@@ -207,9 +208,9 @@ export class TurretDrumComponent {
 
   private addTravel(gesture: NonNullable<typeof this.gesture>, deltaPt: number): void {
     gesture.remainderPt += deltaPt;
-    const clicks = Math.trunc(gesture.remainderPt / PT_PER_CLICK);
+    const clicks = Math.trunc(gesture.remainderPt / this.ptPerClick());
     if (clicks !== 0) {
-      gesture.remainderPt -= clicks * PT_PER_CLICK;
+      gesture.remainderPt -= clicks * this.ptPerClick();
       this.turn.emit(clicks);
     }
   }

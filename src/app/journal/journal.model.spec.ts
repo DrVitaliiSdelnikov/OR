@@ -78,6 +78,15 @@ describe('journal — a series from the position', () => {
     expect(journalSeries({ id: 'w', task: def, startedAtIso: START, records: [], result: null })).toBeNull();
   });
 
+  it('спуск тапом из настроек (U3): помечен на упражнении со спуском давлением, но не в 01–02, где спуск и так тапом', () => {
+    const pressure = journalSeries({ id: 'p', task: exerciseById('03')!, startedAtIso: START, records: [record()], result: null, isTapTriggerChosen: true })!;
+    const tap = journalSeries({ id: 't', task: exerciseById('01')!, startedAtIso: START, records: [record()], result: null, isTapTriggerChosen: true })!;
+    const usual = journalSeries({ id: 'u', task: exerciseById('03')!, startedAtIso: START, records: [record()], result: null })!;
+    expect([pressure.isTapTrigger, tap.isTapTrigger, usual.isTapTrigger]).toEqual([true, false, false]);
+    expect(feedView([pressure])[0].meta).toContain('· спуск тапом');
+    expect(feedView([usual])[0].meta).not.toContain('тапом');
+  });
+
   it('keeps the newest first and the last 200', () => {
     const many = Array.from({ length: JOURNAL_LIMIT }, (_, index) => series({ id: `old-${index}` }));
     const added = withSeries(many, series({ id: 'new' }));

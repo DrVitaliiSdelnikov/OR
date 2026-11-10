@@ -48,20 +48,16 @@ test.describe('прибор: токены и одна тема', () => {
     await expect(page.locator('body')).toHaveCSS('background-color', DEVICE_BG);
   });
 
-  test('кнопки и чипы не ниже 44', async ({ page }) => {
+  test('на настройках все кнопки, переключатели и «назад» не ниже 44', async ({ page }) => {
     await unlockEverything(page);
-    const expectedOnPage: [string, string][] = [
-      ['/settings', '.button'],
-    ];
-    for (const [path, mustHave] of expectedOnPage) {
-      await page.goto(path);
-      await page.locator(mustHave).first().waitFor();
-      const heights = await page.locator('.button, .chip').evaluateAll(elements =>
-        elements.filter(element => (element as HTMLElement).offsetParent !== null).map(element => element.getBoundingClientRect().height),
-      );
-      for (const height of heights) {
-        expect(height, path).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
-      }
+    await page.goto('/settings');
+    await page.getByTestId('reset-progress').waitFor();
+    const heights = await page.locator('[data-test="settings"] :is(button, ion-toggle, a, input)').evaluateAll(elements =>
+      elements.filter(element => (element as HTMLElement).offsetParent !== null).map(element => element.getBoundingClientRect().height),
+    );
+    expect(heights.length).toBeGreaterThan(10);
+    for (const height of heights) {
+      expect(height).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
     }
   });
 });

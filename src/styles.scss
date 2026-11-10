@@ -9,7 +9,6 @@
 @use '@fontsource/roboto-mono/500.css' as roboto-mono-500;
 @use '@fontsource/roboto-mono/700.css' as roboto-mono-700;
 @use './theme/tokens';
-@use './theme/legacy-aliases';
 
 :root {
   --ion-background-color: var(--device-bg);
@@ -17,10 +16,6 @@
   --ion-font-family: var(--font-text);
   --ion-color-primary: var(--device-accent);
   --ion-color-primary-contrast: var(--device-on-accent);
-  --ion-tab-bar-background: var(--device-surface);
-  --ion-tab-bar-border-color: var(--device-line);
-  --ion-tab-bar-color: var(--device-text-muted);
-  --ion-tab-bar-color-selected: var(--device-accent);
   color-scheme: dark;
 }
 
@@ -28,20 +23,6 @@ body {
   background: var(--device-bg);
   color: var(--device-text);
   font: 400 var(--type-body) / 20px var(--font-text);
-}
-
-.screen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--gutter) var(--space-6);
-}
-
-.card {
-  background: var(--device-surface);
-  border: var(--border-width) solid var(--device-line);
-  border-radius: var(--radius-device);
-  padding: var(--space-3) var(--space-4);
 }
 
 .label {
@@ -60,93 +41,6 @@ body {
   display: flex;
   gap: var(--space-2);
   align-items: center;
-}
-
-.spacer {
-  flex: 1;
-}
-
-.button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  min-height: var(--touch-min);
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-device);
-  border: var(--border-width) solid var(--device-line-strong);
-  background: var(--device-surface-2);
-  color: var(--device-text);
-  font: 700 var(--type-body) / 20px var(--font-title);
-  letter-spacing: var(--tracking-title);
-  text-transform: uppercase;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: default;
-  }
-
-  &.primary {
-    border-color: transparent;
-    background: var(--device-accent);
-    color: var(--device-on-accent);
-  }
-
-  &.large {
-    min-height: var(--button-main-height);
-    font-size: var(--type-value);
-  }
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: var(--touch-min);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-device);
-  background: var(--device-surface-2);
-  border: var(--border-width) solid var(--device-line);
-  color: var(--device-text);
-  font: 500 var(--type-label) / 16px var(--font-mono);
-  cursor: pointer;
-
-  &.selected {
-    background: var(--device-accent);
-    color: var(--device-on-accent);
-    border-color: transparent;
-  }
-}
-
-.top-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--touch-min);
-
-  h1 {
-    margin: 0;
-    font: 700 var(--type-title) / 26px var(--font-title);
-    letter-spacing: var(--tracking-title);
-    text-transform: uppercase;
-  }
-}
-
-.ok-text {
-  color: var(--device-ok);
-}
-
-.error-text {
-  color: var(--device-error-text);
-}
-
-.warn-text {
-  color: var(--device-accent);
-}
-
-.accent-text {
-  color: var(--device-accent);
 }
 
 $phone-frame-width: 430px;

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FEEDBACK_EVENTS, FEEDBACK_PLAN, FeedbackEvent, SELECTION_IDLE_MS, SelectionHaptics } from './feedback.model';
+import { FEEDBACK_EVENTS, FEEDBACK_PLAN, FeedbackEvent, SELECTION_IDLE_MS, SelectionHaptics, soundOf } from './feedback.model';
 
 const hapticOf = (event: FeedbackEvent) => FEEDBACK_PLAN[event].haptic;
 
@@ -31,6 +31,22 @@ describe('feedback plan = TOKENS «Звук и вибрация»', () => {
   it('a whole MIL and a full turn tick louder than a plain click', () => {
     expect(FEEDBACK_PLAN['drum-click'].sound).toBe('tick');
     expect([FEEDBACK_PLAN['drum-whole-mil'].sound, FEEDBACK_PLAN['drum-turn'].sound]).toEqual(['tick-strong', 'tick-strong']);
+  });
+});
+
+describe('звук по настройкам (U2)', () => {
+  const audible = { volume: 0.5, isDrumClicksOn: true };
+
+  it('щелчки барабанов выкл — у щелчка, целого MIL, оборота и упора нет звука; остальное звучит', () => {
+    const muted = { ...audible, isDrumClicksOn: false };
+    expect((['drum-click', 'drum-whole-mil', 'drum-turn', 'drum-stop'] as FeedbackEvent[]).map(event => soundOf(event, muted))).toEqual([null, null, null, null]);
+    expect(soundOf('detent', muted)).toBe('tick');
+    expect(soundOf('shot', muted)).toBe('shot');
+    expect(soundOf('drum-click', audible)).toBe('tick');
+  });
+
+  it('громкость 0 — тишина у всех событий', () => {
+    expect(FEEDBACK_EVENTS.map(event => soundOf(event, { volume: 0, isDrumClicksOn: true })).every(sound => sound === null)).toBe(true);
   });
 });
 
