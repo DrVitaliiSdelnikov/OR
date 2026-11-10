@@ -1,7 +1,8 @@
 import { flagAngleDeg } from '../../core/content';
 import { Correction } from '../../core/types';
 import { Vector2 } from '../../sim/noise';
-import { EYEPIECE_RADIUS_PT, MRAD_PER_MOA, ScopeModel } from '../../sim/scope-model';
+import { reticleMarks } from '../../sim/reticle';
+import { EYEPIECE_RADIUS_PT, ScopeModel } from '../../sim/scope-model';
 import { loadSceneImages, SceneImages } from './scene-images';
 import { bermLayout, flagFootY, gongFrame, grassFrame, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, isFlagBeforeBerm, skyFrame, tileXs } from './scene.model';
 
@@ -30,6 +31,14 @@ const DEVICE_PIXEL_RATIO = 2;
 export const GLASS_SIZE_PT = EYEPIECE_RADIUS_PT * 2;
 
 const SKY_FILL = '#c9d3d6';
+const RETICLE_INK = '#14160f';
+const LONG_TICK_HALF_PT = 5;
+const SHORT_TICK_HALF_PT = 2.5;
+const LABEL_RAISE_PT = 8;
+const HOLDOVER_DOT_PT = 1.2;
+const MIL_DOT_RADIUS_MIL = 0.1;
+const MIN_MIL_DOT_RADIUS_PT = 1;
+const THICK_POST_WIDTH_PT = 4;
 const GROUND_FILL = '#8f7f55';
 
 export class ScopeRenderer {
@@ -215,8 +224,8 @@ export class ScopeRenderer {
   private drawReticle(frame: SceneFrame, center: number): void {
     const context = this.context;
     const unitPt = frame.ptPerMil * frame.reticleScale;
-    context.strokeStyle = '#14160f';
-    context.fillStyle = '#14160f';
+    context.strokeStyle = RETICLE_INK;
+    context.fillStyle = RETICLE_INK;
     context.lineWidth = 1;
     context.font = '600 9px "Roboto Mono", monospace';
     context.textAlign = 'center';
@@ -226,80 +235,65 @@ export class ScopeRenderer {
     context.moveTo(center, 0);
     context.lineTo(center, GLASS_SIZE_PT);
     context.stroke();
-    const tick = (alongPt: number, isHorizontal: boolean, halfLengthPt: number): void => {
-      context.beginPath();
-      if (isHorizontal) {
-        context.moveTo(center + alongPt, center - halfLengthPt);
-        context.lineTo(center + alongPt, center + halfLengthPt);
-      } else {
-        context.moveTo(center - halfLengthPt, center + alongPt);
-        context.lineTo(center + halfLengthPt, center + alongPt);
-      }
-      context.stroke();
-    };
-    switch (frame.scope.reticle) {
-      case 'tree':
-        for (let mil = 1; mil <= 14; mil++) {
-          for (const sign of [-1, 1]) {
-            tick(sign * mil * unitPt, true, 5);
-            tick(sign * (mil - 0.5) * unitPt, true, 2.5);
-            if (sign > 0 || mil <= 6) {
-              tick(sign * mil * unitPt, false, 5);
-            }
-          }
-          if (mil % 2 === 0) {
-            context.fillText(String(mil), center + mil * unitPt, center - 8);
-          }
-        }
-        for (let row = 1; row <= 10; row++) {
-          const halfWidth = Math.min(1 + row * 0.55, 8);
-          for (let column = -halfWidth; column <= halfWidth + 1e-9; column += 0.5) {
-            context.fillRect(center + column * unitPt - 0.6, center + row * unitPt - 0.6, 1.2, 1.2);
-          }
-        }
-        break;
-      case 'moa-grid': {
-        const moaPt = unitPt * MRAD_PER_MOA;
-        for (let moa = 1; moa <= 40; moa++) {
-          for (const sign of [-1, 1]) {
-            const isMajor = moa % 5 === 0;
-            tick(sign * moa * moaPt, true, isMajor ? 5 : 2.5);
-            tick(sign * moa * moaPt, false, isMajor ? 5 : 2.5);
-          }
-          if (moa % 10 === 0) {
-            context.fillText(String(moa), center + moa * moaPt, center - 8);
-          }
-        }
-        break;
-      }
-      case 'mil-dot':
-        context.lineWidth = 4;
-        for (const sign of [-1, 1]) {
+    const reticle = reticleMarks(frame.scope.reticle);
+    if (reticle.thickPostFromMil !== null) {
+      this.drawThickPosts(center, reticle.thickPostFromMil * unitPt);
+    }
+    for (const mark of reticle.marks) {
+      const x = center + mark.rightMil * unitPt;
+      const y = center + mark.downMil * unitPt;
+      switch (mark.kind) {
+        case 'mil-tick':
+        case 'five-moa-tick':
+          this.drawTick(x, y, mark.downMil === 0, LONG_TICK_HALF_PT);
+          break;
+        case 'half-mil-tick':
+        case 'moa-tick':
+          this.drawTick(x, y, mark.downMil === 0, SHORT_TICK_HALF_PT);
+          break;
+        case 'label':
+          context.fillText(mark.text!, x, center - LABEL_RAISE_PT);
+          break;
+        case 'holdover-dot':
+          context.fillRect(x - HOLDOVER_DOT_PT / 2, y - HOLDOVER_DOT_PT / 2, HOLDOVER_DOT_PT, HOLDOVER_DOT_PT);
+          break;
+        case 'mil-dot':
           context.beginPath();
-          context.moveTo(center + sign * 4.2 * unitPt, center);
-          context.lineTo(center + sign * GLASS_SIZE_PT, center);
-          context.moveTo(center, center + sign * 4.2 * unitPt);
-          context.lineTo(center, center + sign * GLASS_SIZE_PT);
-          context.stroke();
-        }
-        context.lineWidth = 1;
-        for (let mil = 1; mil <= 4; mil++) {
-          for (const sign of [-1, 1]) {
-            for (const [x, y] of [
-              [sign * mil, 0],
-              [0, sign * mil],
-            ]) {
-              context.beginPath();
-              context.arc(center + x * unitPt, center + y * unitPt, Math.max(1, 0.1 * unitPt), 0, Math.PI * 2);
-              context.fill();
-            }
-          }
-        }
-        break;
+          context.arc(x, y, Math.max(MIN_MIL_DOT_RADIUS_PT, MIL_DOT_RADIUS_MIL * unitPt), 0, Math.PI * 2);
+          context.fill();
+          break;
+      }
     }
     context.beginPath();
     context.arc(center, center, 1.3, 0, Math.PI * 2);
     context.fill();
+  }
+
+  private drawTick(x: number, y: number, isOnHorizontalAxis: boolean, halfLengthPt: number): void {
+    const context = this.context;
+    context.beginPath();
+    if (isOnHorizontalAxis) {
+      context.moveTo(x, y - halfLengthPt);
+      context.lineTo(x, y + halfLengthPt);
+    } else {
+      context.moveTo(x - halfLengthPt, y);
+      context.lineTo(x + halfLengthPt, y);
+    }
+    context.stroke();
+  }
+
+  private drawThickPosts(center: number, fromCenterPt: number): void {
+    const context = this.context;
+    context.lineWidth = THICK_POST_WIDTH_PT;
+    for (const side of [-1, 1]) {
+      context.beginPath();
+      context.moveTo(center + side * fromCenterPt, center);
+      context.lineTo(center + side * GLASS_SIZE_PT, center);
+      context.moveTo(center, center + side * fromCenterPt);
+      context.lineTo(center, center + side * GLASS_SIZE_PT);
+      context.stroke();
+    }
+    context.lineWidth = 1;
   }
 
   private drawVignette(center: number): void {

@@ -1,11 +1,13 @@
 import { afterNextRender, Component, computed, effect, ElementRef, inject, input, linkedSignal, output, viewChild } from '@angular/core';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
+import { TermSchemeComponent } from './schemes/term-scheme.component';
 import { TextbookCards } from './textbook-cards.service';
 import { openedTerms, termSheetView } from './textbook.model';
 
 @Component({
   selector: 'or-term-sheet',
+  imports: [TermSchemeComponent],
   template: `
     @let sheet = view();
     <div class="scrim" (click)="close.emit()" data-test="term-scrim"></div>
@@ -14,6 +16,10 @@ import { openedTerms, termSheetView } from './textbook.model';
         <div class="chapter mono">{{ sheet.chapter }}</div>
         <h2 class="term" data-test="term-title">{{ sheet.term }}</h2>
         <p class="phrase" data-test="term-phrase">{{ sheet.phrase }}</p>
+
+        @if (sheet.scheme; as scheme) {
+          <or-term-scheme [scheme]="scheme" [cards]="cards()" />
+        }
 
         @if (sheet.formula; as formula) {
           <div class="formula" data-test="term-formula">
@@ -85,6 +91,7 @@ export class TermSheetComponent {
   private readonly openingClick = afterNextRender(() => this.feedback.emit('sheet'));
 
   protected readonly term = linkedSignal(() => this.openTerm());
+  protected readonly cards = this.textbookCards.cards;
   protected readonly view = computed(() =>
     termSheetView(this.term(), openedTerms(this.progress.course(), this.progress.settings().isEverythingUnlocked), this.textbookCards.cards()),
   );

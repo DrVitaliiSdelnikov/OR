@@ -53,6 +53,13 @@ interface ScenePoint {
       @for (point of groupScenePoints(); track $index) {
         <circle class="group-point" [attr.cx]="point.x" [attr.cy]="point.y" r="4" data-test="scheme-group-point" />
       }
+      @if (meanScenePoint(); as mean) {
+        <g class="mean" data-test="scheme-mean">
+          <line class="transfer" [attr.x1]="mean.x" [attr.y1]="mean.y" [attr.x2]="center" [attr.y2]="center" />
+          <line [attr.x1]="mean.x - 8" [attr.y1]="mean.y" [attr.x2]="mean.x + 8" [attr.y2]="mean.y" />
+          <line [attr.x1]="mean.x" [attr.y1]="mean.y - 8" [attr.x2]="mean.x" [attr.y2]="mean.y + 8" />
+        </g>
+      }
       @if (impactPoint(); as impact) {
         <circle class="impact" [class.clamped]="impact.isClamped" [attr.cx]="impact.x" [attr.cy]="impact.y" r="5" data-test="scheme-impact" />
       }
@@ -70,6 +77,8 @@ interface ScenePoint {
     .series-call line { stroke: var(--paper-graphite); stroke-width: 1.2; }
     .group-point { fill: none; stroke: var(--paper-ink); stroke-width: 2; }
     .impact.clamped { fill: var(--paper-red-pencil); }
+    .mean line { stroke: var(--paper-red-pencil); stroke-width: 2; }
+    .mean .transfer { stroke-width: 1.5; stroke-dasharray: 4 3; }
   `,
 })
 export class TargetSchemeComponent {
@@ -79,6 +88,7 @@ export class TargetSchemeComponent {
   readonly playerCall = input<Correction | null>(null);
   readonly groupPoints = input<readonly Correction[]>([]);
   readonly callPoints = input<readonly Correction[]>([]);
+  readonly meanPoint = input<Correction | null>(null);
   readonly isPicking = input(false);
   readonly pick = output<Correction>();
 
@@ -91,6 +101,7 @@ export class TargetSchemeComponent {
   protected readonly impactPoint = computed(() => this.toScene(this.impact()));
   protected readonly playerCallPoint = computed(() => this.toScene(this.playerCall()));
   protected readonly groupScenePoints = computed(() => this.groupPoints().map(point => this.toScene(point)!));
+  protected readonly meanScenePoint = computed(() => this.toScene(this.meanPoint()));
   protected readonly callScenePoints = computed(() => this.callPoints().map(point => this.toScene(point)!));
   protected readonly gridLines = computed(() => {
     const stepPt = GRID_STEP_MIL * 5 * this.ptPerMil();

@@ -40,4 +40,21 @@ await openTerm(unlocked, 'ветер');
 await unlocked.locator('[data-test="term-example"]').waitFor();
 await unlocked.screenshot({ path: `${OUTPUT_DIR}/57-term-wind.png` });
 
+async function schemeShot(term: string, name: string, tap?: (page: Page) => Promise<void>): Promise<void> {
+  await unlocked.locator('[data-test="term-close"]').click();
+  await openTerm(unlocked, term);
+  const scheme = unlocked.locator('[data-test="term-scheme"]');
+  await scheme.scrollIntoViewIfNeeded();
+  await tap?.(unlocked);
+  await unlocked.waitForTimeout(300);
+  await unlocked.screenshot({ path: `${OUTPUT_DIR}/${name}.png` });
+}
+
+await schemeShot('сетка', '58-scheme-reticle', async page => {
+  const box = (await page.locator('[data-test="reticle-scheme-mil-dot"]').boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.75, box.y + box.height / 2);
+});
+await schemeShot('энергия', '59-scheme-cartridges');
+await schemeShot('СТП', '60-scheme-group');
+
 await browser.close();

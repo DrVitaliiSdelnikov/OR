@@ -1,7 +1,8 @@
 import { Injectable, signal } from '@angular/core';
-import { cartridgeById } from '../../core/content';
-import { buildDopeCard } from '../../core/dope-card';
+import { cartridgeById, CARTRIDGES } from '../../core/content';
+import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
+import { CartridgeId } from '../../core/types';
 import { CardsByCartridge } from './terms';
 
 const EXAMPLE_CARTRIDGE_ID = 'B';
@@ -19,8 +20,15 @@ export class TextbookCards {
       return;
     }
     this.isBuilding = true;
-    void buildDopeCard(new BallisticsEngine(), cartridgeById(EXAMPLE_CARTRIDGE_ID), CARD_CLICK_MIL).then(card =>
-      this.built.set(new Map([[EXAMPLE_CARTRIDGE_ID, card]])),
-    );
+    void this.buildExampleCardFirst();
+  }
+
+  private async buildExampleCardFirst(): Promise<void> {
+    const engine = new BallisticsEngine();
+    const cards = new Map<CartridgeId, DopeCard>();
+    for (const cartridge of [cartridgeById(EXAMPLE_CARTRIDGE_ID), ...CARTRIDGES.filter(other => other.id !== EXAMPLE_CARTRIDGE_ID)]) {
+      cards.set(cartridge.id, await buildDopeCard(engine, cartridge, CARD_CLICK_MIL));
+      this.built.set(new Map(cards));
+    }
   }
 }

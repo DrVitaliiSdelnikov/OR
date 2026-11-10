@@ -1,4 +1,5 @@
 import { COURSE, CourseResults, ExerciseDef } from '../../sim/course';
+import { schemeOf, TermScheme } from './schemes/scheme.model';
 import { CardsByCartridge, TERM_CARDS, TermCard, TermFormula, TEXTBOOK_CHAPTERS, TextbookChapter } from './terms';
 
 const INTRO_ID = '00';
@@ -18,6 +19,7 @@ export interface TermSheetView {
   term: string;
   chapter: TextbookChapter;
   phrase: string;
+  scheme: TermScheme | null;
   formula: TermFormula | null;
   example: string | null;
   whereLines: readonly string[];
@@ -49,6 +51,7 @@ export function termSheetView(term: string, opened: ReadonlySet<string>, cards: 
     term: card.term,
     chapter: card.chapter,
     phrase: card.phrase,
+    scheme: schemeOf(card.term),
     formula: card.formula ?? null,
     example: card.example?.(cards) ?? null,
     whereLines: [...exerciseLines(term), ...card.places],

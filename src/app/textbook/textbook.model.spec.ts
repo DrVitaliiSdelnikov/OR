@@ -124,6 +124,13 @@ describe('карточка термина', () => {
     expect(termSheetView('формула тысячной', opened, null).example).toContain('= 400 м');
   });
 
+  it('схема: у «правила часов» — часы ветра, у «клика» — нет', () => {
+    const opened = openedTerms(results([], false), true);
+    expect(termSheetView('правило часов', opened, null).scheme).toBe('wind-clock');
+    expect(termSheetView('MOA', opened, null).scheme).toBe('reticle');
+    expect(termSheetView('клик', opened, null).scheme).toBeNull();
+  });
+
   it('где встречается: впервые — упражнение из курса, дальше — места в игре', () => {
     const opened = openedTerms(results([], false), true);
     const dope = termSheetView('ДОПЕ', opened, null);

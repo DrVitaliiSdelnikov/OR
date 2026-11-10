@@ -90,7 +90,7 @@
 | app · подсказки инструктора: рация, обучение 01–03, забытый фактор (A6.4) | [specs/app-instructor.md](specs/app-instructor.md) | реализовано, слито в `master` 9.11 |
 | app · сцена в стекле из фото, пределы наведения (A9.1) | [specs/app-scene-photos.md](specs/app-scene-photos.md) | реализовано, слито в `master` 9.11 |
 | app · звук и вибрация по TOKENS (A4) | [specs/app-feedback.md](specs/app-feedback.md) | реализовано, слито в `master` 9.11 |
-| app · учебник: ссылки, схемы, песочница (A7.3b) | [specs/app-textbook-extras.md](specs/app-textbook-extras.md) | b1 ссылки — слито в `master` 9.11; b2, b3 — впереди |
+| app · учебник: ссылки, схемы, песочница (A7.3b) | [specs/app-textbook-extras.md](specs/app-textbook-extras.md) | b1 ссылки — слито в `master` 9.11; b2 схемы — 10.11; b3 — впереди |
 | app · учебник курсанта (A7.3) | [specs/app-textbook.md](specs/app-textbook.md) | реализовано, слито в `master` 9.11 |
 | app · журнал стрелка (A7.2) | [specs/app-journal.md](specs/app-journal.md) | реализовано, слито в `master` 9.11 |
 | app · свободная игра (A7.1) | [specs/app-free-play.md](specs/app-free-play.md) | реализовано, слито в `master` 9.11 |
