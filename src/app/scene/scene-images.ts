@@ -1,4 +1,4 @@
-import { HIT_MARK_COUNT } from './scene.model';
+import { FLAG_PHOTOS, HIT_MARK_COUNT } from './scene.model';
 
 export interface SceneImages {
   sky: HTMLImageElement;
@@ -7,6 +7,7 @@ export interface SceneImages {
   gong: HTMLImageElement;
   grass: HTMLImageElement;
   hitMarks: HTMLImageElement[];
+  flags: HTMLImageElement[];
 }
 
 const SCENE_DIR = 'scene';
@@ -30,8 +31,9 @@ export function loadSceneImages(): Promise<SceneImages | null> {
     loadImage('gong'),
     loadImage('grass'),
     Promise.all(Array.from({ length: HIT_MARK_COUNT }, (_, index) => loadImage(`mark-${index}`))),
+    Promise.all(FLAG_PHOTOS.map(photo => loadImage(`flag-${photo.stateDeg}`))),
   ])
-    .then(([sky, berm, ground, gong, grass, hitMarks]) => ({ sky, berm, ground, gong, grass, hitMarks }))
+    .then(([sky, berm, ground, gong, grass, hitMarks, flags]) => ({ sky, berm, ground, gong, grass, hitMarks, flags }))
     .catch(() => null);
   return pending;
 }

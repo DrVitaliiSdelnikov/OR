@@ -1,3 +1,4 @@
+import { flagAngleDeg } from '../../core/content';
 import { Correction } from '../../core/types';
 import { Vector2 } from '../../sim/noise';
 import { AimLimits } from '../../sim/scope-session';
@@ -41,6 +42,25 @@ const GRASS_IMAGE_HEIGHT_MIL = 18;
 const GRASS_LEAN_PT_PER_MPS = 1.6;
 const GRASS_GUST_SHARE = 0.35;
 const GRASS_GUST_RATE = 1.7;
+const FLAG_ATTACHED_EDGE_M = 0.6;
+const FLAG_FLUTTER_DEG = 3;
+const FLAG_FLUTTER_FULL_MPS = 3;
+const FLAG_FLUTTER_RATE_PER_MPS = 0.6;
+
+// Measured by tools/scene/prepare.py flags; the attach point is the cloth's top corner at the pole.
+export const FLAG_PHOTOS = [
+  { stateDeg: 25, width: 306, height: 397, attachPx: { x: 0, y: 4 }, attachedEdgePx: 344 },
+  { stateDeg: 45, width: 261, height: 334, attachPx: { x: 0, y: 4 }, attachedEdgePx: 268 },
+  { stateDeg: 65, width: 414, height: 325, attachPx: { x: 0, y: 4 }, attachedEdgePx: 198 },
+  { stateDeg: 80, width: 406, height: 261, attachPx: { x: 0, y: 4 }, attachedEdgePx: 240 },
+] as const;
+
+export interface FlagSprite {
+  photoIndex: number;
+  liftDeg: number;
+  ptPerPx: number;
+  side: 1 | -1;
+}
 
 function milsAt(metres: number, distanceM: number): number {
   return (metres / distanceM) * 1000;
@@ -142,3 +162,15 @@ export function aimLimitsMil(distanceM: number, targetRadiusMil: number, magnifi
   };
 }
 
+export function flagSprite(lateralWindMps: number, flagDistanceM: number, ptPerMil: number, timeS: number): FlagSprite {
+  const angleDeg = flagAngleDeg(lateralWindMps);
+  const photoIndex = FLAG_PHOTOS.reduce((best, photo, index) => (Math.abs(photo.stateDeg - angleDeg) < Math.abs(FLAG_PHOTOS[best].stateDeg - angleDeg) ? index : best), 0);
+  const windMps = Math.abs(lateralWindMps);
+  const flutterDeg = FLAG_FLUTTER_DEG * Math.min(1, windMps / FLAG_FLUTTER_FULL_MPS) * Math.sin(timeS * (1 + windMps * FLAG_FLUTTER_RATE_PER_MPS));
+  return {
+    photoIndex,
+    liftDeg: angleDeg - FLAG_PHOTOS[photoIndex].stateDeg + flutterDeg,
+    ptPerPx: (milsAt(FLAG_ATTACHED_EDGE_M, flagDistanceM) * ptPerMil) / FLAG_PHOTOS[photoIndex].attachedEdgePx,
+    side: lateralWindMps >= 0 ? 1 : -1,
+  };
+}

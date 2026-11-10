@@ -17,6 +17,10 @@ FILES = {
     'ground': 'Gemini_Generated_Image_e87ywue87ywue87y(3).jpg',
     'gong': 'Gemini_Generated_Image_e87ywue87ywue87y(1).jpg',
     'marks': 'Gemini_Generated_Image_1iaghz1iaghz1iag(1).jpg',
+    'flag-25': 'A_single_rectangular_red-orange_range_wind_flag_of_heavy_fabr_71c7720c-eac5-4399-a0cf-cbbacee71a50_7.png',
+    'flag-45': 'a_single_rectangular_red-orange_range_wind_flag_of_heavy_fabr_597a9c04-d710-4404-bc5c-edbc20b552a0_5.png',
+    'flag-65': 'A_single_rectangular_red-orange_range_wind_flag_of_heavy_fab_7a8712ff-9938-4de6-b284-9cf2a80e3a78_23.png',
+    'flag-80': 'u8761437615_a_single_rectangular_red-orange_range_wind_flag_o_91a4f9bf-a105-4e0f-87cd-1a7a802958a1_0.png',
     'grass': 'dry_grass_stems_and_wheat_seed_heads_rising_from_the_bottom_e_15045f66-683b-45d8-91a5-82ababb012de_1.png',
 }
 WEBP_QUALITY = 86
@@ -223,6 +227,62 @@ def prepare_grass():
 
 
 
+FLAG_STATES_DEG = (25, 45, 65, 80)
+FLAG_POLE_SEARCH_SHARE = 0.4
+FLAG_POLE_DARK_SHARE = 0.4
+FLAG_POLE_MAX_BRIGHTNESS = 330
+FLAG_POLE_ERASE_MARGIN_PX = 3
+FLAG_EDGE_BAND_PX = 14
+FLAG_CROP_MARGIN_PX = 4
+
+
+def is_cloth(pixel):
+    red, green, blue = pixel[:3]
+    return red > 120 and red > green * 1.5 and red > blue * 1.5
+
+
+def is_pole(pixel):
+    return pixel[3] > 128 and not is_cloth(pixel) and sum(pixel[:3]) < FLAG_POLE_MAX_BRIGHTNESS
+
+
+def pole_columns(image):
+    pixels = image.load()
+    search_width = int(image.width * FLAG_POLE_SEARCH_SHARE)
+    columns = [x for x in range(search_width) if sum(is_pole(pixels[x, y]) for y in range(image.height)) >= image.height * FLAG_POLE_DARK_SHARE]
+    return min(columns), max(columns)
+
+
+def erase_pole(image, pole_left, pole_right):
+    pixels = image.load()
+    for x in range(max(0, pole_left - FLAG_POLE_ERASE_MARGIN_PX), min(image.width, pole_right + FLAG_POLE_ERASE_MARGIN_PX + 1)):
+        for y in range(image.height):
+            if not is_cloth(pixels[x, y]):
+                pixels[x, y] = (0, 0, 0, 0)
+
+
+def prepare_flag(state_deg):
+    flag = backdrop_to_alpha(load(f'flag-{state_deg}'))
+    pole_left, pole_right = pole_columns(flag)
+    erase_pole(flag, pole_left, pole_right)
+    pixels = flag.load()
+    cloth = [(x, y) for y in range(flag.height) for x in range(flag.width) if pixels[x, y][3] > 0 and is_cloth(pixels[x, y])]
+    cloth_left = min(x for x, _ in cloth)
+    edge_rows = [y for x, y in cloth if x <= cloth_left + FLAG_EDGE_BAND_PX]
+    attach_y = min(edge_rows)
+    left = cloth_left
+    top = max(0, attach_y - FLAG_CROP_MARGIN_PX)
+    right = min(flag.width, max(x for x, _ in cloth) + FLAG_CROP_MARGIN_PX)
+    bottom = min(flag.height, max(y for _, y in cloth) + FLAG_CROP_MARGIN_PX)
+    cropped = flag.crop((left, top, right, bottom))
+    save(cropped, f'flag-{state_deg}')
+    print(f"flag-{state_deg}: {{ stateDeg: {state_deg}, width: {cropped.width}, height: {cropped.height}, attachPx: {{ x: 0, y: {attach_y - top} }}, attachedEdgePx: {max(edge_rows) - attach_y} }}")
+
+
+def prepare_flags():
+    for state_deg in FLAG_STATES_DEG:
+        prepare_flag(state_deg)
+
+
 LAYERS = {
     'sky': lambda: prepare_sky(),
     'berm': lambda: prepare_berm(),
@@ -230,6 +290,7 @@ LAYERS = {
     'gong': lambda: prepare_gong(),
     'marks': lambda: prepare_marks(),
     'grass': lambda: prepare_grass(),
+    'flags': lambda: prepare_flags(),
 }
 
 

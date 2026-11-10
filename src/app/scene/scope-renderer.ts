@@ -4,7 +4,7 @@ import { Vector2 } from '../../sim/noise';
 import { reticleMarks } from '../../sim/reticle';
 import { EYEPIECE_RADIUS_PT, ScopeModel } from '../../sim/scope-model';
 import { loadSceneImages, SceneImages } from './scene-images';
-import { bermLayout, flagFootY, gongFrame, grassFrame, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, isFlagBeforeBerm, skyFrame, tileXs } from './scene.model';
+import { bermLayout, FLAG_PHOTOS, flagFootY, FlagSprite, flagSprite, gongFrame, grassFrame, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, isFlagBeforeBerm, skyFrame, tileXs } from './scene.model';
 
 export interface FlagView {
   distanceM: number;
@@ -72,7 +72,7 @@ export class ScopeRenderer {
       this.drawScene(frame, targetX, targetY);
       this.drawTarget(frame, targetX, targetY);
     }
-    this.drawFlags(frame, targetX, targetY, images !== null);
+    this.drawFlags(frame, targetX, targetY, images);
     if (images) {
       this.drawNearGrass(images, frame, targetX, targetY);
     }
@@ -171,8 +171,9 @@ export class ScopeRenderer {
     context.fill();
   }
 
-  private drawFlags(frame: SceneFrame, targetX: number, targetY: number, isPhotoScene: boolean): void {
+  private drawFlags(frame: SceneFrame, targetX: number, targetY: number, images: SceneImages | null): void {
     const context = this.context;
+    const isPhotoScene = images !== null;
     const horizon = horizonY(groundLineY({ x: targetX, y: targetY }, frame.targetRadiusMil, frame.ptPerMil), frame.targetDistanceM, frame.ptPerMil);
     for (const flag of frame.flags) {
       if (isPhotoScene && !isFlagBeforeBerm(flag.distanceM, frame.targetDistanceM)) {
@@ -189,6 +190,10 @@ export class ScopeRenderer {
       context.moveTo(poleX, poleBottomY);
       context.lineTo(poleX, poleTopY);
       context.stroke();
+      if (images) {
+        this.drawFlagPhoto(images, poleX, poleTopY, flagSprite(flag.lateralWindMps, flag.distanceM, frame.ptPerMil, frame.timeS));
+        continue;
+      }
       const angle = (flagAngleDeg(flag.lateralWindMps) * Math.PI) / 180;
       const side = flag.lateralWindMps >= 0 ? 1 : -1;
       const lengthPt = poleHeightPt * 0.45;
@@ -200,6 +205,17 @@ export class ScopeRenderer {
       context.closePath();
       context.fill();
     }
+  }
+
+  private drawFlagPhoto(images: SceneImages, poleX: number, poleTopY: number, sprite: FlagSprite): void {
+    const photo = FLAG_PHOTOS[sprite.photoIndex];
+    const context = this.context;
+    context.save();
+    context.translate(poleX, poleTopY);
+    context.scale(sprite.side, 1);
+    context.rotate((-sprite.liftDeg * Math.PI) / 180);
+    context.drawImage(images.flags[sprite.photoIndex], -photo.attachPx.x * sprite.ptPerPx, -photo.attachPx.y * sprite.ptPerPx, photo.width * sprite.ptPerPx, photo.height * sprite.ptPerPx);
+    context.restore();
   }
 
   private drawMarks(frame: SceneFrame, targetX: number, targetY: number, images: SceneImages | null): void {

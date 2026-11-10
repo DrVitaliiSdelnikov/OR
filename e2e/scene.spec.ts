@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { seedProgress } from './helpers';
 
-const SCENE_FILES = ['sky', 'berm', 'ground', 'gong', 'grass', 'mark-0', 'mark-1', 'mark-2', 'mark-3', 'mark-4'];
+const SCENE_FILES = ['sky', 'berm', 'ground', 'gong', 'grass', 'mark-0', 'mark-1', 'mark-2', 'mark-3', 'mark-4', 'flag-25', 'flag-45', 'flag-65', 'flag-80'];
 
-test('сцена в стекле: фото неба, вала, земли, гонга, травы и отметин загружаются', async ({ page }) => {
+test('сцена в стекле: фото неба, вала, земли, гонга, травы, отметин и флажков загружаются', async ({ page }) => {
   const loaded = new Set<string>();
   page.on('response', response => {
     const match = /\/scene\/([\w-]+)\.webp$/.exec(response.url());

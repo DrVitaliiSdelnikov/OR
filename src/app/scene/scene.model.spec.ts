@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ptPerMil } from '../../sim/scope-model';
-import { aimLimitsMil, bermLayout, flagFootY, gongFrame, grassFrame, isFlagBeforeBerm, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, PHOTO, skyFrame } from './scene.model';
+import { FLAG_DEG_PER_MPS } from '../../core/content';
+import { aimLimitsMil, bermLayout, FLAG_PHOTOS, flagFootY, flagSprite, gongFrame, grassFrame, isFlagBeforeBerm, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, PHOTO, skyFrame } from './scene.model';
 
 const GLASS_PT = 276;
 const AT_8X = ptPerMil(8);
@@ -145,3 +146,44 @@ describe('scene layout — how far the aim may go', () => {
   });
 });
 
+
+describe('scene layout — the flag photo', () => {
+  const at200 = (metres: number) => (metres / 200) * 1000 * AT_8X;
+
+  it('picks the nearest photographed state and lifts the cloth by the rest', () => {
+    const cases: [number, number, number][] = [
+      [0, 25, -25],
+      [30, 25, 5],
+      [50, 45, 5],
+      [58, 65, -7],
+      [80, 80, 0],
+    ];
+    for (const [angleDeg, stateDeg, liftDeg] of cases) {
+      const sprite = flagSprite(angleDeg / FLAG_DEG_PER_MPS, 200, AT_8X, 0);
+      expect(FLAG_PHOTOS[sprite.photoIndex].stateDeg, `${angleDeg}°`).toBe(stateDeg);
+      expect(sprite.liftDeg, `${angleDeg}°`).toBeCloseTo(liftDeg, 6);
+    }
+  });
+
+  it('the attached edge is 0.6 m at the flag distance, whatever the photo', () => {
+    for (const windMps of [1, 5, 9]) {
+      const sprite = flagSprite(windMps, 200, AT_8X, 0);
+      expect(sprite.ptPerPx * FLAG_PHOTOS[sprite.photoIndex].attachedEdgePx).toBeCloseTo(at200(0.6), 6);
+    }
+  });
+
+  it('wind from the right mirrors the cloth to the left', () => {
+    expect(flagSprite(4, 200, AT_8X, 0).side).toBe(1);
+    expect(flagSprite(-4, 200, AT_8X, 0).side).toBe(-1);
+  });
+
+  it('calm air hangs still; wind flutters the cloth by no more than 3°', () => {
+    for (const timeS of [0, 0.4, 1.3, 2.9]) {
+      expect(flagSprite(0, 200, AT_8X, timeS).liftDeg).toBe(-25);
+      const windy = flagSprite(5, 200, AT_8X, timeS);
+      expect(Math.abs(windy.liftDeg - (45 - 45))).toBeLessThanOrEqual(3);
+    }
+    const lifts = [0.2, 0.6, 1.0].map(timeS => flagSprite(5, 200, AT_8X, timeS).liftDeg);
+    expect(new Set(lifts.map(lift => lift.toFixed(3))).size).toBeGreaterThan(1);
+  });
+});
