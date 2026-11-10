@@ -29,6 +29,8 @@ import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
 import { ReviewSheetComponent } from '../review/review-sheet.component';
 import { ResultSheetComponent } from '../result/result-sheet.component';
+import { sandboxOf, sandboxSettings, sandboxTeaching } from '../textbook/sandbox.model';
+import { TermSheetService } from '../textbook/term-sheet.service';
 import { resultSheet, ResultSheetView } from '../result/result.model';
 import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
@@ -41,6 +43,7 @@ const UI_REFRESH_S = 0.1;
 const RADIO_MS = 4000;
 const FREE_PLAY_ID = 'free';
 const INSTRUCTOR_ON = 'on';
+const SANDBOX_TITLE = 'Попробовать на прицеле';
 const STOP_BADGE_MS = 900;
 const PINCH_STEP_PT = 40;
 const RING_STEP_PT = 24;
@@ -79,20 +82,30 @@ const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
 export class PositionPage {
   readonly exerciseId = input.required<string>();
   readonly instructor = input<string>();
+  readonly sandboxTerm = input<string | undefined>(undefined, { alias: 'sandbox' });
 
   private readonly router = inject(Router);
   private readonly feedback = inject(FeedbackService);
   private readonly progress = inject(ProgressStore);
+  private readonly termSheet = inject(TermSheetService);
   private readonly engine = new BallisticsEngine();
   private readonly glassCanvas = viewChild<ElementRef<HTMLCanvasElement>>('glass');
   private readonly positionRoot = viewChild<ElementRef<HTMLElement>>('positionRoot');
 
   protected readonly isFreePlay = computed(() => this.exerciseId() === FREE_PLAY_ID);
-  protected readonly def = computed<PositionTask | null>(() =>
-    this.isFreePlay()
+  protected readonly sandbox = computed(() => {
+    const term = this.sandboxTerm();
+    return this.isFreePlay() && term ? sandboxOf(term) : null;
+  });
+  protected readonly def = computed<PositionTask | null>(() => {
+    const sandbox = this.sandbox();
+    if (sandbox) {
+      return { ...freePlayTask(sandboxSettings(sandbox)), title: SANDBOX_TITLE };
+    }
+    return this.isFreePlay()
       ? freePlayTask(allowedFreePlay(this.progress.freePlay(), courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks))
-      : (exerciseById(this.exerciseId() as ExerciseId) ?? null),
-  );
+      : (exerciseById(this.exerciseId() as ExerciseId) ?? null);
+  });
   protected readonly session = signal<PositionSession | null>(null);
   protected readonly uiTick = signal(0);
   protected readonly radio = signal<RadioLine | null>(null);
@@ -118,6 +131,10 @@ export class PositionPage {
     const session = this.session();
     if (!session) {
       return null;
+    }
+    const sandbox = this.sandbox();
+    if (sandbox) {
+      return this.isTeachingSkipped() ? null : sandboxTeaching(sandbox, this.acknowledgedSteps().size > 0);
     }
     const factor = this.guardedFactor();
     if (factor && !session.notebook.factorsOn[factor]) {
@@ -149,7 +166,7 @@ export class PositionPage {
     const distanceText = notebook.context.target.distanceM === null ? 'дистанция неизвестна' : `${notebook.context.target.distanceM} м`;
     return {
       title: isExerciseTask(session.def) ? `Упр. ${session.def.id} · ${session.def.title}` : session.def.title,
-      instructorLine: this.isFreePlay() && this.progress.freePlay().isInstructorNear ? instructorLineText(session.trueCorrection(this.scenarioTimeS(session))) : null,
+      instructorLine: this.isFreePlay() && !this.sandbox() && this.progress.freePlay().isInstructorNear ? instructorLineText(session.trueCorrection(this.scenarioTimeS(session))) : null,
       subtitle: `рубеж · ${distanceText} · цель ${session.firingLine.targetIndex + 1} / ${session.setup.targets.length}`,
       wind: wind ? [`${wind.speedMps.toFixed(1)} м/с`, clockText(wind.clock)] : [session.def.conditions.windScale === 0 ? 'штиль' : '—'],
       isWindUnfilled: !tabs(notebook).wind && session.def.conditions.windScale !== 0,
@@ -465,6 +482,11 @@ export class PositionPage {
   protected leave(): void {
     this.isLeaveConfirmOpen.set(false);
     this.saveSeries();
+    const sandboxTerm = this.sandbox() ? this.sandboxTerm() : undefined;
+    if (sandboxTerm) {
+      void this.router.navigate(['/textbook']).then(() => this.termSheet.open(sandboxTerm));
+      return;
+    }
     void this.router.navigate(this.isFreePlay() ? ['/free'] : ['/course', this.exerciseId()]);
   }
 
@@ -563,7 +585,7 @@ export class PositionPage {
 
   private saveSeries(): void {
     const session = this.session();
-    if (!session || session === this.savedSeriesSession) {
+    if (!session || session === this.savedSeriesSession || this.sandbox()) {
       return;
     }
     const series = journalSeries({

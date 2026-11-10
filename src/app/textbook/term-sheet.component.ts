@@ -1,9 +1,14 @@
 import { afterNextRender, Component, computed, effect, ElementRef, inject, input, linkedSignal, output, viewChild } from '@angular/core';
+import { Router } from '@angular/router';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
+import { sandboxOf } from './sandbox.model';
 import { TermSchemeComponent } from './schemes/term-scheme.component';
 import { TextbookCards } from './textbook-cards.service';
 import { openedTerms, termSheetView } from './textbook.model';
+
+const TEXTBOOK_URL = '/textbook';
+const FREE_PLAY_POSITION = ['/position', 'free'];
 
 @Component({
   selector: 'or-term-sheet',
@@ -56,7 +61,12 @@ import { openedTerms, termSheetView } from './textbook.model';
           </div>
         }
       </div>
-      <button class="close mono" type="button" (click)="close.emit()" data-test="term-close">Закрыть</button>
+      <div class="actions">
+        @if (canTry()) {
+          <button class="try mono" type="button" (click)="tryOnScope()" data-test="term-try">Попробовать на прицеле</button>
+        }
+        <button class="close mono" type="button" (click)="close.emit()" data-test="term-close">Закрыть</button>
+      </div>
     </section>
   `,
   styles: `
@@ -77,6 +87,8 @@ import { openedTerms, termSheetView } from './textbook.model';
     .link, .locked { min-height: var(--touch-min); padding: 0 var(--space-3); border-radius: var(--radius-paper); font: 500 var(--type-label) / 16px var(--font-mono); }
     .link { border: 1.5px solid var(--paper-ink); background: transparent; color: var(--paper-ink); }
     .locked { display: inline-grid; place-items: center; border: 1.5px dashed var(--paper-graphite); color: var(--paper-graphite); }
+    .actions { display: flex; flex-direction: column; gap: var(--space-2); }
+    .try { min-height: var(--touch-min); border: none; border-radius: var(--radius-device); background: var(--paper-ink); color: var(--paper-bg); font: 700 var(--type-label) / 16px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; }
     .close { min-height: var(--touch-min); border: 1.5px solid var(--paper-graphite); border-radius: var(--radius-device); background: transparent; color: var(--paper-graphite); font: 700 var(--type-label) / 16px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; }
   `,
 })
@@ -87,11 +99,14 @@ export class TermSheetComponent {
   private readonly progress = inject(ProgressStore);
   private readonly textbookCards = inject(TextbookCards);
   private readonly feedback = inject(FeedbackService);
+  private readonly router = inject(Router);
+  private readonly isOverTextbook = this.router.url.startsWith(TEXTBOOK_URL);
   private readonly body = viewChild.required<ElementRef<HTMLElement>>('body');
   private readonly openingClick = afterNextRender(() => this.feedback.emit('sheet'));
 
   protected readonly term = linkedSignal(() => this.openTerm());
   protected readonly cards = this.textbookCards.cards;
+  protected readonly canTry = computed(() => this.isOverTextbook && sandboxOf(this.term()) !== null);
   protected readonly view = computed(() =>
     termSheetView(this.term(), openedTerms(this.progress.course(), this.progress.settings().isEverythingUnlocked), this.textbookCards.cards()),
   );
@@ -102,5 +117,11 @@ export class TermSheetComponent {
       this.term();
       this.body().nativeElement.scrollTop = 0;
     });
+  }
+
+  protected tryOnScope(): void {
+    const term = this.term();
+    this.close.emit();
+    void this.router.navigate(FREE_PLAY_POSITION, { queryParams: { sandbox: term } });
   }
 }

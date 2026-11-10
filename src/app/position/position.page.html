@@ -90,7 +90,7 @@
         }
       </div>
       @if (state) {
-        <div class="ring" (pointerdown)="ringDown($event)" (pointermove)="ringMove($event)" (pointerup)="ringUp()" (pointercancel)="ringUp()" data-test="zoom-ring">
+        <div class="ring" (pointerdown)="ringDown($event)" (pointermove)="ringMove($event)" (pointerup)="ringUp()" (pointercancel)="ringUp()" data-test="zoom-ring" data-hint="zoom">
           <button data-own-feedback class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(-1)" aria-label="Уменьшить кратность" data-test="zoom-out">−</button>
           <span class="ring-value mono" data-test="magnification">{{ state.magnification }}×</span>
           <button data-own-feedback class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(1)" aria-label="Увеличить кратность" data-test="zoom-in">+</button>

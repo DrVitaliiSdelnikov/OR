@@ -57,4 +57,11 @@ await schemeShot('сетка', '58-scheme-reticle', async page => {
 await schemeShot('энергия', '59-scheme-cartridges');
 await schemeShot('СТП', '60-scheme-group');
 
+await unlocked.locator('[data-test="term-close"]').click();
+await openTerm(unlocked, 'клик');
+await unlocked.locator('[data-test="term-try"]').click();
+await unlocked.locator('[data-test="teaching-text"]').waitFor();
+await unlocked.waitForTimeout(800);
+await unlocked.screenshot({ path: `${OUTPUT_DIR}/61-sandbox-click.png` });
+
 await browser.close();
