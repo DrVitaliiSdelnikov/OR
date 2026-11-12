@@ -1,6 +1,7 @@
 import { Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
+import { NotebookMode } from '../../core/exercise-scoring';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { playability } from '../position/position.model';
 import { ProgressStore } from '../services/progress.store';
@@ -64,7 +65,15 @@ const GROUND_Y = 66;
                 <dt>Условия</dt>
                 <dd data-test="sheet-atmosphere">{{ briefing.facts.atmosphere }}</dd>
                 <dt>Режим</dt>
-                <dd data-test="sheet-mode">{{ briefing.mode }}</dd>
+                @if (briefing.modeOptions; as options) {
+                  <dd class="mode-choice" role="radiogroup" aria-label="Режим">
+                    @for (option of options; track option.mode) {
+                      <button class="mode-option mono" type="button" role="radio" [attr.aria-checked]="chosenMode() === option.mode" [class.chosen]="chosenMode() === option.mode" (click)="chosenMode.set(option.mode)" [attr.data-test]="'sheet-mode-' + option.mode">{{ option.label }}</button>
+                    }
+                  </dd>
+                } @else {
+                  <dd data-test="sheet-mode">{{ briefing.mode }}</dd>
+                }
               </dl>
 
               <div class="section-title mono">Зачёт</div>
@@ -133,6 +142,9 @@ const GROUND_Y = 66;
     .class-3 { background: var(--paper-stamp-bronze); }
     .novelty { font: 700 var(--type-label) / 18px var(--font-text); }
     .best { font: 500 var(--type-label) / 18px var(--font-mono); color: var(--paper-graphite); }
+    .mode-choice { display: flex; flex-wrap: wrap; gap: var(--space-1); margin: 0; }
+    .mode-option { min-height: var(--touch-min); padding: 0 var(--space-2); border: 1.5px solid var(--paper-graphite); border-radius: var(--radius-device); background: transparent; color: var(--paper-ink); font: 500 var(--type-label) / 16px var(--font-mono); }
+    .mode-option.chosen { border-color: var(--paper-ink); background: var(--paper-ink); color: var(--paper-bg); font-weight: 700; }
     .instructor { --track-background: var(--paper-grid); --track-background-checked: var(--paper-stamp-green); --handle-background: var(--paper-bg); --handle-background-checked: var(--paper-bg); min-height: var(--touch-min); color: var(--paper-ink); font: 500 var(--type-label) / 18px var(--font-mono); }
     .order-stamp { align-self: flex-end; padding: 2px 10px; border: 2.5px solid var(--paper-red-pencil); border-radius: 3px; color: var(--paper-red-pencil); font: 700 var(--type-label) / 18px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; transform: rotate(-4deg); }
     .terms { font: 500 var(--type-label) / 18px var(--font-mono); color: var(--device-text-muted); }
@@ -159,6 +171,7 @@ export class ExerciseSheetPage {
     const def = this.def();
     return def ? briefingCard(def, this.progress.course()) : null;
   });
+  protected readonly chosenMode = linkedSignal<NotebookMode | null>(() => this.def()?.notebookMode ?? null);
   protected readonly isInstructorOn = linkedSignal(() => this.card()?.instructor?.isDefaultOn ?? false);
   protected readonly availability = computed(() => {
     const def = this.def();
@@ -175,6 +188,9 @@ export class ExerciseSheetPage {
       return;
     }
     const isWithInstructor = this.card()?.instructor !== null && this.isInstructorOn();
-    void this.router.navigate(['/position', this.exerciseId()], isWithInstructor ? { queryParams: { instructor: 'on' } } : {});
+    const chosenMode = this.chosenMode();
+    const isModeChosen = this.card()?.modeOptions !== null && chosenMode !== null && chosenMode !== this.def()?.notebookMode;
+    const queryParams = { ...(isWithInstructor ? { instructor: 'on' } : {}), ...(isModeChosen ? { mode: chosenMode } : {}) };
+    void this.router.navigate(['/position', this.exerciseId()], Object.keys(queryParams).length > 0 ? { queryParams } : {});
   }
 }

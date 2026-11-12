@@ -6,9 +6,10 @@ import { dopeRowAt } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { impactSoundDelayS } from '../../core/field';
 import { lateralWindMps, windAt } from '../../core/scenario';
+import { NotebookMode } from '../../core/exercise-scoring';
 import { Correction } from '../../core/types';
 import { BoltEvent } from '../../sim/bolt';
-import { courseProgress, ExerciseDef, exerciseById, ExerciseId, isExerciseTask, PositionTask } from '../../sim/course';
+import { courseProgress, ExerciseDef, exerciseById, ExerciseId, isExerciseTask, PositionTask, withChosenMode } from '../../sim/course';
 import { allowedFreePlay, freePlayTask } from '../../sim/free-play';
 import { instructorLineText } from '../free/free-play.model';
 import { factorContributions, forgottenFactor, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
@@ -23,8 +24,8 @@ import { TeachingOverlayComponent } from '../instructor/teaching-overlay.compone
 import { forgottenFactorTeaching, isFactorGuarded, nextTeaching, teachingScript, TeachingView } from '../instructor/teaching.model';
 import { NotebookSheetComponent } from '../notebook/notebook-sheet.component';
 import { CARTRIDGE_LETTERS, clockText, NotebookTab } from '../notebook/notebook.model';
-import { aimLimitsMil } from '../scene/scene.model';
-import { ScopeRenderer } from '../scene/scope-renderer';
+import { aimLimitsMil, flagIndexAt, flagPole } from '../scene/scene.model';
+import { GLASS_SIZE_PT, ScopeRenderer } from '../scene/scope-renderer';
 import { BackStackService, backLayer } from '../services/back-stack.service';
 import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
@@ -36,7 +37,7 @@ import { resultSheet, ResultSheetView } from '../result/result.model';
 import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
-import { breathRing, correctionCells, drumCounterText, markerTarget, notebookSheetTopPt, playability, pressureText, TurretAxis } from './position.model';
+import { breathRing, correctionCells, drumCounterText, flagReadingText, isGlassTap, markerTarget, notebookSheetTopPt, playability, pressureText, TurretAxis } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
 
 const MARKS_ON_GLASS = 8;
@@ -46,6 +47,7 @@ const FREE_PLAY_ID = 'free';
 const INSTRUCTOR_ON = 'on';
 const SANDBOX_TITLE = 'Попробовать на прицеле';
 const STOP_BADGE_MS = 900;
+const FLAG_READING_SHOWN_MS = 2000;
 const PINCH_STEP_PT = 40;
 const RING_STEP_PT = 24;
 const ZONE_TO_GLASS = 0.5;
@@ -84,6 +86,7 @@ const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
 export class PositionPage implements ViewWillEnter, ViewWillLeave {
   readonly exerciseId = input.required<string>();
   readonly instructor = input<string>();
+  readonly mode = input<NotebookMode>();
   readonly sandboxTerm = input<string | undefined>(undefined, { alias: 'sandbox' });
 
   private readonly router = inject(Router);
@@ -107,9 +110,14 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     }
     return this.isFreePlay()
       ? freePlayTask(allowedFreePlay(this.progress.freePlay(), courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks))
-      : (exerciseById(this.exerciseId() as ExerciseId) ?? null);
+      : this.chosenModeDef(exerciseById(this.exerciseId() as ExerciseId) ?? null);
   });
   protected readonly session = signal<PositionSession | null>(null);
+
+  private chosenModeDef(def: ExerciseDef | null): ExerciseDef | null {
+    return def && withChosenMode(def, this.mode());
+  }
+
   protected readonly drumPtPerClick = computed(() => this.progress.settings().drumPtPerClick);
   protected readonly isLeftHanded = computed(() => this.progress.settings().isLeftHanded);
   protected readonly uiTick = signal(0);
@@ -229,6 +237,9 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   private savedSeriesKey = '';
   private aimLimitsSession: PositionSession | null = null;
   private readonly glassPointers = new Map<number, Vector2>();
+  private glassTouch: { pointerId: number; start: Vector2; startedAtMs: number } | null = null;
+  private flagReadingTimer: ReturnType<typeof setTimeout> | null = null;
+  protected readonly flagReadingShown = signal<string | null>(null);
   private pinchDistancePt: number | null = null;
   private ringDrag: { lastPt: number; remainderPt: number } | null = null;
 
@@ -546,6 +557,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     (event.target as Element).setPointerCapture?.(event.pointerId);
     this.glassPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     this.pinchDistancePt = this.glassPointers.size === 2 ? this.pointerSpreadPt() : null;
+    this.glassTouch = this.glassPointers.size === 1 ? { pointerId: event.pointerId, start: { x: event.clientX, y: event.clientY }, startedAtMs: event.timeStamp } : null;
   }
 
   protected glassMove(event: PointerEvent): void {
@@ -570,6 +582,36 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   protected glassUp(event: PointerEvent): void {
     this.glassPointers.delete(event.pointerId);
     this.pinchDistancePt = null;
+    const touch = this.glassTouch;
+    this.glassTouch = null;
+    if (event.type === 'pointerup' && touch?.pointerId === event.pointerId && isGlassTap(touch.start, { x: event.clientX, y: event.clientY }, event.timeStamp - touch.startedAtMs)) {
+      this.readFlagAt(event);
+    }
+  }
+
+  private readFlagAt(event: PointerEvent): void {
+    const session = this.session();
+    const canvas = this.glassCanvas()?.nativeElement;
+    if (!session || !canvas || !session.notebook.context.hasZones) {
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const scale = GLASS_SIZE_PT / rect.width;
+    const tapPt = { x: (event.clientX - rect.left) * scale, y: (event.clientY - rect.top) * scale };
+    const centre = GLASS_SIZE_PT / 2;
+    const target = { x: centre + session.scope.targetOffsetPt.x, y: centre + session.scope.targetOffsetPt.y };
+    const poles = session.scenario.flags.map(flag => flagPole(target, targetRadiusMrad(session.target), session.target.distanceM, flag.distanceM, session.scope.ptPerMil));
+    const flagIndex = flagIndexAt(tapPt, poles);
+    if (flagIndex === null) {
+      return;
+    }
+    const reading = session.readFlag(flagIndex, this.scenarioTimeS(session));
+    this.flagReadingShown.set(flagReadingText(session.scenario.flags[flagIndex].distanceM, reading));
+    if (this.flagReadingTimer) {
+      clearTimeout(this.flagReadingTimer);
+    }
+    this.flagReadingTimer = setTimeout(() => this.flagReadingShown.set(null), FLAG_READING_SHOWN_MS);
+    this.refresh();
   }
 
   protected ringDown(event: PointerEvent): void {
@@ -808,6 +850,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     | 'isCallMarked'
     | 'isDopeNoted'
     | 'openCalcStep'
+    | 'flagsRead'
   > {
     const notebook = session.notebook;
     const station = notebook.readings.station;
@@ -829,6 +872,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       isCallMarked: lastRecord?.isCallAccurate !== undefined,
       isDopeNoted: this.hasNotedDope(),
       openCalcStep: this.openCalcStep(),
+      flagsRead: notebook.readings.flagCrosswindsMps?.filter(crosswindMps => crosswindMps !== null).length ?? 0,
     };
   }
 

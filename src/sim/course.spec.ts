@@ -3,6 +3,7 @@ import { CheckVerdict } from '../core/calc-check';
 import { createScenario } from '../core/scenario';
 import { Correction } from '../core/types';
 import {
+  withChosenMode,
   COURSE,
   courseProgress,
   CourseResults,
@@ -579,5 +580,18 @@ describe('course progress', () => {
     expect(mergeBestClass(2, 0)).toBe(2);
     expect(mergeBestClass(0, 3)).toBe(3);
     expect(mergeBestClass(undefined, 0)).toBe(0);
+  });
+});
+
+describe('mode choice (12, A9.3a)', () => {
+  it('only 12 offers a choice: SAM easy or hard', () => {
+    expect(exerciseById('12')!.modeChoices).toEqual(['manual-easy', 'manual-hard']);
+    expect(exerciseById('09')!.modeChoices).toBeUndefined();
+  });
+
+  it('a chosen mode is taken only when the exercise offers it', () => {
+    expect(withChosenMode(exerciseById('12')!, 'manual-hard').notebookMode).toBe('manual-hard');
+    expect(withChosenMode(exerciseById('09')!, 'manual-hard').notebookMode).toBe('manual-easy');
+    expect(withChosenMode(exerciseById('12')!, undefined).notebookMode).toBe('manual-easy');
   });
 });

@@ -4,7 +4,7 @@ import { Vector2 } from '../../sim/noise';
 import { reticleMarks } from '../../sim/reticle';
 import { EYEPIECE_RADIUS_PT, ScopeModel } from '../../sim/scope-model';
 import { loadSceneImages, SceneImages } from './scene-images';
-import { bermLayout, FLAG_PHOTOS, flagFootY, FlagSprite, flagSprite, gongFrame, grassFrame, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, isFlagBeforeBerm, skyFrame, tileXs } from './scene.model';
+import { bermLayout, FLAG_PHOTOS, FLAG_POLE_M, FLAG_SIDE_OFFSET_M, flagPole, FlagSprite, flagSprite, gongFrame, grassFrame, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, skyFrame, tileXs } from './scene.model';
 
 export interface FlagView {
   distanceM: number;
@@ -24,7 +24,6 @@ export interface SceneFrame {
   timeS: number;
 }
 
-const FLAG_SIDE_OFFSET_M = 2.5;
 /** @deprecated Drawn-scene flag feet; the photo scene uses `flagFootY`. Remove in A9.2. */
 const FLAG_DROP_MIL: Record<number, number> = { 200: 6, 400: 3, 600: 1.5 };
 const DEVICE_PIXEL_RATIO = 2;
@@ -173,38 +172,44 @@ export class ScopeRenderer {
 
   private drawFlags(frame: SceneFrame, targetX: number, targetY: number, images: SceneImages | null): void {
     const context = this.context;
-    const isPhotoScene = images !== null;
-    const horizon = horizonY(groundLineY({ x: targetX, y: targetY }, frame.targetRadiusMil, frame.ptPerMil), frame.targetDistanceM, frame.ptPerMil);
     for (const flag of frame.flags) {
-      if (isPhotoScene && !isFlagBeforeBerm(flag.distanceM, frame.targetDistanceM)) {
+      const pole = images
+        ? flagPole({ x: targetX, y: targetY }, frame.targetRadiusMil, frame.targetDistanceM, flag.distanceM, frame.ptPerMil)
+        : this.drawnScenePole(flag, frame, targetX, targetY);
+      if (!pole) {
         continue;
       }
-      const sideMil = (FLAG_SIDE_OFFSET_M / flag.distanceM) * 1000;
-      const poleX = targetX - sideMil * frame.ptPerMil;
-      const poleBottomY = isPhotoScene ? flagFootY(horizon, flag.distanceM, frame.ptPerMil) : targetY + (FLAG_DROP_MIL[flag.distanceM] ?? 2) * frame.ptPerMil;
-      const poleHeightPt = (2.5 / flag.distanceM) * 1000 * frame.ptPerMil;
-      const poleTopY = poleBottomY - poleHeightPt;
       context.strokeStyle = '#3a3a3a';
-      context.lineWidth = Math.max(1, poleHeightPt * 0.03);
+      context.lineWidth = Math.max(1, (pole.bottomY - pole.topY) * 0.03);
       context.beginPath();
-      context.moveTo(poleX, poleBottomY);
-      context.lineTo(poleX, poleTopY);
+      context.moveTo(pole.x, pole.bottomY);
+      context.lineTo(pole.x, pole.topY);
       context.stroke();
       if (images) {
-        this.drawFlagPhoto(images, poleX, poleTopY, flagSprite(flag.lateralWindMps, flag.distanceM, frame.ptPerMil, frame.timeS));
+        this.drawFlagPhoto(images, pole.x, pole.topY, flagSprite(flag.lateralWindMps, flag.distanceM, frame.ptPerMil, frame.timeS));
         continue;
       }
       const angle = (flagAngleDeg(flag.lateralWindMps) * Math.PI) / 180;
       const side = flag.lateralWindMps >= 0 ? 1 : -1;
-      const lengthPt = poleHeightPt * 0.45;
+      const lengthPt = (pole.bottomY - pole.topY) * 0.45;
       context.fillStyle = '#e0482f';
       context.beginPath();
-      context.moveTo(poleX, poleTopY);
-      context.lineTo(poleX + side * Math.sin(angle) * lengthPt, poleTopY + Math.cos(angle) * lengthPt);
-      context.lineTo(poleX, poleTopY + lengthPt * 0.3);
+      context.moveTo(pole.x, pole.topY);
+      context.lineTo(pole.x + side * Math.sin(angle) * lengthPt, pole.topY + Math.cos(angle) * lengthPt);
+      context.lineTo(pole.x, pole.topY + lengthPt * 0.3);
       context.closePath();
       context.fill();
     }
+  }
+
+  /** @deprecated Drawn-scene flags until the photos load. Remove in A9.2. */
+  private drawnScenePole(flag: FlagView, frame: SceneFrame, targetX: number, targetY: number): { x: number; topY: number; bottomY: number } {
+    const bottomY = targetY + (FLAG_DROP_MIL[flag.distanceM] ?? 2) * frame.ptPerMil;
+    return {
+      x: targetX - (FLAG_SIDE_OFFSET_M / flag.distanceM) * 1000 * frame.ptPerMil,
+      topY: bottomY - (FLAG_POLE_M / flag.distanceM) * 1000 * frame.ptPerMil,
+      bottomY,
+    };
   }
 
   private drawFlagPhoto(images: SceneImages, poleX: number, poleTopY: number, sprite: FlagSprite): void {

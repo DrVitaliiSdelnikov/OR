@@ -33,4 +33,5 @@ export interface InstructorSnapshot {
   isCallMarked: boolean;
   isDopeNoted: boolean;
   openCalcStep: NotebookStepId | null;
+  flagsRead: number;
 }

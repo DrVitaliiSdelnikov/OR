@@ -5,6 +5,8 @@ import { NotebookTotal } from '../../sim/notebook';
 import { formatScopeValue, isHoldoverSettled, ScopeModel } from '../../sim/scope-model';
 import { BREATH_HOLD_MAX_S, BreathState } from '../../sim/sway';
 import { TurretProgress } from '../../sim/turret-target';
+import { flagCrosswindText } from '../notebook/notebook.model';
+import { FlagReading } from '../scene/scene.model';
 
 export type TurretAxis = 'elevation' | 'windage';
 
@@ -28,7 +30,7 @@ export interface Playability {
 type PositionFeature = 'intro' | 'pressure-trigger' | 'notebook-input' | 'manual-calc' | 'zone-flags' | 'moving-targets';
 
 // Что из позиции уже сделано; список растёт с A9.3 (флажки по трассе, движущиеся цели) и уходит, когда играбельно всё.
-const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['intro', 'pressure-trigger', 'notebook-input', 'manual-calc']);
+const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['intro', 'pressure-trigger', 'notebook-input', 'manual-calc', 'zone-flags']);
 const FEATURE_NAMES: Record<PositionFeature, string> = {
   intro: 'вводное',
   'pressure-trigger': 'спуск с давлением',
@@ -38,6 +40,8 @@ const FEATURE_NAMES: Record<PositionFeature, string> = {
   'moving-targets': 'движущиеся цели',
 };
 const PERCENT = 100;
+const TAP_MAX_TRAVEL_PT = 10;
+const TAP_MAX_DURATION_MS = 300;
 const FINGER_TO_MARKER = 1.5;
 const BOLT_TRACK_HOME: Vector2 = { x: 300, y: 110 };
 const BOLT_STEP_LABELS: Record<BoltStep, string> = { up: '1 ↑', back: '2 ← НАЗАД', forward: '3 → ВПЕРЁД', down: '4 ↓' };
@@ -181,4 +185,12 @@ export const NOTEBOOK_SHEET_MIN_HEIGHT_PT = 360;
 
 export function notebookSheetTopPt(belowCrosshairPt: number, viewportHeightPt: number): number {
   return Math.min(belowCrosshairPt, viewportHeightPt - NOTEBOOK_SHEET_MIN_HEIGHT_PT);
+}
+
+export function isGlassTap(start: Vector2, end: Vector2, durationMs: number): boolean {
+  return Math.hypot(end.x - start.x, end.y - start.y) <= TAP_MAX_TRAVEL_PT && durationMs <= TAP_MAX_DURATION_MS;
+}
+
+export function flagReadingText(flagDistanceM: number, reading: FlagReading): string {
+  return `${flagDistanceM} м · ${reading.angleDeg}° · ${reading.isAtLimit ? '≥ ' : ''}${flagCrosswindText(reading.crosswindMps)}`;
 }

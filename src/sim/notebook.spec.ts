@@ -14,7 +14,9 @@ import {
   Notebook,
   NotebookContext,
   placeChip,
-  readFlags,
+  readFlag,
+  hideFlagsBehindBerm,
+  playerFlagCrosswindsMps,
   recordStation,
   recordStep,
   setSign,
@@ -60,6 +62,10 @@ function context(fields: Partial<NotebookContext> = {}): NotebookContext {
     seed: 7,
     ...fields,
   };
+}
+
+function readAllFlags(notebook: Notebook, crosswindsMps: readonly number[]): Notebook {
+  return crosswindsMps.reduce((next, crosswindMps, index) => readFlag(next, index, crosswindMps), notebook);
 }
 
 function station(fields: Partial<GaugeReading> = {}): GaugeReading {
@@ -147,7 +153,7 @@ describe('AUTO', () => {
   it('set К: the zone average 2.85 m/s gives ← 1.24, 12 clicks', () => {
     let notebook = createNotebook(context({ target: { sizeM: 0.5, distanceM: 600 }, hasZones: true }), 'auto');
     notebook = enterWind(notebook, 3, 9);
-    notebook = readFlags(notebook, [2, 4, 1]);
+    notebook = readAllFlags(notebook, [2, 4, 1]);
     const result = total(notebook);
     expect(result.rightMil).toBeCloseTo(-1.24, 2);
     expect(result.windageLeft.targetClicks).toBe(12);
@@ -401,7 +407,7 @@ describe('more cases', () => {
 
   it('zones with every wind from the right push the other way', () => {
     let notebook = createNotebook(context({ target: { sizeM: 0.5, distanceM: 600 }, hasZones: true }), 'auto');
-    notebook = readFlags(enterWind(notebook, 3, 3), [-2, -4, -1]);
+    notebook = readAllFlags(enterWind(notebook, 3, 3), [-2, -4, -1]);
     expect(total(notebook).rightMil).toBeCloseTo(1.24, 2);
   });
 
@@ -473,8 +479,44 @@ describe('formulaCorrectionMil (A6.2)', () => {
   it('with zones it averages the given flag crosswinds', () => {
     const zoned = context({ hasZones: true });
     const withFlags = formulaCorrectionMil(createNotebook(zoned, 'auto'), { ...truth, flagCrosswindsMps: [2, 2, 2] });
-    const reference = total(readFlags(enterWind(recordStation(createNotebook(zoned, 'auto'), station({ temperatureC: 5, pressureHpa: 1000 }), 3, 0), 4, 3), [2, 2, 2]));
+    const reference = total(readAllFlags(enterWind(recordStation(createNotebook(zoned, 'auto'), station({ temperatureC: 5, pressureHpa: 1000 }), 3, 0), 4, 3), [2, 2, 2]));
     expect(withFlags.rightMrad).toBeCloseTo(reference.rightMil, 9);
     expect(withFlags.rightMrad).not.toBeCloseTo(formulaCorrectionMil(createNotebook(zoned, 'auto'), truth).rightMrad, 3);
+  });
+});
+
+describe('flags along the range (A9.3a)', () => {
+  const zonedAt = (distanceM: number) => context({ target: { sizeM: 0.5, distanceM }, hasZones: true });
+
+  it('U3: a single flag reading goes to its own index, the others stay unread', () => {
+    const notebook = readFlag(createNotebook(zonedAt(600), 'auto'), 1, 3.9);
+    expect(notebook.readings.flagCrosswindsMps).toEqual([null, 3.9, null]);
+    expect(stepSheet(notebook, 'zones').chips.map(chip => chip.kind)).toContain('zone-400');
+    expect(stepSheet(notebook, 'zones').chips.map(chip => chip.kind)).not.toContain('zone-200');
+  });
+
+  it('U3: a new flag reading makes the recorded zones step stale', () => {
+    let notebook = readAllFlags(enterWind(createNotebook(zonedAt(600), 'manual-easy'), 3, 9), [2, 4, 1]);
+    notebook = solve(notebook, 'zones', ['zone-station', 'zone-200', 'zone-400', 'zone-600'], [2.85]);
+    expect(notebook.steps.zones.isRecorded).toBe(true);
+    notebook = readFlag(notebook, 0, 2.5);
+    expect(notebook.steps.zones.isRecorded).toBe(false);
+    expect(notebook.steps.zones.staleReason).toBe('wind');
+  });
+
+  it('U4: an unread flag in AUTO takes the station crosswind', () => {
+    const station3From9 = enterWind(createNotebook(zonedAt(600), 'auto'), 3, 9);
+    const partly = readFlag(station3From9, 1, 4);
+    const filledWithStation = readAllFlags(station3From9, [3, 4, 3]);
+    expect(total(partly).rightMil).toBeCloseTo(total(filledWithStation).rightMil, 9);
+    expect(playerFlagCrosswindsMps(partly)).toEqual([3, 4, 3]);
+  });
+
+  it('U4: a flag behind the berm is a zero chip, readable or not', () => {
+    const notebook = hideFlagsBehindBerm(enterWind(createNotebook(zonedAt(500), 'manual-easy'), 3, 9), [2]);
+    const flag600 = stepSheet(notebook, 'zones').chips.find(chip => chip.kind === 'zone-600')!;
+    expect(flag600.value).toBe(0);
+    expect(flag600.isBehindBerm).toBe(true);
+    expect(stepSheet(notebook, 'zones').chips.find(chip => chip.kind === 'zone-station')!.isBehindBerm).toBeUndefined();
   });
 });

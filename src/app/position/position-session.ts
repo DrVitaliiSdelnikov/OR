@@ -4,7 +4,7 @@ import { BallisticsEngine } from '../../core/engine';
 import { CheckErrorType, checkManualSteps, checkPreparation, CheckResult } from '../../core/calc-check';
 import { targetRadiusMrad } from '../../core/content';
 import { mulberry32 } from '../../core/rng';
-import { clockFromDeg, createScenario, gaugeWindAt, Scenario, windAt } from '../../core/scenario';
+import { clockFromDeg, createScenario, gaugeWindAt, lateralWindMps, Scenario, windAt } from '../../core/scenario';
 import { resolveShot, ShotResult } from '../../core/shot';
 import { CartridgeId, Correction, Target } from '../../core/types';
 import { BoltCycleResult, BoltEvent } from '../../sim/bolt';
@@ -15,11 +15,14 @@ import { groupPoint, mainCauseOf, missBreakdown, MissBreakdown } from '../../sim
 import { Vector2 } from '../../sim/noise';
 import {
   changeContext,
+  hideFlagsBehindBerm,
   checkInputs,
   CheckTruth,
   ChipKind,
   createNotebook,
   enterWind,
+  readFlag,
+  playerFlagCrosswindsMps,
   formulaCorrectionMil,
   FormulaInputs,
   measureRange,
@@ -51,6 +54,7 @@ import { FireOutcome, ScopeSession } from '../../sim/scope-session';
 import { diagnoseShot, dopeNoteElevationMil, isCallAccurate, secondShotCorrection, ShotDiagnosis, TurretCorrection, warmImpact } from '../../sim/shot-review';
 import { TriggerAccessibility } from '../../sim/trigger';
 import { TurretProgress, turretProgress } from '../../sim/turret-target';
+import { FlagReading, flagReading, isFlagBeforeBerm } from '../scene/scene.model';
 import { TurretAxis } from './position.model';
 
 export interface PositionStart {
@@ -137,9 +141,11 @@ export class PositionSession {
     this.firingLine = new FiringLine(setup.plan);
     this.scope = new ScopeSession(scopeById(def.scopeId), POSITION_RESTING_BPM, scenario.seed, accessibility, this.firingLine.magazineLoaded);
     this.isRepeatAfterRecalc = recalcNotebook !== undefined;
-    this.currentNotebook = recalcNotebook
-      ? changeContext(recalcNotebook, { card: this.cards.get(this.firingLine.cartridgeId)!, target: this.notebookTarget() })
-      : createNotebook(this.notebookContext(), def.notebookMode ?? 'auto');
+    this.currentNotebook = this.withFlagsBehindBerm(
+      recalcNotebook
+        ? changeContext(recalcNotebook, { card: this.cards.get(this.firingLine.cartridgeId)!, target: this.notebookTarget() })
+        : createNotebook(this.notebookContext(), def.notebookMode ?? 'auto'),
+    );
   }
 
   static async start(options: PositionStart): Promise<PositionSession> {
@@ -194,6 +200,12 @@ export class PositionSession {
     const wind = gaugeWindAt(this.scenario, timeS, (random() * 2 - 1) * noiseLimitMps);
     const windSpeedMps = Math.round(wind.speedMps * STATION_SPEED_DECIMALS) / STATION_SPEED_DECIMALS;
     this.currentNotebook = recordStation(this.currentNotebook, { ...this.scenario.gauge, windSpeedMps, windClock: wind.clock }, holdS, timeS);
+  }
+
+  readFlag(flagIndex: number, timeS: number): FlagReading {
+    const reading = flagReading(lateralWindMps(windAt(this.scenario, timeS)[flagIndex + 1]));
+    this.currentNotebook = readFlag(this.currentNotebook, flagIndex, reading.crosswindMps);
+    return reading;
   }
 
   enterWind(speedMps: number, clock: number): void {
@@ -426,7 +438,7 @@ export class PositionSession {
     const playerWind: FormulaInputs = {
       ...truth,
       wind: notebook.readings.wind ?? { speedMps: 0, clock: truth.wind.clock },
-      flagCrosswindsMps: notebook.readings.flagCrosswindsMps,
+      flagCrosswindsMps: playerFlagCrosswindsMps(notebook),
     };
     const planned = total(notebook);
     const clickMil = notebook.context.card.clickMil;
@@ -479,7 +491,7 @@ export class PositionSession {
 
   private followNewTarget(isNewTarget: boolean): void {
     const card = this.cards.get(this.firingLine.cartridgeId)!;
-    this.currentNotebook = changeContext(this.currentNotebook, isNewTarget ? { card, target: this.notebookTarget() } : { card });
+    this.currentNotebook = this.withFlagsBehindBerm(changeContext(this.currentNotebook, isNewTarget ? { card, target: this.notebookTarget() } : { card }));
     const next = this.total;
     if (this.entered && (next.elevation.targetClicks !== this.entered.elevation.targetClicks || next.windageLeft.targetClicks !== this.entered.windageLeft.targetClicks)) {
       this.entered = null;
@@ -487,6 +499,11 @@ export class PositionSession {
     for (const axis of ['elevation', 'windage'] as const) {
       this.dialTracking[axis] = { startClicks: this.turretClicks(axis), hasOvershot: false };
     }
+  }
+
+  private withFlagsBehindBerm(notebook: Notebook): Notebook {
+    const behindBerm = this.scenario.flags.flatMap((flag, index) => (isFlagBeforeBerm(flag.distanceM, this.target.distanceM) ? [] : [index]));
+    return hideFlagsBehindBerm(notebook, behindBerm);
   }
 
   private notebookContext(): NotebookContext {

@@ -3,9 +3,9 @@ import { cartridgeById } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { ExerciseShotRecord } from '../../sim/course';
-import { createNotebook, enterWind, factorContributions, Notebook, recordStation, total } from '../../sim/notebook';
+import { createNotebook, enterWind, factorContributions, hideFlagsBehindBerm, Notebook, readFlag, recordStation, total } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
-import { clockFromDialAngle, clockText, contributionText, correctionLine, dopeTable, factorDetail, millingSize, rangeClockText, shotStrip, snapMilling, stepSpeed, totalLine } from './notebook.model';
+import { clockFromDialAngle, clockText, contributionText, correctionLine, dopeTable, factorDetail, millingSize, rangeClockText, shotStrip, snapMilling, stepSpeed, totalLine, zoneTable } from './notebook.model';
 
 const scope = scopeById('course-tree');
 let card: DopeCard;
@@ -162,5 +162,36 @@ describe('range clock', () => {
     expect(rangeClockText(0)).toBe('14:00');
     expect(rangeClockText(125)).toBe('14:02');
     expect(rangeClockText(3600)).toBe('15:00');
+  });
+});
+
+describe('zone weights and flags on the WIND tab (В29, A9.3a)', () => {
+  const zonedAt = (distanceM: number | null) => createNotebook({ card, scope, target: { sizeM: 0.5, distanceM }, hasZones: true, canTakeWindFromStation: false, seed: 1 }, 'manual-easy');
+
+  it('without zones there is no table', () => {
+    expect(zoneTable(notebookAt(600))).toBeNull();
+  });
+
+  it('the weights of the DOPE row at the player distance: station, 200, 400, 600 m — multiples of 0.05 that add up to 1', () => {
+    const table = zoneTable(zonedAt(600))!;
+    expect(table.weights.map(weight => weight.label)).toEqual(['станция', '200 м', '400 м', '600 м']);
+    const values = table.weights.map(weight => Number(weight.value.replace(',', '.')));
+    expect(values.reduce((sum, value) => sum + value, 0)).toBeCloseTo(1, 9);
+    for (const value of values) {
+      expect(Math.round(value * 20)).toBeCloseTo(value * 20, 9);
+    }
+  });
+
+  it('an unknown distance has no weights yet', () => {
+    expect(zoneTable(zonedAt(null))!.weights.map(weight => weight.value)).toEqual(['—', '—', '—', '—']);
+  });
+
+  it('each flag says its reading, that it is unread, or that it is behind the berm', () => {
+    const notebook = hideFlagsBehindBerm(readFlag(zonedAt(500), 0, -2.2), [2]);
+    expect(zoneTable(notebook)!.flags).toEqual([
+      { distanceM: 200, text: '2,2 м/с справа', isRead: true },
+      { distanceM: 400, text: 'тапни флажок в стекле', isRead: false },
+      { distanceM: 600, text: 'за валом', isRead: true },
+    ]);
   });
 });

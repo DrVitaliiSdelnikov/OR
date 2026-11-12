@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ptPerMil } from '../../sim/scope-model';
 import { FLAG_DEG_PER_MPS } from '../../core/content';
-import { aimLimitsMil, bermLayout, FLAG_PHOTOS, flagFootY, flagSprite, gongFrame, grassFrame, isFlagBeforeBerm, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, PHOTO, skyFrame } from './scene.model';
+import { aimLimitsMil, bermLayout, FLAG_PHOTOS, flagFootY, flagHitBox, flagIndexAt, flagPole, flagReading, flagSprite, gongFrame, grassFrame, isFlagBeforeBerm, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, PHOTO, skyFrame } from './scene.model';
 
 const GLASS_PT = 276;
 const AT_8X = ptPerMil(8);
@@ -185,5 +185,55 @@ describe('scene layout — the flag photo', () => {
     }
     const lifts = [0.2, 0.6, 1.0].map(timeS => flagSprite(5, 200, AT_8X, timeS).liftDeg);
     expect(new Set(lifts.map(lift => lift.toFixed(3))).size).toBeGreaterThan(1);
+  });
+});
+
+describe('flags along the range (A9.3a)', () => {
+  const halfMetreAt600 = (0.25 / 600) * 1000;
+  const MIN_TOUCH_PT = 44;
+
+  it('U1: the reading is the cloth angle to 5° and that angle over 9° a m/s, signed by the side', () => {
+    expect(flagReading(3.9)).toEqual({ angleDeg: 35, crosswindMps: 3.9, isAtLimit: false });
+    expect(flagReading(-2)).toEqual({ angleDeg: 20, crosswindMps: -2.2, isAtLimit: false });
+    expect(flagReading(12)).toEqual({ angleDeg: 80, crosswindMps: 8.9, isAtLimit: true });
+    expect(flagReading(0)).toEqual({ angleDeg: 0, crosswindMps: 0, isAtLimit: false });
+  });
+
+  it('U2: on 8× the 200 m flag stands 12.5 MIL left of the target on its own ground, the pole 2.5 m tall', () => {
+    const pole = flagPole(target, halfMetreAt600, 600, 200, AT_8X)!;
+    const horizon = horizonY(groundLineY(target, halfMetreAt600, AT_8X), 600, AT_8X);
+    expect(pole.x).toBeCloseTo(target.x - 12.5 * AT_8X, 6);
+    expect(pole.bottomY).toBeCloseTo(flagFootY(horizon, 200, AT_8X), 6);
+    expect(pole.bottomY - pole.topY).toBeCloseTo(12.5 * AT_8X, 6);
+  });
+
+  it('U2: a flag beyond the target is behind the berm — no pole, nothing to tap', () => {
+    expect(flagPole(target, halfMetreAt600, 500, 600, AT_8X)).toBeNull();
+  });
+
+  it('U2: the touch box covers pole and cloth and is never smaller than 44 pt', () => {
+    const far = flagHitBox(flagPole(target, halfMetreAt600, 700, 600, ptPerMil(3))!);
+    expect(far.width).toBeGreaterThanOrEqual(MIN_TOUCH_PT);
+    expect(far.height).toBeGreaterThanOrEqual(MIN_TOUCH_PT);
+    const pole = flagPole(target, halfMetreAt600, 600, 200, AT_8X)!;
+    const near = flagHitBox(pole);
+    expect(near.x).toBeLessThanOrEqual(pole.x - 5 * AT_8X);
+    expect(near.x + near.width).toBeGreaterThanOrEqual(pole.x + 5 * AT_8X);
+    expect(near.y).toBeLessThanOrEqual(pole.topY);
+    expect(near.y + near.height).toBeGreaterThanOrEqual(pole.bottomY);
+  });
+
+  it('U2: a tap finds the flag under it, the nearest pole when boxes overlap, nothing elsewhere', () => {
+    const poles = [200, 400, 600].map(flagDistanceM => flagPole(target, halfMetreAt600, 700, flagDistanceM, ptPerMil(3)));
+    expect(flagIndexAt({ x: poles[1]!.x + 1, y: (poles[1]!.topY + poles[1]!.bottomY) / 2 }, poles)).toBe(1);
+    expect(flagIndexAt({ x: poles[0]!.x, y: poles[0]!.bottomY - 1 }, poles)).toBe(0);
+    expect(flagIndexAt({ x: target.x + 60, y: target.y }, poles)).toBeNull();
+    expect(flagIndexAt({ x: poles[2]!.x, y: poles[2]!.topY }, [poles[0], poles[1], null])).not.toBe(2);
+    const overlapping = [
+      { x: 100, topY: 100, bottomY: 160, clothPt: 30 },
+      { x: 112, topY: 100, bottomY: 160, clothPt: 30 },
+    ];
+    expect(flagIndexAt({ x: 109, y: 130 }, overlapping)).toBe(1);
+    expect(flagIndexAt({ x: 103, y: 130 }, overlapping)).toBe(0);
   });
 });

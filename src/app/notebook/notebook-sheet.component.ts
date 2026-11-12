@@ -25,6 +25,7 @@ import {
   rangeClockText,
   shotStrip,
   totalLine,
+  zoneTable,
 } from './notebook.model';
 import { FactorRow, TotalTabComponent } from './total-tab.component';
 import { WindInput, WindTabComponent } from './wind-tab.component';
@@ -81,7 +82,7 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
             <or-conditions-tab [reading]="state.station" [correctionText]="state.conditionsCorrection" [stepLinkText]="state.isManual ? 'к расчёту: шаг Атмосфера →' : null" (measure)="measure.emit($event)" (toStep)="openStep('atmosphere')" />
           }
           @case ('wind') {
-            <or-wind-tab [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? 'к расчёту: шаг Ветер →' : null" [showShares]="state.isEasy" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
+            <or-wind-tab [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? (state.hasZones ? 'к расчёту: шаг Ветер по зонам →' : 'к расчёту: шаг Ветер →') : null" [showShares]="state.isEasy" [zones]="state.zones" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
           }
           @case ('dope') {
             <or-dope-tab [heading]="state.dopeHeading" [rows]="state.dopeRows" />
@@ -186,6 +187,7 @@ export class NotebookSheetComponent {
       isManual,
       isEasy: notebook.mode === 'manual-easy',
       hasZones: notebook.context.hasZones,
+      zones: zoneTable(notebook),
       hubRows: isManual ? hubRows(notebook) : [],
       badge: modeBadge(notebook.mode),
       formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? 'Формулы −30' : 'Формулы',

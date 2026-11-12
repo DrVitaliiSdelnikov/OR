@@ -3,7 +3,7 @@ import { cartridgeById } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { NotebookMode } from '../../core/exercise-scoring';
-import { changeContext, createNotebook, enterWind, Notebook, placeChip, recordStation, recordStep, setSign, typeTape } from '../../sim/notebook';
+import { changeContext, createNotebook, enterWind, hideFlagsBehindBerm, Notebook, placeChip, readFlag, recordStation, recordStep, setSign, stepSheet, typeTape } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
 import { chipText, editDraft, formulaTokens, hubRows, missingInput, modeBadge, sideOptions, tapeLabels } from './calc-sheet.model';
 
@@ -141,5 +141,21 @@ describe('mode badge', () => {
     expect(modeBadge('manual-easy')).toBe('САМ · ЛЁГКИЙ ×1.5');
     expect(modeBadge('manual-hard')).toBe('САМ · СЛОЖНЫЙ ×2');
     expect(modeBadge('auto')).toBe('АВТО ×1');
+  });
+});
+
+describe('zones step: flags (A9.3a)', () => {
+  const zonedAt = (distanceM: number) =>
+    enterWind(createNotebook({ card: cards.get('B')!, scope, target: { sizeM: 0.5, distanceM }, hasZones: true, canTakeWindFromStation: false, seed: 3 }, 'manual-easy'), 3, 9);
+
+  it('an unread flag says to tap it in the glass', () => {
+    expect(missingInput(readFlag(zonedAt(650), 0, 2), 'zones')).toBe('сначала тапни флажок 400 м в стекле');
+  });
+
+  it('a flag behind the berm is a zero chip labelled so; the step can be filled', () => {
+    const notebook = hideFlagsBehindBerm(readFlag(readFlag(zonedAt(500), 0, 2), 1, 4), [2]);
+    const flag600 = stepSheet(notebook, 'zones').chips.find(chip => chip.kind === 'zone-600')!;
+    expect(chipText(flag600, 500)).toEqual({ value: '0.0', source: 'флажок 600 м за валом' });
+    expect(missingInput(notebook, 'zones')).toBeNull();
   });
 });

@@ -52,6 +52,7 @@ export interface PositionTask {
   hasPatrol: boolean;
   trigger: 'tap' | 'pressure';
   notebookMode: NotebookMode | null;
+  modeChoices?: readonly NotebookMode[];
   scopeId: ScopeId;
   conditions: ScenarioOptions;
 }
@@ -274,7 +275,12 @@ export const COURSE: readonly ExerciseDef[] = [
     conditions: LIGHT_WIND,
     terms: ['упреждение', 'сопровождение', 'засада', 'время полёта'],
   }),
-  exerciseDef('12', 'Полевой рубеж', { count: 10, distance: { kind: 'unknown', fromM: 200, toM: 700 }, isOutAndBack: true }, { notebookMode: 'manual-easy', conditions: ZONE_WIND, terms: [] }),
+  exerciseDef('12', 'Полевой рубеж', { count: 10, distance: { kind: 'unknown', fromM: 200, toM: 700 }, isOutAndBack: true }, {
+    notebookMode: 'manual-easy',
+    modeChoices: ['manual-easy', 'manual-hard'],
+    conditions: ZONE_WIND,
+    terms: [],
+  }),
 ];
 
 const SKILL_GOALS: Record<ExerciseId, (run: ExerciseRun) => SkillGoals> = {
@@ -310,6 +316,10 @@ const SKILL_GOALS: Record<ExerciseId, (run: ExerciseRun) => SkillGoals> = {
   '11': patrolGoals,
   '12': run => ({ skill: { isMet: run.shots.length > 0 && !run.hasOpenedReference }, top: { isMet: run.mode === 'manual-hard' } }),
 };
+
+export function withChosenMode<T extends PositionTask>(def: T, mode: NotebookMode | undefined): T {
+  return mode && def.modeChoices?.includes(mode) ? { ...def, notebookMode: mode } : def;
+}
 
 export function isExerciseTask(task: PositionTask): task is ExerciseDef {
   return task.kind === 'exercise';

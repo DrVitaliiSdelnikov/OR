@@ -67,6 +67,14 @@ describe('briefingCard', () => {
     expect(briefing.novelty).toBeNull();
   });
 
+  it('12 offers SAM easy or hard with their multipliers; others have no choice', () => {
+    expect(card('12').modeOptions).toEqual([
+      { mode: 'manual-easy', label: 'САМ · лёгкий × 1.5' },
+      { mode: 'manual-hard', label: 'САМ · сложный × 2.0' },
+    ]);
+    expect(card('09').modeOptions).toBeNull();
+  });
+
   it('«с инструктором»: on before the admission, off after it; only where there is a script', () => {
     expect(card('01').instructor).toEqual({ isDefaultOn: true });
     expect(card('03', { isIntroCompleted: true, bestClasses: { '03': 2 } }).instructor).toEqual({ isDefaultOn: false });

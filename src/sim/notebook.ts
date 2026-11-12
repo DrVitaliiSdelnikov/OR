@@ -65,7 +65,8 @@ export interface NotebookReadings {
   reticleMil: number | null;
   station: StationRecord | null;
   wind: { speedMps: number; clock: number } | null;
-  flagCrosswindsMps: readonly number[] | null;
+  flagCrosswindsMps: readonly (number | null)[] | null;
+  flagsBehindBerm: readonly number[];
   stationVersion: number;
   windVersion: number;
 }
@@ -94,6 +95,7 @@ export interface Chip {
   kind: ChipKind;
   value: number;
   group: ChipGroup;
+  isBehindBerm?: true;
 }
 
 export interface SheetSlot {
@@ -163,6 +165,7 @@ interface StepDefinition {
   dependsOn: readonly StaleReason[];
 }
 
+const FLAG_ZONE_KINDS = ['zone-200', 'zone-400', 'zone-600'] as const;
 const STEP_ORDER: readonly NotebookStepId[] = ['distance', 'dope', 'atmosphere', 'zones', 'wind', 'lead'];
 const STALE_ORDER: readonly StaleReason[] = ['cartridge', 'distance', 'conditions', 'wind'];
 const FULL_MEASUREMENT_S = 3;
@@ -236,7 +239,7 @@ export function createNotebook(context: NotebookContext, mode: NotebookMode): No
   return {
     context,
     mode,
-    readings: { reticleMil: null, station: null, wind: null, flagCrosswindsMps: null, stationVersion: 0, windVersion: 0 },
+    readings: { reticleMil: null, station: null, wind: null, flagCrosswindsMps: null, flagsBehindBerm: [], stationVersion: 0, windVersion: 0 },
     factorsOn: { dope: true, conditions: false, wind: true, lead: context.target.movement !== undefined },
     steps,
     distanceM: context.target.distanceM,
@@ -267,8 +270,24 @@ export function takeWindFromStation(notebook: Notebook): Notebook {
   return enterWind(notebook, station.windSpeedMps, station.windClock);
 }
 
-export function readFlags(notebook: Notebook, flagCrosswindsMps: readonly number[]): Notebook {
+export function readFlag(notebook: Notebook, flagIndex: number, crosswindMps: number): Notebook {
+  const flagCrosswindsMps = [...(notebook.readings.flagCrosswindsMps ?? FLAG_ZONE_KINDS.map(() => null))];
+  flagCrosswindsMps[flagIndex] = crosswindMps;
   return refreshStale({ ...notebook, readings: { ...notebook.readings, flagCrosswindsMps, windVersion: notebook.readings.windVersion + 1 } });
+}
+
+export function hideFlagsBehindBerm(notebook: Notebook, flagIndexes: readonly number[]): Notebook {
+  return { ...notebook, readings: { ...notebook.readings, flagsBehindBerm: flagIndexes } };
+}
+
+export function playerFlagCrosswindsMps(notebook: Notebook): number[] | null {
+  const flags = notebook.readings.flagCrosswindsMps;
+  if (!flags) {
+    return null;
+  }
+  const wind = notebook.readings.wind;
+  const stationCrosswindMps = wind ? signedCrosswindMps(wind) : 0;
+  return flags.map(crosswindMps => crosswindMps ?? stationCrosswindMps);
 }
 
 export function openReference(notebook: Notebook): Notebook {
@@ -315,7 +334,7 @@ export function stepSheet(notebook: Notebook, step: NotebookStepId): StepSheet {
   const traps = isHard ? definition.traps.filter(kind => available[kind] !== undefined).slice(0, TRAPS_IN_HARD) : [];
   const chipKinds = [...slotKinds, ...traps].filter(kind => available[kind] !== undefined);
   const chips = shuffleInPlace(
-    chipKinds.map(kind => ({ kind, value: available[kind]!, group: CHIP_GROUPS[kind] })),
+    chipKinds.map(kind => ({ kind, value: available[kind]!, group: CHIP_GROUPS[kind], ...(isFlagBehindBerm(notebook.readings, kind) ? { isBehindBerm: true as const } : {}) })),
     notebook.context.seed + STEP_ORDER.indexOf(step),
   );
   const printedConstants = isHard ? [] : definition.constants.filter(kind => available[kind] !== undefined).map(kind => ({ kind, value: available[kind]!, group: CHIP_GROUPS[kind] }));
@@ -554,8 +573,9 @@ function autoWindMil(notebook: Notebook, wind: { speedMps: number; clock: number
   if (!wind || notebook.distanceM === null) {
     return null;
   }
-  if (notebook.context.hasZones && notebook.readings.flagCrosswindsMps) {
-    return zoneWindMil(notebook, [signedCrosswindMps(wind), ...notebook.readings.flagCrosswindsMps]);
+  const flagCrosswinds = notebook.context.hasZones ? playerFlagCrosswindsMps(notebook) : null;
+  if (flagCrosswinds) {
+    return zoneWindMil(notebook, [signedCrosswindMps(wind), ...flagCrosswinds]);
   }
   return windCorrectionMil(wind.speedMps, wind.clock, notebook.distanceM, dopeRowAt(notebook.context.card, notebook.distanceM).windConstant);
 }
@@ -571,7 +591,8 @@ function autoLeadMil(notebook: Notebook): number | null {
 
 function zoneCrosswindsMps(notebook: Notebook): number[] {
   const wind = notebook.readings.wind;
-  return [wind ? signedCrosswindMps(wind) : 0, ...(notebook.readings.flagCrosswindsMps ?? [0, 0, 0])];
+  const flags = notebook.readings.flagCrosswindsMps ?? FLAG_ZONE_KINDS.map(() => null);
+  return [wind ? signedCrosswindMps(wind) : 0, ...flags.map(crosswindMps => crosswindMps ?? 0)];
 }
 
 // Средний ветер одной цифрой (шаг «зоны» игрока) или по зонам: снос влево — минус, ветер слева — плюс.
@@ -619,7 +640,7 @@ function normalizedClock(clock: number): number {
 
 function chipValues(notebook: Notebook): Partial<Record<ChipKind, number>> {
   const { card, target } = notebook.context;
-  const { station, wind, reticleMil, flagCrosswindsMps } = notebook.readings;
+  const { station, wind, reticleMil } = notebook.readings;
   const distanceM = notebook.distanceM;
   const row = distanceM === null ? null : dopeRowAt(card, distanceM);
   const neighborDistanceM = target.neighborDistanceM ?? (distanceM === null ? null : distanceM + NEIGHBOR_ROW_M);
@@ -637,15 +658,24 @@ function chipValues(notebook: Notebook): Partial<Record<ChipKind, number>> {
     'pressure-column': row?.pressureUp10HpaMil,
     'wind-constant': row?.windConstant,
     'zone-station': wind ? signedCrosswindMps(wind) : undefined,
-    'zone-200': flagCrosswindsMps?.[0],
-    'zone-400': flagCrosswindsMps?.[1],
-    'zone-600': flagCrosswindsMps?.[2],
+    ...flagChipValues(notebook.readings),
     'target-crosswind': target.movement ? crosswindMps(target.movement.speedMps, target.movement.clock) : undefined,
     'target-speed': target.movement?.speedMps,
     'time-of-flight': row?.timeOfFlightS,
     'neighbor-time': neighborDistanceM === null ? undefined : dopeRowAt(card, Math.min(neighborDistanceM, lastRowM(card))).timeOfFlightS,
   };
   return Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined)) as Partial<Record<ChipKind, number>>;
+}
+
+function flagChipValues(readings: NotebookReadings): Partial<Record<ChipKind, number>> {
+  return Object.fromEntries(
+    FLAG_ZONE_KINDS.map((kind, index) => [kind, readings.flagsBehindBerm.includes(index) ? 0 : (readings.flagCrosswindsMps?.[index] ?? undefined)]),
+  );
+}
+
+function isFlagBehindBerm(readings: NotebookReadings, kind: ChipKind): boolean {
+  const flagIndex = (FLAG_ZONE_KINDS as readonly ChipKind[]).indexOf(kind);
+  return flagIndex >= 0 && readings.flagsBehindBerm.includes(flagIndex);
 }
 
 function lastRowM(card: DopeCard): number {

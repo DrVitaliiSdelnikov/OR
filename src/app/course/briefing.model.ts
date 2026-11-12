@@ -1,4 +1,4 @@
-import { modeMultiplier } from '../../core/exercise-scoring';
+import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { CourseResults, ExerciseDef, TargetDistance } from '../../sim/course';
 import { teachingScript } from '../instructor/teaching.model';
 import { allFirstText, classStamp, isPaperExercise } from '../result/result.model';
@@ -18,6 +18,7 @@ export interface BriefingCard {
   facts: ExerciseSheet;
   classRows: string[];
   mode: string;
+  modeOptions: { mode: NotebookMode; label: string }[] | null;
   novelty: string | null;
   best: string | null;
   termsLine: string | null;
@@ -51,7 +52,8 @@ export function briefingCard(def: ExerciseDef, course: CourseResults): BriefingC
           `2 класс — 85 % и ${def.goals.second}`,
           `1 класс — ${def.goals.first ? `${allFirstText(def)} и ${def.goals.first}` : allFirstText(def)}`,
         ],
-    mode: def.notebookMode ? `${MODE_LABELS[def.notebookMode]} × ${modeMultiplier(def.notebookMode, false).toFixed(1)}` : '—',
+    mode: def.notebookMode ? modeLabel(def.notebookMode) : '—',
+    modeOptions: def.modeChoices ? def.modeChoices.map(mode => ({ mode, label: modeLabel(mode) })) : null,
     novelty: !isAdmittedBefore && def.novelty ? `Новое: ${def.novelty}` : null,
     best: bestTotal !== undefined ? `лучший: ${bestClass ? classStamp(bestClass).toLowerCase() : 'не зачтено'} · ${bestTotal} очк.` : null,
     termsLine: def.terms.length > 0 ? `узнаешь: ${def.terms.join(' · ')}` : null,
@@ -69,4 +71,8 @@ function distanceText(distance: TargetDistance): string {
     case 'unknown':
       return `${distance.fromM}–${distance.toM} м · неизвестно`;
   }
+}
+
+function modeLabel(mode: NotebookMode): string {
+  return `${MODE_LABELS[mode]} × ${modeMultiplier(mode, false).toFixed(1)}`;
 }

@@ -1,3 +1,4 @@
+import { FLAG_DISTANCES_M } from '../../core/content';
 import { atmosphereCorrectionMil, crosswindMps, windCorrectionMil } from '../../core/game-formulas';
 import { DopeCard, dopeRowAt } from '../../core/dope-card';
 import { CartridgeId } from '../../core/types';
@@ -18,6 +19,13 @@ export interface DopeTableRow {
   note: string;
   isCurrent: boolean;
 }
+
+export interface ZoneTable {
+  weights: { label: string; value: string }[];
+  flags: { distanceM: number; text: string; isRead: boolean }[];
+}
+
+const ZONE_LABELS = ['станция', '200 м', '400 м', '600 м'] as const;
 
 export const NOTEBOOK_TABS: readonly { id: NotebookTab; label: string }[] = [
   { id: 'total', label: 'Итог' },
@@ -176,4 +184,29 @@ export function factorDetail(notebook: Notebook, factor: NotebookFactor): string
     case 'lead':
       return 'упреждение — сеткой, на барабаны не идёт';
   }
+}
+
+export function zoneTable(notebook: Notebook): ZoneTable | null {
+  if (!notebook.context.hasZones) {
+    return null;
+  }
+  const weights = notebook.distanceM === null ? null : dopeRowAt(notebook.context.card, notebook.distanceM).zoneWeights;
+  const { flagCrosswindsMps, flagsBehindBerm } = notebook.readings;
+  return {
+    weights: ZONE_LABELS.map((label, index) => ({ label, value: weights ? weights[index].toFixed(2).replace('.', ',') : '—' })),
+    flags: FLAG_DISTANCES_M.map((distanceM, index) => {
+      if (flagsBehindBerm.includes(index)) {
+        return { distanceM, text: 'за валом', isRead: true };
+      }
+      const crosswindMps = flagCrosswindsMps?.[index] ?? null;
+      return crosswindMps === null ? { distanceM, text: 'тапни флажок в стекле', isRead: false } : { distanceM, text: flagCrosswindText(crosswindMps), isRead: true };
+    }),
+  };
+}
+
+export function flagCrosswindText(crosswindMps: number): string {
+  if (crosswindMps === 0) {
+    return 'штиль';
+  }
+  return `${Math.abs(crosswindMps).toFixed(1).replace('.', ',')} м/с ${crosswindMps > 0 ? 'слева' : 'справа'}`;
 }

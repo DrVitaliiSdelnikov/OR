@@ -1,4 +1,4 @@
-import { flagAngleDeg } from '../../core/content';
+import { FLAG_DEG_PER_MPS, FLAG_MAX_DEG, flagAngleDeg } from '../../core/content';
 import { Correction } from '../../core/types';
 import { Vector2 } from '../../sim/noise';
 import { AimLimits } from '../../sim/scope-session';
@@ -28,7 +28,25 @@ export const PHOTO = {
   grass: { width: 1915, height: 544 },
 } as const;
 
+export interface FlagPole {
+  x: number;
+  topY: number;
+  bottomY: number;
+  clothPt: number;
+}
+
+export interface FlagReading {
+  angleDeg: number;
+  crosswindMps: number;
+  isAtLimit: boolean;
+}
+
 export const HIT_MARK_COUNT = 5;
+export const FLAG_SIDE_OFFSET_M = 2.5;
+export const FLAG_POLE_M = 2.5;
+const FLAG_CLOTH_M = 1;
+const FLAG_READING_STEP_DEG = 5;
+const MIN_TOUCH_PT = 44;
 const BERM_HEIGHT_M = 2;
 const HIT_MARK_M = 0.08;
 const SKY_DRIFT_SHARE = 0.25;
@@ -134,6 +152,53 @@ export function flagFootY(horizon: number, flagDistanceM: number, ptPerMil: numb
 
 export function isFlagBeforeBerm(flagDistanceM: number, targetDistanceM: number): boolean {
   return flagDistanceM < targetDistanceM;
+}
+
+export function flagPole(target: Vector2, targetRadiusMil: number, targetDistanceM: number, flagDistanceM: number, ptPerMil: number): FlagPole | null {
+  if (!isFlagBeforeBerm(flagDistanceM, targetDistanceM)) {
+    return null;
+  }
+  const horizon = horizonY(groundLineY(target, targetRadiusMil, ptPerMil), targetDistanceM, ptPerMil);
+  const bottomY = flagFootY(horizon, flagDistanceM, ptPerMil);
+  return {
+    x: target.x - milsAt(FLAG_SIDE_OFFSET_M, flagDistanceM) * ptPerMil,
+    topY: bottomY - milsAt(FLAG_POLE_M, flagDistanceM) * ptPerMil,
+    bottomY,
+    clothPt: milsAt(FLAG_CLOTH_M, flagDistanceM) * ptPerMil,
+  };
+}
+
+export function flagHitBox(pole: FlagPole): Frame {
+  const width = Math.max(MIN_TOUCH_PT, 2 * pole.clothPt);
+  const height = Math.max(MIN_TOUCH_PT, pole.bottomY - pole.topY);
+  const middleY = (pole.topY + pole.bottomY) / 2;
+  return { x: pole.x - width / 2, y: middleY - height / 2, width, height };
+}
+
+export function flagIndexAt(point: Vector2, poles: readonly (FlagPole | null)[]): number | null {
+  let nearestIndex: number | null = null;
+  let nearestDistancePt = Infinity;
+  for (const [index, pole] of poles.entries()) {
+    if (!pole || !isInside(point, flagHitBox(pole))) {
+      continue;
+    }
+    const distancePt = Math.abs(point.x - pole.x);
+    if (distancePt < nearestDistancePt) {
+      nearestIndex = index;
+      nearestDistancePt = distancePt;
+    }
+  }
+  return nearestIndex;
+}
+
+function isInside(point: Vector2, box: Frame): boolean {
+  return point.x >= box.x && point.x <= box.x + box.width && point.y >= box.y && point.y <= box.y + box.height;
+}
+
+export function flagReading(lateralWindMps: number): FlagReading {
+  const angleDeg = Math.round(flagAngleDeg(lateralWindMps) / FLAG_READING_STEP_DEG) * FLAG_READING_STEP_DEG;
+  const speedMps = Math.round((angleDeg / FLAG_DEG_PER_MPS) * 10) / 10;
+  return { angleDeg, crosswindMps: lateralWindMps < 0 ? -speedMps : speedMps, isAtLimit: angleDeg >= FLAG_MAX_DEG };
 }
 
 export function grassFrame(targetX: number, groundY: number, distanceM: number, ptPerMil: number, swayPt: number): Frame {

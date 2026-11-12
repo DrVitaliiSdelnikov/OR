@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { NotebookTotal } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
-import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, markerTarget, NOTEBOOK_SHEET_MIN_HEIGHT_PT, notebookSheetTopPt, playability, pressureText } from './position.model';
+import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, flagReadingText, isGlassTap, markerTarget, NOTEBOOK_SHEET_MIN_HEIGHT_PT, notebookSheetTopPt, playability, pressureText } from './position.model';
 
 const scope = scopeById('course-tree');
 
@@ -67,17 +67,15 @@ describe('drum counter', () => {
 });
 
 describe('playability', () => {
-  it('00-08 and 10 are playable now', () => {
-    for (const id of ['00', '01', '02', '03', '04', '05', '06', '07', '08', '10'] as const) {
+  it('00-10 and 12 are playable now (A9.3a opens 09 and 12)', () => {
+    for (const id of ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '12'] as const) {
       expect(playability(exerciseById(id)!), id).toEqual({ isPlayable: true, reason: null });
     }
   });
 
   it('the rest say what is missing', () => {
     const reason = (id: ExerciseId) => playability(exerciseById(id)!).reason;
-    expect(reason('09')).toBe('откроется позже: флажки по трассе');
     expect(reason('11')).toBe('откроется позже: движущиеся цели');
-    expect(reason('12')).toBe('откроется позже: флажки по трассе');
   });
 });
 
@@ -130,5 +128,20 @@ describe('notebook sheet on a short screen (iPhone Safari)', () => {
   it('rises above the crosshair when the screen is too short for the minimum height', () => {
     expect(notebookSheetTopPt(358, 664)).toBe(664 - NOTEBOOK_SHEET_MIN_HEIGHT_PT);
     expect(NOTEBOOK_SHEET_MIN_HEIGHT_PT).toBe(360);
+  });
+});
+
+describe('reading a flag in the glass (A9.3a)', () => {
+  it('a tap is a touch that barely moves and lets go quickly; anything else is aiming', () => {
+    expect(isGlassTap({ x: 0, y: 0 }, { x: 6, y: 6 }, 200)).toBe(true);
+    expect(isGlassTap({ x: 0, y: 0 }, { x: 12, y: 0 }, 100)).toBe(false);
+    expect(isGlassTap({ x: 0, y: 0 }, { x: 0, y: 0 }, 400)).toBe(false);
+  });
+
+  it('the plate says distance, angle, speed and where the wind comes from', () => {
+    expect(flagReadingText(400, { angleDeg: 35, crosswindMps: 3.9, isAtLimit: false })).toBe('400 м · 35° · 3,9 м/с слева');
+    expect(flagReadingText(200, { angleDeg: 20, crosswindMps: -2.2, isAtLimit: false })).toBe('200 м · 20° · 2,2 м/с справа');
+    expect(flagReadingText(600, { angleDeg: 80, crosswindMps: 8.9, isAtLimit: true })).toBe('600 м · 80° · ≥ 8,9 м/с слева');
+    expect(flagReadingText(200, { angleDeg: 0, crosswindMps: 0, isAtLimit: false })).toBe('200 м · 0° · штиль');
   });
 });

@@ -113,6 +113,20 @@
   touch-action: none;
 }
 
+.flag-reading {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-6);
+  transform: translateX(-50%);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-device);
+  background: var(--device-sunken);
+  color: var(--device-text);
+  font: 700 var(--type-label) / 18px var(--font-mono);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .stop-badge {
   position: absolute;
   left: 50%;

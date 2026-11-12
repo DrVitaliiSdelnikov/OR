@@ -68,6 +68,9 @@
           @if (stopBadge(); as badge) {
             <span class="stop-badge" data-test="stop-badge">{{ badge }}</span>
           }
+          @if (flagReadingShown(); as reading) {
+            <span class="flag-reading" role="status" data-test="flag-reading">{{ reading }}</span>
+          }
           @if (state?.zone; as zone) {
             <svg class="zone" viewBox="0 0 276 276" aria-hidden="true" data-test="trigger-zone">
               <circle class="zone-ring" cx="138" cy="138" [attr.r]="zone.radius" />

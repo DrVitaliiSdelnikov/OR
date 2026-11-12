@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { RIFLE } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
-import { gaugeWindAt, windAt } from '../../core/scenario';
+import { gaugeWindAt, lateralWindMps, windAt } from '../../core/scenario';
 import { exerciseById } from '../../sim/course';
 import { CauseKind, groupPoint, MissBreakdown } from '../../sim/miss-breakdown';
+import { flagReading } from '../scene/scene.model';
 import { PositionSession } from './position-session';
 
 const engine = new BallisticsEngine();
@@ -12,7 +13,7 @@ const ACCESSIBILITY = { isZoneLarger: false, isMarkerDriftOff: true };
 const ON_TARGET = { x: 0, y: 0 };
 const FAR_OFF = { x: 6, y: 0 };
 
-async function start(id: '01' | '02' | '04' | '05' | '06' | '08' | '10', seed = 11): Promise<PositionSession> {
+async function start(id: '01' | '02' | '04' | '05' | '06' | '08' | '09' | '10', seed = 11): Promise<PositionSession> {
   return PositionSession.start({ def: exerciseById(id)!, seed, engine, accessibility: ACCESSIBILITY });
 }
 
@@ -746,5 +747,21 @@ describe('PositionSession — why the bullet went there (A6.2)', () => {
     expect(first.review.group[0].upMrad).toBeCloseTo(first.review.warmImpact.upMrad - causeOf(first, 'calc').vector.upMrad - causeOf(first, 'wind').vector.upMrad - causeOf(first, 'formula').vector.upMrad, 2);
     const repeat = await session.restartForRecalc(engine);
     expect((await shoot(repeat, ON_TARGET))!.review.group).toHaveLength(1);
+  });
+});
+
+describe('PositionSession — flags along the range (09, A9.3a)', () => {
+  it('a tapped flag goes to the notebook as its cloth reading at that moment', async () => {
+    const session = await start('09');
+    const timeS = session.scenario.startTimeS + 4;
+    const reading = session.readFlag(1, timeS);
+    expect(reading).toEqual(flagReading(lateralWindMps(windAt(session.scenario, timeS)[2])));
+    expect(session.notebook.readings.flagCrosswindsMps).toEqual([null, reading.crosswindMps, null]);
+  });
+
+  it('flags at or beyond the gong are behind the berm, per target', async () => {
+    const session = await start('09');
+    const behindBerm = (distanceM: number) => [200, 400, 600].flatMap((flagM, index) => (flagM >= distanceM ? [index] : []));
+    expect(session.notebook.readings.flagsBehindBerm).toEqual(behindBerm(session.target.distanceM));
   });
 });

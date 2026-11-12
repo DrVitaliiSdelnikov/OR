@@ -34,6 +34,7 @@ function snapshot(exerciseId: ExerciseId, fields: Partial<InstructorSnapshot> = 
     isCallMarked: false,
     isDopeNoted: false,
     openCalcStep: null,
+    flagsRead: 0,
     ...fields,
   };
 }
@@ -194,6 +195,24 @@ describe('teaching — 06 SAM', () => {
   });
 });
 
+describe('teaching — 09 flags along the range', () => {
+  it('flags in the glass, the tap, the zone weights on the WIND tab, the zones step; 4 hints', () => {
+    const start = next(snapshot('09'))!;
+    expect([start.anchor, start.kind, start.count]).toEqual(['glass', 'explain', 4]);
+    expect(start.text).toBe('Ветер по трассе разный. Флажки на 200, 400, 600 м — левее цели, веди прицел к ним');
+    const tap = next(snapshot('09'), ['flags'])!;
+    expect([tap.anchor, tap.kind, tap.text]).toEqual(['glass', 'action', 'Тапни флажок — угол и скорость запишутся в блокнот']);
+    const read = snapshot('09', { flagsRead: 1 });
+    expect(next(read)).toBeNull();
+    const windTab = next({ ...read, hasOpenedNotebook: true, sheetTab: 'wind' })!;
+    expect([windTab.anchor, windTab.number]).toEqual(['zone-weights', 3]);
+    const zonesStep = next({ ...read, hasOpenedNotebook: true, sheetTab: 'total', openCalcStep: 'zones' }, ['weights'])!;
+    expect([zonesStep.anchor, zonesStep.text]).toEqual(['calc-formula', 'Средний ветер — сумма: вес × V⊥ зоны. Станция — с вкладки «Ветер», флажки — из стекла']);
+    expect(next({ ...read, recordedSteps: ['zones'] })).toBeNull();
+    expect(next(snapshot('09', { shotsFired: 1 }))).toBeNull();
+  });
+});
+
 describe('teaching — 08 cartridge change', () => {
   it('waits for the empty magazine, names the next cartridge, then its own card', () => {
     expect(next(snapshot('08', { shotsFired: 1 }))).toBeNull();
@@ -246,9 +265,9 @@ describe('teaching — 02 and 03 moments', () => {
     expect(next({ ...fired, isBoltCycleDue: false, shotsFired: 2 }, ['breath'])).toBeNull();
   });
 
-  it('scripts: 01–06, 08, 10; none for 00, 07, 09, 11, 12', () => {
-    expect((['01', '02', '03', '04', '05', '06', '08', '10'] as ExerciseId[]).every(id => teachingScript(id) !== null)).toBe(true);
-    expect((['00', '07', '09', '11', '12'] as ExerciseId[]).map(teachingScript)).toEqual([null, null, null, null, null]);
+  it('scripts: 01–06, 08–10; none for 00, 07, 11, 12', () => {
+    expect((['01', '02', '03', '04', '05', '06', '08', '09', '10'] as ExerciseId[]).every(id => teachingScript(id) !== null)).toBe(true);
+    expect((['00', '07', '11', '12'] as ExerciseId[]).map(teachingScript)).toEqual([null, null, null, null]);
   });
 });
 

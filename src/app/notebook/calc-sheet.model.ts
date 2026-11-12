@@ -89,6 +89,9 @@ const MISSING_TEXTS: Partial<Record<ChipKind, string>> = {
   pressure: 'сначала сделай замер на вкладке «Условия»',
   crosswind: 'сначала введи ветер на вкладке «Ветер»',
   'zone-station': 'сначала введи ветер на вкладке «Ветер»',
+  'zone-200': 'сначала тапни флажок 200 м в стекле',
+  'zone-400': 'сначала тапни флажок 400 м в стекле',
+  'zone-600': 'сначала тапни флажок 600 м в стекле',
 };
 const MODE_NAMES: Record<NotebookMode, string> = { auto: 'АВТО', 'manual-easy': 'САМ · ЛЁГКИЙ', 'manual-hard': 'САМ · СЛОЖНЫЙ' };
 const MAX_DRAFT_LENGTH = 6;
@@ -184,7 +187,7 @@ export function chipText(chip: Chip, distanceM: number | null): { value: string;
     case 'zone-200':
     case 'zone-400':
     case 'zone-600':
-      return { value: chip.value.toFixed(1), source: `V⊥ флажок ${chip.kind.slice(5)} м` };
+      return { value: chip.value.toFixed(1), source: chip.isBehindBerm ? `флажок ${chip.kind.slice(5)} м за валом` : `V⊥ флажок ${chip.kind.slice(5)} м` };
     case 'target-crosswind':
       return { value: chip.value.toFixed(1), source: 'V⊥ цели' };
     case 'target-speed':

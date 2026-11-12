@@ -35,6 +35,8 @@ const isSheetOpen = (state: InstructorSnapshot): boolean => state.sheetTab !== n
 const isWindWritten = (state: InstructorSnapshot): boolean => (state.windSpeedMps ?? 0) > 0;
 const isRangeMeasured = (state: InstructorSnapshot): boolean => state.reticleMil !== null;
 const isWindStepRecorded = (state: InstructorSnapshot): boolean => state.recordedSteps.includes('wind');
+const isZonesStepRecorded = (state: InstructorSnapshot): boolean => state.recordedSteps.includes('zones');
+const isAnyFlagRead = (state: InstructorSnapshot): boolean => state.flagsRead > 0;
 const isFirstReviewClosed = (state: InstructorSnapshot): boolean => state.shotsFired > 1 || (hasFired(state) && !state.isReviewOpen);
 
 function metresText(metres: number): string {
@@ -252,6 +254,41 @@ const WIND_AND_STATION: readonly TeachingStep[] = [
   },
 ];
 
+const ZONE_FLAGS: readonly TeachingStep[] = [
+  {
+    id: 'flags',
+    kind: 'explain',
+    anchor: fixed('glass'),
+    text: fixed('Ветер по трассе разный. Флажки на 200, 400, 600 м — левее цели, веди прицел к ним'),
+    isDue: always,
+    isDone: state => isAnyFlagRead(state) || hasFired(state),
+  },
+  {
+    id: 'flag-tap',
+    kind: 'action',
+    anchor: fixed('glass'),
+    text: fixed('Тапни флажок — угол и скорость запишутся в блокнот'),
+    isDue: always,
+    isDone: state => isAnyFlagRead(state) || hasFired(state),
+  },
+  {
+    id: 'weights',
+    kind: 'explain',
+    anchor: fixed('zone-weights'),
+    text: fixed('Вес зоны — её доля в среднем ветре. Веса — из строки ДОПЕ на твоей дистанции'),
+    isDue: state => state.sheetTab === 'wind',
+    isDone: state => isZonesStepRecorded(state) || hasFired(state),
+  },
+  {
+    id: 'zones-step',
+    kind: 'explain',
+    anchor: fixed('calc-formula'),
+    text: fixed('Средний ветер — сумма: вес × V⊥ зоны. Станция — с вкладки «Ветер», флажки — из стекла'),
+    isDue: state => state.openCalcStep === 'zones',
+    isDone: state => isZonesStepRecorded(state) || hasFired(state),
+  },
+];
+
 const MILLING: readonly TeachingStep[] = [
   {
     ...notebookStep('Открой блокнот: дистанция неизвестна'),
@@ -352,6 +389,7 @@ const SCRIPTS: Partial<Record<ExerciseId, readonly TeachingStep[]>> = {
   '05': MILLING,
   '06': MANUAL_EASY,
   '08': CARTRIDGE_CHANGE,
+  '09': ZONE_FLAGS,
   '10': MANUAL_HARD,
 };
 
