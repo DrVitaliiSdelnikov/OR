@@ -1,6 +1,6 @@
 import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, input, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonContent } from '@ionic/angular/standalone';
+import { IonContent, ViewWillEnter, ViewWillLeave } from '@ionic/angular/standalone';
 import { targetRadiusMrad } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
@@ -25,6 +25,7 @@ import { NotebookSheetComponent } from '../notebook/notebook-sheet.component';
 import { CARTRIDGE_LETTERS, clockText, NotebookTab } from '../notebook/notebook.model';
 import { aimLimitsMil } from '../scene/scene.model';
 import { ScopeRenderer } from '../scene/scope-renderer';
+import { BackStackService, backLayer } from '../services/back-stack.service';
 import { FeedbackEvent, FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
 import { ReviewSheetComponent } from '../review/review-sheet.component';
@@ -78,8 +79,9 @@ const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
   ],
   templateUrl: './position.page.html',
   styleUrl: './position.page.scss',
+  host: { '(document:visibilitychange)': 'saveWhenHidden()' },
 })
-export class PositionPage {
+export class PositionPage implements ViewWillEnter, ViewWillLeave {
   readonly exerciseId = input.required<string>();
   readonly instructor = input<string>();
   readonly sandboxTerm = input<string | undefined>(undefined, { alias: 'sandbox' });
@@ -88,6 +90,7 @@ export class PositionPage {
   private readonly feedback = inject(FeedbackService);
   private readonly progress = inject(ProgressStore);
   private readonly termSheet = inject(TermSheetService);
+  private readonly backStack = inject(BackStackService);
   private readonly engine = new BallisticsEngine();
   private readonly glassCanvas = viewChild<ElementRef<HTMLCanvasElement>>('glass');
   private readonly positionRoot = viewChild<ElementRef<HTMLElement>>('positionRoot');
@@ -117,6 +120,10 @@ export class PositionPage {
   protected readonly sheetTab = signal<NotebookTab | null>(null);
   protected readonly reviewedShot = signal<PositionShot | null>(null);
   protected readonly reviewFrame = signal<{ topPt: number; heightPt: number } | null>(null);
+  private readonly reviewLayer = backLayer(() => this.reviewedShot() !== null, () => this.closeReview());
+  private readonly sheetLayer = backLayer(() => this.sheetTab() !== null, () => this.closeSheet());
+  private readonly leaveConfirmLayer = backLayer(() => this.isLeaveConfirmOpen(), () => this.stay());
+  private isLeaveConfirmed = false;
   protected readonly dopeNotes = computed(() => {
     const session = this.session();
     return session ? (this.progress.dopeNotes()[session.notebook.context.card.cartridgeId] ?? []) : [];
@@ -219,7 +226,7 @@ export class PositionPage {
   private dialAtLastShot = { elevation: 0, windageLeft: 0 };
   private aimLimitsKey = '';
   private seriesStartedAtIso = new Date().toISOString();
-  private savedSeriesSession: PositionSession | null = null;
+  private savedSeriesKey = '';
   private aimLimitsSession: PositionSession | null = null;
   private readonly glassPointers = new Map<number, Vector2>();
   private pinchDistancePt: number | null = null;
@@ -464,17 +471,43 @@ export class PositionPage {
     this.refresh();
   }
 
+  ionViewWillEnter(): void {
+    this.backStack.setPageHandler(() => this.back());
+  }
+
+  ionViewWillLeave(): void {
+    this.backStack.setPageHandler(null);
+  }
+
+  canLeave(): boolean {
+    if (this.isLeaveConfirmed || !this.isLeaveConfirmNeeded()) {
+      return true;
+    }
+    this.isLeaveConfirmOpen.set(true);
+    return false;
+  }
+
   protected back(): void {
     if (this.sheetTab() !== null) {
       this.closeSheet();
       return;
     }
-    const session = this.session();
-    if (session && session.hasFired && !session.isFinished && !this.isFreePlay()) {
+    if (this.isLeaveConfirmNeeded()) {
       this.isLeaveConfirmOpen.set(true);
       return;
     }
     this.leave();
+  }
+
+  protected saveWhenHidden(): void {
+    if (document.visibilityState === 'hidden') {
+      this.saveSeries();
+    }
+  }
+
+  private isLeaveConfirmNeeded(): boolean {
+    const session = this.session();
+    return session !== null && session.hasFired && !session.isFinished && !this.isFreePlay();
   }
 
   protected stay(): void {
@@ -483,6 +516,7 @@ export class PositionPage {
 
   protected leave(): void {
     this.isLeaveConfirmOpen.set(false);
+    this.isLeaveConfirmed = true;
     this.saveSeries();
     const sandboxTerm = this.sandbox() ? this.sandboxTerm() : undefined;
     if (sandboxTerm) {
@@ -587,7 +621,11 @@ export class PositionPage {
 
   private saveSeries(): void {
     const session = this.session();
-    if (!session || session === this.savedSeriesSession || this.sandbox()) {
+    if (!session || this.sandbox()) {
+      return;
+    }
+    const seriesKey = `${this.seriesStartedAtIso}:${session.records.length}:${session.result() !== null}`;
+    if (seriesKey === this.savedSeriesKey) {
       return;
     }
     const series = journalSeries({
@@ -599,7 +637,7 @@ export class PositionPage {
       isTapTriggerChosen: this.progress.settings().isTapTrigger,
     });
     if (series) {
-      this.savedSeriesSession = session;
+      this.savedSeriesKey = seriesKey;
       this.progress.addSeries(series);
     }
   }

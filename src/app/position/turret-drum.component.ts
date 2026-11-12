@@ -1,4 +1,5 @@
 import { Component, computed, DestroyRef, inject, input, output, signal } from '@angular/core';
+import { backLayer } from '../services/back-stack.service';
 import { TurretAxis } from './position.model';
 
 interface DrumTick {
@@ -107,6 +108,7 @@ export class TurretDrumComponent {
   readonly turn = output<number>();
 
   protected readonly isLoupeOpen = signal(false);
+  private readonly loupeLayer = backLayer(() => this.isLoupeOpen(), () => this.isLoupeOpen.set(false));
   protected readonly isVertical = computed(() => this.axis() === 'windage');
   protected readonly halfLength = computed(() => VISIBLE_CLICKS * this.ptPerClick());
   protected readonly viewBox = computed(() => (this.isVertical() ? `0 0 40 ${2 * this.halfLength()}` : `0 0 ${2 * this.halfLength()} 40`));

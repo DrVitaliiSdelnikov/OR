@@ -1,18 +1,18 @@
 import { Component, computed, ElementRef, inject, viewChildren } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { ProgressStore } from '../services/progress.store';
 import { TermSheetService } from './term-sheet.service';
 import { TermTile, textbookView } from './textbook.model';
+import { BackLinkDirective } from '../services/back-link.directive';
 
 @Component({
   selector: 'or-textbook',
-  imports: [IonContent, RouterLink],
+  imports: [BackLinkDirective, IonContent],
   template: `
     <ion-content>
       <div class="textbook" data-test="textbook">
         <header class="header">
-          <a class="back" routerLink="/" aria-label="Назад" data-test="textbook-back">←</a>
+          <a class="back" orBackLink="/" aria-label="Назад" data-test="textbook-back">←</a>
           <div>
             <h1 class="title">Учебник курсанта</h1>
             <div class="counter mono" data-test="textbook-counter">{{ view().counterText }}</div>

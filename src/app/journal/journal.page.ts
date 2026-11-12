@@ -8,6 +8,7 @@ import { ProgressStore } from '../services/progress.store';
 import { CHECK_ERROR_TERMS, MAIN_CAUSE_TERMS } from '../textbook/term-links';
 import { TermTextComponent } from '../textbook/term-text.component';
 import { achievementsView, cardsView, errorsView, feedView, STATS_MIN_SHOTS, statsView } from './journal.model';
+import { BackLinkDirective } from '../services/back-link.directive';
 
 type JournalTab = 'feed' | 'errors' | 'cards' | 'stats' | 'achievements';
 
@@ -23,12 +24,12 @@ const PERCENT = 100;
 
 @Component({
   selector: 'or-journal',
-  imports: [IonContent, RouterLink, TermTextComponent],
+  imports: [BackLinkDirective, IonContent, RouterLink, TermTextComponent],
   template: `
     <ion-content>
       <div class="journal" data-test="journal">
         <header class="header">
-          <a class="back" routerLink="/" aria-label="Назад" data-test="journal-back">←</a>
+          <a class="back" orBackLink="/" aria-label="Назад" data-test="journal-back">←</a>
           <h1 class="title">Журнал стрелка</h1>
         </header>
 

@@ -94,6 +94,15 @@ describe('journal — a series from the position', () => {
     expect(added[0].id).toBe('new');
     expect(added.some(item => item.id === `old-${JOURNAL_LIMIT - 1}`)).toBe(false);
   });
+
+  it('U5 (A8): серия с тем же id заменяется на своём месте — запись «прервано» из фона становится итогом', () => {
+    const journal = [series({ id: 'newer' }), series({ id: 'same', isInterrupted: true }), series({ id: 'older' })];
+    const replaced = withSeries(journal, series({ id: 'same', isInterrupted: false, exerciseClass: 2 }));
+    expect(replaced.map(item => item.id)).toEqual(['newer', 'same', 'older']);
+    expect(replaced[1]).toMatchObject({ isInterrupted: false, exerciseClass: 2 });
+    const full = Array.from({ length: JOURNAL_LIMIT }, (_, index) => series({ id: `old-${index}` }));
+    expect(withSeries(full, series({ id: 'old-3' })).length).toBe(JOURNAL_LIMIT);
+  });
 });
 
 describe('journal — the feed', () => {

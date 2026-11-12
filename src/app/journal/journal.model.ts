@@ -149,6 +149,9 @@ export function journalSeries(input: SeriesInput): JournalSeries | null {
 }
 
 export function withSeries(journal: readonly JournalSeries[], series: JournalSeries): JournalSeries[] {
+  if (journal.some(saved => saved.id === series.id)) {
+    return journal.map(saved => (saved.id === series.id ? series : saved));
+  }
   return [series, ...journal].slice(0, JOURNAL_LIMIT);
 }
 

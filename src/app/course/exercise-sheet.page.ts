@@ -1,11 +1,12 @@
 import { Component, computed, inject, input, linkedSignal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { playability } from '../position/position.model';
 import { ProgressStore } from '../services/progress.store';
 import { TermTextComponent } from '../textbook/term-text.component';
 import { briefingCard } from './briefing.model';
+import { BackLinkDirective } from '../services/back-link.directive';
 
 const SCHEME_WIDTH = 300;
 const SCHEME_HEIGHT = 90;
@@ -16,12 +17,12 @@ const GROUND_Y = 66;
 
 @Component({
   selector: 'or-exercise-sheet',
-  imports: [IonContent, IonToggle, RouterLink, TermTextComponent],
+  imports: [BackLinkDirective, IonContent, IonToggle, TermTextComponent],
   template: `
     <ion-content>
       <div class="briefing-screen">
         <header class="header">
-          <a class="back" routerLink="/course" aria-label="Назад" data-test="sheet-back">←</a>
+          <a class="back" orBackLink="/course" aria-label="Назад" data-test="sheet-back">←</a>
         </header>
 
         @if (card(); as briefing) {

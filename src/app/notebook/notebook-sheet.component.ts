@@ -1,4 +1,5 @@
 import { afterNextRender, Component, computed, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
+import { backLayer } from '../services/back-stack.service';
 import { FeedbackService } from '../services/feedback.service';
 import { factorContributions, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
 import { PositionSession } from '../position/position-session';
@@ -149,6 +150,8 @@ export class NotebookSheetComponent {
   protected readonly dragOffsetPt = signal(0);
   protected readonly calcStep = signal<NotebookStepId | null>(null);
   protected readonly isFormulasOpen = signal(false);
+  private readonly calcStepLayer = backLayer(() => this.calcStep() !== null, () => this.closeStep());
+  private readonly formulasLayer = backLayer(() => this.isFormulasOpen(), () => this.isFormulasOpen.set(false));
   protected readonly view = computed(() => {
     this.revision();
     const session = this.session();

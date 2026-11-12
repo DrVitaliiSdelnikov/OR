@@ -1,5 +1,5 @@
 import { Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { CARTRIDGES } from '../../core/content';
 import { Vector2 } from '../../sim/noise';
@@ -16,6 +16,7 @@ import { ReticleSchemeComponent } from '../textbook/schemes/reticle-scheme.compo
 import { TextbookCards } from '../textbook/textbook-cards.service';
 import { gongRadiusPt, impactShiftPt, INTRO_SCENE, INTRO_STEPS, IntroProgress, isStepDone, MEASURE, measureHint, partKey, START_PROGRESS } from './intro.model';
 import { PartSchemeComponent } from './part-scheme.component';
+import { BackLinkDirective } from '../services/back-link.directive';
 
 const MIN_MAGNIFICATION = scopeById(INTRO_SCENE.scopeId).magnificationMin;
 const MAX_MAGNIFICATION = scopeById(INTRO_SCENE.scopeId).magnificationMax;
@@ -23,13 +24,13 @@ const GLASS_CENTER_PT = GLASS_SIZE_PT / 2;
 
 @Component({
   selector: 'or-intro',
-  imports: [IonContent, RouterLink, PartSchemeComponent, TurretDrumComponent, BoltTrackComponent, ReticleSchemeComponent, CartridgesSchemeComponent],
+  imports: [BackLinkDirective, IonContent, PartSchemeComponent, TurretDrumComponent, BoltTrackComponent, ReticleSchemeComponent, CartridgesSchemeComponent],
   template: `
     @let current = step();
     <ion-content>
       <div class="intro" data-test="intro">
         <header class="header">
-          <a class="back" routerLink="/course/00" aria-label="Назад" data-test="intro-back">←</a>
+          <a class="back" orBackLink="/course/00" aria-label="Назад" data-test="intro-back">←</a>
           <div>
             <h1 class="title">00 · Винтовка и прицел</h1>
             <div class="subtitle mono" data-test="intro-step">шаг {{ stepIndex() + 1 }} из {{ steps.length }} · {{ current.title }}</div>

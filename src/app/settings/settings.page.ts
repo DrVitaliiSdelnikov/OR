@@ -1,11 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import packageJson from '../../../package.json';
+import { backLayer } from '../services/back-stack.service';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
 import { DRUM_SENSITIVITIES, Settings, SettingsFlag, steppedVolume, VOLUME_STEPS } from './settings.model';
+import { BackLinkDirective } from '../services/back-link.directive';
 
 interface ToggleRow {
   key: SettingsFlag;
@@ -29,13 +30,13 @@ const DATA_TOGGLES: readonly ToggleRow[] = [
 
 @Component({
   selector: 'or-settings',
-  imports: [IonContent, IonToggle, NgTemplateOutlet, RouterLink],
+  imports: [BackLinkDirective, IonContent, IonToggle, NgTemplateOutlet],
   template: `
     @let settings = progress.settings();
     <ion-content>
       <div class="settings" data-test="settings">
         <header class="header">
-          <a class="back" routerLink="/" aria-label="Назад" data-test="settings-back">←</a>
+          <a class="back" orBackLink="/" aria-label="Назад" data-test="settings-back">←</a>
           <h1 class="title">Настройки</h1>
         </header>
 
@@ -155,6 +156,7 @@ export class SettingsPage {
   protected readonly volumeSteps = VOLUME_STEPS;
   protected readonly version = packageJson.version;
   protected readonly isResetAsked = signal(false);
+  private readonly resetConfirmLayer = backLayer(() => this.isResetAsked(), () => this.isResetAsked.set(false));
   protected readonly volumeStep = computed(() => Math.round(this.progress.settings().volume * VOLUME_STEPS));
   protected readonly handOrder = computed(() => (this.progress.settings().isLeftHanded ? ['ОГОНЬ', 'ДЕРЖАТЬ'] : ['ДЕРЖАТЬ', 'ОГОНЬ']));
 

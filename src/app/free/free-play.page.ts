@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import { NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId } from '../../core/types';
@@ -9,18 +9,19 @@ import { ScopeId } from '../../sim/scope-model';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
 import { ChoiceView, freePlayView } from './free-play.model';
+import { BackLinkDirective } from '../services/back-link.directive';
 
 type PickerKind = 'scope' | 'cartridge';
 
 @Component({
   selector: 'or-free-play',
-  imports: [IonContent, IonToggle, RouterLink],
+  imports: [BackLinkDirective, IonContent, IonToggle],
   template: `
     @let view = state();
     <ion-content>
       <div class="free" data-test="free-play">
         <header class="header">
-          <a class="back" routerLink="/" aria-label="Назад" data-test="free-back">←</a>
+          <a class="back" orBackLink="/" aria-label="Назад" data-test="free-back">←</a>
           <div>
             <h1 class="title">Свободная игра</h1>
             <div class="subtitle mono">параметры выстрела</div>

@@ -1,20 +1,21 @@
 import { Component, computed, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { rankHeader } from '../home/home.model';
 import { ProgressStore } from '../services/progress.store';
 import { ClassStamp, TrailNode, trailNodes } from './course-trail.model';
+import { BackLinkDirective } from '../services/back-link.directive';
 
 const STAMP_LABELS: Record<ClassStamp, string> = { gold: '1 кл.', silver: '2 кл.', bronze: '3 кл.' };
 
 @Component({
   selector: 'or-course-trail',
-  imports: [IonContent, RouterLink],
+  imports: [BackLinkDirective, IonContent],
   template: `
     <ion-content>
       <div class="trail-screen">
         <header class="header">
-          <a class="back" routerLink="/" aria-label="Назад" data-test="trail-back">←</a>
+          <a class="back" orBackLink="/" aria-label="Назад" data-test="trail-back">←</a>
           <div>
             <h1>Снайперская подготовка</h1>
             <div class="meta" data-test="trail-progress">пройдено {{ header().admissions }} / {{ header().admissionsTotal }} · {{ header().rankLabel }}</div>
