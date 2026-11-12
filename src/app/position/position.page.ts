@@ -37,7 +37,7 @@ import { resultSheet, ResultSheetView } from '../result/result.model';
 import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
-import { breathRing, correctionCells, drumCounterText, flagReadingText, isGlassTap, markerTarget, notebookSheetTopPt, playability, pressureText, TurretAxis } from './position.model';
+import { breathRing, correctionCells, drumCounterText, flagReadingText, isGlassTap, markerTarget, patrolLineText, notebookSheetTopPt, playability, pressureText, TurretAxis } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
 
 const MARKS_ON_GLASS = 8;
@@ -185,6 +185,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       title: isExerciseTask(session.def) ? `Упр. ${session.def.id} · ${session.def.title}` : session.def.title,
       instructorLine: this.isFreePlay() && !this.sandbox() && this.progress.freePlay().isInstructorNear ? instructorLineText(session.trueCorrection(this.scenarioTimeS(session))) : null,
       subtitle: `рубеж · ${distanceText} · цель ${session.firingLine.targetIndex + 1} / ${session.setup.targets.length}`,
+      patrolLine: session.patrol ? patrolLineText(session.patrol, session.patrolWalkedS(this.scenarioTimeS(session))) : null,
       wind: wind ? [`${wind.speedMps.toFixed(1)} м/с`, clockText(wind.clock)] : [session.def.conditions.windScale === 0 ? 'штиль' : '—'],
       isWindUnfilled: !tabs(notebook).wind && session.def.conditions.windScale !== 0,
       isNotEntered: entered === null,
@@ -726,16 +727,17 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       marks: this.marks,
       flags: session.scenario.flags.map((flag, index) => ({ distanceM: flag.distanceM, lateralWindMps: lateralWindMps(zones[index + 1]) })),
       timeS: performance.now() / 1000,
+      movingTargetShiftMil: session.followPatrol(this.scenarioTimeS(session)),
     });
   }
 
   private keepAimInScene(session: PositionSession): void {
     const radiusMil = targetRadiusMrad(session.target);
-    const key = `${session.target.distanceM}:${radiusMil}:${session.scope.magnification}`;
+    const key = `${session.target.distanceM}:${radiusMil}:${session.scope.magnification}:${session.patrol?.path.halfWidthM ?? 0}`;
     if (key !== this.aimLimitsKey || session !== this.aimLimitsSession) {
       this.aimLimitsKey = key;
       this.aimLimitsSession = session;
-      session.scope.setAimLimits(aimLimitsMil(session.target.distanceM, radiusMil, session.scope.magnification));
+      session.scope.setAimLimits(aimLimitsMil(session.target.distanceM, radiusMil, session.scope.magnification, session.patrol?.path.halfWidthM ?? 0));
     }
   }
 
@@ -851,6 +853,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     | 'isDopeNoted'
     | 'openCalcStep'
     | 'flagsRead'
+    | 'isAmbushTarget'
   > {
     const notebook = session.notebook;
     const station = notebook.readings.station;
@@ -873,6 +876,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       isDopeNoted: this.hasNotedDope(),
       openCalcStep: this.openCalcStep(),
       flagsRead: notebook.readings.flagCrosswindsMps?.filter(crosswindMps => crosswindMps !== null).length ?? 0,
+      isAmbushTarget: session.patrol?.isAmbush ?? false,
     };
   }
 

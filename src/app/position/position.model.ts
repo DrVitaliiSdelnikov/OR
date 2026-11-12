@@ -4,6 +4,7 @@ import { Vector2 } from '../../sim/noise';
 import { NotebookTotal } from '../../sim/notebook';
 import { formatScopeValue, isHoldoverSettled, ScopeModel } from '../../sim/scope-model';
 import { BREATH_HOLD_MAX_S, BreathState } from '../../sim/sway';
+import { movementClockAt, PatrolTarget } from '../../sim/patrol';
 import { TurretProgress } from '../../sim/turret-target';
 import { flagCrosswindText } from '../notebook/notebook.model';
 import { FlagReading } from '../scene/scene.model';
@@ -29,8 +30,7 @@ export interface Playability {
 
 type PositionFeature = 'intro' | 'pressure-trigger' | 'notebook-input' | 'manual-calc' | 'zone-flags' | 'moving-targets';
 
-// Что из позиции уже сделано; список растёт с A9.3 (флажки по трассе, движущиеся цели) и уходит, когда играбельно всё.
-const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['intro', 'pressure-trigger', 'notebook-input', 'manual-calc', 'zone-flags']);
+const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['intro', 'pressure-trigger', 'notebook-input', 'manual-calc', 'zone-flags', 'moving-targets']);
 const FEATURE_NAMES: Record<PositionFeature, string> = {
   intro: 'вводное',
   'pressure-trigger': 'спуск с давлением',
@@ -40,6 +40,8 @@ const FEATURE_NAMES: Record<PositionFeature, string> = {
   'moving-targets': 'движущиеся цели',
 };
 const PERCENT = 100;
+const CROSSWISE_CLOCK = 3;
+const HALF_TURN_CLOCK = 6;
 const TAP_MAX_TRAVEL_PT = 10;
 const TAP_MAX_DURATION_MS = 300;
 const FINGER_TO_MARKER = 1.5;
@@ -67,8 +69,9 @@ export function correctionCells(scope: ScopeModel, dial: DialClicks, total: Note
     axisCell('ГОР', horizontalText(scope, rightMil), hasTotal ? total.windageLeft.targetClicks : null, dial.windageLeft, clicks => horizontalText(scope, -clicks * scope.clickMrad)),
     { label: 'ДИСТ', value: distanceM === null ? '—' : `${distanceM} м`, target: null, isOnTarget: true },
   ];
-  if (hasTotal && (!isHoldoverSettled(scope, total.holdUpMil) || !isHoldoverSettled(scope, total.holdRightMil))) {
-    cells.push({ label: 'УДЕРЖ.', value: `${verticalText(scope, total.holdUpMil)} · ${horizontalText(scope, total.holdRightMil)}`, target: null, isOnTarget: true });
+  const holdRightMil = hasTotal ? total.holdRightMil + total.leadMil : 0;
+  if (hasTotal && (!isHoldoverSettled(scope, total.holdUpMil) || !isHoldoverSettled(scope, holdRightMil))) {
+    cells.push({ label: 'УДЕРЖ.', value: `${verticalText(scope, total.holdUpMil)} · ${horizontalText(scope, holdRightMil)}`, target: null, isOnTarget: true });
   }
   return cells;
 }
@@ -89,6 +92,7 @@ export function drumCounterText(axis: TurretAxis, progress: TurretProgress | nul
   return progress === null ? '' : drumCounter(axis, progress);
 }
 
+/** @deprecated Everything is playable since A9.3b; remove with `IMPLEMENTED_FEATURES` and the disabled «НА ПОЗИЦИЮ» reason in A10. */
 export function playability(def: PositionTask): Playability {
   const missing = requiredFeatures(def).filter(feature => !IMPLEMENTED_FEATURES.has(feature));
   return missing.length === 0 ? { isPlayable: true, reason: null } : { isPlayable: false, reason: `откроется позже: ${missing.map(feature => FEATURE_NAMES[feature]).join(', ')}` };
@@ -194,3 +198,23 @@ export function isGlassTap(start: Vector2, end: Vector2, durationMs: number): bo
 export function flagReadingText(flagDistanceM: number, reading: FlagReading): string {
   return `${flagDistanceM} м · ${reading.angleDeg}° · ${reading.isAtLimit ? '≥ ' : ''}${flagCrosswindText(reading.crosswindMps)}`;
 }
+
+export function patrolLineText(patrol: PatrolTarget, walkedS: number): string {
+  const clock = movementClockAt(patrol.path, walkedS);
+  const isCrosswise = clock % CROSSWISE_CLOCK === 0;
+  const speedText = patrol.path.speedMps.toFixed(1).replace('.', ',');
+  return `${speedText} м/с · ${isCrosswise ? 'поперёк' : 'наискось'} ${headingArrow(clock)}${patrol.isAmbush ? ' · засада' : ''}`;
+}
+
+function headingArrow(clock: number): string {
+  const isMovingRight = clock > 0 && clock < HALF_TURN_CLOCK;
+  if (clock % CROSSWISE_CLOCK === 0) {
+    return isMovingRight ? '→' : '←';
+  }
+  const isComingCloser = clock > CROSSWISE_CLOCK && clock < CROSSWISE_CLOCK + HALF_TURN_CLOCK;
+  if (isMovingRight) {
+    return isComingCloser ? '↘' : '↗';
+  }
+  return isComingCloser ? '↙' : '↖';
+}
+

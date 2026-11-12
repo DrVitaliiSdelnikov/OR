@@ -36,6 +36,7 @@ const isWindWritten = (state: InstructorSnapshot): boolean => (state.windSpeedMp
 const isRangeMeasured = (state: InstructorSnapshot): boolean => state.reticleMil !== null;
 const isWindStepRecorded = (state: InstructorSnapshot): boolean => state.recordedSteps.includes('wind');
 const isZonesStepRecorded = (state: InstructorSnapshot): boolean => state.recordedSteps.includes('zones');
+const isLeadStepRecorded = (state: InstructorSnapshot): boolean => state.recordedSteps.includes('lead');
 const isAnyFlagRead = (state: InstructorSnapshot): boolean => state.flagsRead > 0;
 const isFirstReviewClosed = (state: InstructorSnapshot): boolean => state.shotsFired > 1 || (hasFired(state) && !state.isReviewOpen);
 
@@ -289,6 +290,41 @@ const ZONE_FLAGS: readonly TeachingStep[] = [
   },
 ];
 
+const PATROL: readonly TeachingStep[] = [
+  {
+    id: 'patrol',
+    kind: 'explain',
+    anchor: fixed('position-patrol'),
+    text: fixed('Скорость и направление цели — здесь. Стрелка меняется на развороте'),
+    isDue: always,
+    isDone: hasFired,
+  },
+  {
+    id: 'lead-step',
+    kind: 'action',
+    anchor: fixed('tile-notebook'),
+    text: fixed('Посчитай упреждение: шаг «Упреждение» в блокноте'),
+    isDue: isScreenFree,
+    isDone: state => isLeadStepRecorded(state) || hasFired(state),
+  },
+  {
+    id: 'hold-lead',
+    kind: 'explain',
+    anchor: fixed('glass'),
+    text: fixed('Упреждение держи сеткой впереди цели, барабан не трогай. Веди сетку за целью и стреляй'),
+    isDue: state => state.isEntered && isScreenFree(state),
+    isDone: hasFired,
+  },
+  {
+    id: 'ambush',
+    kind: 'explain',
+    anchor: fixed('glass'),
+    text: fixed('Засада: поставь сетку впереди на упреждение и жди, пока цель дойдёт'),
+    isDue: state => state.isAmbushTarget && isScreenFree(state),
+    isDone: () => false,
+  },
+];
+
 const MILLING: readonly TeachingStep[] = [
   {
     ...notebookStep('Открой блокнот: дистанция неизвестна'),
@@ -391,6 +427,7 @@ const SCRIPTS: Partial<Record<ExerciseId, readonly TeachingStep[]>> = {
   '08': CARTRIDGE_CHANGE,
   '09': ZONE_FLAGS,
   '10': MANUAL_HARD,
+  '11': PATROL,
 };
 
 export function teachingScript(exerciseId: ExerciseId): readonly TeachingStep[] | null {

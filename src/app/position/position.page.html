@@ -6,6 +6,9 @@
       <div class="titles">
         <div class="title" data-test="position-title">{{ state?.title ?? def()?.title ?? '' }}</div>
         <div class="subtitle mono" data-test="position-subtitle">{{ state?.subtitle ?? '' }}</div>
+        @if (state?.patrolLine; as patrolLine) {
+          <div class="subtitle mono" data-test="position-patrol" data-hint="position-patrol">{{ patrolLine }}</div>
+        }
       </div>
       <button class="wind-tile mono" type="button" [disabled]="!state" (click)="openSheet('wind')" data-test="wind-tile" data-hint="wind-tile">
         @for (line of state?.wind ?? ['—']; track $index) {

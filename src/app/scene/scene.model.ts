@@ -35,6 +35,12 @@ export interface FlagPole {
   clothPt: number;
 }
 
+export interface TrolleyFrames {
+  body: Frame;
+  wheels: Frame[];
+  railY: number;
+}
+
 export interface FlagReading {
   angleDeg: number;
   crosswindMps: number;
@@ -47,6 +53,10 @@ export const FLAG_POLE_M = 2.5;
 const FLAG_CLOTH_M = 1;
 const FLAG_READING_STEP_DEG = 5;
 const MIN_TOUCH_PT = 44;
+const TROLLEY_LENGTH_M = 1.2;
+const TROLLEY_HEIGHT_M = 0.4;
+const TROLLEY_WHEEL_M = 0.2;
+const TROLLEY_WHEEL_SPREAD_M = 0.8;
 const BERM_HEIGHT_M = 2;
 const HIT_MARK_M = 0.08;
 const SKY_DRIFT_SHARE = 0.25;
@@ -154,6 +164,20 @@ export function isFlagBeforeBerm(flagDistanceM: number, targetDistanceM: number)
   return flagDistanceM < targetDistanceM;
 }
 
+export function trolleyFrame(gong: Vector2, targetRadiusMil: number, distanceM: number, ptPerMil: number): TrolleyFrames {
+  const groundY = groundLineY(gong, targetRadiusMil, ptPerMil);
+  const toPt = (metres: number) => milsAt(metres, distanceM) * ptPerMil;
+  const width = toPt(TROLLEY_LENGTH_M);
+  const height = toPt(TROLLEY_HEIGHT_M);
+  const wheelPt = toPt(TROLLEY_WHEEL_M);
+  const wheelXs = [-1, 1].map(side => gong.x + (side * toPt(TROLLEY_WHEEL_SPREAD_M)) / 2 - wheelPt / 2);
+  return {
+    body: { x: gong.x - width / 2, y: groundY - height, width, height },
+    wheels: wheelXs.map(x => ({ x, y: groundY - wheelPt / 2, width: wheelPt, height: wheelPt })),
+    railY: groundY,
+  };
+}
+
 export function flagPole(target: Vector2, targetRadiusMil: number, targetDistanceM: number, flagDistanceM: number, ptPerMil: number): FlagPole | null {
   if (!isFlagBeforeBerm(flagDistanceM, targetDistanceM)) {
     return null;
@@ -211,7 +235,7 @@ export function grassSwayPt(lateralWindMps: number, timeS: number): number {
   return lateralWindMps * GRASS_LEAN_PT_PER_MPS * (1 + GRASS_GUST_SHARE * Math.sin(timeS * GRASS_GUST_RATE));
 }
 
-export function aimLimitsMil(distanceM: number, targetRadiusMil: number, magnification: number): AimLimits {
+export function aimLimitsMil(distanceM: number, targetRadiusMil: number, magnification: number, patrolHalfWidthM = 0): AimLimits {
   const plateDiameterMil = 2 * targetRadiusMil;
   const groundUnderTargetMil = ((PHOTO.gong.standBottomPx - PHOTO.gong.plateCentrePx.y) / PHOTO.gong.plateDiameterPx) * plateDiameterMil;
   const bermMil = milsAt(BERM_HEIGHT_M, distanceM);
@@ -219,9 +243,10 @@ export function aimLimitsMil(distanceM: number, targetRadiusMil: number, magnifi
   const viewHalfMil = fieldOfViewMil(magnification) / 2;
   const groundBottomMil = -groundUnderTargetMil - groundPhotoMil;
   const skyTopMil = -groundUnderTargetMil + bermMil + SKY_ABOVE_BERM_MIL;
+  const sideLimitMil = Math.max(SIDE_LIMIT_MIL, milsAt(patrolHalfWidthM, distanceM) + viewHalfMil);
   return {
-    minX: -SIDE_LIMIT_MIL,
-    maxX: SIDE_LIMIT_MIL,
+    minX: -sideLimitMil,
+    maxX: sideLimitMil,
     minY: Math.min(groundBottomMil + viewHalfMil, -HOLD_RESERVE_MIL),
     maxY: Math.max(skyTopMil - viewHalfMil, HOLD_RESERVE_MIL),
   };

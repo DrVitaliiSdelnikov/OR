@@ -178,6 +178,7 @@ function breakdownWith(vectors: Partial<Record<CauseKind, [number, number]>>): M
     },
     plannedHold: zero,
     reticle: vectors.hold ? { upMrad: vectors.hold[0], rightMrad: vectors.hold[1] } : zero,
+    ...(vectors.lead ? { targetMotion: { upMrad: 0, rightMrad: -vectors.lead[1] } } : {}),
     triggerSpread: vectors.trigger ? { upMrad: vectors.trigger[0], rightMrad: vectors.trigger[1] } : zero,
     velocitySpread: vectors.rifle ? { upMrad: vectors.rifle[0], rightMrad: vectors.rifle[1] } : zero,
     rifleGroup: zero,
@@ -229,6 +230,8 @@ describe('causesView', () => {
     expect(causesView(breakdownWith({ trigger: [-0.2, 0.2], hold: [0.1, 0] })).conclusion).toBe('Сорвал спуск: ↘ 3 кл.');
     expect(causesView(breakdownWith({ zero: [-0.6, -0.6] })).conclusion).toBe('Ноль прицела: СТП ↙ 8 кл., спуск чистый');
     expect(causesView(breakdownWith({ wind: [0, 0.3], trigger: [0.1, 0] })).conclusion).toBe('Перекрут по ветру 3 кл.');
+    expect(causesView(breakdownWith({ lead: [0, -0.6] })).conclusion).toBe('Упреждение: пуля ← на 6 кл. от цели, спуск чистый');
+    expect(causesView(breakdownWith({ lead: [0, -0.6] })).rows.map(row => row.name)).toContain('Упреждение');
   });
 
   it('no player error from a click: the rifle when grey causes show, otherwise clean', () => {

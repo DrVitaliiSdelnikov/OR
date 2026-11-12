@@ -80,6 +80,7 @@ const CAUSE_NAMES: Record<CauseKind, string> = {
   calc: 'Расчёт',
   wind: 'Оценка ветра',
   hold: 'Удержание',
+  lead: 'Упреждение',
   trigger: 'Спуск',
   zero: 'Ноль прицела',
   formula: 'Упрощение формулы',
@@ -414,6 +415,8 @@ function mainCausePhrase(main: MissCause, breakdown: MissBreakdown): string {
       return `Расчёт увёл пулю ${directionArrow(main.vector)} на ${main.clicks} кл.`;
     case 'hold':
       return `Сетку увело ${directionArrow(main.vector)} на ${main.clicks} кл.`;
+    case 'lead':
+      return `Упреждение: пуля ${directionArrow(main.vector)} на ${main.clicks} кл. от цели`;
     case 'trigger':
       return `Сорвал спуск: ${shift}`;
     default:

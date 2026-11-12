@@ -23,6 +23,7 @@ export const CAUSE_TERMS: Record<CauseKind, string> = {
   calc: 'САМ',
   wind: 'ветер',
   hold: 'дыхание',
+  lead: 'упреждение',
   trigger: 'спуск',
   zero: 'ноль',
   'cold-bore': 'холодный выстрел',
@@ -35,6 +36,7 @@ export const MAIN_CAUSE_TERMS: Record<MainCause, string> = {
   'wind-under': 'ветер',
   'wind-over': 'ветер',
   hold: 'дыхание',
+  lead: 'упреждение',
   trigger: 'спуск',
   zero: 'ноль',
 };

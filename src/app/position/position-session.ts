@@ -54,6 +54,7 @@ import { FireOutcome, ScopeSession } from '../../sim/scope-session';
 import { diagnoseShot, dopeNoteElevationMil, isCallAccurate, secondShotCorrection, ShotDiagnosis, TurretCorrection, warmImpact } from '../../sim/shot-review';
 import { TriggerAccessibility } from '../../sim/trigger';
 import { TurretProgress, turretProgress } from '../../sim/turret-target';
+import { movementClockAt, movingShotOptions, PatrolTarget, targetOffsetMil } from '../../sim/patrol';
 import { FlagReading, flagReading, isFlagBeforeBerm } from '../scene/scene.model';
 import { TurretAxis } from './position.model';
 
@@ -120,6 +121,7 @@ export class PositionSession {
   private currentNotebook: Notebook;
   private entered: NotebookTotal | null = null;
   private stationMeasurements = 0;
+  private patrolStartS: number | null = null;
   private lastCall: Correction | null = null;
   private readonly shotRecords: ExerciseShotRecord[] = [];
   private readonly groupPoints: Correction[] = [];
@@ -179,6 +181,28 @@ export class PositionSession {
 
   get target(): Target {
     return this.setup.targets[this.firingLine.targetIndex];
+  }
+
+  get patrol(): PatrolTarget | null {
+    return this.setup.patrol?.[this.firingLine.targetIndex] ?? null;
+  }
+
+  patrolWalkedS(timeS: number): number {
+    return timeS - (this.patrolStartS ?? timeS);
+  }
+
+  followPatrol(timeS: number): number | null {
+    const patrol = this.patrol;
+    if (!patrol) {
+      return null;
+    }
+    this.patrolStartS ??= timeS;
+    const walkedS = timeS - this.patrolStartS;
+    const clock = movementClockAt(patrol.path, walkedS);
+    if (this.currentNotebook.context.target.movement?.clock !== clock) {
+      this.currentNotebook = changeContext(this.currentNotebook, { target: { ...this.notebookTarget(), movement: { speedMps: patrol.path.speedMps, clock } } });
+    }
+    return targetOffsetMil(patrol.path, this.target.distanceM, walkedS);
   }
 
   get total(): NotebookTotal {
@@ -341,7 +365,8 @@ export class PositionSession {
     const stageIndex = this.firingLine.stageIndex;
     const targetIndex = this.firingLine.targetIndex;
     const target = this.target;
-    const outcome = this.scope.fire();
+    const patrol = this.patrol;
+    const outcome = this.relativeToGong(this.scope.fire(), timeS);
     if (!outcome) {
       return null;
     }
@@ -350,6 +375,7 @@ export class PositionSession {
       hold: outcome.hold,
       isColdBore,
       sightOffset: this.setup.sightOffset,
+      ...(patrol && this.patrolStartS !== null ? movingShotOptions(patrol.path, timeS - this.patrolStartS) : {}),
     });
     const breakdown = this.breakdownOf(notebookAtShot, target, timeS, outcome, result);
     this.groupPoints.push(groupPoint(breakdown));
@@ -371,6 +397,7 @@ export class PositionSession {
       windSpeedMps: windAt(this.scenario, timeS)[0].speedMps,
       ...(check ? { check } : {}),
       ...(rangeEstimateM !== undefined ? { rangeEstimateM } : {}),
+      ...(patrol ? { isAmbush: patrol.isAmbush } : {}),
     };
     this.shotRecords.push(record);
     const events = this.firingLine.recordShot(result.isHit);
@@ -456,6 +483,7 @@ export class PositionSession {
       sightOffset: result.sightOffset,
       hasKnockedSight: this.def.hasKnockedSight,
       clickMil,
+      ...(this.patrol ? { targetMotion: result.targetMotion } : {}),
     });
   }
 
@@ -489,7 +517,19 @@ export class PositionSession {
     return { notebook: this.currentNotebook, truth, inputs, result };
   }
 
+  private relativeToGong(outcome: FireOutcome | null, timeS: number): FireOutcome | null {
+    const shiftMil = this.followPatrol(timeS);
+    if (!outcome || shiftMil === null) {
+      return outcome;
+    }
+    const fromGong = (point: Correction): Correction => ({ upMrad: point.upMrad, rightMrad: point.rightMrad - shiftMil });
+    return { ...outcome, hold: fromGong(outcome.hold), reticle: fromGong(outcome.reticle) };
+  }
+
   private followNewTarget(isNewTarget: boolean): void {
+    if (isNewTarget) {
+      this.patrolStartS = null;
+    }
     const card = this.cards.get(this.firingLine.cartridgeId)!;
     this.currentNotebook = this.withFlagsBehindBerm(changeContext(this.currentNotebook, isNewTarget ? { card, target: this.notebookTarget() } : { card }));
     const next = this.total;

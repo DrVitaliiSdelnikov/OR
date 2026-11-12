@@ -176,3 +176,30 @@ describe('mainCauseOf (A6.3)', () => {
     expect(mainCauseOf(missBreakdown(input()))).toBeNull();
   });
 });
+
+describe('missBreakdown — a moving target (A9.3b)', () => {
+  const movingImpact = (value: MissBreakdownInput): Correction => {
+    const still = impactOf(value);
+    return point(still.upMrad, still.rightMrad - value.targetMotion!.rightMrad);
+  };
+
+  it('U8: held 1.2 ahead while the target moved 1.8 — the lead petal is 6 clicks back, the hold petal is only vertical', () => {
+    const value = input({ reticle: point(0.05, 1.2), targetMotion: point(0, 1.8) });
+    expect(cause(value, 'lead').vector.rightMrad).toBeCloseTo(-0.6, 9);
+    expect(cause(value, 'lead').clicks).toBe(6);
+    expect(cause(value, 'lead').isPlayerError).toBe(true);
+    expect(cause(value, 'hold').vector).toEqual(point(0.05, 0));
+    expect(missBreakdown(value).main).toBe('lead');
+  });
+
+  it('all causes still add up to the impact', () => {
+    const value = input({ plannedHold: point(0.1, 0.2), reticle: point(0.13, 1.5), triggerSpread: point(-0.05, 0.11), targetMotion: point(0, 1.65) });
+    const sum = missBreakdown(value).causes.reduce((total, next) => point(total.upMrad + next.vector.upMrad, total.rightMrad + next.vector.rightMrad), ZERO);
+    expect(sum.upMrad).toBeCloseTo(movingImpact(value).upMrad, 9);
+    expect(sum.rightMrad).toBeCloseTo(movingImpact(value).rightMrad, 9);
+  });
+
+  it('a still target has no lead petal', () => {
+    expect(missBreakdown(input()).causes.map(candidate => candidate.kind)).not.toContain('lead');
+  });
+});

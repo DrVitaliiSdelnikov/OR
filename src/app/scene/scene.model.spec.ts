@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ptPerMil } from '../../sim/scope-model';
 import { FLAG_DEG_PER_MPS } from '../../core/content';
-import { aimLimitsMil, bermLayout, FLAG_PHOTOS, flagFootY, flagHitBox, flagIndexAt, flagPole, flagReading, flagSprite, gongFrame, grassFrame, isFlagBeforeBerm, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, PHOTO, skyFrame } from './scene.model';
+import { aimLimitsMil, bermLayout, trolleyFrame, FLAG_PHOTOS, flagFootY, flagHitBox, flagIndexAt, flagPole, flagReading, flagSprite, gongFrame, grassFrame, isFlagBeforeBerm, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, horizonY, PHOTO, skyFrame } from './scene.model';
 
 const GLASS_PT = 276;
 const AT_8X = ptPerMil(8);
@@ -235,5 +235,35 @@ describe('flags along the range (A9.3a)', () => {
     ];
     expect(flagIndexAt({ x: 109, y: 130 }, overlapping)).toBe(1);
     expect(flagIndexAt({ x: 103, y: 130 }, overlapping)).toBe(0);
+  });
+});
+
+describe('the patrol trolley (A9.3b)', () => {
+  const AT_12X = ptPerMil(12);
+
+  it('U6: at 300 m on 12× the body is 1.2 m = 4 MIL wide, centred under the gong, standing on its ground line', () => {
+    const trolley = trolleyFrame(target, halfMetreAt300, 300, AT_12X);
+    expect(trolley.body.width).toBeCloseTo(4 * AT_12X, 6);
+    expect(trolley.body.x + trolley.body.width / 2).toBeCloseTo(target.x, 6);
+    expect(trolley.body.y + trolley.body.height).toBeCloseTo(groundLineY(target, halfMetreAt300, AT_12X), 6);
+    expect(trolley.body.height).toBeCloseTo((0.4 / 300) * 1000 * AT_12X, 6);
+    expect(trolley.railY).toBeCloseTo(groundLineY(target, halfMetreAt300, AT_12X), 6);
+  });
+
+  it('two wheels under the body, inside its width', () => {
+    const trolley = trolleyFrame(target, halfMetreAt300, 300, AT_12X);
+    expect(trolley.wheels).toHaveLength(2);
+    for (const wheel of trolley.wheels) {
+      expect(wheel.x).toBeGreaterThanOrEqual(trolley.body.x);
+      expect(wheel.x + wheel.width).toBeLessThanOrEqual(trolley.body.x + trolley.body.width);
+    }
+  });
+
+  it('the aim may follow a patrol beyond the usual 20 MIL to the side', () => {
+    const halfWidthM = 13.6;
+    const limits = aimLimitsMil(300, halfMetreAt300, 8, halfWidthM);
+    expect(limits.maxX).toBeGreaterThanOrEqual((halfWidthM / 300) * 1000);
+    expect(limits.minX).toBe(-limits.maxX);
+    expect(aimLimitsMil(300, halfMetreAt300, 8, 0).maxX).toBe(20);
   });
 });

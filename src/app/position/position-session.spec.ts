@@ -5,6 +5,7 @@ import { BallisticsEngine } from '../../core/engine';
 import { gaugeWindAt, lateralWindMps, windAt } from '../../core/scenario';
 import { exerciseById } from '../../sim/course';
 import { CauseKind, groupPoint, MissBreakdown } from '../../sim/miss-breakdown';
+import { movementClockAt, targetOffsetMil } from '../../sim/patrol';
 import { flagReading } from '../scene/scene.model';
 import { PositionSession } from './position-session';
 
@@ -13,7 +14,7 @@ const ACCESSIBILITY = { isZoneLarger: false, isMarkerDriftOff: true };
 const ON_TARGET = { x: 0, y: 0 };
 const FAR_OFF = { x: 6, y: 0 };
 
-async function start(id: '01' | '02' | '04' | '05' | '06' | '08' | '09' | '10', seed = 11): Promise<PositionSession> {
+async function start(id: '01' | '02' | '04' | '05' | '06' | '08' | '09' | '10' | '11', seed = 11): Promise<PositionSession> {
   return PositionSession.start({ def: exerciseById(id)!, seed, engine, accessibility: ACCESSIBILITY });
 }
 
@@ -763,5 +764,56 @@ describe('PositionSession — flags along the range (09, A9.3a)', () => {
     const session = await start('09');
     const behindBerm = (distanceM: number) => [200, 400, 600].flatMap((flagM, index) => (flagM >= distanceM ? [index] : []));
     expect(session.notebook.readings.flagsBehindBerm).toEqual(behindBerm(session.target.distanceM));
+  });
+});
+
+describe('PositionSession — the patrol (11, A9.3b)', () => {
+  it('the gong walks its path from the moment the target shows up', async () => {
+    const session = await start('11');
+    const path = session.patrol!.path;
+    const startS = session.scenario.startTimeS;
+    expect(session.followPatrol(startS)).toBeCloseTo(targetOffsetMil(path, session.target.distanceM, 0), 9);
+    expect(session.followPatrol(startS + 4)).toBeCloseTo(targetOffsetMil(path, session.target.distanceM, 4), 9);
+    expect(session.patrol!.isAmbush).toBe(false);
+  });
+
+  it('a still target has no patrol', async () => {
+    const session = await start('04');
+    expect(session.patrol).toBeNull();
+    expect(session.followPatrol(session.scenario.startTimeS)).toBeNull();
+  });
+
+  it('the notebook knows the speed and the current heading; after the turn the heading flips', async () => {
+    const session = await start('11');
+    const path = session.patrol!.path;
+    const startS = session.scenario.startTimeS;
+    session.followPatrol(startS);
+    expect(session.notebook.context.target.movement).toEqual({ speedMps: path.speedMps, clock: movementClockAt(path, 0) });
+    const afterTurnS = (4 * path.halfWidthM) / path.speedMps - 1;
+    session.followPatrol(startS + afterTurnS);
+    expect(session.notebook.context.target.movement!.clock).toBe(movementClockAt(path, afterTurnS));
+    expect(movementClockAt(path, afterTurnS)).not.toBe(movementClockAt(path, 0));
+  });
+
+  it('the shot counts from the gong where it is: aiming at the empty start point misses, aiming at the gong lands near it', async () => {
+    const aimedAtStart = await start('11');
+    dialToTarget(aimedAtStart);
+    const startS = aimedAtStart.scenario.startTimeS;
+    const shiftMil = aimedAtStart.followPatrol(startS)!;
+    expect(Math.abs(shiftMil)).toBeGreaterThan(5);
+    aimedAtStart.scope.aim = { x: 0, y: 0 };
+    const missed = (await aimedAtStart.fire(startS))!;
+    expect(Math.abs(missed.result.impact.rightMrad)).toBeGreaterThan(4);
+    expect(missed.record.isHit).toBe(false);
+    expect(missed.record.isAmbush).toBe(false);
+    expect(Math.abs(missed.result.targetMotion.rightMrad)).toBeGreaterThan(0);
+
+    const aimedAtGong = await start('11');
+    dialToTarget(aimedAtGong);
+    aimedAtGong.followPatrol(startS);
+    aimedAtGong.scope.aim = { x: shiftMil, y: 0 };
+    const near = (await aimedAtGong.fire(startS))!;
+    expect(Math.abs(near.result.impact.rightMrad)).toBeLessThan(1.5);
+    expect(near.review.breakdown.causes.map(cause => cause.kind)).toContain('lead');
   });
 });

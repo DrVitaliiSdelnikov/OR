@@ -35,6 +35,7 @@ function snapshot(exerciseId: ExerciseId, fields: Partial<InstructorSnapshot> = 
     isDopeNoted: false,
     openCalcStep: null,
     flagsRead: 0,
+    isAmbushTarget: false,
     ...fields,
   };
 }
@@ -213,6 +214,23 @@ describe('teaching — 09 flags along the range', () => {
   });
 });
 
+describe('teaching — 11 the patrol', () => {
+  it('U9: the subtitle, the lead step, holding with the reticle, then the ambush at target 6; 4 hints', () => {
+    const start = next(snapshot('11'))!;
+    expect([start.anchor, start.kind, start.count, start.text]).toEqual(['position-patrol', 'explain', 4, 'Скорость и направление цели — здесь. Стрелка меняется на развороте']);
+    const notebook = next(snapshot('11'), ['patrol'])!;
+    expect([notebook.anchor, notebook.kind, notebook.text]).toEqual(['tile-notebook', 'action', 'Посчитай упреждение: шаг «Упреждение» в блокноте']);
+    expect(next(snapshot('11', { recordedSteps: ['lead'] }), ['patrol'])).toBeNull();
+    const hold = next(snapshot('11', { recordedSteps: ['lead'], isEntered: true }), ['patrol'])!;
+    expect([hold.anchor, hold.text]).toEqual(['glass', 'Упреждение держи сеткой впереди цели, барабан не трогай. Веди сетку за целью и стреляй']);
+    const fired = snapshot('11', { shotsFired: 3, recordedSteps: ['lead'], isEntered: true });
+    expect(next(fired, ['patrol', 'hold-lead'])).toBeNull();
+    const ambush = next({ ...fired, isAmbushTarget: true }, ['patrol', 'hold-lead'])!;
+    expect([ambush.anchor, ambush.number, ambush.text]).toEqual(['glass', 4, 'Засада: поставь сетку впереди на упреждение и жди, пока цель дойдёт']);
+    expect(next({ ...fired, isAmbushTarget: true }, ['patrol', 'hold-lead', 'ambush'])).toBeNull();
+  });
+});
+
 describe('teaching — 08 cartridge change', () => {
   it('waits for the empty magazine, names the next cartridge, then its own card', () => {
     expect(next(snapshot('08', { shotsFired: 1 }))).toBeNull();
@@ -265,9 +283,9 @@ describe('teaching — 02 and 03 moments', () => {
     expect(next({ ...fired, isBoltCycleDue: false, shotsFired: 2 }, ['breath'])).toBeNull();
   });
 
-  it('scripts: 01–06, 08–10; none for 00, 07, 11, 12', () => {
-    expect((['01', '02', '03', '04', '05', '06', '08', '09', '10'] as ExerciseId[]).every(id => teachingScript(id) !== null)).toBe(true);
-    expect((['00', '07', '11', '12'] as ExerciseId[]).map(teachingScript)).toEqual([null, null, null, null]);
+  it('scripts: 01–06, 08–11; none for 00, 07, 12', () => {
+    expect((['01', '02', '03', '04', '05', '06', '08', '09', '10', '11'] as ExerciseId[]).every(id => teachingScript(id) !== null)).toBe(true);
+    expect((['00', '07', '12'] as ExerciseId[]).map(teachingScript)).toEqual([null, null, null]);
   });
 });
 

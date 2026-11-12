@@ -34,4 +34,5 @@ export interface InstructorSnapshot {
   isDopeNoted: boolean;
   openCalcStep: NotebookStepId | null;
   flagsRead: number;
+  isAmbushTarget: boolean;
 }

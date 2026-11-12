@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { NotebookTotal } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
-import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, flagReadingText, isGlassTap, markerTarget, NOTEBOOK_SHEET_MIN_HEIGHT_PT, notebookSheetTopPt, playability, pressureText } from './position.model';
+import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, flagReadingText, isGlassTap, patrolLineText, markerTarget, NOTEBOOK_SHEET_MIN_HEIGHT_PT, notebookSheetTopPt, playability, pressureText } from './position.model';
 
 const scope = scopeById('course-tree');
 
@@ -67,15 +67,10 @@ describe('drum counter', () => {
 });
 
 describe('playability', () => {
-  it('00-10 and 12 are playable now (A9.3a opens 09 and 12)', () => {
-    for (const id of ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '12'] as const) {
+  it('every exercise is playable (A9.3b opens 11, the last one)', () => {
+    for (const id of ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'] as ExerciseId[]) {
       expect(playability(exerciseById(id)!), id).toEqual({ isPlayable: true, reason: null });
     }
-  });
-
-  it('the rest say what is missing', () => {
-    const reason = (id: ExerciseId) => playability(exerciseById(id)!).reason;
-    expect(reason('11')).toBe('откроется позже: движущиеся цели');
   });
 });
 
@@ -145,3 +140,22 @@ describe('reading a flag in the glass (A9.3a)', () => {
     expect(flagReadingText(200, { angleDeg: 0, crosswindMps: 0, isAtLimit: false })).toBe('200 м · 0° · штиль');
   });
 });
+
+describe('the patrol on the position (A9.3b)', () => {
+  const crosswise = { speedMps: 1.1, movementClock: 3, startOffsetM: -8.8, halfWidthM: 8.8 };
+
+  it('U7: speed, heading and where it walks now; the arrow flips after the turn', () => {
+    expect(patrolLineText({ path: crosswise, isAmbush: false }, 0)).toBe('1,1 м/с · поперёк →');
+    expect(patrolLineText({ path: crosswise, isAmbush: false }, 17)).toBe('1,1 м/с · поперёк ←');
+    expect(patrolLineText({ path: { ...crosswise, movementClock: 1.5, startOffsetM: -5, halfWidthM: 5 }, isAmbush: false }, 0)).toBe('1,1 м/с · наискось ↗');
+    expect(patrolLineText({ path: { ...crosswise, movementClock: 10.5, startOffsetM: 5, halfWidthM: 5 }, isAmbush: true }, 0)).toBe('1,1 м/с · наискось ↖ · засада');
+  });
+
+  it('the lead is held with the reticle: it joins the УДЕРЖ. cell, the drum stays on the wind', () => {
+    const withLead = { ...total(16, 6), leadMil: 1.8 };
+    const cells = correctionCells(scope, { elevation: 16, windageLeft: 6 }, withLead, 400);
+    expect(cells[1].target).toBeNull();
+    expect(cells[3]).toEqual({ label: 'УДЕРЖ.', value: '↑ 0.0 · → 1.8 R', target: null, isOnTarget: true });
+  });
+});
+

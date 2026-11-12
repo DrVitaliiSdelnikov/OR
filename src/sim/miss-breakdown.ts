@@ -1,7 +1,7 @@
 import { roundToClicks } from '../core/game-formulas';
 import { Correction } from '../core/types';
 
-export type CauseKind = 'calc' | 'wind' | 'hold' | 'trigger' | 'zero' | 'formula' | 'rifle' | 'cold-bore';
+export type CauseKind = 'calc' | 'wind' | 'hold' | 'lead' | 'trigger' | 'zero' | 'formula' | 'rifle' | 'cold-bore';
 export type WindVerdict = 'under' | 'over';
 export type MainCause = Exclude<CauseKind, 'wind' | 'formula' | 'rifle' | 'cold-bore'> | 'wind-under' | 'wind-over';
 
@@ -19,6 +19,7 @@ export interface MissBreakdownInput {
   sightOffset: Correction;
   hasKnockedSight: boolean;
   clickMil: number;
+  targetMotion?: Correction;
 }
 
 export interface MissCause {
@@ -49,7 +50,7 @@ export function missBreakdown(input: MissBreakdownInput): MissBreakdown {
   const vectors: [CauseKind, Correction, boolean][] = [
     ['calc', minus(plus(calcBase, input.plannedHold), input.formulaPlayerWind), true],
     ['wind', minus(input.formulaPlayerWind, input.formulaTruth), true],
-    ['hold', minus(input.reticle, input.plannedHold), true],
+    ...holdAndLead(input),
     ['trigger', input.triggerSpread, true],
     ...(input.hasKnockedSight ? [['zero', plus(input.sightOffset, input.dial), true] as [CauseKind, Correction, boolean]] : []),
     ['formula', minus(input.formulaTruth, input.ideal), false],
@@ -69,6 +70,18 @@ export function missBreakdown(input: MissBreakdownInput): MissBreakdown {
     isTriggerClean: trigger.clicks === 0,
     windVerdict: windCause.clicks === 0 ? null : Math.abs(input.formulaPlayerWind.rightMrad) < Math.abs(input.formulaTruth.rightMrad) ? 'under' : 'over',
   };
+}
+
+// На движущейся цели вынос сетки по горизонтали сверх плана — это упреждение, а не дрожь удержания.
+function holdAndLead(input: MissBreakdownInput): [CauseKind, Correction, boolean][] {
+  const held = minus(input.reticle, input.plannedHold);
+  if (!input.targetMotion) {
+    return [['hold', held, true]];
+  }
+  return [
+    ['hold', { upMrad: held.upMrad, rightMrad: 0 }, true],
+    ['lead', { upMrad: -input.targetMotion.upMrad, rightMrad: held.rightMrad - input.targetMotion.rightMrad }, true],
+  ];
 }
 
 export function mainCauseOf(breakdown: MissBreakdown): MainCause | null {

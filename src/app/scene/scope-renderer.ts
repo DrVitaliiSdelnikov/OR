@@ -4,7 +4,7 @@ import { Vector2 } from '../../sim/noise';
 import { reticleMarks } from '../../sim/reticle';
 import { EYEPIECE_RADIUS_PT, ScopeModel } from '../../sim/scope-model';
 import { loadSceneImages, SceneImages } from './scene-images';
-import { bermLayout, FLAG_PHOTOS, FLAG_POLE_M, FLAG_SIDE_OFFSET_M, flagPole, FlagSprite, flagSprite, gongFrame, grassFrame, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, skyFrame, tileXs } from './scene.model';
+import { bermLayout, FLAG_PHOTOS, FLAG_POLE_M, FLAG_SIDE_OFFSET_M, flagPole, FlagSprite, flagSprite, gongFrame, grassFrame, trolleyFrame, grassSwayPt, groundFrame, groundLineY, hitMarkFrame, skyFrame, tileXs } from './scene.model';
 
 export interface FlagView {
   distanceM: number;
@@ -22,6 +22,7 @@ export interface SceneFrame {
   marks: Correction[];
   flags: FlagView[];
   timeS: number;
+  movingTargetShiftMil: number | null;
 }
 
 /** @deprecated Drawn-scene flag feet; the photo scene uses `flagFootY`. Remove in A9.2. */
@@ -39,6 +40,11 @@ const MIL_DOT_RADIUS_MIL = 0.1;
 const MIN_MIL_DOT_RADIUS_PT = 1;
 const THICK_POST_WIDTH_PT = 4;
 const GROUND_FILL = '#8f7f55';
+// Drawn trolley until the F2 photo arrives (brief 15).
+const TROLLEY_OLIVE = '#4a4f33';
+const TROLLEY_WHEEL = '#1f2119';
+const RAIL_STEEL = '#55585a';
+const RAIL_WIDTH_M = 0.07;
 
 export class ScopeRenderer {
   private readonly context: CanvasRenderingContext2D;
@@ -63,19 +69,29 @@ export class ScopeRenderer {
 
     const targetX = center + frame.targetOffsetPt.x;
     const targetY = center + frame.targetOffsetPt.y;
+    const gongX = targetX + (frame.movingTargetShiftMil ?? 0) * frame.ptPerMil;
     const images = this.images;
     if (images) {
       this.drawPhotoScene(images, frame, targetX, targetY);
-      this.drawGong(images, frame, targetX, targetY);
     } else {
       this.drawScene(frame, targetX, targetY);
-      this.drawTarget(frame, targetX, targetY);
+    }
+    if (frame.movingTargetShiftMil !== null) {
+      this.drawRail(frame, gongX, targetY);
+    }
+    if (images) {
+      this.drawGong(images, frame, gongX, targetY);
+    } else {
+      this.drawTarget(frame, gongX, targetY);
+    }
+    if (frame.movingTargetShiftMil !== null) {
+      this.drawTrolley(frame, gongX, targetY);
     }
     this.drawFlags(frame, targetX, targetY, images);
     if (images) {
       this.drawNearGrass(images, frame, targetX, targetY);
     }
-    this.drawMarks(frame, targetX, targetY, images);
+    this.drawMarks(frame, gongX, targetY, images);
     this.drawReticle(frame, center);
     this.drawVignette(center);
     context.restore();
@@ -136,6 +152,30 @@ export class ScopeRenderer {
   private drawGong(images: SceneImages, frame: SceneFrame, targetX: number, targetY: number): void {
     const gong = gongFrame({ x: targetX, y: targetY }, frame.targetRadiusMil, frame.ptPerMil);
     this.context.drawImage(images.gong, gong.x, gong.y, gong.width, gong.height);
+  }
+
+  private drawRail(frame: SceneFrame, gongX: number, targetY: number): void {
+    const railY = trolleyFrame({ x: gongX, y: targetY }, frame.targetRadiusMil, frame.targetDistanceM, frame.ptPerMil).railY;
+    const context = this.context;
+    context.strokeStyle = RAIL_STEEL;
+    context.lineWidth = Math.max(1, frame.ptPerMil * (RAIL_WIDTH_M / frame.targetDistanceM) * 1000);
+    context.beginPath();
+    context.moveTo(0, railY);
+    context.lineTo(GLASS_SIZE_PT, railY);
+    context.stroke();
+  }
+
+  private drawTrolley(frame: SceneFrame, gongX: number, targetY: number): void {
+    const trolley = trolleyFrame({ x: gongX, y: targetY }, frame.targetRadiusMil, frame.targetDistanceM, frame.ptPerMil);
+    const context = this.context;
+    context.fillStyle = TROLLEY_OLIVE;
+    context.fillRect(trolley.body.x, trolley.body.y, trolley.body.width, trolley.body.height);
+    context.fillStyle = TROLLEY_WHEEL;
+    for (const wheel of trolley.wheels) {
+      context.beginPath();
+      context.arc(wheel.x + wheel.width / 2, wheel.y + wheel.height / 2, wheel.width / 2, 0, Math.PI * 2);
+      context.fill();
+    }
   }
 
   private drawNearGrass(images: SceneImages, frame: SceneFrame, targetX: number, targetY: number): void {

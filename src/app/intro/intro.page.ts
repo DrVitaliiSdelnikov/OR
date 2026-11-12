@@ -256,6 +256,7 @@ export class IntroPage {
       nearWindMps: 0,
       marks: [],
       flags: [],
+      movingTargetShiftMil: null,
       timeS: performance.now() / 1000,
     });
   }
