@@ -176,3 +176,9 @@ export function boltHandlePosition(step: BoltStep, progress: number): Vector2 {
       return { x: BOLT_TRACK_HOME.x, y: raisedY + BOLT_STEP_TRAVEL_PT.down * progress };
   }
 }
+
+export const NOTEBOOK_SHEET_MIN_HEIGHT_PT = 360;
+
+export function notebookSheetTopPt(belowCrosshairPt: number, viewportHeightPt: number): number {
+  return Math.min(belowCrosshairPt, viewportHeightPt - NOTEBOOK_SHEET_MIN_HEIGHT_PT);
+}

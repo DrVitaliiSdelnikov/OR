@@ -76,6 +76,12 @@ const HOLD_RING_RADIUS = 48;
     .fire:disabled { opacity: 0.45; }
     .pressure { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); margin-right: var(--space-2); font: 700 var(--type-title) / 26px var(--font-mono); color: var(--device-accent); white-space: nowrap; }
     .rounds { position: absolute; bottom: -18px; right: 0; font: 500 var(--type-label) / 16px var(--font-mono); color: var(--device-text-muted); }
+    @media (max-height: 760px) {
+      :host { --fire-size: 72px; --hold-size: 64px; }
+      .hold-wrap { width: 88px; height: 88px; }
+      .fire-wrap { width: 100px; height: 100px; }
+      .rounds { bottom: 0; }
+    }
   `,
 })
 export class FireControlComponent {

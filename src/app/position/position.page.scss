@@ -311,3 +311,27 @@
   font: 500 var(--type-label) / 18px var(--font-mono);
   color: var(--device-accent);
 }
+
+// iPhone Safari leaves ~660 pt between its toolbars; the 276 pt glass stays, the rest tightens.
+@media (max-height: 760px) {
+  .position {
+    --fire-size: 72px;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--gutter) var(--space-2);
+  }
+
+  .body {
+    gap: var(--space-1);
+    padding-top: var(--space-1);
+  }
+
+  .title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cell {
+    padding-block: 2px;
+  }
+}

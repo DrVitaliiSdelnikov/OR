@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { NotebookTotal } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
-import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, markerTarget, playability, pressureText } from './position.model';
+import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, markerTarget, NOTEBOOK_SHEET_MIN_HEIGHT_PT, notebookSheetTopPt, playability, pressureText } from './position.model';
 
 const scope = scopeById('course-tree');
 
@@ -118,5 +118,17 @@ describe('bolt track (Затвор 1)', () => {
     expect(boltHandlePosition('back', 1)).toEqual({ x: 160, y: 50 });
     expect(boltHandlePosition('forward', 1)).toEqual({ x: 300, y: 50 });
     expect(boltHandlePosition('down', 1)).toEqual({ x: 300, y: 110 });
+  });
+});
+
+describe('notebook sheet on a short screen (iPhone Safari)', () => {
+  it('opens under the crosshair while it leaves the sheet its minimum height', () => {
+    expect(notebookSheetTopPt(358, 844)).toBe(358);
+    expect(844 - notebookSheetTopPt(358, 844)).toBeGreaterThan(NOTEBOOK_SHEET_MIN_HEIGHT_PT);
+  });
+
+  it('rises above the crosshair when the screen is too short for the minimum height', () => {
+    expect(notebookSheetTopPt(358, 664)).toBe(664 - NOTEBOOK_SHEET_MIN_HEIGHT_PT);
+    expect(NOTEBOOK_SHEET_MIN_HEIGHT_PT).toBe(360);
   });
 });

@@ -35,7 +35,7 @@ import { resultSheet, ResultSheetView } from '../result/result.model';
 import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
-import { breathRing, correctionCells, drumCounterText, markerTarget, playability, pressureText, TurretAxis } from './position.model';
+import { breathRing, correctionCells, drumCounterText, markerTarget, notebookSheetTopPt, playability, pressureText, TurretAxis } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
 
 const MARKS_ON_GLASS = 8;
@@ -276,8 +276,8 @@ export class PositionPage {
     const glass = this.glassCanvas()?.nativeElement.getBoundingClientRect();
     const root = this.positionRoot()?.nativeElement.getBoundingClientRect();
     if (glass && root) {
-      const crosshairY = glass.top + glass.height / 2 + SHEET_GAP_BELOW_CROSSHAIR_PT;
-      this.sheetFrame.set({ topPt: crosshairY - root.top, heightPt: window.innerHeight - crosshairY });
+      const sheetTopY = notebookSheetTopPt(glass.top + glass.height / 2 + SHEET_GAP_BELOW_CROSSHAIR_PT, window.innerHeight);
+      this.sheetFrame.set({ topPt: sheetTopY - root.top, heightPt: window.innerHeight - sheetTopY });
     }
     this.fingerMarker = null;
     this.hasOpenedNotebook.set(true);

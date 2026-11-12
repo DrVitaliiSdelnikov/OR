@@ -58,3 +58,8 @@ $phone-frame-width: 430px;
     border-right: var(--border-width) solid var(--device-line);
   }
 }
+
+// Ionic lifts every toggle to z-index 2 (for ion-item overlays we do not use); it then paints over sticky docks.
+ion-toggle {
+  z-index: auto;
+}
