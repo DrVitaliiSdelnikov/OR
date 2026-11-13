@@ -17,14 +17,14 @@ export interface ExerciseClassInput {
   isTopSkillGoalMet: boolean;
 }
 
-const FIRST_SHOT_POINTS = 10;
-const SECOND_SHOT_POINTS = 5;
+export const FIRST_SHOT_POINTS = 10;
+export const SECOND_SHOT_POINTS = 5;
 const DEFAULT_MAX_SHOTS_PER_TARGET = 2;
 const MAX_POINTS_PER_TARGET = FIRST_SHOT_POINTS;
 export const REFERENCE_PENALTY = 30;
-const THIRD_CLASS_SHARE = 0.7;
-const SECOND_CLASS_SHARE = 0.85;
-const FIRST_CLASS_SHARE = 1;
+export const THIRD_CLASS_SHARE = 0.7;
+export const SECOND_CLASS_SHARE = 0.85;
+export const FIRST_CLASS_SHARE = 1;
 const SHARE_EPSILON = 1e-9;
 const ROUNDING_EPSILON = 1e-9;
 const COURSE_EXERCISES = 12;

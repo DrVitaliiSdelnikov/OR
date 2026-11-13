@@ -37,7 +37,7 @@ import { resultSheet, ResultSheetView } from '../result/result.model';
 import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
-import { breathRing, correctionCells, drumCounterText, flagReadingText, isGlassTap, markerTarget, patrolLineText, notebookSheetTopPt, playability, pressureText, TurretAxis } from './position.model';
+import { breathRing, correctionCells, drumCounterText, flagReadingText, isGlassTap, markerTarget, patrolLineText, notebookSheetTopPt, pressureText, TurretAxis } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
 
 const MARKS_ON_GLASS = 8;
@@ -163,10 +163,8 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     }
     return nextTeaching(script, this.acknowledgedSteps(), this.instructorSnapshot(session, session.def as ExerciseDef));
   });
-  protected readonly isUnplayable = computed(() => {
-    const def = this.def();
-    return def === null || !playability(def).isPlayable;
-  });
+
+  protected readonly isTaskMissing = computed(() => this.def() === null);
 
   protected readonly view = computed(() => {
     this.uiTick();
@@ -639,7 +637,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   }
 
   private async begin(): Promise<void> {
-    if (this.isUnplayable()) {
+    if (this.isTaskMissing()) {
       return;
     }
     await this.startSession();
@@ -844,6 +842,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     | 'reticleMil'
     | 'measuredDistanceM'
     | 'targetSizeM'
+    | 'targetDistanceM'
     | 'recordedSteps'
     | 'stageIndex'
     | 'isMagazineChangeDue'
@@ -867,6 +866,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       reticleMil: notebook.readings.reticleMil,
       measuredDistanceM: notebook.readings.reticleMil !== null ? notebook.distanceM : null,
       targetSizeM: notebook.context.target.sizeM,
+      targetDistanceM: notebook.context.target.distanceM,
       recordedSteps: (Object.keys(notebook.steps) as NotebookStepId[]).filter(step => notebook.steps[step].isRecorded),
       stageIndex,
       isMagazineChangeDue: session.isMagazineChangeDue,

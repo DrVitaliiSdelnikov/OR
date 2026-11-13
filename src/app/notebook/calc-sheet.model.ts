@@ -1,7 +1,8 @@
 import { CheckErrorType } from '../../core/calc-check';
+import { FLAG_DISTANCES_M } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
-import { Chip, ChipKind, Notebook, NotebookStepId, softHint, StaleReason, stepSheet } from '../../sim/notebook';
+import { Chip, ChipKind, FLAG_ZONE_KINDS, Notebook, NotebookStepId, softHint, StaleReason, stepSheet } from '../../sim/notebook';
 
 export type FormulaToken = { kind: 'text'; text: string } | { kind: 'slot'; index: number; label: string; placedText: string | null };
 export type HubRowState = 'empty' | 'recorded' | 'stale';
@@ -89,9 +90,7 @@ const MISSING_TEXTS: Partial<Record<ChipKind, string>> = {
   pressure: 'сначала сделай замер на вкладке «Условия»',
   crosswind: 'сначала введи ветер на вкладке «Ветер»',
   'zone-station': 'сначала введи ветер на вкладке «Ветер»',
-  'zone-200': 'сначала тапни флажок 200 м в стекле',
-  'zone-400': 'сначала тапни флажок 400 м в стекле',
-  'zone-600': 'сначала тапни флажок 600 м в стекле',
+  ...Object.fromEntries(FLAG_ZONE_KINDS.map((kind, index) => [kind, `сначала тапни флажок ${FLAG_DISTANCES_M[index]} м в стекле`])),
 };
 const MODE_NAMES: Record<NotebookMode, string> = { auto: 'АВТО', 'manual-easy': 'САМ · ЛЁГКИЙ', 'manual-hard': 'САМ · СЛОЖНЫЙ' };
 const MAX_DRAFT_LENGTH = 6;

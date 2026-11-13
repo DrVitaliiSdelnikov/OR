@@ -125,12 +125,14 @@ test.describe('лист расчёта САМ (A5.2)', () => {
     expect(await page.locator('[data-test^="chip-"]:not([data-test="chip-tray"])').count()).toBeGreaterThan(3);
     await expect(page.getByTestId('calc-formulas')).toHaveText('Формулы −30');
     await page.getByTestId('calc-formulas').click();
-    await expect(page.getByTestId('formulas-confirm')).toBeVisible();
+    await expect(page.getByTestId('formulas-confirm')).toContainText('Справочник стоит 30 очков');
     await page.getByTestId('formulas-cancel').click();
     await expect(page.getByTestId('calc-formulas')).toHaveText('Формулы −30');
     await page.getByTestId('calc-formulas').click();
     await page.getByTestId('formulas-open').click();
     await expect(page.getByTestId('formulas-list')).toContainText('W = V⊥ × D / K');
+    await expect(page.getByTestId('formulas-list')).toContainText('2, 4, 8, 10 ч → 0,87');
+    await expect(page.getByTestId('formulas-list')).toContainText('1 MIL = 3,44 MOA');
     await page.getByTestId('formulas-close').click();
     await expect(page.getByTestId('calc-formulas')).toHaveText('Формулы');
   });

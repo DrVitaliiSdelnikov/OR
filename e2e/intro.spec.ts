@@ -77,6 +77,7 @@ test.describe('упр. 00 «Винтовка и прицел» (A7.5)', () => {
     await expect(page.getByTestId('cartridge-fact')).toHaveCount(3);
     await page.getByTestId('intro-next').click();
     await expect(page.getByTestId('intro-finish')).toBeDisabled();
+    await expect(page.getByTestId('intro-finish')).toHaveText('Готов к упражнению 01');
     await expect(page.getByTestId('fire-waiting')).toHaveCount(0);
     for (const [deltaX, deltaY] of BOLT_STROKES) {
       await strokeHandle(page, deltaX, deltaY);

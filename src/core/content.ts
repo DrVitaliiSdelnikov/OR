@@ -1,7 +1,8 @@
+import { text } from '../i18n';
 import { Cartridge, CartridgeId, Rifle, Target } from './types';
 
 export const RIFLE: Rifle = {
-  name: '«Рубеж-1», класс .308',
+  name: text.content.rifleName,
   sightHeightCm: 5,
   zeroM: 100,
   groupSigmaMrad: 0.1,
@@ -10,9 +11,9 @@ export const RIFLE: Rifle = {
 };
 
 export const CARTRIDGES: readonly Cartridge[] = [
-  { id: 'A', name: 'Патрон А', blurb: 'лёгкая быстрая пуля', massG: 9.7, bcG7: 0.19, muzzleVelocityMps: 860, muzzleVelocitySdMps: 10 },
-  { id: 'B', name: 'Патрон Б', blurb: 'средняя пуля', massG: 10.9, bcG7: 0.218, muzzleVelocityMps: 800, muzzleVelocitySdMps: 7 },
-  { id: 'C', name: 'Патрон В', blurb: 'тяжёлая пуля, высокий BC', massG: 11.7, bcG7: 0.255, muzzleVelocityMps: 775, muzzleVelocitySdMps: 6 },
+  { id: 'A', ...text.content.cartridges.A, massG: 9.7, bcG7: 0.19, muzzleVelocityMps: 860, muzzleVelocitySdMps: 10 },
+  { id: 'B', ...text.content.cartridges.B, massG: 10.9, bcG7: 0.218, muzzleVelocityMps: 800, muzzleVelocitySdMps: 7 },
+  { id: 'C', ...text.content.cartridges.C, massG: 11.7, bcG7: 0.255, muzzleVelocityMps: 775, muzzleVelocitySdMps: 6 },
 ];
 
 export const MAX_TRAJECTORY_M = 1000;

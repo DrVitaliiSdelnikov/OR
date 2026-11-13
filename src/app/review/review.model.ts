@@ -1,18 +1,17 @@
 import { CHECK_ERROR_TERMS } from '../textbook/term-links';
 import { CalcStepInput, CheckedRow, CheckErrorType, CheckVerdict, PreparationRowInput } from '../../core/calc-check';
 import { DopeCard } from '../../core/dope-card';
-import { calcPoints, modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
+import { calcPoints, FIRST_SHOT_POINTS, modeMultiplier, NotebookMode, SECOND_SHOT_POINTS } from '../../core/exercise-scoring';
+import { ScreenDirection, text } from '../../i18n';
 import { rangeByMilling, roundToClicks } from '../../core/game-formulas';
 import { CartridgeId, Correction } from '../../core/types';
 import { ExerciseShotRecord, PositionTask } from '../../sim/course';
 import { factorContributions, Notebook, NotebookFactor, stepSheet, total } from '../../sim/notebook';
 import { CauseKind, MissBreakdown, MissCause } from '../../sim/miss-breakdown';
-import { analyseGroup, GroupShape, ShotDiagnosis, TurretCorrection } from '../../sim/shot-review';
+import { analyseGroup, MIN_GROUP_SHOTS, ShotDiagnosis, TurretCorrection } from '../../sim/shot-review';
 import { SLOT_LABELS, STEP_TITLES } from '../notebook/calc-sheet.model';
 import { clockText, FACTOR_NAMES } from '../notebook/notebook.model';
 import { ShotCheck } from '../position/position-session';
-
-export type CheckStamp = 'ТОЧНО' | 'ПОЧТИ' | 'ОШИБКА';
 
 export interface CheckRowView {
   label: string;
@@ -23,7 +22,7 @@ export interface CheckRowView {
 }
 
 export interface CheckSheetView {
-  stamp: CheckStamp;
+  stamp: string;
   verdict: CheckVerdict;
   subtitle: string;
   isAuto: boolean;
@@ -55,71 +54,34 @@ export interface CausesView {
   rows: CauseRowView[];
 }
 
-const STAMPS: Record<CheckVerdict, CheckStamp> = { exact: 'ТОЧНО', close: 'ПОЧТИ', error: 'ОШИБКА' };
-const ERROR_LABELS: Record<CheckErrorType, string> = {
-  substitution: 'ПОДСТАНОВКА',
-  arithmetic: 'АРИФМЕТИКА',
-  side: 'СТОРОНА',
-  units: 'ЕДИНИЦЫ',
-  rounding: 'ОКРУГЛЕНИЕ',
-  lead: 'УПРЕЖДЕНИЕ',
-  reading: 'ПОКАЗАНИЯ',
-  factor: 'ФАКТОР',
-  turret: 'БАРАБАН',
-};
-const PREPARATION_LABELS: Record<PreparationRowInput['row'], string> = {
-  'reading-speed': 'Ветер: скорость',
-  'reading-direction': 'Ветер: направление',
-  factors: 'Учтённые факторы',
-  'turret-elevation': 'Барабан ВЕРТ',
-  'turret-windage': 'Барабан ГОР',
-};
 const VERTICAL_STEPS: ReadonlySet<string> = new Set(['dope', 'atmosphere']);
 const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', 'lead'];
-const CAUSE_NAMES: Record<CauseKind, string> = {
-  calc: 'Расчёт',
-  wind: 'Оценка ветра',
-  hold: 'Удержание',
-  lead: 'Упреждение',
-  trigger: 'Спуск',
-  zero: 'Ноль прицела',
-  formula: 'Упрощение формулы',
-  rifle: 'Винтовка',
-  'cold-bore': 'Холодный ствол',
-};
 const ARROWS_FROM_RIGHT = ['→', '↗', '↑', '↖', '←', '↙', '↓', '↘'];
 const ARROW_SECTOR_RAD = Math.PI / 4;
-const GROUP_TEXTS: Record<GroupShape, string> = {
-  scattered: 'Разброс — позиция, окуляр',
-  'vertical-string': 'Вертикальная струна — дыхание',
-  'horizontal-string': 'Горизонтальная струна — завал оружия',
-  'low-right': 'Низко-вправо — кисть, спуск',
-  offset: 'Плотная, но не в центре — ноль прицела',
-  tight: 'Плотная группа — основы в порядке',
-};
+const T = text.review;
 const MOA_PER_MIL = 3.44;
 const DECIMALS = 100;
 
 export function shotPointsText(isHit: boolean, isFirstShotAtTarget: boolean, isPaperTarget: boolean): string {
   if (isPaperTarget) {
-    return isHit ? 'попадание' : 'мимо';
+    return isHit ? T.paperHit : T.paperMiss;
   }
   if (!isHit) {
-    return 'промах';
+    return T.miss;
   }
-  return isFirstShotAtTarget ? '10 · первым' : '5 · вторым';
+  return isFirstShotAtTarget ? T.firstShotPoints({ points: FIRST_SHOT_POINTS }) : T.secondShotPoints({ points: SECOND_SHOT_POINTS });
 }
 
 export function diagnosisText(diagnosis: ShotDiagnosis, call: Correction): string {
   if (diagnosis === 'clean') {
-    return 'Чисто: сетка на цели, попадание';
+    return T.diagnosisClean;
   }
   if (diagnosis === 'data') {
-    return 'Сетка была на цели — ошибка в данных';
+    return T.diagnosisData;
   }
   const isVertical = Math.abs(call.upMrad) >= Math.abs(call.rightMrad);
-  const direction = isVertical ? (call.upMrad > 0 ? 'вверх' : 'вниз') : call.rightMrad > 0 ? 'вправо' : 'влево';
-  return `Сетка ушла ${direction} на ${Math.hypot(call.upMrad, call.rightMrad).toFixed(1)} — ошибка выполнения`;
+  const direction = isVertical ? verticalDirection(call.upMrad) : horizontalDirection(call.rightMrad);
+  return T.diagnosisExecution({ direction, mil: Math.hypot(call.upMrad, call.rightMrad) });
 }
 
 export function correctionText(correction: TurretCorrection | null, diagnosis: ShotDiagnosis): string | null {
@@ -127,18 +89,18 @@ export function correctionText(correction: TurretCorrection | null, diagnosis: S
     return null;
   }
   if (diagnosis === 'execution') {
-    return 'Данные верны — повтори чисто';
+    return T.repeatClean;
   }
   const parts: string[] = [];
   if (correction.upClicks !== 0) {
     const clicks = Math.abs(correction.upClicks);
-    parts.push(`Пуля ${correction.upClicks > 0 ? 'ниже' : 'выше'} на ${(clicks / 10).toFixed(1)} → ${clicks} кл. ${correction.upClicks > 0 ? 'вверх' : 'вниз'} на барабане`);
+    parts.push(T.correctionVertical({ isLow: correction.upClicks > 0, mil: clicks / 10, clicks }));
   }
   if (correction.rightClicks !== 0) {
     const clicks = Math.abs(correction.rightClicks);
-    parts.push(`Пуля ${correction.rightClicks > 0 ? 'левее' : 'правее'} на ${(clicks / 10).toFixed(1)} → ${clicks} кл. ${correction.rightClicks > 0 ? 'вправо' : 'влево'} на барабане`);
+    parts.push(T.correctionHorizontal({ isLeft: correction.rightClicks > 0, mil: clicks / 10, clicks }));
   }
-  return parts.length === 0 ? 'Поправка не нужна' : parts.join(' · ');
+  return parts.length === 0 ? T.noCorrection : parts.join(' · ');
 }
 
 export function checkSheet(check: ShotCheck, mode: NotebookMode): CheckSheetView {
@@ -149,14 +111,14 @@ export function checkSheet(check: ShotCheck, mode: NotebookMode): CheckSheetView
   const otherLabels = rows.filter((row, index) => row.status !== 'exact' && index !== main?.rowIndex).map(row => row.label);
   const multiplier = modeMultiplier(mode, false);
   return {
-    stamp: STAMPS[result.verdict],
+    stamp: T.stamps[result.verdict],
     verdict: result.verdict,
     subtitle: isAuto ? autoSubtitle(rows) : manualSubtitle(result.counts, rows.length),
     isAuto,
     rows,
     mainError: main ? { label: errorLabel(isAuto, rows[main.rowIndex].label, main.rowIndex, main.type), phrase: errorPhrase(check, main.rowIndex, main.type), term: CHECK_ERROR_TERMS[main.type] } : null,
-    others: result.otherErrorsCount > 0 && otherLabels.length > 0 ? `ещё ${result.otherErrorsCount} · ${otherLabels.join(', ')}` : null,
-    pointsText: `+${Math.round(calcPoints(result.verdict) * multiplier)} за расчёт · ×${multiplier}`,
+    others: result.otherErrorsCount > 0 && otherLabels.length > 0 ? T.others({ count: result.otherErrorsCount, labels: otherLabels }) : null,
+    pointsText: T.points({ points: Math.round(calcPoints(result.verdict) * multiplier), multiplier }),
     dialed: dialedText(notebook, check.truth.dialedElevationClicks, check.truth.dialedWindageLeftClicks),
   };
 }
@@ -171,14 +133,14 @@ export function targetPlaques(def: PositionTask, records: readonly ExerciseShotR
       const shots = records.filter(record => record.stageIndex === stageIndex && record.targetIndex === targetIndex);
       const isCurrent = !isFinished && current.stageIndex === stageIndex && current.targetIndex === targetIndex;
       if (isPaper && shots.length > 0) {
-        plaques.push(`${number} · ${shots.filter(shot => shot.isHit).length} из ${shots.length}`);
+        plaques.push(T.plaquePaper({ number, hits: shots.filter(shot => shot.isHit).length, shots: shots.length }));
       } else if (isCurrent) {
-        plaques.push(`${number} · сейчас`);
+        plaques.push(T.plaqueCurrent({ number }));
       } else if (shots.length === 0) {
-        plaques.push(`${number} · ·`);
+        plaques.push(T.plaqueEmpty({ number }));
       } else {
         const hitIndex = shots.findIndex(shot => shot.isHit);
-        plaques.push(`${number} · ${hitIndex === 0 ? '10' : hitIndex === 1 ? '5' : '✕'}`);
+        plaques.push(T.plaqueScored({ number, points: hitIndex === 0 ? FIRST_SHOT_POINTS : hitIndex === 1 ? SECOND_SHOT_POINTS : null }));
       }
     }
   });
@@ -195,7 +157,7 @@ export function dopeNoteTexts(notes: readonly DopeNote[], card: DopeCard): Map<n
   for (const note of notes) {
     const row = card.rows.reduce((best, candidate) => (Math.abs(candidate.distanceM - note.distanceM) <= Math.abs(best.distanceM - note.distanceM) ? candidate : best));
     const value = `${note.elevationMil < 0 ? '↓' : '↑'} ${Math.abs(note.elevationMil).toFixed(1)}`;
-    texts.set(row.distanceM, row.distanceM === note.distanceM ? value : `${value} · ${note.distanceM} м`);
+    texts.set(row.distanceM, row.distanceM === note.distanceM ? value : T.dopeNoteAt({ value, distanceM: note.distanceM }));
   }
   return texts;
 }
@@ -208,13 +170,13 @@ function manualRows(check: ShotCheck): CheckRowView[] {
       const reticleMil = check.notebook.readings.reticleMil ?? 0;
       return {
         label: STEP_TITLES.distance,
-        player: `${Math.round(check.notebook.distanceM ?? 0)} м`,
-        reference: `${Math.round(rangeByMilling(check.notebook.context.target.sizeM, reticleMil))} м`,
+        player: T.metres({ distanceM: check.notebook.distanceM ?? 0 }),
+        reference: T.metres({ distanceM: rangeByMilling(check.notebook.context.target.sizeM, reticleMil) }),
         diff: diffText(checked),
         status: checked.status,
       };
     }
-    const unit = input.playerUnits === 'moa' ? ' MOA' : '';
+    const unit = input.playerUnits === 'moa' ? T.moaUnit : '';
     return {
       label: STEP_TITLES[input.step],
       player: `${arrowed(input.step, input.playerMil, trimmed(Math.abs(input.playerMil)))}${unit}`,
@@ -235,14 +197,14 @@ function preparationRows(check: ShotCheck): CheckRowView[] {
   const clickMil = notebook.context.card.clickMil;
   const planned = total(notebook);
   const values: Record<PreparationRowInput['row'], { player: string; reference: string }> = {
-    'reading-speed': { player: wind ? `${wind.speedMps.toFixed(1)} м/с` : '—', reference: station ? `${station.windSpeedMps.toFixed(1)} м/с` : '—' },
+    'reading-speed': { player: wind ? T.speed({ speedMps: wind.speedMps }) : T.none, reference: station ? T.speed({ speedMps: station.windSpeedMps }) : T.none },
     'reading-direction': { player: wind ? clockText(wind.clock) : '—', reference: clockText(truth.trueWindClock) },
-    factors: { player: onNames.join(', ') || '—', reference: neededNames.join(', ') || '—' },
-    'turret-elevation': { player: verticalClicks(truth.dialedElevationClicks, clickMil), reference: `итог ${verticalClicks(planned.elevation.targetClicks, clickMil)}` },
-    'turret-windage': { player: horizontalClicks(truth.dialedWindageLeftClicks, clickMil), reference: `итог ${horizontalClicks(planned.windageLeft.targetClicks, clickMil)}` },
+    factors: { player: onNames.join(', ') || T.none, reference: neededNames.join(', ') || T.none },
+    'turret-elevation': { player: verticalClicks(truth.dialedElevationClicks, clickMil), reference: T.planned({ value: verticalClicks(planned.elevation.targetClicks, clickMil) }) },
+    'turret-windage': { player: horizontalClicks(truth.dialedWindageLeftClicks, clickMil), reference: T.planned({ value: horizontalClicks(planned.windageLeft.targetClicks, clickMil) }) },
   };
   return check.inputs.preparation.map((input, index) => ({
-    label: PREPARATION_LABELS[input.row],
+    label: T.preparationLabels[input.row],
     ...values[input.row],
     diff: diffText(check.result.rows[index]),
     status: check.result.rows[index].status,
@@ -251,10 +213,10 @@ function preparationRows(check: ShotCheck): CheckRowView[] {
 
 function errorLabel(isAuto: boolean, rowLabel: string, rowIndex: number, type: CheckErrorType): string {
   if (!isAuto) {
-    return `ШАГ ${rowIndex + 1} · ${ERROR_LABELS[type]}`;
+    return T.stepError({ stepNumber: rowIndex + 1, label: T.errorLabels[type] });
   }
   const label = rowLabel.toUpperCase();
-  return label.includes(ERROR_LABELS[type]) ? label : `${label} · ${ERROR_LABELS[type]}`;
+  return label.includes(T.errorLabels[type]) ? label : `${label} · ${T.errorLabels[type]}`;
 }
 
 function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType): string {
@@ -269,36 +231,36 @@ function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType): 
     case 'substitution':
       return substitutionPhrase(check.notebook, input);
     case 'side':
-      return `Число верное, сторона обратная: брать ${sideWord(input.step, input.expectedRawMil)}`;
+      return T.sidePhrase({ direction: sideDirection(input.step, input.expectedRawMil) });
     case 'units':
-      return `Ответ в MOA, а барабан в MIL: ${reference} MIL = ${(Number(reference) * MOA_PER_MIL).toFixed(2)} MOA`;
+      return T.unitsPhrase({ mil: reference, moa: (Number(reference) * MOA_PER_MIL).toFixed(2) });
     case 'rounding':
-      return `${Math.abs(input.expectedRawMil).toFixed(2)} до ближайшего клика — ${reference}, у тебя ${player}`;
+      return T.roundingPhrase({ raw: Math.abs(input.expectedRawMil).toFixed(2), reference, player });
     case 'lead':
-      return `Упреждение ${Math.abs(input.expectedRawMil).toFixed(2)} MIL, у тебя ${player}`;
+      return T.leadPhrase({ raw: Math.abs(input.expectedRawMil).toFixed(2), player });
     default:
-      return `Формула и подстановка верны, но выходит ${Math.abs(input.expectedRawMil).toFixed(2)}, а у тебя ${player}`;
+      return T.arithmeticPhrase({ raw: Math.abs(input.expectedRawMil).toFixed(2), player });
   }
 }
 
 function substitutionPhrase(notebook: Notebook, input: CalcStepInput): string {
   const slotIndex = input.expectedInputs.findIndex((value, index) => value !== input.playerInputs[index]);
   const slot = stepSheet(notebook, input.step).slots[slotIndex];
-  const label = slot ? SLOT_LABELS[slot.chipKind] : 'слот';
-  return `В слот ${label} поставлено ${trimmed(input.playerInputs[slotIndex])}, а нужно ${trimmed(input.expectedInputs[slotIndex])}`;
+  const label = slot ? SLOT_LABELS[slot.chipKind] : T.anySlot;
+  return T.substitutionPhrase({ slot: label, player: trimmed(input.playerInputs[slotIndex]), expected: trimmed(input.expectedInputs[slotIndex]) });
 }
 
 function preparationPhrase(check: ShotCheck, input: PreparationRowInput, type: CheckErrorType): string {
   const row = preparationRows(check)[check.inputs.preparation.indexOf(input)];
   switch (input.row) {
     case 'reading-speed':
-      return `Станция показала ${row.reference}, ты ввёл ${row.player.replace(' м/с', '')}`;
+      return T.readingSpeedPhrase({ reference: row.reference, player: row.player.replace(T.speedUnit, '') });
     case 'reading-direction':
-      return type === 'side' ? `Ветер с ${row.reference}, ты ввёл ${row.player}: поправка в другую сторону` : `Ветер с ${row.reference}, ты ввёл ${row.player}`;
+      return type === 'side' ? T.readingSidePhrase(row) : T.readingDirectionPhrase(row);
     case 'factors':
-      return `Не учтено: ${missingFactorNames(check.notebook)} — ${input.clicksOff} кл.`;
+      return T.factorsPhrase({ names: missingFactorNames(check.notebook), clicks: input.clicksOff });
     default:
-      return `В блокноте ${row.reference.replace('итог ', '')}, на барабане ${row.player}: ${input.isWrongSide ? 'в другую сторону' : `${input.clicksOff} кл.`}`;
+      return T.turretPhrase({ planned: row.reference.replace(T.plannedPrefix, ''), dialed: row.player, isWrongSide: input.isWrongSide === true, clicks: input.clicksOff });
   }
 }
 
@@ -337,31 +299,40 @@ function arrowed(step: string, signedMil: number, valueText: string): string {
   return `${arrow} ${valueText}`;
 }
 
-function sideWord(step: string, signedMil: number): string {
-  if (VERTICAL_STEPS.has(step)) {
-    return signedMil > 0 ? 'вверх' : 'вниз';
-  }
-  return signedMil > 0 ? 'вправо' : 'влево';
+function verticalDirection(upMil: number): ScreenDirection {
+  return upMil > 0 ? 'up' : 'down';
+}
+
+function horizontalDirection(rightMil: number): ScreenDirection {
+  return rightMil > 0 ? 'right' : 'left';
+}
+
+function sideDirection(step: string, signedMil: number): ScreenDirection {
+  return VERTICAL_STEPS.has(step) ? verticalDirection(signedMil) : horizontalDirection(signedMil);
 }
 
 function diffText(row: CheckedRow): string {
   if (row.errorTypes.includes('side')) {
-    return 'СТОРОНА';
+    return T.diffSide;
   }
-  return row.clicksOff === 0 ? '0' : `${row.clicksOff} кл.`;
+  return row.clicksOff === 0 ? '0' : T.clicks({ clicks: row.clicksOff });
 }
 
 function manualSubtitle(counts: Record<CheckVerdict, number>, total: number): string {
   if (counts.exact === total) {
-    return `${total} из ${total} шагов верны`;
+    return T.allStepsRight({ total });
   }
-  const parts = [counts.exact > 0 ? `${counts.exact} верны` : '', counts.close > 0 ? `${counts.close} почти` : '', counts.error > 0 ? `${counts.error} ошибка` : ''];
+  const parts = [
+    counts.exact > 0 ? T.stepsRight({ count: counts.exact }) : '',
+    counts.close > 0 ? T.stepsClose({ count: counts.close }) : '',
+    counts.error > 0 ? T.stepsWrong({ count: counts.error }) : '',
+  ];
   return parts.filter(Boolean).join(' · ');
 }
 
 function autoSubtitle(rows: readonly CheckRowView[]): string {
   const wrong = rows.filter(row => row.status !== 'exact');
-  return wrong.length === 0 ? 'Показания, факторы и барабаны совпали' : wrong.map(row => `${row.label} ${row.diff}`).join(' · ');
+  return wrong.length === 0 ? T.autoAllMatched : wrong.map(row => `${row.label} ${row.diff}`).join(' · ');
 }
 
 function trimmed(value: number): string {
@@ -383,8 +354,8 @@ export function causesView(breakdown: MissBreakdown): CausesView {
     conclusion: conclusionText(breakdown),
     rows: shown.map(cause => ({
       kind: cause.kind,
-      name: CAUSE_NAMES[cause.kind],
-      text: cause.clicks === 0 ? 'чисто' : `${directionArrow(cause.vector)} ${cause.clicks} кл.`,
+      name: T.causeNames[cause.kind],
+      text: cause.clicks === 0 ? T.causeClean : T.causeShift({ arrow: directionArrow(cause.vector), clicks: cause.clicks }),
       isPlayerError: cause.isPlayerError,
       isMain: cause.kind === breakdown.main,
       share: cause.clicks / largestClicks,
@@ -394,32 +365,33 @@ export function causesView(breakdown: MissBreakdown): CausesView {
 
 export function groupText(points: readonly Correction[]): string {
   const group = analyseGroup(points);
-  return group ? GROUP_TEXTS[group.shape] : 'Диагноз группы — от 3 выстрелов';
+  return group ? T.groupTexts[group.shape] : T.groupTooSmall({ minShots: MIN_GROUP_SHOTS });
 }
 
 function conclusionText(breakdown: MissBreakdown): string {
   const main = breakdown.causes.find(cause => cause.kind === breakdown.main);
   if (!main) {
-    return breakdown.causes.some(cause => !cause.isPlayerError && cause.isShown) ? 'Твоих ошибок нет — это разброс винтовки' : 'Чисто';
+    return breakdown.causes.some(cause => !cause.isPlayerError && cause.isShown) ? T.noPlayerErrors : T.clean;
   }
   const phrase = mainCausePhrase(main, breakdown);
-  return main.kind !== 'trigger' && breakdown.isTriggerClean ? `${phrase}, спуск чистый` : phrase;
+  return main.kind !== 'trigger' && breakdown.isTriggerClean ? T.cleanTrigger({ phrase }) : phrase;
 }
 
 function mainCausePhrase(main: MissCause, breakdown: MissBreakdown): string {
-  const shift = `${directionArrow(main.vector)} ${main.clicks} кл.`;
+  const arrow = directionArrow(main.vector);
+  const shift = T.causeShift({ arrow, clicks: main.clicks });
   switch (main.kind) {
     case 'wind':
-      return `${breakdown.windVerdict === 'under' ? 'Недокрут' : 'Перекрут'} по ветру ${main.clicks} кл.`;
+      return T.windCause({ isUnder: breakdown.windVerdict === 'under', clicks: main.clicks });
     case 'calc':
-      return `Расчёт увёл пулю ${directionArrow(main.vector)} на ${main.clicks} кл.`;
+      return T.calcCause({ arrow, clicks: main.clicks });
     case 'hold':
-      return `Сетку увело ${directionArrow(main.vector)} на ${main.clicks} кл.`;
+      return T.holdCause({ arrow, clicks: main.clicks });
     case 'lead':
-      return `Упреждение: пуля ${directionArrow(main.vector)} на ${main.clicks} кл. от цели`;
+      return T.leadCause({ arrow, clicks: main.clicks });
     case 'trigger':
-      return `Сорвал спуск: ${shift}`;
+      return T.triggerCause({ shift });
     default:
-      return `Ноль прицела: СТП ${shift}`;
+      return T.zeroCause({ shift });
   }
 }

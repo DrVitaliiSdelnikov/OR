@@ -1,3 +1,4 @@
+import { text } from '../i18n';
 import { ScenarioOptions } from '../core/scenario';
 import { CartridgeId } from '../core/types';
 import { FreePlayTask, FreePlayUnlocks } from './course';
@@ -44,7 +45,7 @@ const DEFAULT_SHOTS_PER_TARGET = 5;
 export function freePlayTask(settings: FreePlaySettings): FreePlayTask {
   return {
     kind: 'free',
-    title: 'Свободная игра',
+    title: text.content.freePlayTitle,
     targets: {
       count: 1,
       distance: settings.isDistanceUnknown ? { kind: 'unknown', fromM: MIN_DISTANCE_M, toM: MAX_DISTANCE_M } : { kind: 'fixed', distanceM: settings.distanceM },

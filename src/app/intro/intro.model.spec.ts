@@ -4,7 +4,6 @@ import { rangeByMilling } from '../../core/game-formulas';
 import { courseProgress, exerciseById } from '../../sim/course';
 import { ptPerMil, scopeById } from '../../sim/scope-model';
 import { withIntroCompleted } from '../home/home.model';
-import { playability } from '../position/position.model';
 import { openedTerms } from '../textbook/textbook.model';
 import {
   gongRadiusPt,
@@ -82,8 +81,7 @@ describe('стекло (U4)', () => {
 });
 
 describe('после вводного (U5)', () => {
-  it('00 играбельно; после «ГОТОВ» открыт 01 и пять терминов 00', () => {
-    expect(playability(exerciseById('00')!).isPlayable).toBe(true);
+  it('после «ГОТОВ» открыт 01 и пять терминов 00', () => {
     const before = { isIntroCompleted: false, bestClasses: {} };
     const after = withIntroCompleted(before);
     expect(courseProgress(before, false).unlockedIds).not.toContain('01');

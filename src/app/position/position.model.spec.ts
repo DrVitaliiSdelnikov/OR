@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { exerciseById, ExerciseId } from '../../sim/course';
 import { NotebookTotal } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
-import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, flagReadingText, isGlassTap, patrolLineText, markerTarget, NOTEBOOK_SHEET_MIN_HEIGHT_PT, notebookSheetTopPt, playability, pressureText } from './position.model';
+import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, drumCounter, flagReadingText, isGlassTap, patrolLineText, markerTarget, NOTEBOOK_SHEET_MIN_HEIGHT_PT, notebookSheetTopPt, pressureText } from './position.model';
 
 const scope = scopeById('course-tree');
 
@@ -63,14 +62,6 @@ describe('drum counter', () => {
   it('overshooting says how many clicks are extra; on target says nothing', () => {
     expect(drumCounter('elevation', { remainingClicks: 2, direction: 'down', isOnTarget: false, overshootClicks: 2 })).toBe('лишние 2 кл.');
     expect(drumCounter('elevation', { remainingClicks: 0, direction: 'none', isOnTarget: true, overshootClicks: 0 })).toBe('');
-  });
-});
-
-describe('playability', () => {
-  it('every exercise is playable (A9.3b opens 11, the last one)', () => {
-    for (const id of ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'] as ExerciseId[]) {
-      expect(playability(exerciseById(id)!), id).toEqual({ isPlayable: true, reason: null });
-    }
   });
 });
 

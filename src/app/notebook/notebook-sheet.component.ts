@@ -1,4 +1,5 @@
 import { afterNextRender, Component, computed, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
+import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { backLayer } from '../services/back-stack.service';
 import { FeedbackService } from '../services/feedback.service';
 import { factorContributions, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
@@ -190,7 +191,7 @@ export class NotebookSheetComponent {
       zones: zoneTable(notebook),
       hubRows: isManual ? hubRows(notebook) : [],
       badge: modeBadge(notebook.mode),
-      formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? 'Формулы −30' : 'Формулы',
+      formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? `Формулы −${REFERENCE_PENALTY}` : 'Формулы',
       formulaLines,
       needsReferenceConfirm: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference,
       filled: { total: filled.total, distance: filled.distance, conditions: filled.conditions, wind: filled.wind, dope: filled.dope } as Record<NotebookTab, boolean>,

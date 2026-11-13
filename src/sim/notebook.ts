@@ -165,10 +165,10 @@ interface StepDefinition {
   dependsOn: readonly StaleReason[];
 }
 
-const FLAG_ZONE_KINDS = ['zone-200', 'zone-400', 'zone-600'] as const;
+export const FLAG_ZONE_KINDS = ['zone-200', 'zone-400', 'zone-600'] as const;
 const STEP_ORDER: readonly NotebookStepId[] = ['distance', 'dope', 'atmosphere', 'zones', 'wind', 'lead'];
 const STALE_ORDER: readonly StaleReason[] = ['cartridge', 'distance', 'conditions', 'wind'];
-const FULL_MEASUREMENT_S = 3;
+export const FULL_MEASUREMENT_S = 3;
 const TRAPS_IN_HARD = 2;
 const GROUPED_FROM_CHIPS = 6;
 const NEIGHBOR_ROW_M = 100;

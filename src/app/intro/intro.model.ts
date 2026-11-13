@@ -1,4 +1,5 @@
 import { targetRadiusMrad } from '../../core/content';
+import { decimal } from '../../i18n/format';
 import { ptPerMil, ScopeId, scopeById } from '../../sim/scope-model';
 
 export type IntroStepId = 'rifle' | 'scope' | 'drum' | 'zoom' | 'reticles' | 'cartridges' | 'bolt';
@@ -33,6 +34,8 @@ export const INTRO_SCENE = {
   gongDiameterM: 0.5,
   startMagnification: 8,
 };
+
+const INTRO_SCOPE = scopeById(INTRO_SCENE.scopeId);
 
 const MEASURE_GONG_SIZE_M = 0.5;
 const MEASURE_DISTANCE_M = 500;
@@ -76,7 +79,7 @@ export const INTRO_STEPS: readonly IntroStep[] = [
       { id: 'eyepiece', name: 'Окуляр', caption: 'Стекло у глаза: в нём ты видишь цель и сетку' },
       { id: 'elevation', name: 'Барабан ВЕРТ', caption: 'Поднимает и опускает точку попадания: один клик — 0,1 MIL' },
       { id: 'windage', name: 'Барабан ГОР', caption: 'Сдвигает точку попадания влево и вправо — поправка на ветер' },
-      { id: 'zoom', name: 'Кольцо', caption: 'Кольцо кратности: приближение от 3× до 12×' },
+      { id: 'zoom', name: 'Кольцо', caption: `Кольцо кратности: приближение от ${INTRO_SCOPE.magnificationMin}× до ${INTRO_SCOPE.magnificationMax}×` },
     ],
   },
   { id: 'drum', title: 'Барабан', instruction: `Накрути барабан ВЕРТ вверх на ${MIN_DIALLED_CLICKS} кликов — смотри, куда уходит точка попадания` },
@@ -84,7 +87,7 @@ export const INTRO_STEPS: readonly IntroStep[] = [
   {
     id: 'reticles',
     title: 'Сетки',
-    instruction: `Тапни по меткам сеток. Потом ответь: гонг ${String(MEASURE_GONG_SIZE_M).replace('.', ',')} м на ${MEASURE_DISTANCE_M} м — сколько MIL он займёт?`,
+    instruction: `Тапни по меткам сеток. Потом ответь: гонг ${decimal(MEASURE_GONG_SIZE_M)} м на ${MEASURE_DISTANCE_M} м — сколько MIL он займёт?`,
   },
   { id: 'cartridges', title: 'Патроны', instruction: 'Три патрона: тяжелее и обтекаемее — меньше падает и меньше сносится ветром' },
   { id: 'bolt', title: 'Затвор', instruction: 'Передёрни затвор: тяни рукоять вверх, назад, вперёд, вниз' },

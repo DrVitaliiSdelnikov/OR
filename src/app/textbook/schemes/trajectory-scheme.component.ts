@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { decimal } from '../../../i18n/format';
 import { DopeCard } from '../../../core/dope-card';
 import { trajectoryView } from './scheme.model';
 
@@ -65,11 +66,11 @@ export class TrajectorySchemeComponent {
         distanceM: mark.distanceM,
         x: x(mark.distanceM),
         y: y(mark.elevationMil),
-        text: `${String(mark.timeOfFlightS).replace('.', ',')} с`,
+        text: `${decimal(mark.timeOfFlightS)} с`,
       })),
       distanceTicks: DISTANCE_TICKS_M.map(distanceM => ({ x: x(distanceM), text: `${distanceM} м` })),
       bottomY: BOTTOM,
-      maxText: String(maxMil).replace('.', ','),
+      maxText: decimal(maxMil),
     };
   });
 }

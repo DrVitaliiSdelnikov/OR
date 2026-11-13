@@ -1,5 +1,5 @@
 import { BOLT_STEP_TRAVEL_PT, BOLT_STEPS, BoltStep } from '../../sim/bolt';
-import { PositionTask } from '../../sim/course';
+import { decimal } from '../../i18n/format';
 import { Vector2 } from '../../sim/noise';
 import { NotebookTotal } from '../../sim/notebook';
 import { formatScopeValue, isHoldoverSettled, ScopeModel } from '../../sim/scope-model';
@@ -23,22 +23,6 @@ export interface DialClicks {
   windageLeft: number;
 }
 
-export interface Playability {
-  isPlayable: boolean;
-  reason: string | null;
-}
-
-type PositionFeature = 'intro' | 'pressure-trigger' | 'notebook-input' | 'manual-calc' | 'zone-flags' | 'moving-targets';
-
-const IMPLEMENTED_FEATURES: ReadonlySet<PositionFeature> = new Set<PositionFeature>(['intro', 'pressure-trigger', 'notebook-input', 'manual-calc', 'zone-flags', 'moving-targets']);
-const FEATURE_NAMES: Record<PositionFeature, string> = {
-  intro: 'вводное',
-  'pressure-trigger': 'спуск с давлением',
-  'notebook-input': 'блокнот',
-  'manual-calc': 'расчёт САМ',
-  'zone-flags': 'флажки по трассе',
-  'moving-targets': 'движущиеся цели',
-};
 const PERCENT = 100;
 const CROSSWISE_CLOCK = 3;
 const HALF_TURN_CLOCK = 6;
@@ -90,35 +74,6 @@ export function drumCounter(axis: TurretAxis, progress: TurretProgress): string 
 
 export function drumCounterText(axis: TurretAxis, progress: TurretProgress | null): string {
   return progress === null ? '' : drumCounter(axis, progress);
-}
-
-/** @deprecated Everything is playable since A9.3b; remove with `IMPLEMENTED_FEATURES` and the disabled «НА ПОЗИЦИЮ» reason in A10. */
-export function playability(def: PositionTask): Playability {
-  const missing = requiredFeatures(def).filter(feature => !IMPLEMENTED_FEATURES.has(feature));
-  return missing.length === 0 ? { isPlayable: true, reason: null } : { isPlayable: false, reason: `откроется позже: ${missing.map(feature => FEATURE_NAMES[feature]).join(', ')}` };
-}
-
-function requiredFeatures(def: PositionTask): PositionFeature[] {
-  if (!def.targets) {
-    return ['intro'];
-  }
-  const features: PositionFeature[] = [];
-  if (def.trigger === 'pressure') {
-    features.push('pressure-trigger');
-  }
-  if (def.conditions.windScale !== 0) {
-    features.push('notebook-input');
-  }
-  if (def.notebookMode === 'manual-easy' || def.notebookMode === 'manual-hard') {
-    features.push('manual-calc');
-  }
-  if (def.conditions.isWindUniform === false) {
-    features.push('zone-flags');
-  }
-  if (def.hasPatrol) {
-    features.push('moving-targets');
-  }
-  return features;
 }
 
 function axisCell(label: 'ВЕРТ' | 'ГОР', value: string, targetClicks: number | null, dialClicks: number, format: (clicks: number) => string): CorrectionCell {
@@ -202,7 +157,7 @@ export function flagReadingText(flagDistanceM: number, reading: FlagReading): st
 export function patrolLineText(patrol: PatrolTarget, walkedS: number): string {
   const clock = movementClockAt(patrol.path, walkedS);
   const isCrosswise = clock % CROSSWISE_CLOCK === 0;
-  const speedText = patrol.path.speedMps.toFixed(1).replace('.', ',');
+  const speedText = decimal(patrol.path.speedMps, 1);
   return `${speedText} м/с · ${isCrosswise ? 'поперёк' : 'наискось'} ${headingArrow(clock)}${patrol.isAmbush ? ' · засада' : ''}`;
 }
 

@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { FIRST_FIRING_EXERCISE_ID } from '../../sim/course';
 import { RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { cartridgeById, CARTRIDGES } from '../../core/content';
@@ -35,7 +36,7 @@ const PERCENT = 100;
 
         @if (isEmpty()) {
           <section class="sheet" data-test="journal-empty">
-            <p class="empty">Журнал пуст. Первая запись — после упражнения 01</p>
+            <p class="empty">Журнал пуст. Первая запись — после упражнения {{ firstFiringExerciseId }}</p>
             <a class="to-course" routerLink="/course" data-test="journal-to-course">К курсу</a>
           </section>
         } @else {
@@ -159,6 +160,7 @@ const PERCENT = 100;
   `,
 })
 export class JournalPage {
+  protected readonly firstFiringExerciseId = FIRST_FIRING_EXERCISE_ID;
   private readonly progress = inject(ProgressStore);
   private readonly dopeCards = signal<DopeCard[]>([]);
 

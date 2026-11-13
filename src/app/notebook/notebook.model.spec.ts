@@ -5,7 +5,7 @@ import { BallisticsEngine } from '../../core/engine';
 import { ExerciseShotRecord } from '../../sim/course';
 import { createNotebook, enterWind, factorContributions, hideFlagsBehindBerm, Notebook, readFlag, recordStation, total } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
-import { clockFromDialAngle, clockText, contributionText, correctionLine, dopeTable, factorDetail, millingSize, rangeClockText, shotStrip, snapMilling, stepSpeed, totalLine, zoneTable } from './notebook.model';
+import { clockFromDialAngle, clockShareLines, clockText, contributionText, correctionLine, dopeTable, factorDetail, millingSize, moaPerMilText, rangeClockText, referencePriceText, shotStrip, snapMilling, stepSpeed, totalLine, zoneTable } from './notebook.model';
 
 const scope = scopeById('course-tree');
 let card: DopeCard;
@@ -193,5 +193,21 @@ describe('zone weights and flags on the WIND tab (В29, A9.3a)', () => {
       { distanceM: 400, text: 'тапни флажок в стекле', isRead: false },
       { distanceM: 600, text: 'за валом', isRead: true },
     ]);
+  });
+});
+
+describe('formulas reference (A10)', () => {
+  it('clock shares come from the share formula, with a decimal comma', () => {
+    expect(clockShareLines()).toEqual(['12, 6 ч → 0', '1, 5, 7, 11 ч → 0,5', '2, 4, 8, 10 ч → 0,87', '3, 9 ч → 1']);
+  });
+
+  it('the price is the reference penalty, with the word agreeing with the number', () => {
+    expect(referencePriceText()).toBe('Справочник стоит 30 очков');
+    expect(referencePriceText(21)).toBe('Справочник стоит 21 очко');
+    expect(referencePriceText(22)).toBe('Справочник стоит 22 очка');
+  });
+
+  it('MIL in MOA from the scope unit, with a decimal comma', () => {
+    expect(moaPerMilText()).toBe('3,44');
   });
 });

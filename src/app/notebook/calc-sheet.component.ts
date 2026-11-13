@@ -1,4 +1,5 @@
 import { Component, computed, input, output, signal } from '@angular/core';
+import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { ChipKind, NotebookStepId, stepHasSide } from '../../sim/notebook';
 import { PositionSession } from '../position/position-session';
 import { DraftKey, editDraft, formulaTokens, hubSteps, missingInput, modeBadge, sideOptions, STEP_TITLES, TAPE_UNITS, tapeLabels } from './calc-sheet.model';
@@ -162,7 +163,7 @@ export class CalcSheetComponent {
       awaitedKind: activeSlot === null ? null : (sheet.slots[activeSlot]?.waitsFor ?? null),
       isGrouped: sheet.isGrouped,
       distanceM: notebook.distanceM,
-      formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? 'Формулы −30' : 'Формулы',
+      formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? `Формулы −${REFERENCE_PENALTY}` : 'Формулы',
       canRecord: sheet.slots.every(slot => slot.placed !== null) && lastValue !== null && lastValue !== undefined && !isSideMissing,
     };
   });

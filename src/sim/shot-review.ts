@@ -16,9 +16,9 @@ export interface GroupAnalysis {
   shape: GroupShape;
 }
 
-const CALL_TOLERANCE_MIL = 0.2;
+export const CALL_TOLERANCE_MIL = 0.2;
 const DISTANCE_EPSILON_MIL = 1e-9;
-const MIN_GROUP_SHOTS = 3;
+export const MIN_GROUP_SHOTS = 3;
 const SCATTERED_SPREADS = 4;
 const STRING_SPREADS = 2;
 const STRING_AXIS_RATIO = 2;

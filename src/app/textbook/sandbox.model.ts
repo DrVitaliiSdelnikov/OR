@@ -1,4 +1,6 @@
 import { DEFAULT_FREE_PLAY, FreePlaySettings } from '../../sim/free-play';
+import { FLAG_DISTANCES_M } from '../../core/content';
+import { andList } from '../../i18n/format';
 import { TeachingView } from '../instructor/teaching.model';
 
 export interface SandboxHint {
@@ -43,7 +45,7 @@ export const SANDBOXES: readonly Sandbox[] = [
   {
     terms: ['флажок'],
     settings: { distanceM: 600, wind: 'strong' },
-    hint: { anchor: 'glass', text: 'Флажки на 200, 400 и 600 м. Чем сильнее ветер поперёк, тем круче полотнище' },
+    hint: { anchor: 'glass', text: `Флажки на ${andList(FLAG_DISTANCES_M)} м. Чем сильнее ветер поперёк, тем круче полотнище` },
   },
   {
     terms: ['дыхание', 'пульс'],

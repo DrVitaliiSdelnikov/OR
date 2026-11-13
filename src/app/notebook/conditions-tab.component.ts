@@ -1,4 +1,5 @@
 import { Component, computed, DestroyRef, inject, input, output, signal } from '@angular/core';
+import { FULL_MEASUREMENT_S } from '../../sim/notebook';
 
 export interface StationView {
   temperature: string;
@@ -9,7 +10,7 @@ export interface StationView {
   isShort: boolean;
 }
 
-const FULL_MEASUREMENT_MS = 3000;
+const FULL_MEASUREMENT_MS = FULL_MEASUREMENT_S * 1000;
 const PROGRESS_TICK_MS = 50;
 const RING_RADIUS = 30;
 
@@ -64,7 +65,7 @@ const RING_RADIUS = 30;
           }
         </div>
       } @else {
-        <div class="hint mono">Держи «Замер» 3 с</div>
+        <div class="hint mono" data-test="measure-hint">Держи «Замер» {{ fullMeasurementS }} с</div>
       }
       <div class="reference mono">Эталон ДОПЕ: +15 C · 1013 гПа</div>
       @if (stepLinkText(); as link) {
@@ -97,6 +98,7 @@ const RING_RADIUS = 30;
   `,
 })
 export class ConditionsTabComponent {
+  protected readonly fullMeasurementS = FULL_MEASUREMENT_S;
   readonly reading = input<StationView | null>(null);
   readonly correctionText = input.required<string>();
   readonly stepLinkText = input<string | null>(null);

@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import { NotebookMode } from '../../core/exercise-scoring';
 import { exerciseById, ExerciseId } from '../../sim/course';
-import { playability } from '../position/position.model';
 import { ProgressStore } from '../services/progress.store';
 import { TermTextComponent } from '../textbook/term-text.component';
 import { briefingCard } from './briefing.model';
@@ -102,11 +101,8 @@ const GROUND_Y = 66;
           @if (briefing.termsLine; as terms) {
             <div class="terms mono" data-test="sheet-terms"><or-term-text [text]="terms" /></div>
           }
-          @if (availability()?.reason; as reason) {
-            <div class="note" data-test="to-position-reason">{{ reason }}</div>
-          }
           <div class="dock">
-            <button class="to-position" type="button" [disabled]="!availability()?.isPlayable" (click)="toPosition()" data-test="to-position">{{ briefing.introLine ? 'Начать' : 'На позицию' }}</button>
+            <button class="to-position" type="button" (click)="toPosition()" data-test="to-position">{{ briefing.introLine ? 'Начать' : 'На позицию' }}</button>
           </div>
         } @else {
           <div class="note" data-test="sheet-missing">Такого упражнения нет</div>
@@ -173,10 +169,6 @@ export class ExerciseSheetPage {
   });
   protected readonly chosenMode = linkedSignal<NotebookMode | null>(() => this.def()?.notebookMode ?? null);
   protected readonly isInstructorOn = linkedSignal(() => this.card()?.instructor?.isDefaultOn ?? false);
-  protected readonly availability = computed(() => {
-    const def = this.def();
-    return def ? playability(def) : null;
-  });
   protected readonly targetXs = computed(() => {
     const count = Math.max(1, this.card()?.scheme.targetCount ?? 1);
     return Array.from({ length: count }, (_, index) => (count === 1 ? TARGETS_TO_X : TARGETS_FROM_X + ((TARGETS_TO_X - TARGETS_FROM_X) * index) / (count - 1)));

@@ -57,7 +57,7 @@ test.describe('главный экран и курс-тропа', () => {
     await expect(page.locator('[data-test^="node-"]')).toHaveCount(13);
   });
 
-  test('вводное — «откроется позже»; шестерёнка, учебник и журнал открываются', async ({ page }) => {
+  test('вводное открывается; шестерёнка, учебник и журнал открываются', async ({ page }) => {
     await seedCourse(page, false, {});
     await page.goto('/');
     await page.getByTestId('tile-textbook').click();

@@ -595,3 +595,26 @@ describe('mode choice (12, A9.3a)', () => {
     expect(withChosenMode(exerciseById('12')!, undefined).notebookMode).toBe('manual-easy');
   });
 });
+
+describe('goal texts and titles follow the course constants (В7, A10)', () => {
+  it('class goals carry the limits that skillGoals checks', () => {
+    expect(exercise('02').goals).toEqual({ second: 'группа 2–4 ≤ 1 MIL', first: 'холодный — без срыва спуска, контрольный ≤ 0,3 MIL от точки прицеливания' });
+    expect(exercise('03').goals.first).toBe(`все ${exercise('03').targets!.count} с задержкой дыхания в окне`);
+    expect(exercise('05').goals).toEqual({ second: 'дальность ±10 % на всех', first: 'дальность ±5 % на всех' });
+    expect(exercise('10').goals.first).toBe('вызов точен (≤ 0,2 MIL) на всех');
+    expect(exercise('11').goals).toEqual({ second: `≥ 7 из ${exercise('11').targets!.count} и ни одной ошибки СТОРОНА`, first: '10 из 10, засадой — все первым выстрелом' });
+  });
+
+  it('10 is named after its distance', () => {
+    const def = exercise('10');
+    expect(def.targets!.distance).toEqual({ kind: 'fixed', distanceM: 400 });
+    expect(def.title).toBe('Пристрелка на 400');
+  });
+
+  it('names, novelties and static goals come from the catalog', () => {
+    expect(exercise('01').title).toBe('Первые щелчки');
+    expect(exercise('07').novelty).toBeNull();
+    expect(exercise('11').novelty).toBe('движущиеся цели, упреждение сеткой, шаг «Упреждение» в блокноте');
+    expect(exercise('12').goals).toEqual({ second: 'без справочника', first: 'САМ сложный' });
+  });
+});

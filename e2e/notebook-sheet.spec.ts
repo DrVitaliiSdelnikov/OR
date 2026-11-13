@@ -63,6 +63,7 @@ test.describe('шторка блокнота (A5.1)', () => {
     await page.getByTestId('tile-notebook').click();
     await expect(page.getByTestId('dot-conditions')).toBeVisible();
     await page.getByTestId('tab-conditions').click();
+    await expect(page.getByTestId('measure-hint')).toHaveText('Держи «Замер» 3 с');
     await holdMeasure(page, FULL_MEASUREMENT_MS);
     await expect(page.getByTestId('station-readings')).toContainText(/14:0\d · T /);
     await expect(page.getByTestId('short-measurement')).toHaveCount(0);

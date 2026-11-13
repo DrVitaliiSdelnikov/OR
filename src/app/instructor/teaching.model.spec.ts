@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { FLAG_DISTANCES_M } from '../../core/content';
+import { FULL_MEASUREMENT_S } from '../../sim/notebook';
 import { describe, expect, it } from 'vitest';
 import { ExerciseId } from '../../sim/course';
 import { InstructorSnapshot } from './instructor-snapshot';
@@ -26,6 +28,7 @@ function snapshot(exerciseId: ExerciseId, fields: Partial<InstructorSnapshot> = 
     reticleMil: null,
     measuredDistanceM: null,
     targetSizeM: 0.5,
+    targetDistanceM: 300,
     recordedSteps: [],
     stageIndex: 0,
     isMagazineChangeDue: false,
@@ -333,5 +336,28 @@ describe('every cut-out has its element', () => {
     expect(markup).toContain(`[attr.data-hint]="'toggle-' + row.factor"`);
     expect(markup).toContain(`[attr.data-hint]="'tab-' + item.id"`);
     expect(markup).toContain(`[attr.data-hint]="'step-' + row.step"`);
+  });
+});
+
+describe('teaching — numbers come from the exercise and the constants (В7, A10)', () => {
+  it('01 and 02 name the distance of the current target', () => {
+    expect(next(snapshot('01', { targetDistanceM: 400 }))!.text).toBe('Это прицел. Цель — гонг на 400 м');
+    expect(next(snapshot('02', { targetDistanceM: 100 }))!.text).toBe('Прицел сбит. Пристреляем на 100 м');
+  });
+
+  it('01: the side drum hint shows the windage of the total', () => {
+    const entered = snapshot('01', { hasOpenedNotebook: true, isEntered: true, elevation: { remainingClicks: 0, direction: 'none', isOnTarget: true, overshootClicks: 0 }, windageTargetClicks: 0 });
+    const glass = next(snapshot('01'))!.id;
+    const hint = next(entered, [glass, 'dope'])!;
+    expect([hint.id, hint.text]).toEqual(['side-drum', 'Боковой — ветер. Сегодня штиль, 0']);
+  });
+
+  it('04: the station hold time is the full measurement time', () => {
+    const conditions = snapshot('04', { hasOpenedNotebook: true, sheetTab: 'conditions' });
+    expect(next(conditions)!.text).toBe(`Держи «Замер» ${FULL_MEASUREMENT_S} с`);
+  });
+
+  it('09: the flag distances are the flags of the range', () => {
+    expect(next(snapshot('09'))!.text).toBe(`Ветер по трассе разный. Флажки на ${FLAG_DISTANCES_M.join(', ')} м — левее цели, веди прицел к ним`);
   });
 });

@@ -1,11 +1,10 @@
 import { Component, input, output } from '@angular/core';
+import { clockShareLines, moaPerMilText, referencePriceText } from './notebook.model';
 
 export interface FormulaLine {
   title: string;
   formula: string;
 }
-
-const CLOCK_SHARES: readonly string[] = ['12, 6 ч → 0', '1, 5, 7, 11 ч → 0.5', '2, 4, 8, 10 ч → 0.87', '3, 9 ч → 1'];
 
 @Component({
   selector: 'or-formulas-sheet',
@@ -14,7 +13,7 @@ const CLOCK_SHARES: readonly string[] = ['12, 6 ч → 0', '1, 5, 7, 11 ч → 0
     <section class="sheet" role="dialog" aria-label="Справочник формул" data-test="formulas-sheet">
       @if (needsConfirm()) {
         <div class="confirm" data-test="formulas-confirm">
-          <div class="question">Справочник стоит 30 очков</div>
+          <div class="question">{{ referencePrice }}</div>
           <div class="confirm-actions">
             <button class="primary mono" type="button" (click)="confirm.emit()" data-test="formulas-open">Открыть</button>
             <button class="secondary mono" type="button" (click)="close.emit()" data-test="formulas-cancel">Нет</button>
@@ -30,7 +29,7 @@ const CLOCK_SHARES: readonly string[] = ['12, 6 ч → 0', '1, 5, 7, 11 ч → 0
           @for (share of shares; track share) {
             <div class="line share">{{ share }}</div>
           }
-          <div class="line"><b>Единицы</b> 1 MIL = 3.44 MOA</div>
+          <div class="line"><b>Единицы</b> 1 MIL = {{ moaPerMil }} MOA</div>
         </div>
         <button class="secondary mono" type="button" (click)="close.emit()" data-test="formulas-close">Закрыть</button>
       }
@@ -50,9 +49,11 @@ const CLOCK_SHARES: readonly string[] = ['12, 6 ч → 0', '1, 5, 7, 11 ч → 0
   `,
 })
 export class FormulasSheetComponent {
+  protected readonly referencePrice = referencePriceText();
+  protected readonly moaPerMil = moaPerMilText();
   readonly lines = input.required<FormulaLine[]>();
   readonly needsConfirm = input(false);
   readonly confirm = output<void>();
   readonly close = output<void>();
-  protected readonly shares = CLOCK_SHARES;
+  protected readonly shares = clockShareLines();
 }

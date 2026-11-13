@@ -1,7 +1,8 @@
-import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
+import { modeMultiplier, NotebookMode, SECOND_CLASS_SHARE, THIRD_CLASS_SHARE } from '../../core/exercise-scoring';
+import { text } from '../../i18n';
 import { CourseResults, ExerciseDef, TargetDistance } from '../../sim/course';
 import { teachingScript } from '../instructor/teaching.model';
-import { allFirstText, classStamp, isPaperExercise } from '../result/result.model';
+import { classStamp, firstClassGoalText, isPaperExercise } from '../result/result.model';
 import { exerciseSheet, ExerciseSheet, MODE_LABELS } from './course-trail.model';
 
 export interface BriefingScheme {
@@ -28,7 +29,7 @@ export interface BriefingCard {
 
 const ATTESTATION_ID = '12';
 const INTRO_ID = '00';
-const INTRO_LINE = 'Без стрельбы и оценки. Семь шагов: винтовка, прицел, барабан, кратность, сетки, патроны, затвор';
+const T = text.briefing;
 
 export function briefingCard(def: ExerciseDef, course: CourseResults): BriefingCard {
   const bestClass = course.bestClasses[def.id];
@@ -36,7 +37,7 @@ export function briefingCard(def: ExerciseDef, course: CourseResults): BriefingC
   const isAdmittedBefore = bestClass !== undefined && bestClass !== 0;
   const isIntro = def.id === INTRO_ID;
   return {
-    header: `ЗАДАНИЕ ${def.id} · ${isIntro ? 'ВВОДНОЕ' : def.id === ATTESTATION_ID ? 'АТТЕСТАЦИЯ' : 'УЧЕБНОЕ'}`,
+    header: T.header({ exerciseId: def.id, kind: isIntro ? 'intro' : def.id === ATTESTATION_ID ? 'attestation' : 'training' }),
     title: def.title,
     scheme: {
       distanceText: def.targets ? distanceText(def.targets.distance) : '',
@@ -48,31 +49,31 @@ export function briefingCard(def: ExerciseDef, course: CourseResults): BriefingC
     classRows: isIntro
       ? []
       : [
-          '3 класс — от 70 % очков',
-          `2 класс — 85 % и ${def.goals.second}`,
-          `1 класс — ${def.goals.first ? `${allFirstText(def)} и ${def.goals.first}` : allFirstText(def)}`,
+          T.thirdClass({ minShare: THIRD_CLASS_SHARE }),
+          T.secondClass({ minShare: SECOND_CLASS_SHARE, goal: def.goals.second }),
+          T.firstClass({ goal: firstClassGoalText(def) }),
         ],
-    mode: def.notebookMode ? modeLabel(def.notebookMode) : '—',
+    mode: def.notebookMode ? modeLabel(def.notebookMode) : T.noMode,
     modeOptions: def.modeChoices ? def.modeChoices.map(mode => ({ mode, label: modeLabel(mode) })) : null,
-    novelty: !isAdmittedBefore && def.novelty ? `Новое: ${def.novelty}` : null,
-    best: bestTotal !== undefined ? `лучший: ${bestClass ? classStamp(bestClass).toLowerCase() : 'не зачтено'} · ${bestTotal} очк.` : null,
-    termsLine: def.terms.length > 0 ? `узнаешь: ${def.terms.join(' · ')}` : null,
+    novelty: !isAdmittedBefore && def.novelty ? T.novelty({ novelty: def.novelty }) : null,
+    best: bestTotal !== undefined ? T.best({ stamp: bestClass ? classStamp(bestClass).toLowerCase() : T.bestNotAdmitted, total: bestTotal }) : null,
+    termsLine: def.terms.length > 0 ? T.terms({ terms: def.terms }) : null,
     instructor: teachingScript(def.id) ? { isDefaultOn: !isAdmittedBefore } : null,
-    introLine: isIntro ? INTRO_LINE : null,
+    introLine: isIntro ? T.introLine : null,
   };
 }
 
 function distanceText(distance: TargetDistance): string {
   switch (distance.kind) {
     case 'fixed':
-      return `${distance.distanceM} м`;
+      return T.fixedDistance({ distanceM: distance.distanceM });
     case 'known':
-      return `${distance.fromM}–${distance.toM} м`;
+      return T.knownDistance(distance);
     case 'unknown':
-      return `${distance.fromM}–${distance.toM} м · неизвестно`;
+      return T.unknownDistance(distance);
   }
 }
 
 function modeLabel(mode: NotebookMode): string {
-  return `${MODE_LABELS[mode]} × ${modeMultiplier(mode, false).toFixed(1)}`;
+  return T.mode({ label: MODE_LABELS[mode], multiplier: modeMultiplier(mode, false) });
 }

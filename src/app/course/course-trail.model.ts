@@ -1,4 +1,5 @@
 import { ExerciseClass, NotebookMode } from '../../core/exercise-scoring';
+import { decimal, signed } from '../../i18n/format';
 import { ValueRange } from '../../core/scenario';
 import { CartridgeId } from '../../core/types';
 import { COURSE, courseProgress, CourseResults, ExerciseDef, ExerciseId, ExerciseTargets, TargetDistance } from '../../sim/course';
@@ -147,13 +148,3 @@ function metres(value: number): string {
   return `${decimal(value)} м`;
 }
 
-function signed(value: number): string {
-  if (value > 0) {
-    return `+${decimal(value)}`;
-  }
-  return value < 0 ? `−${decimal(-value)}` : '0';
-}
-
-function decimal(value: number): string {
-  return String(value).replace('.', ',');
-}

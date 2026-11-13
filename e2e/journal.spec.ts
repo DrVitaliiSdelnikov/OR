@@ -25,7 +25,7 @@ test.describe('журнал стрелка (A7.2)', () => {
   test('пустой журнал: старые выстрелы старого формата не показываются, «К КУРСУ» ведёт на тропу', async ({ page }) => {
     await seed(page);
     await page.goto('/journal');
-    await expect(page.getByTestId('journal-empty')).toBeVisible();
+    await expect(page.getByTestId('journal-empty')).toContainText('Журнал пуст. Первая запись — после упражнения 01');
     await page.getByTestId('journal-to-course').click();
     await page.waitForURL('**/course');
   });

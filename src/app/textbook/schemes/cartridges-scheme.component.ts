@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { decimal } from '../../../i18n/format';
 import { CartridgeId } from '../../../core/types';
 import { CardsByCartridge } from '../terms';
 import { cartridgesView } from './scheme.model';
@@ -84,7 +85,7 @@ function chart(title: string, test: string, curves: readonly { id: CartridgeId; 
   return {
     title,
     test,
-    maxText: String(Number(maxMil.toFixed(1))).replace('.', ','),
+    maxText: decimal(Number(maxMil.toFixed(1))),
     lines: curves.map(item => ({ id: item.id, points: item.curve.map(point => `${x(point.distanceM)},${y(point.mil)}`).join(' ') })),
   };
 }

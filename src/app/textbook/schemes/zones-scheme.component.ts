@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { decimal } from '../../../i18n/format';
 import { DopeCard } from '../../../core/dope-card';
 import { zonesView } from './scheme.model';
 
@@ -66,7 +67,7 @@ export class ZonesSchemeComponent {
       zones: view.zones.map(zone => ({
         fromX: x(zone.fromM),
         width: x(zone.toM) - x(zone.fromM),
-        weightText: String(zone.weight).replace('.', ','),
+        weightText: decimal(zone.weight),
       })),
       flags: view.flagsM.map(distanceM => {
         const flagX = x(distanceM);

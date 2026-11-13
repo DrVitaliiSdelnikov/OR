@@ -1,4 +1,5 @@
 import { CARTRIDGES, FLAG_DISTANCES_M, RIFLE, WIND_ZONE_LIMITS_M } from '../../../core/content';
+import { decimal } from '../../../i18n/format';
 import { DopeCard, dopeRowAt } from '../../../core/dope-card';
 import { windClockShare } from '../../../core/field';
 import { roundToClicks } from '../../../core/game-formulas';
@@ -203,5 +204,5 @@ function arrow(value: number, positive: string, negative: string): string {
 }
 
 function decimalText(value: number, maxDigits: number): string {
-  return String(Number(value.toFixed(maxDigits))).replace('.', ',');
+  return decimal(Number(value.toFixed(maxDigits)));
 }

@@ -1,4 +1,6 @@
 import { Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { FIRST_FIRING_EXERCISE_ID } from '../../sim/course';
+import { decimal } from '../../i18n/format';
 import { Router } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { CARTRIDGES } from '../../core/content';
@@ -96,7 +98,7 @@ const GLASS_CENTER_PT = GLASS_SIZE_PT / 2;
 
         <div class="dock">
           @if (isLastStep()) {
-            <button class="next" type="button" [disabled]="!isCurrentDone()" (click)="finish()" data-test="intro-finish">Готов к упражнению 01</button>
+            <button class="next" type="button" [disabled]="!isCurrentDone()" (click)="finish()" data-test="intro-finish">Готов к упражнению {{ firstFiringExerciseId }}</button>
           } @else {
             <button class="next" type="button" [disabled]="!isCurrentDone()" (click)="next()" data-test="intro-next">Дальше</button>
           }
@@ -133,6 +135,7 @@ const GLASS_CENTER_PT = GLASS_SIZE_PT / 2;
   `,
 })
 export class IntroPage {
+  protected readonly firstFiringExerciseId = FIRST_FIRING_EXERCISE_ID;
   private readonly router = inject(Router);
   private readonly progressStore = inject(ProgressStore);
   private readonly feedback = inject(FeedbackService);
@@ -144,7 +147,7 @@ export class IntroPage {
 
   protected readonly steps = INTRO_STEPS;
   protected readonly measure = MEASURE;
-  protected readonly measureSizeText = String(MEASURE.gongSizeM).replace('.', ',');
+  protected readonly measureSizeText = decimal(MEASURE.gongSizeM);
   protected readonly glassSize = GLASS_SIZE_PT;
   protected readonly glassCenter = GLASS_CENTER_PT;
   protected readonly stepIndex = signal(0);
@@ -219,7 +222,7 @@ export class IntroPage {
   }
 
   protected milText(mil: number): string {
-    return String(mil).replace('.', ',');
+    return decimal(mil);
   }
 
   protected dragBolt(delta: Vector2): void {

@@ -1,3 +1,5 @@
+import { text } from '../i18n';
+
 export const MRAD_PER_MOA = 0.29089;
 export const MILS_PER_DRUM_TURN = 10;
 export const EYEPIECE_RADIUS_PT = 138;
@@ -37,12 +39,14 @@ const COURSE_BODY = {
   windageTravelMrad: 6,
 } as const;
 
+const SCOPE_NAMES = text.content.scopes;
+
 export const SCOPES: readonly ScopeModel[] = [
-  { id: 'course-tree', name: 'Курсовой 3–12× · Ёлка', reticle: 'tree', ...COURSE_BODY },
-  { id: 'course-dot', name: 'Курсовой 3–12× · MIL-dot', reticle: 'mil-dot', ...COURSE_BODY },
+  { id: 'course-tree', name: SCOPE_NAMES['course-tree'](COURSE_BODY), reticle: 'tree', ...COURSE_BODY },
+  { id: 'course-dot', name: SCOPE_NAMES['course-dot'](COURSE_BODY), reticle: 'mil-dot', ...COURSE_BODY },
   {
     id: 'moa',
-    name: 'MOA 6–24×',
+    name: SCOPE_NAMES.moa({ magnificationMin: 6, magnificationMax: 24 }),
     reticle: 'moa-grid',
     magnificationMin: 6,
     magnificationMax: 24,
@@ -54,7 +58,7 @@ export const SCOPES: readonly ScopeModel[] = [
   },
   {
     id: 'tree',
-    name: 'Дальний 5–25× · Ёлка',
+    name: SCOPE_NAMES.tree({ magnificationMin: 5, magnificationMax: 25 }),
     reticle: 'tree',
     magnificationMin: 5,
     magnificationMax: 25,
@@ -66,7 +70,7 @@ export const SCOPES: readonly ScopeModel[] = [
   },
   {
     id: 'dot',
-    name: 'Старый 3–12× · MIL-dot · 2-я плоскость',
+    name: SCOPE_NAMES.dot({ magnificationMin: 3, magnificationMax: 12 }),
     reticle: 'mil-dot',
     magnificationMin: 3,
     magnificationMax: 12,

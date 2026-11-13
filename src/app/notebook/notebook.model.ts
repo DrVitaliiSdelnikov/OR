@@ -1,10 +1,13 @@
 import { FLAG_DISTANCES_M } from '../../core/content';
+import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
+import { windClockShare } from '../../core/field';
+import { decimal, plural, PluralForms } from '../../i18n/format';
 import { atmosphereCorrectionMil, crosswindMps, windCorrectionMil } from '../../core/game-formulas';
 import { DopeCard, dopeRowAt } from '../../core/dope-card';
 import { CartridgeId } from '../../core/types';
 import { ExerciseShotRecord } from '../../sim/course';
 import { FactorContribution, Notebook, NotebookFactor, NotebookTotal } from '../../sim/notebook';
-import { formatScopeValue, isHoldoverSettled, ScopeModel } from '../../sim/scope-model';
+import { formatScopeValue, isHoldoverSettled, MRAD_PER_MOA, ScopeModel } from '../../sim/scope-model';
 
 export type NotebookTab = 'total' | 'distance' | 'conditions' | 'wind' | 'dope';
 
@@ -25,7 +28,7 @@ export interface ZoneTable {
   flags: { distanceM: number; text: string; isRead: boolean }[];
 }
 
-const ZONE_LABELS = ['станция', '200 м', '400 м', '600 м'] as const;
+const ZONE_LABELS = ['станция', ...FLAG_DISTANCES_M.map(distanceM => `${distanceM} м`)];
 
 export const NOTEBOOK_TABS: readonly { id: NotebookTab; label: string }[] = [
   { id: 'total', label: 'Итог' },
@@ -193,7 +196,7 @@ export function zoneTable(notebook: Notebook): ZoneTable | null {
   const weights = notebook.distanceM === null ? null : dopeRowAt(notebook.context.card, notebook.distanceM).zoneWeights;
   const { flagCrosswindsMps, flagsBehindBerm } = notebook.readings;
   return {
-    weights: ZONE_LABELS.map((label, index) => ({ label, value: weights ? weights[index].toFixed(2).replace('.', ',') : '—' })),
+    weights: ZONE_LABELS.map((label, index) => ({ label, value: weights ? decimal(weights[index], 2) : '—' })),
     flags: FLAG_DISTANCES_M.map((distanceM, index) => {
       if (flagsBehindBerm.includes(index)) {
         return { distanceM, text: 'за валом', isRead: true };
@@ -208,5 +211,27 @@ export function flagCrosswindText(crosswindMps: number): string {
   if (crosswindMps === 0) {
     return 'штиль';
   }
-  return `${Math.abs(crosswindMps).toFixed(1).replace('.', ',')} м/с ${crosswindMps > 0 ? 'слева' : 'справа'}`;
+  return `${decimal(Math.abs(crosswindMps), 1)} м/с ${crosswindMps > 0 ? 'слева' : 'справа'}`;
+}
+
+const CLOCK_HOURS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const SHARE_DIGITS = 2;
+const MOA_DIGITS = 2;
+const POINT_FORMS: PluralForms = ['очко', 'очка', 'очков'];
+
+export function clockShareLines(): string[] {
+  const clocksByShare = new Map<number, number[]>();
+  for (const clock of CLOCK_HOURS) {
+    const share = Number(windClockShare(clock).toFixed(SHARE_DIGITS));
+    clocksByShare.set(share, [...(clocksByShare.get(share) ?? []), clock]);
+  }
+  return [...clocksByShare].map(([share, clocks]) => `${clocks.join(', ')} ч → ${decimal(share)}`);
+}
+
+export function referencePriceText(penalty = REFERENCE_PENALTY): string {
+  return `Справочник стоит ${penalty} ${plural(penalty, POINT_FORMS)}`;
+}
+
+export function moaPerMilText(): string {
+  return decimal(1 / MRAD_PER_MOA, MOA_DIGITS);
 }

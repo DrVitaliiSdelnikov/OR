@@ -25,6 +25,7 @@ export interface InstructorSnapshot {
   reticleMil: number | null;
   measuredDistanceM: number | null;
   targetSizeM: number;
+  targetDistanceM: number | null;
   recordedSteps: readonly NotebookStepId[];
   stageIndex: number;
   isMagazineChangeDue: boolean;

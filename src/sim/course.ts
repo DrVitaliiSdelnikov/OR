@@ -20,7 +20,8 @@ import { FiringPlan } from './firing-line';
 import { PatrolTarget, patrolPlan } from './patrol';
 import { FreePlayScopeUnlocks, ScopeId } from './scope-model';
 import { MainCause } from './miss-breakdown';
-import { ShotDiagnosis } from './shot-review';
+import { CALL_TOLERANCE_MIL, ShotDiagnosis } from './shot-review';
+import { text } from '../i18n';
 
 export type ExerciseId = '00' | '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10' | '11' | '12';
 
@@ -190,92 +191,81 @@ const RANGE_TOLERANCE_SECOND_CLASS = 0.1;
 const RANGE_TOLERANCE_FIRST_CLASS = 0.05;
 const PATROL_MIN_TARGETS_HIT = 7;
 const PATROL_TARGETS = 10;
+const BREATHING_TARGETS = 5;
+const CONFIRM_ZERO_DISTANCE_M = 400;
 const POINTS_PER_PAPER_HIT = 10;
 const DISTANCE_EPSILON_MIL = 1e-9;
 const MET: GoalCheck = { isMet: true };
 const NOT_MET: GoalCheck = { isMet: false };
 const NO_SCORE: ScoreParts = { targetSum: 0, calcSum: 0, multiplier: 1, referencePenalty: 0 };
 
+const GOALS = text.content.goals;
 const GOAL_TEXTS: Record<ExerciseId, ExerciseGoalTexts> = {
-  '00': { second: '', first: null },
-  '01': { second: 'накрутка ровно по итогу с первого раза', first: null },
-  '02': { second: 'группа 2–4 ≤ 1 MIL', first: 'холодный — без срыва спуска, контрольный ≤ 0,3 MIL от точки прицеливания' },
-  '03': { second: 'ни одного сорванного спуска', first: 'все 5 с задержкой дыхания в окне' },
-  '04': { second: 'скорость перенесена без ошибки', first: 'вклад ветра учтён на всех' },
-  '05': { second: 'дальность ±10 % на всех', first: 'дальность ±5 % на всех' },
-  '06': { second: 'проверка расчёта без «ошибки» на всех', first: '«точно» на всех' },
-  '07': { second: 'условия учтены на всех', first: '«точно» на всех' },
-  '08': { second: 'верный расчёт для всех трёх патронов', first: '«точно» для всех трёх' },
-  '09': { second: 'ни одной ошибки СТОРОНА', first: '«точно» на всех' },
-  '10': { second: 'все промахи первым выстрелом добиты вторым', first: 'вызов точен (≤ 0,2 MIL) на всех' },
-  '11': { second: '≥ 7 из 10 и ни одной ошибки СТОРОНА', first: '10 из 10, засадой — все первым выстрелом' },
-  '12': { second: 'без справочника', first: 'САМ сложный' },
+  ...GOALS,
+  '02': GOALS['02']({
+    groupFirstShot: ZERO_GROUP_SHOTS[0] + 1,
+    groupLastShot: ZERO_GROUP_SHOTS[ZERO_GROUP_SHOTS.length - 1] + 1,
+    groupMaxMil: ZERO_GROUP_MAX_MIL,
+    controlMaxMil: ZERO_CONTROL_MAX_MIL,
+  }),
+  '03': GOALS['03']({ targets: BREATHING_TARGETS }),
+  '05': GOALS['05']({ secondClassTolerance: RANGE_TOLERANCE_SECOND_CLASS, firstClassTolerance: RANGE_TOLERANCE_FIRST_CLASS }),
+  '10': GOALS['10']({ callToleranceMil: CALL_TOLERANCE_MIL }),
+  '11': GOALS['11']({ minTargetsHit: PATROL_MIN_TARGETS_HIT, targets: PATROL_TARGETS }),
 };
 
-const NOVELTIES: Record<ExerciseId, string | null> = {
-  '00': 'знакомство: части винтовки и прицела, барабан двигает точку попадания, кратность, сетки',
-  '01': 'барабаны, клики, ДОПЕ подсказкой; спуск — тап; затвор — сам',
-  '02': 'вызов выстрела (ставит игра), группа',
-  '03': 'полный спуск с давлением, дыхание, затвор Г-дорожкой',
-  '04': 'ветер, метеостанция, флажок у бруствера',
-  '05': 'неизвестная дистанция, миллинг по сетке',
-  '06': 'режим САМ лёгкий',
-  '07': null,
-  '08': 'смена патрона внутри упражнения',
-  '09': 'разный ветер по трассе, мираж',
-  '10': 'САМ сложный, вызов выстрела игроком, карандаш в ДОПЕ',
-  '11': 'движущиеся цели, упреждение сеткой, шаг «Упреждение» в блокноте',
-  '12': null,
-};
+const TITLES = text.content.exerciseTitles;
+
+export const FIRST_FIRING_EXERCISE_ID: ExerciseId = '01';
 
 export const COURSE: readonly ExerciseDef[] = [
-  exerciseDef('00', 'Винтовка и прицел', null, { stages: [], hasColdBore: false, notebookMode: null, conditions: CALM, terms: ['винтовка', 'прицел', 'сетка', 'кратность', 'фокальная плоскость'] }),
-  exerciseDef('01', 'Первые щелчки', { count: 3, distance: { kind: 'fixed', distanceM: 300 } }, {
+  exerciseDef('00', TITLES['00'], null, { stages: [], hasColdBore: false, notebookMode: null, conditions: CALM, terms: ['винтовка', 'прицел', 'сетка', 'кратность', 'фокальная плоскость'] }),
+  exerciseDef('01', TITLES['01'], { count: 3, distance: { kind: 'fixed', distanceM: 300 } }, {
     hasColdBore: false,
     conditions: { ...CALM, temperatureRangeC: [15, 15], pressureRangeHpa: [1013, 1013] },
     terms: ['клик', 'MIL', 'MOA', 'барабан', 'ДОПЕ', 'ZERO STOP'],
   }),
-  exerciseDef('02', 'Ноль и холодный ствол', { count: 1, distance: { kind: 'fixed', distanceM: 100 }, diameterM: 0.5 }, {
+  exerciseDef('02', TITLES['02'], { count: 1, distance: { kind: 'fixed', distanceM: 100 }, diameterM: 0.5 }, {
     stages: [{ cartridgeId: 'B', maxShotsPerTarget: 5, closesOnHit: false }],
     hasKnockedSight: true,
     conditions: CALM,
     terms: ['ноль', 'СТП', 'группа', 'холодный выстрел', 'вызов'],
   }),
-  exerciseDef('03', 'Дыхание и спуск', { count: 5, distance: { kind: 'fixed', distanceM: 300 }, diameterM: 0.35 }, { conditions: CALM, terms: ['дыхание', 'спуск', 'затвор', 'пульс'] }),
-  exerciseDef('04', 'Флажок на бруствере', { count: 3, distance: { kind: 'fixed', distanceM: 300 } }, {
+  exerciseDef('03', TITLES['03'], { count: BREATHING_TARGETS, distance: { kind: 'fixed', distanceM: 300 }, diameterM: 0.35 }, { conditions: CALM, terms: ['дыхание', 'спуск', 'затвор', 'пульс'] }),
+  exerciseDef('04', TITLES['04'], { count: 3, distance: { kind: 'fixed', distanceM: 300 } }, {
     conditions: { ...LIGHT_WIND, windClocks: [3, 9] },
     terms: ['ветер', 'правило часов', 'флажок', 'метеостанция', 'боковая составляющая'],
   }),
-  exerciseDef('05', 'Дистанции: ДОПЕ и дальномер', { count: 3, distance: { kind: 'unknown', fromM: 300, toM: 600 } }, { conditions: LIGHT_WIND, terms: ['миллинг', 'формула тысячной', 'строка ДОПЕ'] }),
-  exerciseDef('06', 'Часы ветра', { count: 4, distance: { kind: 'known', fromM: 400, toM: 500 } }, {
+  exerciseDef('05', TITLES['05'], { count: 3, distance: { kind: 'unknown', fromM: 300, toM: 600 } }, { conditions: LIGHT_WIND, terms: ['миллинг', 'формула тысячной', 'строка ДОПЕ'] }),
+  exerciseDef('06', TITLES['06'], { count: 4, distance: { kind: 'known', fromM: 400, toM: 500 } }, {
     notebookMode: 'manual-easy',
     conditions: { ...MODERATE_WIND, windClocks: OBLIQUE_CLOCKS },
     terms: ['доля по часам', 'константа ветра', 'САМ'],
   }),
-  exerciseDef('07', 'Холодное утро', { count: 4, distance: { kind: 'known', fromM: 500, toM: 600 } }, {
+  exerciseDef('07', TITLES['07'], { count: 4, distance: { kind: 'known', fromM: 500, toM: 600 } }, {
     notebookMode: 'manual-easy',
     conditions: { ...LIGHT_WIND, temperatureRangeC: [-5, 0], pressureRangeHpa: [1025, 1035] },
     terms: ['плотность воздуха', 'эталон +15 / 1013', 'поправка условий'],
   }),
-  exerciseDef('08', 'Три патрона', { count: 1, distance: { kind: 'fixed', distanceM: 600 } }, {
+  exerciseDef('08', TITLES['08'], { count: 1, distance: { kind: 'fixed', distanceM: 600 } }, {
     stages: (['A', 'B', 'C'] as const).map(cartridgeId => ({ ...TWO_SHOTS, cartridgeId })),
     notebookMode: 'manual-easy',
     conditions: MODERATE_WIND,
     terms: ['баллистический коэффициент', 'энергия', 'разброс скорости', 'карточка патрона'],
   }),
-  exerciseDef('09', 'Флажки по трассе', { count: 4, distance: { kind: 'known', fromM: 500, toM: 700 } }, { notebookMode: 'manual-easy', conditions: ZONE_WIND, terms: ['зоны ветра', 'средний ветер', 'мираж'] }),
-  exerciseDef('10', 'Пристрелка на 400', { count: 3, distance: { kind: 'fixed', distanceM: 400 } }, {
+  exerciseDef('09', TITLES['09'], { count: 4, distance: { kind: 'known', fromM: 500, toM: 700 } }, { notebookMode: 'manual-easy', conditions: ZONE_WIND, terms: ['зоны ветра', 'средний ветер', 'мираж'] }),
+  exerciseDef('10', TITLES['10']({ distanceM: CONFIRM_ZERO_DISTANCE_M }), { count: 3, distance: { kind: 'fixed', distanceM: CONFIRM_ZERO_DISTANCE_M } }, {
     notebookMode: 'manual-hard',
     conditions: LIGHT_WIND,
     terms: ['поправка по второму выстрелу', 'своя карточка', 'вызов'],
   }),
-  exerciseDef('11', 'Движущийся дозор', { count: 10, distance: { kind: 'known', fromM: 300, toM: 500 } }, {
+  exerciseDef('11', TITLES['11'], { count: PATROL_TARGETS, distance: { kind: 'known', fromM: 300, toM: 500 } }, {
     hasPatrol: true,
     notebookMode: 'manual-easy',
     conditions: LIGHT_WIND,
     terms: ['упреждение', 'сопровождение', 'засада', 'время полёта'],
   }),
-  exerciseDef('12', 'Полевой рубеж', { count: 10, distance: { kind: 'unknown', fromM: 200, toM: 700 }, isOutAndBack: true }, {
+  exerciseDef('12', TITLES['12'], { count: 10, distance: { kind: 'unknown', fromM: 200, toM: 700 }, isOutAndBack: true }, {
     notebookMode: 'manual-easy',
     modeChoices: ['manual-easy', 'manual-hard'],
     conditions: ZONE_WIND,
@@ -430,7 +420,7 @@ function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | n
     title,
     targets,
     goals: GOAL_TEXTS[id],
-    novelty: NOVELTIES[id],
+    novelty: text.content.novelties[id],
     stages: [TWO_SHOTS],
     hasColdBore: true,
     hasKnockedSight: false,

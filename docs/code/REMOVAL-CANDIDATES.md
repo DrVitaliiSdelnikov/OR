@@ -15,7 +15,6 @@
 
 | Что | Почему уходит | Чем заменяется | Удалить в | Помечено в коде |
 | --- | --- | --- | --- | --- |
-| `IMPLEMENTED_FEATURES`, `playability` в `position.model` и причина «откроется позже» на брифинге | временная играбельность, с A9.3b играбельно всё | — | A10 | `@deprecated` на `playability` |
 | рисованная сцена в `scope-renderer`: `drawScene`, `drawTarget`, `FLAG_DROP_MIL`, `drawnScenePole` | заглушка до фото (В22) | фото-слои A9.1; пока — запасная, если картинки не загрузились | A9.2, когда фото станут обязательными | `@deprecated` на методах |
 
 ## Будет помечено, когда появится замена
@@ -29,6 +28,7 @@
 
 | Что | Когда | Задача |
 | --- | --- | --- |
+| `IMPLEMENTED_FEATURES`, `playability`, `Playability` в `position.model`, причина «откроется позже» и выключенная «НА ПОЗИЦИЮ» на брифинге; тест «играбельно всё» — с A9.3b играбельно всё | 13.11 | A10a |
 | `src/theme/_legacy-aliases.scss` (`--hub-*`, `--font-sans`, `--fire-gap`) и его `@use`; глобальные `.screen`, `.card`, `.spacer`, `.button`, `.chip`, `.top-bar`, `.ok-text`, `.error-text`, `.warn-text`, `.accent-text`; `--ion-tab-bar-*`; настройка `isSoundOn` (заменена громкостью, старое значение переводится при загрузке) | 10.11 | A7.4 |
 | старый журнал `app/log` и формат выстрела `ShotRecord` / `shots` — остаток удалённой свободной игры, никто не писал (В31) | 9.11 | A7.2 |
 | события `hit` и `gauge-read` в `FeedbackService` — объявлены, но не вызывались; вибрация по `switch` — заменена таблицей `FEEDBACK_PLAN` (В31) | 9.11 | A4 |

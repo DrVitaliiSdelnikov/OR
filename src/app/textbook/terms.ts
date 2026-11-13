@@ -1,4 +1,5 @@
-import { cartridgeById, FLAG_DEG_PER_MPS, RIFLE, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
+import { cartridgeById, FLAG_DEG_PER_MPS, FLAG_DISTANCES_M, RIFLE, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
+import { andList, decimal } from '../../i18n/format';
 import { DopeCard, DopeRow, dopeRowAt } from '../../core/dope-card';
 import { impactSoundDelayS, windClockShare } from '../../core/field';
 import {
@@ -55,10 +56,6 @@ const ENERGY_ROUNDING_J = 10;
 const ZONE_EXAMPLE_CROSSWINDS_MPS = [2, 3, 4, 0];
 const ATMOSPHERE_COLUMN_STEP = 10;
 
-function comma(value: number, digits: number): string {
-  return value.toFixed(digits).replace('.', ',');
-}
-
 function cmOnTarget(mil: number, distanceM: number): number {
   return mil * distanceM * CM_PER_MIL_PER_METRE;
 }
@@ -88,7 +85,7 @@ export const TERM_CARDS: readonly TermCard[] = [
     phrase: 'Первый выстрел из холодного чистого ствола уходит чуть в сторону от остальных. Это свойство винтовки — его не поправляют барабаном, а помнят.',
     example: () => {
       const shift = RIFLE.coldBoreShiftMil;
-      return `${RIFLE.name} на 300 м: ↑ ${comma(shift.upMrad, 2)} MIL = ${comma(cmOnTarget(shift.upMrad, 300), 1)} см, → ${comma(shift.rightMrad, 2)} MIL = ${comma(cmOnTarget(shift.rightMrad, 300), 1)} см`;
+      return `${RIFLE.name} на 300 м: ↑ ${decimal(shift.upMrad, 2)} MIL = ${decimal(cmOnTarget(shift.upMrad, 300), 1)} см, → ${decimal(shift.rightMrad, 2)} MIL = ${decimal(cmOnTarget(shift.rightMrad, 300), 1)} см`;
     },
     places: ['первый выстрел упражнения с упр. 02', 'разбор · серый лепесток «холодный ствол»'],
     related: ['группа', 'СТП', 'ноль'],
@@ -139,7 +136,7 @@ export const TERM_CARDS: readonly TermCard[] = [
         { symbol: 'Ц', meaning: 'цена клика, 0,1 MIL' },
       ],
     },
-    example: () => `П = 0,62 MIL: N = 0,62 / 0,1 = 6,2 → ${clicksText(0.62)}; на 300 м один клик — ${comma(cmOnTarget(CLICK_MIL, 300), 0)} см`,
+    example: () => `П = 0,62 MIL: N = 0,62 / 0,1 = 6,2 → ${clicksText(0.62)}; на 300 м один клик — ${decimal(cmOnTarget(CLICK_MIL, 300), 0)} см`,
     places: ['позиция · барабаны', 'блокнот · вкладка ИТОГ'],
     related: ['барабан', 'MIL', 'ZERO STOP'],
   },
@@ -172,7 +169,7 @@ export const TERM_CARDS: readonly TermCard[] = [
     forms: ['миллинга', 'миллингом'],
     chapter: 'Сетка',
     phrase: 'Измерить цель сеткой: сколько MIL занимает её известный размер. Дальше — дальность по формуле тысячной.',
-    example: () => `гонг 0,5 м занял в сетке 1,25 MIL → ${comma(rangeByMilling(0.5, 1.25), 0)} м`,
+    example: () => `гонг 0,5 м занял в сетке 1,25 MIL → ${decimal(rangeByMilling(0.5, 1.25), 0)} м`,
     places: ['блокнот · вкладка ДИСТАНЦИЯ'],
     related: ['формула тысячной', 'сетка'],
   },
@@ -188,7 +185,7 @@ export const TERM_CARDS: readonly TermCard[] = [
         { symbol: 'D', meaning: 'дистанция, м' },
       ],
     },
-    example: () => `0,62 MIL на 300 м = 0,62 × 300 / 10 = ${comma(cmOnTarget(0.62, 300), 1)} см`,
+    example: () => `0,62 MIL на 300 м = 0,62 × 300 / 10 = ${decimal(cmOnTarget(0.62, 300), 1)} см`,
     places: ['весь курс'],
     related: ['MOA', 'клик'],
   },
@@ -203,7 +200,7 @@ export const TERM_CARDS: readonly TermCard[] = [
         { symbol: 'MIL', meaning: 'угол в тысячных' },
       ],
     },
-    example: () => `1,4 MIL = ${comma(1.4 / MRAD_PER_MOA, 2)} MOA; клик MOA-прицела ¼ MOA = ${comma(0.25 * MRAD_PER_MOA, 3)} MIL`,
+    example: () => `1,4 MIL = ${decimal(1.4 / MRAD_PER_MOA, 2)} MOA; клик MOA-прицела ¼ MOA = ${decimal(0.25 * MRAD_PER_MOA, 3)} MIL`,
     places: ['свободная игра · прицел MOA после упр. 06'],
     related: ['MIL', 'клик'],
   },
@@ -214,7 +211,7 @@ export const TERM_CARDS: readonly TermCard[] = [
     phrase: 'Паспорт патрона: масса и скорость пули, баллистический коэффициент, разброс скорости.',
     example: () => {
       const cartridge = cartridgeById('B');
-      return `${cartridge.name}: ${comma(cartridge.massG, 1)} г, ${cartridge.muzzleVelocityMps} ± ${cartridge.muzzleVelocitySdMps} м/с, G7 ${comma(cartridge.bcG7, 3)}`;
+      return `${cartridge.name}: ${decimal(cartridge.massG, 1)} г, ${cartridge.muzzleVelocityMps} ± ${cartridge.muzzleVelocitySdMps} м/с, G7 ${decimal(cartridge.bcG7, 3)}`;
     },
     places: ['упр. 08 · смена магазина', 'свободная игра · выбор патрона'],
     related: ['баллистический коэффициент', 'энергия', 'разброс скорости'],
@@ -224,7 +221,7 @@ export const TERM_CARDS: readonly TermCard[] = [
     forms: ['баллистического коэффициента'],
     chapter: 'Патрон',
     phrase: 'Насколько пуля обтекаемая (BC по модели G7). Чем выше, тем медленнее она теряет скорость: меньше падает и меньше сносится ветром.',
-    example: () => (['A', 'B', 'C'] as const).map(id => `${cartridgeById(id).name} — ${comma(cartridgeById(id).bcG7, 3)}`).join(' · '),
+    example: () => (['A', 'B', 'C'] as const).map(id => `${cartridgeById(id).name} — ${decimal(cartridgeById(id).bcG7, 3)}`).join(' · '),
     places: ['карточка патрона'],
     related: ['карточка патрона', 'константа ветра'],
   },
@@ -245,7 +242,7 @@ export const TERM_CARDS: readonly TermCard[] = [
       const cartridge = cartridgeById('B');
       const massKg = cartridge.massG / GRAMS_PER_KG;
       const energyJ = (massKg * cartridge.muzzleVelocityMps ** 2) / 2;
-      return `${cartridge.name}: ${comma(massKg, 4)} × ${cartridge.muzzleVelocityMps}² / 2 ≈ ${Math.round(energyJ / ENERGY_ROUNDING_J) * ENERGY_ROUNDING_J} Дж`;
+      return `${cartridge.name}: ${decimal(massKg, 4)} × ${cartridge.muzzleVelocityMps}² / 2 ≈ ${Math.round(energyJ / ENERGY_ROUNDING_J) * ENERGY_ROUNDING_J} Дж`;
     },
     places: ['карточка патрона'],
     related: ['баллистический коэффициент', 'карточка патрона'],
@@ -268,7 +265,7 @@ export const TERM_CARDS: readonly TermCard[] = [
     phrase: 'Таблица поправок своей винтовки и патрона: для каждой дистанции — ВЕРТ в MIL и кликах, время полёта, константа ветра, поправки на холод и давление.',
     example: cards => {
       const row = rowB(cards, 300);
-      return row ? `Патрон Б, 300 м: ВЕРТ ${comma(row.elevationMil, 1)} MIL = ${row.clicks} кл.` : null;
+      return row ? `Патрон Б, 300 м: ВЕРТ ${decimal(row.elevationMil, 1)} MIL = ${row.clicks} кл.` : null;
     },
     places: ['блокнот · вкладка ДОПЕ', 'журнал · карточки'],
     related: ['строка ДОПЕ', 'ноль', 'барабан', 'своя карточка'],
@@ -283,7 +280,7 @@ export const TERM_CARDS: readonly TermCard[] = [
       const upper = rowB(cards, 500);
       const between = rowB(cards, 450);
       return lower && upper && between
-        ? `Патрон Б, 450 м — между ${comma(lower.elevationMil, 1)} (400 м) и ${comma(upper.elevationMil, 1)} (500 м): ВЕРТ ${comma(between.elevationMil, 2)} MIL = ${between.clicks} кл.`
+        ? `Патрон Б, 450 м — между ${decimal(lower.elevationMil, 1)} (400 м) и ${decimal(upper.elevationMil, 1)} (500 м): ВЕРТ ${decimal(between.elevationMil, 2)} MIL = ${between.clicks} кл.`
         : null;
     },
     places: ['блокнот · вкладка ДОПЕ'],
@@ -322,7 +319,7 @@ export const TERM_CARDS: readonly TermCard[] = [
     example: cards => {
       const row = rowB(cards, 400);
       return row
-        ? `Патрон Б, 400 м: t = ${comma(row.timeOfFlightS, 2)} с, звон — через ${comma(impactSoundDelayS(row.timeOfFlightS, 400, STANDARD_TEMPERATURE_C), 1)} с после выстрела`
+        ? `Патрон Б, 400 м: t = ${decimal(row.timeOfFlightS, 2)} с, звон — через ${decimal(impactSoundDelayS(row.timeOfFlightS, 400, STANDARD_TEMPERATURE_C), 1)} с после выстрела`
         : null;
     },
     places: ['блокнот · вкладка ДОПЕ, колонка t'],
@@ -348,7 +345,7 @@ export const TERM_CARDS: readonly TermCard[] = [
         return null;
       }
       const correctionMil = Math.abs(windCorrectionMil(3, 9, 300, row.windConstant));
-      return `ветер 3 м/с с 9 ч, 300 м, патрон Б: W = 3 × 300 / ${row.windConstant} = ${comma(correctionMil, 2)} MIL → ${clicksText(correctionMil)} влево`;
+      return `ветер 3 м/с с 9 ч, 300 м, патрон Б: W = 3 × 300 / ${row.windConstant} = ${decimal(correctionMil, 2)} MIL → ${clicksText(correctionMil)} влево`;
     },
     places: ['блокнот · вкладка ВЕТЕР'],
     related: ['боковая составляющая', 'константа ветра', 'правило часов'],
@@ -366,8 +363,8 @@ export const TERM_CARDS: readonly TermCard[] = [
     forms: ['флажка', 'флажки', 'флажков', 'флажком', 'флажку', 'флажкам'],
     chapter: 'Ветер',
     phrase: 'Флажки на трассе показывают ветер там, где летит пуля. Чем сильнее ветер, тем больше угол.',
-    example: () => `флажок отклонён на 27°: 27 / ${FLAG_DEG_PER_MPS} = ${comma(27 / FLAG_DEG_PER_MPS, 0)} м/с`,
-    places: ['позиция · флажки 200, 400, 600 м'],
+    example: () => `флажок отклонён на 27°: 27 / ${FLAG_DEG_PER_MPS} = ${decimal(27 / FLAG_DEG_PER_MPS, 0)} м/с`,
+    places: [`позиция · флажки ${FLAG_DISTANCES_M.join(', ')} м`],
     related: ['зоны ветра', 'метеостанция'],
   },
   {
@@ -391,7 +388,7 @@ export const TERM_CARDS: readonly TermCard[] = [
         { symbol: 'доля', meaning: 'доля по часам' },
       ],
     },
-    example: () => `4 м/с с 2 ч: V⊥ = 4 × ${comma(windClockShare(2), 2)} = ${comma(crosswindMps(4, 2), 2)} м/с`,
+    example: () => `4 м/с с 2 ч: V⊥ = 4 × ${decimal(windClockShare(2), 2)} = ${decimal(crosswindMps(4, 2), 2)} м/с`,
     places: ['блокнот · вкладка ВЕТЕР'],
     related: ['доля по часам', 'ветер'],
   },
@@ -400,7 +397,7 @@ export const TERM_CARDS: readonly TermCard[] = [
     forms: ['доли по часам', 'долю по часам'],
     chapter: 'Ветер',
     phrase: 'Какая часть ветра работает поперёк. Быстрая армейская оценка — «наискось половина», но в САМ считай по таблице.',
-    example: () => [3, 2, 1, 12].map(hours => `${hours} ч → ${comma(windClockShare(hours), 2)}`).join(' · '),
+    example: () => [3, 2, 1, 12].map(hours => `${hours} ч → ${decimal(windClockShare(hours), 2)}`).join(' · '),
     places: ['блокнот · часы ветра', 'справочник формул'],
     related: ['правило часов', 'боковая составляющая'],
   },
@@ -421,10 +418,10 @@ export const TERM_CARDS: readonly TermCard[] = [
     term: 'зоны ветра',
     forms: ['зон ветра', 'зонам ветра', 'зонах ветра'],
     chapter: 'Ветер',
-    phrase: 'Трасса делится на зоны: у стрелка, у флажков 200, 400 и 600 м. Ветер в каждой свой, а вес зоны зависит от дистанции.',
+    phrase: `Трасса делится на зоны: у стрелка, у флажков ${andList(FLAG_DISTANCES_M)} м. Ветер в каждой свой, а вес зоны зависит от дистанции.`,
     example: cards => {
       const row = rowB(cards, 500);
-      return row ? `Патрон Б, 500 м — веса: ${row.zoneWeights.map(weight => comma(weight, 2)).join(' · ')}` : null;
+      return row ? `Патрон Б, 500 м — веса: ${row.zoneWeights.map(weight => decimal(weight, 2)).join(' · ')}` : null;
     },
     places: ['блокнот · вкладка ВЕТЕР, упр. с зонами'],
     related: ['средний ветер', 'флажок'],
@@ -447,8 +444,8 @@ export const TERM_CARDS: readonly TermCard[] = [
       if (!row) {
         return null;
       }
-      const parts = row.zoneWeights.map((weight, index) => `${comma(weight, 2)} × ${ZONE_EXAMPLE_CROSSWINDS_MPS[index]}`).join(' + ');
-      return `500 м, зоны ${ZONE_EXAMPLE_CROSSWINDS_MPS.join(' · ')} м/с: ${parts} = ${comma(averageCrosswindMps(ZONE_EXAMPLE_CROSSWINDS_MPS, row.zoneWeights), 2)} м/с`;
+      const parts = row.zoneWeights.map((weight, index) => `${decimal(weight, 2)} × ${ZONE_EXAMPLE_CROSSWINDS_MPS[index]}`).join(' + ');
+      return `500 м, зоны ${ZONE_EXAMPLE_CROSSWINDS_MPS.join(' · ')} м/с: ${parts} = ${decimal(averageCrosswindMps(ZONE_EXAMPLE_CROSSWINDS_MPS, row.zoneWeights), 2)} м/с`;
     },
     places: ['блокнот · вкладка ВЕТЕР, упр. с зонами'],
     related: ['зоны ветра', 'ветер'],
@@ -474,7 +471,7 @@ export const TERM_CARDS: readonly TermCard[] = [
         { symbol: 'mil', meaning: 'сколько MIL цель заняла в сетке' },
       ],
     },
-    example: () => `гонг 0,5 м, в сетке 1,25 MIL: Д = 0,5 × 1000 / 1,25 = ${comma(rangeByMilling(0.5, 1.25), 0)} м`,
+    example: () => `гонг 0,5 м, в сетке 1,25 MIL: Д = 0,5 × 1000 / 1,25 = ${decimal(rangeByMilling(0.5, 1.25), 0)} м`,
     places: ['блокнот · вкладка ДИСТАНЦИЯ'],
     related: ['миллинг', 'строка ДОПЕ'],
   },
@@ -519,7 +516,7 @@ export const TERM_CARDS: readonly TermCard[] = [
       const colderTens = (STANDARD_TEMPERATURE_C - temperatureC) / ATMOSPHERE_COLUMN_STEP;
       const pressureTens = (pressureHpa - STANDARD_PRESSURE_HPA) / ATMOSPHERE_COLUMN_STEP;
       const correctionMil = atmosphereCorrectionMil(row, temperatureC, pressureHpa);
-      return `Патрон Б, 600 м, −5 °C, ${pressureHpa} гПа: ${comma(colderTens, 0)} × ${comma(row.colderBy10CMil, 2)} + ${comma(pressureTens, 1)} × ${comma(row.pressureUp10HpaMil, 2)} = ${comma(correctionMil, 2)} MIL → ${clicksText(correctionMil)} вверх`;
+      return `Патрон Б, 600 м, −5 °C, ${pressureHpa} гПа: ${decimal(colderTens, 0)} × ${decimal(row.colderBy10CMil, 2)} + ${decimal(pressureTens, 1)} × ${decimal(row.pressureUp10HpaMil, 2)} = ${decimal(correctionMil, 2)} MIL → ${clicksText(correctionMil)} вверх`;
     },
     places: ['блокнот · вкладка УСЛОВИЯ'],
     related: ['эталон +15 / 1013', 'САМ'],
@@ -573,7 +570,7 @@ export const TERM_CARDS: readonly TermCard[] = [
     example: cards => {
       const row = rowB(cards, 400);
       return row
-        ? `шаг 1,1 м/с поперёк, 400 м: L = 1,1 × ${comma(row.timeOfFlightS, 2)} / 400 × 1000 = ${comma(leadMil(1.1, 3, row.timeOfFlightS, 400), 2)} MIL`
+        ? `шаг 1,1 м/с поперёк, 400 м: L = 1,1 × ${decimal(row.timeOfFlightS, 2)} / 400 × 1000 = ${decimal(leadMil(1.1, 3, row.timeOfFlightS, 400), 2)} MIL`
         : null;
     },
     places: ['блокнот · шаг «Упреждение»'],

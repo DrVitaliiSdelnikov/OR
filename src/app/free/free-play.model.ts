@@ -1,4 +1,5 @@
 import { CARTRIDGES } from '../../core/content';
+import { decimal } from '../../i18n/format';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId, Correction } from '../../core/types';
 import { FreePlayUnlocks } from '../../sim/course';
@@ -51,9 +52,6 @@ function lockOf(key: keyof FreePlayUnlocks | null, unlocks: FreePlayUnlocks): st
   return key === null || unlocks[key] ? null : `откроется в упр. ${OPENED_IN[key]}`;
 }
 
-function decimal(value: number, digits: number): string {
-  return value.toFixed(digits).replace('.', ',');
-}
 
 export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlocks): FreePlayView {
   const chosenCartridge = CARTRIDGES.find(cartridge => cartridge.id === settings.cartridgeId)!;
