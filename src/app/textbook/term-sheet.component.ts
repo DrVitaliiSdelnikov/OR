@@ -1,5 +1,6 @@
 import { afterNextRender, Component, computed, effect, ElementRef, inject, input, linkedSignal, output, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
+import { text } from '../../i18n';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
 import { sandboxOf } from './sandbox.model';
@@ -36,11 +37,11 @@ const FREE_PLAY_POSITION = ['/position', 'free'];
         }
 
         @if (sheet.example; as example) {
-          <div class="example mono" data-test="term-example"><span class="label">пример</span> {{ example }}</div>
+          <div class="example mono" data-test="term-example"><span class="label">{{ texts.example }}</span> {{ example }}</div>
         }
 
         <div class="block">
-          <div class="label mono">где встречается</div>
+          <div class="label mono">{{ texts.where }}</div>
           @for (line of sheet.whereLines; track line) {
             <div class="where mono" data-test="term-where">{{ line }}</div>
           }
@@ -48,7 +49,7 @@ const FREE_PLAY_POSITION = ['/position', 'free'];
 
         @if (sheet.related.length > 0) {
           <div class="block">
-            <div class="label mono">рядом</div>
+            <div class="label mono">{{ texts.related }}</div>
             <div class="related">
               @for (item of sheet.related; track item.term) {
                 @if (item.isOpen) {
@@ -63,9 +64,9 @@ const FREE_PLAY_POSITION = ['/position', 'free'];
       </div>
       <div class="actions">
         @if (canTry()) {
-          <button class="try mono" type="button" (click)="tryOnScope()" data-test="term-try">Попробовать на прицеле</button>
+          <button class="try mono" type="button" (click)="tryOnScope()" data-test="term-try">{{ texts.tryOnScope }}</button>
         }
-        <button class="close mono" type="button" (click)="close.emit()" data-test="term-close">Закрыть</button>
+        <button class="close mono" type="button" (click)="close.emit()" data-test="term-close">{{ texts.close }}</button>
       </div>
     </section>
   `,
@@ -104,6 +105,7 @@ export class TermSheetComponent {
   private readonly body = viewChild.required<ElementRef<HTMLElement>>('body');
   private readonly openingClick = afterNextRender(() => this.feedback.emit('sheet'));
 
+  protected readonly texts = text.textbook.sheet;
   protected readonly term = linkedSignal(() => this.openTerm());
   protected readonly cards = this.textbookCards.cards;
   protected readonly canTry = computed(() => this.isOverTextbook && sandboxOf(this.term()) !== null);

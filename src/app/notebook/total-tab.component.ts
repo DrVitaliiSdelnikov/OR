@@ -1,4 +1,5 @@
 import { Component, input, output, signal } from '@angular/core';
+import { text } from '../../i18n';
 import { NotebookFactor } from '../../sim/notebook';
 
 export interface FactorRow {
@@ -12,7 +13,7 @@ export interface FactorRow {
 @Component({
   selector: 'or-total-tab',
   template: `
-    <div class="mode mono" data-test="notebook-mode">Авто · отметь, что учесть</div>
+    <div class="mode mono" data-test="notebook-mode">{{ texts.mode }}</div>
     <div class="factors">
       @for (row of rows(); track row.factor) {
         <div class="factor" [class.off]="!row.isOn" [attr.data-test]="'factor-' + row.factor" [attr.data-hint]="'factor-' + row.factor">
@@ -24,7 +25,7 @@ export interface FactorRow {
               type="button"
               role="switch"
               [attr.aria-checked]="row.isOn"
-              [attr.aria-label]="'Учитывать: ' + row.name"
+              [attr.aria-label]="texts.toggle({ name: row.name })"
               (click)="toggle.emit(row.factor)"
               [attr.data-test]="'toggle-' + row.factor"
               [attr.data-hint]="'toggle-' + row.factor"
@@ -35,7 +36,7 @@ export interface FactorRow {
           @if (openFactor() === row.factor) {
             <div class="detail mono" [attr.data-test]="'detail-' + row.factor">
               <span>{{ row.detail }}</span>
-              <span class="stamp">подставлено игрой</span>
+              <span class="stamp">{{ texts.stamp }}</span>
             </div>
           }
         </div>
@@ -63,6 +64,8 @@ export interface FactorRow {
 export class TotalTabComponent {
   readonly rows = input.required<FactorRow[]>();
   readonly toggle = output<NotebookFactor>();
+
+  protected readonly texts = text.notebook.totalTab;
 
   protected readonly openFactor = signal<NotebookFactor | null>(null);
 

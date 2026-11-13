@@ -7,6 +7,7 @@ import { MainCause } from '../../sim/miss-breakdown';
 import { MODE_LABELS } from '../course/course-trail.model';
 import { RANK_LABELS } from '../home/home.model';
 import { CARTRIDGE_LETTERS } from '../notebook/notebook.model';
+import { text } from '../../i18n';
 import { classStamp, MAIN_CAUSE_PHRASES, STAMP_TONES, StampTone } from '../result/result.model';
 import { DopeNotes } from '../review/review.model';
 
@@ -88,27 +89,17 @@ export interface AchievementsView {
 
 export const JOURNAL_LIMIT = 200;
 export const STATS_MIN_SHOTS = 10;
-const MONTHS = ['янв.', 'февр.', 'марта', 'апр.', 'мая', 'июня', 'июля', 'авг.', 'сент.', 'окт.', 'нояб.', 'дек.'];
+const T = text.screens.journal;
 const ADMISSIONS_TOTAL = 12;
 const DISTANCE_BUCKET_M = 100;
 const DISTANCE_BUCKETS_M = Array.from({ length: 10 }, (_, index) => (index + 1) * DISTANCE_BUCKET_M);
 const WIND_BUCKETS: readonly { label: string; belowMps: number }[] = [
-  { label: 'штиль', belowMps: 0.5 },
-  { label: 'слабый', belowMps: 3 },
-  { label: 'умеренный', belowMps: 6.5 },
-  { label: 'сильный', belowMps: Infinity },
+  { label: T.windBuckets.calm, belowMps: 0.5 },
+  { label: T.windBuckets.light, belowMps: 3 },
+  { label: T.windBuckets.moderate, belowMps: 6.5 },
+  { label: T.windBuckets.strong, belowMps: Infinity },
 ];
-const ERROR_LABELS: Record<CheckErrorType, string> = {
-  side: 'СТОРОНА',
-  substitution: 'ПОДСТАНОВКА',
-  arithmetic: 'АРИФМЕТИКА',
-  factor: 'ФАКТОР',
-  reading: 'ПОКАЗАНИЯ',
-  lead: 'УПРЕЖДЕНИЕ',
-  rounding: 'ОКРУГЛЕНИЕ',
-  units: 'ЕДИНИЦЫ',
-  turret: 'БАРАБАН',
-};
+const ERROR_ORDER: readonly CheckErrorType[] = ['side', 'substitution', 'arithmetic', 'factor', 'reading', 'lead', 'rounding', 'units', 'turret'];
 const EXECUTION_CAUSES: readonly MainCause[] = ['hold', 'trigger', 'wind-under', 'wind-over'];
 
 export function journalSeries(input: SeriesInput): JournalSeries | null {
@@ -157,7 +148,7 @@ export function withSeries(journal: readonly JournalSeries[], series: JournalSer
 
 function dayText(iso: string): string {
   const date = new Date(iso);
-  return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  return `${date.getDate()} ${T.months[date.getMonth()]}`;
 }
 
 function timeText(iso: string): string {
@@ -169,16 +160,16 @@ function distancesText(shots: readonly JournalShot[]): string {
   const distances = shots.map(shot => shot.distanceM);
   const low = Math.min(...distances);
   const high = Math.max(...distances);
-  return low === high ? `${low} м` : `${low}–${high} м`;
+  return low === high ? T.distance({ distanceM: low }) : T.distanceRange({ fromM: low, toM: high });
 }
 
 function seriesTitle(series: JournalSeries): string {
-  return series.kind === 'free' ? `Свободная · ${distancesText(series.shots)}` : `${series.exerciseId} · ${series.title}`;
+  return series.kind === 'free' ? T.freeTitle({ distances: distancesText(series.shots) }) : `${series.exerciseId} · ${series.title}`;
 }
 
 function seriesStamp(series: JournalSeries): string | null {
   if (series.isInterrupted) {
-    return 'прервано';
+    return T.interrupted;
   }
   return series.exerciseClass === null ? null : classStamp(series.exerciseClass);
 }
@@ -187,13 +178,17 @@ export function feedView(journal: readonly JournalSeries[]): FeedItemView[] {
   return journal.map(series => ({
     id: series.id,
     title: seriesTitle(series),
-    meta: `патрон ${series.cartridgeIds.map(id => CARTRIDGE_LETTERS[id]).join(', ')} · ${MODE_LABELS[series.mode]}${series.isTapTrigger ? ' · спуск тапом' : ''} · ${timeText(series.startedAtIso)}`,
+    meta: T.meta({
+      cartridges: series.cartridgeIds.map(id => CARTRIDGE_LETTERS[id]),
+      mode: MODE_LABELS[series.mode],
+      isTapTrigger: series.isTapTrigger === true,
+      time: timeText(series.startedAtIso),
+    }),
     stamp: seriesStamp(series),
     stampTone: series.isInterrupted || series.exerciseClass === null ? 'graphite' : STAMP_TONES[series.exerciseClass],
-    shots: series.shots.map((shot, index) => {
-      const cause = !shot.isHit && shot.mainCause ? ` · ${MAIN_CAUSE_PHRASES[shot.mainCause]}` : '';
-      return `${index + 1} · ${shot.distanceM} м · ${shot.isHit ? '✓' : '✕'}${cause}`;
-    }),
+    shots: series.shots.map((shot, index) =>
+      T.shotLine({ number: index + 1, distanceM: shot.distanceM, isHit: shot.isHit, cause: !shot.isHit && shot.mainCause ? MAIN_CAUSE_PHRASES[shot.mainCause] : null }),
+    ),
   }));
 }
 
@@ -201,21 +196,20 @@ export function errorsView(journal: readonly JournalSeries[]): ErrorRowView[] {
   const rows = new Map<string, { label: string; count: number; last: string; order: number }>();
   const note = (key: string, label: string, series: JournalSeries, order: number): void => {
     const row = rows.get(key);
-    const where = `${series.exerciseId ?? 'своб.'} · ${dayText(series.startedAtIso)}`;
+    const where = T.errorPlace({ exerciseId: series.exerciseId, day: dayText(series.startedAtIso) });
     if (row) {
       row.count++;
     } else {
       rows.set(key, { label, count: 1, last: where, order });
     }
   };
-  const errorKeys = Object.keys(ERROR_LABELS) as CheckErrorType[];
   for (const series of journal) {
     for (const shot of series.shots) {
       for (const type of shot.errorTypes) {
-        note(type, ERROR_LABELS[type], series, errorKeys.indexOf(type));
+        note(type, text.review.errorLabels[type], series, ERROR_ORDER.indexOf(type));
       }
       if (shot.mainCause && EXECUTION_CAUSES.includes(shot.mainCause)) {
-        note(shot.mainCause, MAIN_CAUSE_PHRASES[shot.mainCause], series, errorKeys.length + EXECUTION_CAUSES.indexOf(shot.mainCause));
+        note(shot.mainCause, MAIN_CAUSE_PHRASES[shot.mainCause], series, ERROR_ORDER.length + EXECUTION_CAUSES.indexOf(shot.mainCause));
       }
     }
   }
@@ -249,7 +243,7 @@ function elevationText(mil: number): string {
 
 export function cardsView(cards: readonly DopeCard[], notes: DopeNotes): CardView[] {
   return cards.map(card => ({
-    title: `Патрон ${CARTRIDGE_LETTERS[card.cartridgeId]}`,
+    title: T.cardTitle({ letter: CARTRIDGE_LETTERS[card.cartridgeId] }),
     rows: card.rows.map(row => {
       const note = (notes[card.cartridgeId] ?? []).find(item => item.distanceM === row.distanceM);
       return { distance: String(row.distanceM), factory: elevationText(row.elevationMil), player: note ? elevationText(note.elevationMil) : null };
@@ -262,11 +256,11 @@ export function achievementsView(course: CourseResults): AchievementsView {
   const graded = COURSE.filter(def => def.targets !== null);
   return {
     rank: RANK_LABELS[progress.rank],
-    admissions: `допуски ${progress.admissions} / ${ADMISSIONS_TOTAL}`,
+    admissions: T.admissions({ admissions: progress.admissions, admissionsTotal: ADMISSIONS_TOTAL }),
     classes: graded.map(def => {
       const best = course.bestClasses[def.id];
       return { id: def.id, title: def.title, stamp: best === undefined ? null : classStamp(best) };
     }),
-    records: graded.filter(def => course.bestTotals?.[def.id] !== undefined).map(def => `${def.id} · ${course.bestTotals![def.id]} очк.`),
+    records: graded.filter(def => course.bestTotals?.[def.id] !== undefined).map(def => T.record({ exerciseId: def.id, total: course.bestTotals![def.id]! })),
   };
 }

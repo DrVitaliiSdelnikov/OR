@@ -1,4 +1,6 @@
 import { Component, computed, DestroyRef, inject, input, output, signal } from '@angular/core';
+import { STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
+import { text } from '../../i18n';
 import { FULL_MEASUREMENT_S } from '../../sim/notebook';
 
 export interface StationView {
@@ -52,22 +54,22 @@ const RING_RADIUS = 30;
             (pointercancel)="release()"
             data-test="measure"
             data-hint="measure"
-          >Замер</button>
+          >{{ texts.measure }}</button>
         </div>
       </div>
 
       @if (reading(); as station) {
         <div class="readings mono" data-test="station-readings">
           <div class="line">{{ station.time }} · T {{ station.temperature }} · P {{ station.pressure }} · RH {{ station.humidity }}</div>
-          <div class="line">ветер {{ station.wind }} — справочно, вводится на вкладке «Ветер»</div>
+          <div class="line">{{ texts.stationWind({ wind: station.wind }) }}</div>
           @if (station.isShort) {
-            <div class="short" data-test="short-measurement">короткий замер</div>
+            <div class="short" data-test="short-measurement">{{ texts.shortMeasurement }}</div>
           }
         </div>
       } @else {
-        <div class="hint mono" data-test="measure-hint">Держи «Замер» {{ fullMeasurementS }} с</div>
+        <div class="hint mono" data-test="measure-hint">{{ measureHint }}</div>
       }
-      <div class="reference mono">Эталон ДОПЕ: +15 C · 1013 гПа</div>
+      <div class="reference mono">{{ referenceText }}</div>
       @if (stepLinkText(); as link) {
         <button class="step-link mono" type="button" (click)="toStep.emit()" data-test="conditions-step-link">{{ link }}</button>
       } @else {
@@ -98,7 +100,9 @@ const RING_RADIUS = 30;
   `,
 })
 export class ConditionsTabComponent {
-  protected readonly fullMeasurementS = FULL_MEASUREMENT_S;
+  protected readonly texts = text.notebook.conditionsTab;
+  protected readonly measureHint = this.texts.measureHold({ seconds: FULL_MEASUREMENT_S });
+  protected readonly referenceText = this.texts.reference({ temperatureC: STANDARD_TEMPERATURE_C, pressureHpa: STANDARD_PRESSURE_HPA });
   readonly reading = input<StationView | null>(null);
   readonly correctionText = input.required<string>();
   readonly stepLinkText = input<string | null>(null);

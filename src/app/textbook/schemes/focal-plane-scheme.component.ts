@@ -1,4 +1,5 @@
 import { Component, computed, signal } from '@angular/core';
+import { text } from '../../../i18n';
 import { focalPlaneView } from './scheme.model';
 
 const MIN_MAGNIFICATION = 3;
@@ -11,8 +12,8 @@ const DOTS_EACH_SIDE = [-3, -2, -1, 1, 2, 3];
     @let view = plane();
     <div class="planes">
       @for (plane of [
-        { name: 'первая плоскость', spacing: view.firstPlaneMilSpacing, caption: view.firstPlaneCaption, test: 'focal-first' },
-        { name: 'вторая плоскость', spacing: view.secondPlaneMilSpacing, caption: view.secondPlaneCaption, test: 'focal-second' }
+        { name: texts.firstPlane, spacing: view.firstPlaneMilSpacing, caption: view.firstPlaneCaption, test: 'focal-first' },
+        { name: texts.secondPlane, spacing: view.secondPlaneMilSpacing, caption: view.secondPlaneCaption, test: 'focal-second' }
       ]; track plane.test) {
         <figure class="plane" [attr.data-test]="plane.test">
           <svg viewBox="-50 -50 100 100" role="img" [attr.aria-label]="plane.name">
@@ -34,7 +35,7 @@ const DOTS_EACH_SIDE = [-3, -2, -1, 1, 2, 3];
       }
     </div>
     <label class="zoom mono">
-      <span>кратность <b data-test="focal-magnification">{{ magnification() }}×</b></span>
+      <span>{{ texts.magnification }} <b data-test="focal-magnification">{{ magnification() }}×</b></span>
       <input type="range" [min]="minMagnification" [max]="maxMagnification" step="1" [value]="magnification()" (input)="setMagnification($event)" data-test="focal-slider" />
     </label>
   `,
@@ -55,6 +56,7 @@ const DOTS_EACH_SIDE = [-3, -2, -1, 1, 2, 3];
   `,
 })
 export class FocalPlaneSchemeComponent {
+  protected readonly texts = text.textbook.schemes.focalPlane;
   protected readonly minMagnification = MIN_MAGNIFICATION;
   protected readonly maxMagnification = MAX_MAGNIFICATION;
   protected readonly dots = DOTS_EACH_SIDE;

@@ -1,5 +1,7 @@
 import { afterNextRender, Component, computed, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
+import { RIFLE, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
 import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
+import { text } from '../../i18n';
 import { backLayer } from '../services/back-stack.service';
 import { FeedbackService } from '../services/feedback.service';
 import { factorContributions, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
@@ -34,6 +36,8 @@ import { WindInput, WindTabComponent } from './wind-tab.component';
 const SWIPE_CLOSE_PT = 80;
 const LOCKED_NOTICE_MS = 1800;
 const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', 'lead'];
+const FORMULAS_TEXTS = text.notebook.formulas;
+const MODEL_TEXTS = text.notebook.model;
 
 @Component({
   selector: 'or-notebook-sheet',
@@ -43,15 +47,15 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
     @if (calcStep(); as step) {
       <or-calc-sheet [session]="session()" [revision]="revision()" [step]="step" (back)="closeStep()" (changed)="changed.emit()" (formulas)="openFormulas()" />
     } @else {
-    <section class="sheet" [style.transform]="'translateY(' + dragOffsetPt() + 'px)'" role="dialog" aria-label="Блокнот" data-test="notebook-sheet">
+    <section class="sheet" [style.transform]="'translateY(' + dragOffsetPt() + 'px)'" role="dialog" [attr.aria-label]="texts.label" data-test="notebook-sheet">
       <header class="frame" (pointerdown)="dragStart($event)" (pointermove)="dragMove($event)" (pointerup)="dragEnd()" (pointercancel)="dragEnd()">
-        <button class="handle" type="button" (click)="close.emit()" aria-label="Закрыть блокнот" data-test="sheet-handle"><span class="grip"></span></button>
+        <button class="handle" type="button" (click)="close.emit()" [attr.aria-label]="texts.close" data-test="sheet-handle"><span class="grip"></span></button>
         <nav class="tabs" data-test="notebook-tabs">
           @for (item of tabItems; track item.id) {
             <button class="tab" type="button" [class.active]="tab() === item.id" (click)="selectTab(item.id)" [attr.aria-pressed]="tab() === item.id" [attr.data-test]="'tab-' + item.id" [attr.data-hint]="'tab-' + item.id">
               {{ item.label }}
               @if (!state.filled[item.id]) {
-                <span class="dot" [attr.data-test]="'dot-' + item.id" aria-label="не заполнено"></span>
+                <span class="dot" [attr.data-test]="'dot-' + item.id" [attr.aria-label]="texts.unfilled"></span>
               }
             </button>
           }
@@ -66,7 +70,7 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
 
       <div class="paper" #paper>
         @if (lockedNotice()) {
-          <div class="locked-notice mono" data-test="locked-notice">Откроется в следующем этапе</div>
+          <div class="locked-notice mono" data-test="locked-notice">{{ texts.lockedNotice }}</div>
         }
         @switch (tab()) {
           @case ('total') {
@@ -80,10 +84,10 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
             <or-distance-tab [knownText]="state.knownDistance" [gongMil]="state.gongMil" [resultText]="state.millingResult" [isManual]="state.isManual" (measure)="measureRange($event)" />
           }
           @case ('conditions') {
-            <or-conditions-tab [reading]="state.station" [correctionText]="state.conditionsCorrection" [stepLinkText]="state.isManual ? 'к расчёту: шаг Атмосфера →' : null" (measure)="measure.emit($event)" (toStep)="openStep('atmosphere')" />
+            <or-conditions-tab [reading]="state.station" [correctionText]="state.conditionsCorrection" [stepLinkText]="state.isManual ? texts.toAtmosphere : null" (measure)="measure.emit($event)" (toStep)="openStep('atmosphere')" />
           }
           @case ('wind') {
-            <or-wind-tab [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? (state.hasZones ? 'к расчёту: шаг Ветер по зонам →' : 'к расчёту: шаг Ветер →') : null" [showShares]="state.isEasy" [zones]="state.zones" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
+            <or-wind-tab [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? (state.hasZones ? texts.toZones : texts.toWind) : null" [showShares]="state.isEasy" [zones]="state.zones" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
           }
           @case ('dope') {
             <or-dope-tab [heading]="state.dopeHeading" [rows]="state.dopeRows" />
@@ -96,11 +100,11 @@ const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', '
           @for (shot of state.strip; track $index) {
             <span>{{ shot }}</span>
           } @empty {
-            <span class="muted">выстрелов ещё нет</span>
+            <span class="muted">{{ texts.noShots }}</span>
           }
         </div>
         <div class="total mono" data-test="sheet-total">{{ state.totalLine }}</div>
-        <button class="enter" type="button" [disabled]="state.isTotalEmpty" (click)="enter.emit()" data-test="enter-turrets" data-hint="enter-turrets">Внести на барабаны</button>
+        <button class="enter" type="button" [disabled]="state.isTotalEmpty" (click)="enter.emit()" data-test="enter-turrets" data-hint="enter-turrets">{{ texts.enter }}</button>
       </footer>
     </section>
     }
@@ -146,6 +150,7 @@ export class NotebookSheetComponent {
 
   private readonly paper = viewChild<ElementRef<HTMLElement>>('paper');
 
+  protected readonly texts = text.notebook.notebookSheet;
   protected readonly tabItems = NOTEBOOK_TABS;
   protected readonly lockedTabs = LOCKED_TABS;
   protected readonly lockedNotice = signal(false);
@@ -166,11 +171,12 @@ export class NotebookSheetComponent {
     const wind = notebook.readings.wind;
     const stationTime = station ? rangeClockText(station.timeS - session.scenario.startTimeS) : '';
     const target = session.target;
+    const texts = this.texts;
     const stationView: StationView | null = station && {
-      temperature: `${station.temperatureC.toFixed(0)} C`,
-      pressure: `${station.pressureHpa.toFixed(0)} гПа`,
+      temperature: texts.temperature({ temperatureC: station.temperatureC }),
+      pressure: texts.pressure({ pressureHpa: station.pressureHpa }),
       humidity: `${Math.round(station.relativeHumidity * 100)} %`,
-      wind: `${station.windSpeedMps.toFixed(1)} м/с`,
+      wind: texts.windSpeed({ speedMps: station.windSpeedMps }),
       time: stationTime,
       isShort: station.isShort,
     };
@@ -191,24 +197,29 @@ export class NotebookSheetComponent {
       zones: zoneTable(notebook),
       hubRows: isManual ? hubRows(notebook) : [],
       badge: modeBadge(notebook.mode),
-      formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? `Формулы −${REFERENCE_PENALTY}` : 'Формулы',
+      formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? FORMULAS_TEXTS.withPenalty({ penalty: REFERENCE_PENALTY }) : FORMULAS_TEXTS.title,
       formulaLines,
       needsReferenceConfirm: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference,
       filled: { total: filled.total, distance: filled.distance, conditions: filled.conditions, wind: filled.wind, dope: filled.dope } as Record<NotebookTab, boolean>,
       factorRows,
-      knownDistance: notebook.context.target.distanceM === null ? null : `Дистанция ${notebook.context.target.distanceM} м · задана упражнением`,
+      knownDistance: notebook.context.target.distanceM === null ? null : texts.knownDistance({ distanceM: notebook.context.target.distanceM }),
       gongMil: (target.diameterM * 1000) / target.distanceM,
       millingResult:
         reticleMil === null || notebook.distanceM === null
           ? null
-          : `Д = ${notebook.context.target.sizeM} × 1000 / ${reticleMil.toFixed(2)} = ${Math.round(notebook.distanceM)} м`,
+          : texts.millingResult({ sizeM: notebook.context.target.sizeM, reticleMil, distanceM: Math.round(notebook.distanceM) }),
       station: stationView,
       conditionsCorrection: correctionLine('conditions', factors.conditions),
       wind: wind as WindInput | null,
-      windCaption: wind ? `ветер ${wind.speedMps.toFixed(1)} м/с с ${clockText(wind.clock)}` : 'тяни стрелку к часу, откуда дует',
-      stationWind: station ? `станция: ${station.windSpeedMps.toFixed(1)} м/с · ${stationTime}` : 'станция: нет замера',
+      windCaption: wind ? texts.windCaption({ reading: MODEL_TEXTS.windReading({ speedMps: wind.speedMps, clock: clockText(wind.clock) }) }) : texts.windCaptionEmpty,
+      stationWind: station ? texts.stationWind({ speedMps: station.windSpeedMps, time: stationTime }) : texts.stationWindEmpty,
       windCorrection: correctionLine('wind', factors.wind),
-      dopeHeading: `Карточка патрона ${CARTRIDGE_LETTERS[notebook.context.card.cartridgeId]} · ноль 100 м · эталон +15 C / 1013 гПа`,
+      dopeHeading: texts.dopeHeading({
+        cartridge: CARTRIDGE_LETTERS[notebook.context.card.cartridgeId],
+        zeroM: RIFLE.zeroM,
+        temperatureC: STANDARD_TEMPERATURE_C,
+        pressureHpa: STANDARD_PRESSURE_HPA,
+      }),
       dopeRows: dopeTable(notebook.context.card, notebook.distanceM, dopeNoteTexts(this.dopeNotes(), notebook.context.card)),
       strip: shotStrip(session.records),
       totalLine: totalLine(scope, total),

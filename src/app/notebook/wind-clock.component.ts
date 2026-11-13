@@ -1,6 +1,7 @@
 import { Component, computed, inject, input, output } from '@angular/core';
 import { FeedbackService } from '../services/feedback.service';
 import { windClockShare } from '../../core/field';
+import { text } from '../../i18n';
 import { clockFromDialAngle, dialAngleFromClock } from './notebook.model';
 
 const DIAL_CENTER = 130;
@@ -26,7 +27,7 @@ interface DialTick {
       class="dial"
       viewBox="0 0 260 270"
       role="slider"
-      aria-label="Направление ветра по часам"
+      [attr.aria-label]="texts.label"
       aria-valuemin="0.5"
       aria-valuemax="12"
       [attr.aria-valuenow]="clock()"
@@ -37,7 +38,7 @@ interface DialTick {
       data-test="wind-clock"
       data-hint="wind-clock"
     >
-      <text class="aim" x="130" y="12">ЦЕЛЬ</text>
+      <text class="aim" x="130" y="12">{{ texts.aim }}</text>
       <g transform="translate(0 10)">
         <circle class="face" [attr.cx]="center" [attr.cy]="center" [attr.r]="radius" />
         @for (tick of ticks; track $index) {
@@ -78,6 +79,8 @@ export class WindClockComponent {
   readonly clock = input<number | null>(null);
   readonly showShares = input(false);
   readonly clockChange = output<number>();
+
+  protected readonly texts = text.notebook.windClock;
 
   protected readonly center = DIAL_CENTER;
   protected readonly radius = DIAL_RADIUS;

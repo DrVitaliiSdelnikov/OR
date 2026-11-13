@@ -1,5 +1,5 @@
 import { CARTRIDGES } from '../../core/content';
-import { decimal } from '../../i18n/format';
+import { text } from '../../i18n';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId, Correction } from '../../core/types';
 import { FreePlayUnlocks } from '../../sim/course';
@@ -26,7 +26,8 @@ export interface FreePlayView {
   scopeTile: string;
 }
 
-const WIND_LABELS: Record<WindPreset, string> = { calm: 'штиль', light: 'слабый', moderate: 'умеренный', strong: 'сильный', gusty: 'порывистый' };
+const T = text.screens.freePlay;
+const WIND_LABELS: Record<WindPreset, string> = T.winds;
 const SCOPE_OPENED_BY: Record<ScopeId, keyof FreePlayUnlocks | null> = {
   'course-tree': null,
   'course-dot': 'milDotScope',
@@ -49,7 +50,7 @@ const MODE_OPENED_BY: Record<NotebookMode, keyof FreePlayUnlocks | null> = { aut
 const NOTHING_TO_SHOW_MIL = 0.05;
 
 function lockOf(key: keyof FreePlayUnlocks | null, unlocks: FreePlayUnlocks): string | null {
-  return key === null || unlocks[key] ? null : `откроется в упр. ${OPENED_IN[key]}`;
+  return key === null || unlocks[key] ? null : T.opensIn({ exerciseId: OPENED_IN[key] });
 }
 
 
@@ -57,7 +58,7 @@ export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlock
   const chosenCartridge = CARTRIDGES.find(cartridge => cartridge.id === settings.cartridgeId)!;
   const chosenScope = SCOPES.find(scope => scope.id === settings.scopeId)!;
   return {
-    distanceText: settings.isDistanceUnknown ? 'неизвестная' : `${settings.distanceM} м`,
+    distanceText: settings.isDistanceUnknown ? T.unknownDistance : T.distance({ distanceM: settings.distanceM }),
     unknownLock: lockOf('unknownDistance', unlocks),
     winds: (Object.keys(WIND_LABELS) as WindPreset[]).map(id => ({
       id,
@@ -68,7 +69,7 @@ export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlock
     })),
     modes: (Object.keys(MODE_LABELS) as NotebookMode[]).map(id => ({
       id,
-      label: `${MODE_LABELS[id]} × ${modeMultiplier(id, false).toFixed(1)}`,
+      label: T.mode({ label: MODE_LABELS[id], multiplier: modeMultiplier(id, false) }),
       line: '',
       lock: lockOf(MODE_OPENED_BY[id], unlocks),
       isChosen: settings.notebookMode === id,
@@ -76,7 +77,7 @@ export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlock
     cartridges: CARTRIDGES.map(cartridge => ({
       id: cartridge.id,
       label: cartridge.name,
-      line: `${decimal(cartridge.massG, 1)} г · ${cartridge.muzzleVelocityMps} м/с · BC ${decimal(cartridge.bcG7, 3)}`,
+      line: T.cartridgeLine({ massG: cartridge.massG, muzzleVelocityMps: cartridge.muzzleVelocityMps, bcG7: cartridge.bcG7 }),
       lock: lockOf(cartridge.id === 'B' ? null : 'cartridgesAC', unlocks),
       isChosen: settings.cartridgeId === cartridge.id,
     })),
@@ -95,6 +96,6 @@ export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlock
 export function instructorLineText(correction: Correction): string {
   const up = `${correction.upMrad >= 0 ? '↑' : '↓'} ${Math.abs(correction.upMrad).toFixed(1)}`;
   const side = Math.abs(correction.rightMrad) < NOTHING_TO_SHOW_MIL ? '' : ` ${correction.rightMrad > 0 ? '→' : '←'} ${Math.abs(correction.rightMrad).toFixed(1)}`;
-  return `Расчётные данные: ${up}${side} MIL`;
+  return T.instructorLine({ correction: `${up}${side}` });
 }
 

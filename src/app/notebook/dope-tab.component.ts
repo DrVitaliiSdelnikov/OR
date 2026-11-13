@@ -1,4 +1,5 @@
 import { Component, input } from '@angular/core';
+import { text } from '../../i18n';
 import { DopeTableRow } from './notebook.model';
 
 @Component({
@@ -9,14 +10,14 @@ import { DopeTableRow } from './notebook.model';
       <table class="table mono">
         <thead>
           <tr>
-            <th class="pinned">Дист</th>
-            <th>Верт</th>
-            <th>Кл.</th>
+            <th class="pinned">{{ texts.distance }}</th>
+            <th>{{ texts.elevation }}</th>
+            <th>{{ texts.clicks }}</th>
             <th>t</th>
-            <th title="константа ветра">K</th>
-            <th title="холоднее на 10 °C">−10 °C</th>
-            <th title="давление +10 гПа">+10 гПа</th>
-            <th title="мои заметки">Заметки</th>
+            <th [title]="texts.windConstantTitle">K</th>
+            <th [title]="texts.colderTitle">−10 °C</th>
+            <th [title]="texts.pressureTitle">{{ texts.pressure }}</th>
+            <th [title]="texts.notesTitle">{{ texts.notes }}</th>
           </tr>
         </thead>
         <tbody>
@@ -50,6 +51,7 @@ import { DopeTableRow } from './notebook.model';
   `,
 })
 export class DopeTabComponent {
+  protected readonly texts = text.notebook.dopeTab;
   readonly heading = input.required<string>();
   readonly rows = input.required<DopeTableRow[]>();
 }

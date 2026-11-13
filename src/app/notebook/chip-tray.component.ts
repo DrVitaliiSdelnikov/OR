@@ -1,8 +1,9 @@
 import { Component, computed, input, output } from '@angular/core';
+import { text } from '../../i18n';
 import { Chip, ChipGroup, ChipKind } from '../../sim/notebook';
 import { chipText } from './calc-sheet.model';
 
-const GROUP_NAMES: Record<ChipGroup, string> = { instruments: 'Приборы', steps: 'Расчёт шагов', cartridge: 'Патрон' };
+const GROUP_NAMES: Record<ChipGroup, string> = text.notebook.chipTray.groups;
 const GROUP_ORDER: readonly ChipGroup[] = ['instruments', 'steps', 'cartridge'];
 
 interface ChipView {
@@ -17,7 +18,7 @@ interface ChipView {
   selector: 'or-chip-tray',
   template: `
     <div class="tray" data-test="chip-tray">
-      <div class="caption mono">Переменные · тап пишет в слот</div>
+      <div class="caption mono">{{ texts.caption }}</div>
       @for (group of groups(); track group.name) {
         @if (isGrouped()) {
           <div class="group mono">{{ group.name }}</div>
@@ -60,6 +61,8 @@ export class ChipTrayComponent {
   readonly isGrouped = input(false);
   readonly distanceM = input<number | null>(null);
   readonly pick = output<ChipKind>();
+
+  protected readonly texts = text.notebook.chipTray;
 
   protected readonly groups = computed(() => {
     const used = new Set(this.usedKinds());

@@ -1,5 +1,6 @@
 import { Component, computed, input, signal } from '@angular/core';
 import { Correction } from '../../core/types';
+import { text } from '../../i18n';
 import { FlightPaths, FlightPoint } from '../../sim/flight-path';
 import { groupText } from './review.model';
 import { TargetSchemeComponent } from './target-scheme.component';
@@ -13,18 +14,15 @@ const PLOT_RIGHT = 284;
 const PLOT_HALF_HEIGHT = 60;
 const HEADROOM = 1.15;
 const CM_PER_MIL_PER_M = 0.1;
-const VIEW_TABS: readonly { kind: FlightViewKind; label: string }[] = [
-  { kind: 'front', label: 'спереди' },
-  { kind: 'side', label: 'сбоку' },
-  { kind: 'top', label: 'сверху' },
-];
+const T = text.screens.flightView;
+const VIEW_TABS: readonly { kind: FlightViewKind; label: string }[] = (Object.keys(T.tabs) as FlightViewKind[]).map(kind => ({ kind, label: T.tabs[kind] }));
 
 @Component({
   selector: 'or-flight-view',
   imports: [TargetSchemeComponent],
   template: `
     <section class="flight" data-test="flight-view">
-      <div class="title">Траектории и группа</div>
+      <div class="title">{{ texts.title }}</div>
       <div class="tabs" role="tablist">
         @for (tab of tabs; track tab.kind) {
           <button class="tab mono" type="button" role="tab" [class.active]="kind() === tab.kind" [attr.aria-selected]="kind() === tab.kind" (click)="kind.set(tab.kind)" [attr.data-test]="'flight-tab-' + tab.kind">{{ tab.label }}</button>
@@ -37,16 +35,16 @@ const VIEW_TABS: readonly { kind: FlightViewKind; label: string }[] = [
         </div>
       } @else {
         @let plot = scene();
-        <svg class="plot" [attr.viewBox]="'0 0 ' + width + ' ' + height" role="img" [attr.aria-label]="kind() === 'side' ? 'Траектория сбоку' : 'Траектория сверху'" [attr.data-test]="'flight-plot-' + kind()">
+        <svg class="plot" [attr.viewBox]="'0 0 ' + width + ' ' + height" role="img" [attr.aria-label]="kind() === 'side' ? texts.plotSide : texts.plotTop" [attr.data-test]="'flight-plot-' + kind()">
           <line class="sight" [attr.x1]="left" [attr.y1]="middle" [attr.x2]="right" [attr.y2]="middle" />
           <line class="gong" [attr.x1]="right" [attr.y1]="middle - plot.gongHalf" [attr.x2]="right" [attr.y2]="middle + plot.gongHalf" />
           <polyline class="centre" [attr.points]="plot.centre" data-test="flight-centre" />
           <polyline class="bullet" [attr.points]="plot.bullet" data-test="flight-bullet" />
-          <text class="axis-caption" [attr.x]="left" [attr.y]="height - 4">0 м</text>
-          <text class="axis-caption end" [attr.x]="right" [attr.y]="height - 4">{{ distanceM() }} м</text>
-          <text class="axis-caption" [attr.x]="left" y="12">{{ kind() === 'side' ? '↑ выше' : '↑ левее' }} · {{ plot.scaleCm }} см</text>
+          <text class="axis-caption" [attr.x]="left" [attr.y]="height - 4">{{ texts.axisStart }}</text>
+          <text class="axis-caption end" [attr.x]="right" [attr.y]="height - 4">{{ texts.axisEnd({ distanceM: distanceM() }) }}</text>
+          <text class="axis-caption" [attr.x]="left" y="12">{{ texts.scale({ isSide: kind() === 'side', scaleCm: plot.scaleCm }) }}</text>
         </svg>
-        <div class="legend mono">— твоя пуля · - - в центр цели</div>
+        <div class="legend mono">{{ texts.legend }}</div>
       }
     </section>
   `,
@@ -77,6 +75,7 @@ export class FlightViewComponent {
   protected readonly tabs = VIEW_TABS;
   protected readonly width = VIEW_WIDTH;
   protected readonly height = VIEW_HEIGHT;
+  protected readonly texts = T;
   protected readonly left = PLOT_LEFT;
   protected readonly right = PLOT_RIGHT;
   protected readonly middle = VIEW_HEIGHT / 2;

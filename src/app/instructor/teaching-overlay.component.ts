@@ -1,4 +1,5 @@
 import { Component, computed, effect, ElementRef, inject, input, output } from '@angular/core';
+import { text } from '../../i18n';
 import { RADIO_CALLSIGN } from './radio.model';
 import { TermTextComponent } from '../textbook/term-text.component';
 import { TeachingView } from './teaching.model';
@@ -26,16 +27,16 @@ const CUTOUT_PADDING_PX = 6;
         <div class="hint-head mono">
           <span>{{ callsign }}</span>
           @if (view().number !== null) {
-            <span data-test="teaching-count">подсказка {{ view().number }} из {{ view().count }}</span>
+            <span data-test="teaching-count">{{ texts.hintCount({ number: view().number!, count: view().count! }) }}</span>
           }
         </div>
         <div class="hint-text" data-test="teaching-text">@if (view().kind === 'explain') {<or-term-text [text]="view().text" />} @else {{{ view().text }}}</div>
         <div class="hint-actions">
           @if (view().kind === 'explain') {
-            <button class="understood" type="button" (click)="acknowledge.emit()" data-test="teaching-ok">Понял</button>
+            <button class="understood" type="button" (click)="acknowledge.emit()" data-test="teaching-ok">{{ texts.understood }}</button>
           }
           @if (view().number !== null) {
-            <button class="skip mono" type="button" (click)="skip.emit()" data-test="teaching-skip">пропустить обучение</button>
+            <button class="skip mono" type="button" (click)="skip.emit()" data-test="teaching-skip">{{ texts.skip }}</button>
           }
         </div>
       </div>
@@ -63,6 +64,7 @@ export class TeachingOverlayComponent {
   readonly skip = output<void>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly texts = text.radio.overlay;
   protected readonly callsign = RADIO_CALLSIGN;
   protected readonly viewportHeight = computed(() => {
     this.revision();

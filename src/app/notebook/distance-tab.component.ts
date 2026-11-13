@@ -1,4 +1,6 @@
 import { Component, computed, input, output, signal } from '@angular/core';
+import { text } from '../../i18n';
+import { STEP_FORMULAS } from './calc-sheet.model';
 import { MILLING_GRID_MIL, MILLING_PT_PER_MIL, millingSize, snapMilling } from './notebook.model';
 
 const GRID_WIDTH_PT = 140;
@@ -18,7 +20,7 @@ const HASH_STEP_MIL = 0.5;
           [attr.viewBox]="'0 0 ' + gridWidth + ' ' + gridHeight"
           (pointerdown)="tap($event)"
           role="img"
-          aria-label="Мини-сетка: коснись верха и низа гонга"
+          [attr.aria-label]="texts.gridLabel"
           data-test="milling-grid"
         >
           <line class="axis" [attr.x1]="gridWidth / 2" y1="0" [attr.x2]="gridWidth / 2" [attr.y2]="gridHeight" />
@@ -31,9 +33,9 @@ const HASH_STEP_MIL = 0.5;
           }
         </svg>
         <div class="side mono">
-          <div class="formula">Д = размер × 1000 / MIL</div>
+          <div class="formula">{{ formula }}</div>
           <div data-test="milling-size">{{ sizeText() }}</div>
-          <button class="count" type="button" [disabled]="sizeMil() === null" (click)="count()" data-test="milling-count">{{ isManual() ? 'К расчёту: шаг Дистанция →' : 'Посчитать' }}</button>
+          <button class="count" type="button" [disabled]="sizeMil() === null" (click)="count()" data-test="milling-count">{{ isManual() ? texts.toStep : texts.count }}</button>
           @if (!isManual() && resultText(); as result) {
             <div class="result" data-test="milling-result" data-hint="milling-result">{{ result }}</div>
           }
@@ -63,6 +65,8 @@ export class DistanceTabComponent {
   readonly isManual = input(false);
   readonly measure = output<number>();
 
+  protected readonly texts = text.notebook.distanceTab;
+  protected readonly formula = STEP_FORMULAS.distance;
   protected readonly gridWidth = GRID_WIDTH_PT;
   protected readonly gridHeight = GRID_HEIGHT_PT;
   protected readonly centerY = GRID_CENTER_Y;
@@ -79,7 +83,7 @@ export class DistanceTabComponent {
   });
   protected readonly sizeText = computed(() => {
     const size = this.sizeMil();
-    return size === null ? 'Коснись верха и низа гонга' : `размер на сетке: ${size.toFixed(2)} MIL`;
+    return size === null ? this.texts.tapGong : this.texts.size({ sizeMil: size });
   });
 
   protected tap(event: PointerEvent): void {

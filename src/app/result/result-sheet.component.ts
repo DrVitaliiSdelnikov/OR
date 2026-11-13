@@ -1,5 +1,6 @@
 import { Component, computed, inject, input, OnInit, output } from '@angular/core';
 import { Correction } from '../../core/types';
+import { text } from '../../i18n';
 import { groupText } from '../review/review.model';
 import { TargetSchemeComponent } from '../review/target-scheme.component';
 import { FeedbackService } from '../services/feedback.service';
@@ -11,10 +12,10 @@ import { ResultSheetView } from './result.model';
   imports: [TargetSchemeComponent],
   template: `
     @let sheet = view();
-    <section class="result" role="dialog" aria-label="Итог упражнения" data-test="result-sheet">
+    <section class="result" role="dialog" [attr.aria-label]="texts.title" data-test="result-sheet">
       <div class="body">
         <header class="head">
-          <div class="title">Итог упражнения</div>
+          <div class="title">{{ texts.title }}</div>
           <div class="stamps">
             @if (sheet.struckClass; as struck) {
               <span class="struck mono" data-test="result-struck">{{ struck }}</span>
@@ -45,12 +46,12 @@ import { ResultSheetView } from './result.model';
           <div class="series-text mono" data-test="result-group">{{ groupLine() }}</div>
         </div>
 
-        <div class="main-error" [class.clean]="sheet.mainError === 'Ошибок нет'" data-test="result-main-error">{{ sheet.mainError }}</div>
+        <div class="main-error" [class.clean]="sheet.mainError === noErrors" data-test="result-main-error">{{ sheet.mainError }}</div>
 
         @if (sheet.newTerms.length > 0 || sheet.openedLine) {
           <div class="news" data-test="result-news">
             @if (sheet.newTerms.length > 0) {
-              <div class="terms-label mono">новые термины</div>
+              <div class="terms-label mono">{{ texts.newTerms }}</div>
               <div class="terms">
                 @for (term of sheet.newTerms; track term) {
                   <button class="term mono" type="button" [style.animation-delay.ms]="$index * 250" (click)="termSheet.open(term)" data-test="result-term">{{ term }}</button>
@@ -66,12 +67,12 @@ import { ResultSheetView } from './result.model';
 
       <footer class="foot">
         @if (sheet.isAdmitted) {
-          <button class="main mono" type="button" (click)="next.emit()" data-test="result-next">Дальше</button>
-          <button class="secondary mono" type="button" (click)="repeat.emit()" data-test="result-repeat">Повторить</button>
+          <button class="main mono" type="button" (click)="next.emit()" data-test="result-next">{{ texts.next }}</button>
+          <button class="secondary mono" type="button" (click)="repeat.emit()" data-test="result-repeat">{{ texts.repeat }}</button>
         } @else {
-          <button class="main mono" type="button" (click)="repeat.emit()" data-test="result-repeat">Повторить</button>
+          <button class="main mono" type="button" (click)="repeat.emit()" data-test="result-repeat">{{ texts.repeat }}</button>
         }
-        <button class="secondary mono" type="button" (click)="journal.emit()" data-test="result-journal">В журнал</button>
+        <button class="secondary mono" type="button" (click)="journal.emit()" data-test="result-journal">{{ texts.toJournal }}</button>
       </footer>
     </section>
   `,
@@ -127,6 +128,8 @@ export class ResultSheetComponent implements OnInit {
   readonly repeat = output<void>();
   readonly journal = output<void>();
 
+  protected readonly texts = text.screens.resultSheet;
+  protected readonly noErrors = text.result.noErrors;
   private readonly feedback = inject(FeedbackService);
   protected readonly termSheet = inject(TermSheetService);
   protected readonly groupLine = computed(() => groupText(this.group()));

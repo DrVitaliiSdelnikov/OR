@@ -5,21 +5,18 @@ import { IonContent } from '@ionic/angular/standalone';
 import { cartridgeById, CARTRIDGES } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
+import { text } from '../../i18n';
 import { ProgressStore } from '../services/progress.store';
 import { CHECK_ERROR_TERMS, MAIN_CAUSE_TERMS } from '../textbook/term-links';
 import { TermTextComponent } from '../textbook/term-text.component';
 import { achievementsView, cardsView, errorsView, feedView, STATS_MIN_SHOTS, statsView } from './journal.model';
 import { BackLinkDirective } from '../services/back-link.directive';
 
-type JournalTab = 'feed' | 'errors' | 'cards' | 'stats' | 'achievements';
+const T = text.screens.journal;
 
-const TABS: readonly { id: JournalTab; label: string }[] = [
-  { id: 'feed', label: 'Лента' },
-  { id: 'errors', label: 'Ошибки' },
-  { id: 'cards', label: 'Карточки' },
-  { id: 'stats', label: 'Статистика' },
-  { id: 'achievements', label: 'Достижения' },
-];
+type JournalTab = keyof typeof T.tabs;
+
+const TABS: readonly { id: JournalTab; label: string }[] = (Object.keys(T.tabs) as JournalTab[]).map(id => ({ id, label: T.tabs[id] }));
 const CARD_CLICK_MIL = 0.1;
 const PERCENT = 100;
 
@@ -30,14 +27,14 @@ const PERCENT = 100;
     <ion-content>
       <div class="journal" data-test="journal">
         <header class="header">
-          <a class="back" orBackLink="/" aria-label="Назад" data-test="journal-back">←</a>
-          <h1 class="title">Журнал стрелка</h1>
+          <a class="back" orBackLink="/" [attr.aria-label]="texts.back" data-test="journal-back">←</a>
+          <h1 class="title">{{ texts.title }}</h1>
         </header>
 
         @if (isEmpty()) {
           <section class="sheet" data-test="journal-empty">
-            <p class="empty">Журнал пуст. Первая запись — после упражнения {{ firstFiringExerciseId }}</p>
-            <a class="to-course" routerLink="/course" data-test="journal-to-course">К курсу</a>
+            <p class="empty">{{ texts.empty({ exerciseId: firstFiringExerciseId }) }}</p>
+            <a class="to-course" routerLink="/course" data-test="journal-to-course">{{ texts.toCourse }}</a>
           </section>
         } @else {
           <nav class="tabs mono">
@@ -73,7 +70,7 @@ const PERCENT = 100;
                     <span class="mono">{{ row.count }} · {{ row.last }}</span>
                   </div>
                 } @empty {
-                  <p class="empty" data-test="journal-no-errors">Ошибок пока нет</p>
+                  <p class="empty" data-test="journal-no-errors">{{ texts.noErrors }}</p>
                 }
               </section>
             }
@@ -108,7 +105,7 @@ const PERCENT = 100;
                   </section>
                 }
               } @else {
-                <section class="sheet"><p class="empty" data-test="journal-stats-few">Статистика наберётся после {{ minShots }} выстрелов</p></section>
+                <section class="sheet"><p class="empty" data-test="journal-stats-few">{{ texts.statsFew({ minShots: minShots }) }}</p></section>
               }
             }
             @case ('achievements') {
@@ -118,7 +115,7 @@ const PERCENT = 100;
                 @for (row of achievements().classes; track row.id) {
                   <div class="error-row">
                     <span>{{ row.id }} · {{ row.title }}</span>
-                    <span class="mono">{{ row.stamp ?? '—' }}</span>
+                    <span class="mono">{{ row.stamp ?? texts.noStamp }}</span>
                   </div>
                 }
                 @for (record of achievements().records; track record) {
@@ -160,6 +157,7 @@ const PERCENT = 100;
   `,
 })
 export class JournalPage {
+  protected readonly texts = T;
   protected readonly firstFiringExerciseId = FIRST_FIRING_EXERCISE_ID;
   private readonly progress = inject(ProgressStore);
   private readonly dopeCards = signal<DopeCard[]>([]);
@@ -174,9 +172,9 @@ export class JournalPage {
   protected readonly errors = computed(() => errorsView(this.progress.journal()));
   protected readonly stats = computed(() => statsView(this.progress.journal()));
   protected readonly statGroups = computed(() => [
-    { title: 'Первым выстрелом · дистанция', bars: this.stats().byDistance },
-    { title: 'Ветер', bars: this.stats().byWind },
-    { title: 'Режим', bars: this.stats().byMode },
+    { title: T.statGroups.distance, bars: this.stats().byDistance },
+    { title: T.statGroups.wind, bars: this.stats().byWind },
+    { title: T.statGroups.mode, bars: this.stats().byMode },
   ]);
   protected readonly cards = computed(() => cardsView(this.dopeCards(), this.progress.dopeNotes()));
   protected readonly achievements = computed(() => achievementsView(this.progress.course()));

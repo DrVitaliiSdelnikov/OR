@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { text } from '../../i18n';
 import { MissBreakdown } from '../../sim/miss-breakdown';
 import { CAUSE_TERMS } from '../textbook/term-links';
 import { TermTextComponent } from '../textbook/term-text.component';
@@ -10,7 +11,7 @@ import { causesView } from './review.model';
   template: `
     @let state = view();
     <section class="causes" data-test="causes">
-      <div class="title">Почему ушла пуля</div>
+      <div class="title">{{ texts.title }}</div>
       <div class="conclusion" data-test="causes-conclusion"><or-term-text [text]="state.conclusion" /></div>
       <ul class="rows">
         @for (row of state.rows; track row.kind) {
@@ -22,7 +23,7 @@ import { causesView } from './review.model';
         }
       </ul>
       @if (hasGrey()) {
-        <div class="note mono">серым — не ошибка</div>
+        <div class="note mono">{{ texts.greyNote }}</div>
       }
     </section>
   `,
@@ -43,6 +44,7 @@ import { causesView } from './review.model';
   `,
 })
 export class CausesComponent {
+  protected readonly texts = text.screens.causes;
   protected readonly causeTerms = CAUSE_TERMS;
   readonly breakdown = input.required<MissBreakdown>();
   protected readonly view = computed(() => causesView(this.breakdown()));

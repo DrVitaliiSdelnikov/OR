@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import { decimal } from '../../../i18n/format';
+import { text } from '../../../i18n';
 import { DopeCard } from '../../../core/dope-card';
 import { trajectoryView } from './scheme.model';
 
@@ -11,17 +11,18 @@ const TOP = 22;
 const BOTTOM = 150;
 const MAX_DISTANCE_M = 1000;
 const DISTANCE_TICKS_M = [0, 500, 1000];
+const T = text.textbook.schemes.trajectory;
 
 @Component({
   selector: 'or-trajectory-scheme',
   template: `
     @let chart = chartView();
-    <svg [attr.viewBox]="'0 0 ' + width + ' ' + height" role="img" aria-label="Траектория патрона Б: поправка по дистанции" data-test="trajectory-scheme">
+    <svg [attr.viewBox]="'0 0 ' + width + ' ' + height" role="img" [attr.aria-label]="texts.label" data-test="trajectory-scheme">
       <line class="sight" [attr.x1]="left" [attr.y1]="top" [attr.x2]="right" [attr.y2]="top" />
-      <text class="small" [attr.x]="right" [attr.y]="top - 6" text-anchor="end">линия прицеливания</text>
+      <text class="small" [attr.x]="right" [attr.y]="top - 6" text-anchor="end">{{ texts.sightLine }}</text>
       <polyline class="curve" [attr.points]="chart.curve" data-test="trajectory-curve" />
       <circle class="zero" [attr.cx]="chart.zeroX" [attr.cy]="top" r="3.5" />
-      <text class="small" [attr.x]="chart.zeroX" [attr.y]="top - 6" text-anchor="middle">ноль {{ chart.zeroM }} м</text>
+      <text class="small" [attr.x]="chart.zeroX" [attr.y]="top - 6" text-anchor="middle">{{ chart.zeroText }}</text>
       @for (mark of chart.timeMarks; track mark.distanceM) {
         <circle class="time-dot" [attr.cx]="mark.x" [attr.cy]="mark.y" r="2.5" />
         <text class="small" [attr.x]="mark.x - 6" [attr.y]="mark.y + 12" text-anchor="end" data-test="trajectory-time">{{ mark.text }}</text>
@@ -29,9 +30,9 @@ const DISTANCE_TICKS_M = [0, 500, 1000];
       @for (tick of chart.distanceTicks; track tick.text) {
         <text class="small" [attr.x]="tick.x" [attr.y]="height - 4" text-anchor="middle">{{ tick.text }}</text>
       }
-      <text class="small" [attr.x]="left" [attr.y]="chart.bottomY">на 1000 м: ↑ {{ chart.maxText }} MIL</text>
+      <text class="small" [attr.x]="left" [attr.y]="chart.bottomY">{{ chart.maxText }}</text>
     </svg>
-    <p class="caption mono" data-test="scheme-caption">Патрон Б: на сколько поднять прицел, чтобы попасть — та же кривая, что строки ДОПЕ. Точки — время полёта.</p>
+    <p class="caption mono" data-test="scheme-caption">{{ texts.caption }}</p>
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -47,6 +48,7 @@ const DISTANCE_TICKS_M = [0, 500, 1000];
 export class TrajectorySchemeComponent {
   readonly card = input.required<DopeCard>();
 
+  protected readonly texts = T;
   protected readonly width = WIDTH;
   protected readonly height = HEIGHT;
   protected readonly left = LEFT;
@@ -61,16 +63,16 @@ export class TrajectorySchemeComponent {
     return {
       curve: view.points.map(point => `${x(point.distanceM)},${y(point.elevationMil)}`).join(' '),
       zeroX: x(view.zeroM),
-      zeroM: view.zeroM,
+      zeroText: T.zero({ zeroM: view.zeroM }),
       timeMarks: view.timeMarks.map(mark => ({
         distanceM: mark.distanceM,
         x: x(mark.distanceM),
         y: y(mark.elevationMil),
-        text: `${decimal(mark.timeOfFlightS)} с`,
+        text: T.timeMark({ timeOfFlightS: mark.timeOfFlightS }),
       })),
-      distanceTicks: DISTANCE_TICKS_M.map(distanceM => ({ x: x(distanceM), text: `${distanceM} м` })),
+      distanceTicks: DISTANCE_TICKS_M.map(distanceM => ({ x: x(distanceM), text: T.distanceTick({ distanceM }) })),
       bottomY: BOTTOM,
-      maxText: decimal(maxMil),
+      maxText: T.maxElevation({ distanceM: MAX_DISTANCE_M, maxMil }),
     };
   });
 }

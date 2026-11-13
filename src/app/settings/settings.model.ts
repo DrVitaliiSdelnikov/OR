@@ -1,3 +1,7 @@
+import { text } from '../../i18n';
+
+const DRUM_LABELS = text.screens.settings.drumSensitivities;
+
 export interface Settings {
   volume: number;
   isHapticsOn: boolean;
@@ -14,9 +18,9 @@ export interface Settings {
 export type SettingsFlag = { [Key in keyof Settings]: Settings[Key] extends boolean ? Key : never }[keyof Settings];
 
 export const DRUM_SENSITIVITIES: readonly { ptPerClick: number; label: string }[] = [
-  { ptPerClick: 16, label: 'точно' },
-  { ptPerClick: 12, label: 'обычно' },
-  { ptPerClick: 8, label: 'быстро' },
+  { ptPerClick: 16, label: DRUM_LABELS.precise },
+  { ptPerClick: 12, label: DRUM_LABELS.normal },
+  { ptPerClick: 8, label: DRUM_LABELS.fast },
 ];
 
 export const DEFAULT_SETTINGS: Settings = {

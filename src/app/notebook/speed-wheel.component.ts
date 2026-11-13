@@ -1,6 +1,7 @@
 import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
 import { FeedbackService } from '../services/feedback.service';
-import { MAX_WIND_SPEED_MPS, stepSpeed } from './notebook.model';
+import { text } from '../../i18n';
+import { MAX_WIND_SPEED_MPS, SPEED_STEP_MPS, stepSpeed } from './notebook.model';
 
 const ROW_PT = 32;
 const VISIBLE_NEIGHBORS = 2;
@@ -14,7 +15,7 @@ const KEY_STEPS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1,
         class="wheel mono"
         role="spinbutton"
         tabindex="0"
-        aria-label="Скорость ветра, м/с"
+        [attr.aria-label]="texts.label"
         aria-valuemin="0"
         [attr.aria-valuemax]="maxSpeed"
         [attr.aria-valuenow]="shownSpeed() ?? 0"
@@ -28,11 +29,11 @@ const KEY_STEPS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1,
         @for (row of rows(); track row.offset) {
           <div class="row" [class.current]="row.offset === 0" [style.opacity]="row.opacity">{{ row.text }}</div>
         }
-        <span class="unit">м/с</span>
+        <span class="unit">{{ texts.unit }}</span>
       </div>
       <div class="steps">
-        <button data-own-feedback class="step" type="button" (click)="nudge(-1)" aria-label="Медленнее на 0,1" data-test="speed-minus">−</button>
-        <button data-own-feedback class="step" type="button" (click)="nudge(1)" aria-label="Быстрее на 0,1" data-test="speed-plus">+</button>
+        <button data-own-feedback class="step" type="button" (click)="nudge(-1)" [attr.aria-label]="slowerLabel" data-test="speed-minus">−</button>
+        <button data-own-feedback class="step" type="button" (click)="nudge(1)" [attr.aria-label]="fasterLabel" data-test="speed-plus">+</button>
       </div>
     </div>
   `,
@@ -51,6 +52,10 @@ export class SpeedWheelComponent {
   private readonly feedback = inject(FeedbackService);
   readonly speed = input<number | null>(null);
   readonly speedChange = output<number>();
+
+  protected readonly texts = text.notebook.speedWheel;
+  protected readonly slowerLabel = this.texts.slower({ stepMps: SPEED_STEP_MPS });
+  protected readonly fasterLabel = this.texts.faster({ stepMps: SPEED_STEP_MPS });
 
   // Быстрые шаги подряд приходят раньше, чем родитель вернёт новое значение во вход: считаем от своего.
   protected readonly shownSpeed = linkedSignal(() => this.speed());

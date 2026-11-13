@@ -1,6 +1,6 @@
 import { Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { FIRST_FIRING_EXERCISE_ID } from '../../sim/course';
-import { decimal } from '../../i18n/format';
+import { text } from '../../i18n';
 import { Router } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { CARTRIDGES } from '../../core/content';
@@ -23,6 +23,7 @@ import { BackLinkDirective } from '../services/back-link.directive';
 const MIN_MAGNIFICATION = scopeById(INTRO_SCENE.scopeId).magnificationMin;
 const MAX_MAGNIFICATION = scopeById(INTRO_SCENE.scopeId).magnificationMax;
 const GLASS_CENTER_PT = GLASS_SIZE_PT / 2;
+const INTRO_EXERCISE_ID = '00';
 
 @Component({
   selector: 'or-intro',
@@ -32,14 +33,14 @@ const GLASS_CENTER_PT = GLASS_SIZE_PT / 2;
     <ion-content>
       <div class="intro" data-test="intro">
         <header class="header">
-          <a class="back" orBackLink="/course/00" aria-label="Назад" data-test="intro-back">←</a>
+          <a class="back" orBackLink="/course/00" [attr.aria-label]="texts.back" data-test="intro-back">←</a>
           <div>
-            <h1 class="title">00 · Винтовка и прицел</h1>
-            <div class="subtitle mono" data-test="intro-step">шаг {{ stepIndex() + 1 }} из {{ steps.length }} · {{ current.title }}</div>
+            <h1 class="title">{{ title }}</h1>
+            <div class="subtitle mono" data-test="intro-step">{{ texts.stepCounter({ number: stepIndex() + 1, count: steps.length, title: current.title }) }}</div>
           </div>
         </header>
 
-        <div class="instructor" data-test="intro-instruction"><span class="callsign mono">Старший:</span> {{ current.instruction }}</div>
+        <div class="instructor" data-test="intro-instruction"><span class="callsign mono">{{ texts.callsign }}</span> {{ current.instruction }}</div>
 
         <section class="station" [attr.data-test]="'station-' + current.id">
           @switch (current.id) {
@@ -51,10 +52,10 @@ const GLASS_CENTER_PT = GLASS_SIZE_PT / 2;
             }
             @case ('reticles') {
               <div class="paper"><or-reticle-scheme /></div>
-              <div class="question mono">Гонг {{ measureSizeText }} м на {{ measure.distanceM }} м — сколько MIL?</div>
+              <div class="question mono">{{ question }}</div>
               <div class="answers">
                 @for (option of measure.optionsMil; track option) {
-                  <button class="answer" type="button" [class.chosen]="progress().answerMil === option" (click)="answer(option)" [attr.data-test]="'measure-' + option">{{ milText(option) }} MIL</button>
+                  <button class="answer" type="button" [class.chosen]="progress().answerMil === option" (click)="answer(option)" [attr.data-test]="'measure-' + option">{{ texts.answer({ mil: option }) }}</button>
                 }
               </div>
               @if (hint(); as text) {
@@ -65,13 +66,13 @@ const GLASS_CENTER_PT = GLASS_SIZE_PT / 2;
               @if (allCards(); as cards) {
                 <div class="paper"><or-cartridges-scheme [cards]="cards" /></div>
               } @else {
-                <p class="pending mono" data-test="cartridges-pending">считаю карточки патронов…</p>
+                <p class="pending mono" data-test="cartridges-pending">{{ texts.pendingCartridges }}</p>
               }
             }
             @case ('bolt') {
               <or-bolt-track [isFireWaitingShown]="false" [step]="boltView().step" [progress]="boltView().progress" (drag)="dragBolt($event)" />
               @if (progress().isBoltCycled) {
-                <div class="done mono" data-test="bolt-done">Патрон в стволе — затвор закрыт</div>
+                <div class="done mono" data-test="bolt-done">{{ texts.boltDone }}</div>
               }
             }
             @default {
@@ -87,9 +88,9 @@ const GLASS_CENTER_PT = GLASS_SIZE_PT / 2;
                 <or-turret-drum axis="elevation" [clicks]="progress().dialledClicks" [minClicks]="0" [valueText]="drumValueText()" [counter]="drumCounter()" (turn)="turn($event)" />
               } @else {
                 <div class="zoom">
-                  <button class="zoom-step" type="button" (click)="zoom(-1)" aria-label="Уменьшить кратность" data-test="intro-zoom-out">−</button>
+                  <button class="zoom-step" type="button" (click)="zoom(-1)" [attr.aria-label]="texts.zoomOut" data-test="intro-zoom-out">−</button>
                   <span class="mono" data-test="intro-magnification">{{ magnification() }}×</span>
-                  <button class="zoom-step" type="button" (click)="zoom(1)" aria-label="Увеличить кратность" data-test="intro-zoom-in">+</button>
+                  <button class="zoom-step" type="button" (click)="zoom(1)" [attr.aria-label]="texts.zoomIn" data-test="intro-zoom-in">+</button>
                 </div>
               }
             }
@@ -98,9 +99,9 @@ const GLASS_CENTER_PT = GLASS_SIZE_PT / 2;
 
         <div class="dock">
           @if (isLastStep()) {
-            <button class="next" type="button" [disabled]="!isCurrentDone()" (click)="finish()" data-test="intro-finish">Готов к упражнению {{ firstFiringExerciseId }}</button>
+            <button class="next" type="button" [disabled]="!isCurrentDone()" (click)="finish()" data-test="intro-finish">{{ texts.finish({ exerciseId: firstFiringExerciseId }) }}</button>
           } @else {
-            <button class="next" type="button" [disabled]="!isCurrentDone()" (click)="next()" data-test="intro-next">Дальше</button>
+            <button class="next" type="button" [disabled]="!isCurrentDone()" (click)="next()" data-test="intro-next">{{ texts.next }}</button>
           }
         </div>
       </div>
@@ -147,7 +148,9 @@ export class IntroPage {
 
   protected readonly steps = INTRO_STEPS;
   protected readonly measure = MEASURE;
-  protected readonly measureSizeText = decimal(MEASURE.gongSizeM);
+  protected readonly texts = text.intro.page;
+  protected readonly title = this.texts.title({ exerciseId: INTRO_EXERCISE_ID, exerciseTitle: text.content.exerciseTitles[INTRO_EXERCISE_ID] });
+  protected readonly question = this.texts.question({ gongSizeM: MEASURE.gongSizeM, distanceM: MEASURE.distanceM });
   protected readonly glassSize = GLASS_SIZE_PT;
   protected readonly glassCenter = GLASS_CENTER_PT;
   protected readonly stepIndex = signal(0);
@@ -162,7 +165,7 @@ export class IntroPage {
   protected readonly impactUpMil = computed(() => this.progress().dialledClicks * scopeById(INTRO_SCENE.scopeId).clickMrad);
   protected readonly impactY = computed(() => GLASS_CENTER_PT - impactShiftPt(this.progress().dialledClicks, INTRO_SCENE.startMagnification));
   protected readonly drumValueText = computed(() => `↑ ${this.impactUpMil().toFixed(1)}`);
-  protected readonly drumCounter = computed(() => `${this.progress().dialledClicks} кл.`);
+  protected readonly drumCounter = computed(() => this.texts.drumCounter({ clicks: this.progress().dialledClicks }));
   protected readonly allCards = computed(() => {
     const cards = this.textbookCards.cards();
     return cards && cards.size === CARTRIDGES.length ? cards : null;
@@ -219,10 +222,6 @@ export class IntroPage {
 
   protected answer(optionMil: number): void {
     this.progress.update(progress => ({ ...progress, answerMil: optionMil }));
-  }
-
-  protected milText(mil: number): string {
-    return decimal(mil);
   }
 
   protected dragBolt(delta: Vector2): void {

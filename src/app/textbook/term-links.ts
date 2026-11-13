@@ -1,4 +1,5 @@
 import { CheckErrorType } from '../../core/calc-check';
+import { text } from '../../i18n';
 import { CauseKind, MainCause } from '../../sim/miss-breakdown';
 import { TERM_CARDS } from './terms';
 
@@ -7,39 +8,11 @@ export interface TermSegment {
   term: string | null;
 }
 
-export const CHECK_ERROR_TERMS: Record<CheckErrorType, string> = {
-  side: 'правило часов',
-  substitution: 'САМ',
-  arithmetic: 'САМ',
-  factor: 'САМ',
-  reading: 'метеостанция',
-  lead: 'упреждение',
-  rounding: 'клик',
-  units: 'MOA',
-  turret: 'барабан',
-};
+export const CHECK_ERROR_TERMS: Record<CheckErrorType, string> = text.textbook.termLinks.checkErrors;
 
-export const CAUSE_TERMS: Record<CauseKind, string> = {
-  calc: 'САМ',
-  wind: 'ветер',
-  hold: 'дыхание',
-  lead: 'упреждение',
-  trigger: 'спуск',
-  zero: 'ноль',
-  'cold-bore': 'холодный выстрел',
-  formula: 'константа ветра',
-  rifle: 'группа',
-};
+export const CAUSE_TERMS: Record<CauseKind, string> = text.textbook.termLinks.causes;
 
-export const MAIN_CAUSE_TERMS: Record<MainCause, string> = {
-  calc: 'САМ',
-  'wind-under': 'ветер',
-  'wind-over': 'ветер',
-  hold: 'дыхание',
-  lead: 'упреждение',
-  trigger: 'спуск',
-  zero: 'ноль',
-};
+export const MAIN_CAUSE_TERMS: Record<MainCause, string> = text.textbook.termLinks.mainCauses;
 
 const UNIT_TERMS: readonly string[] = ['MIL', 'MOA'];
 const ENDS_WITH_NUMBER = /\d\s*$/;

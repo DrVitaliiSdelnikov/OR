@@ -2,6 +2,7 @@ import { Component, computed, inject, input, linkedSignal } from '@angular/core'
 import { Router } from '@angular/router';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import { NotebookMode } from '../../core/exercise-scoring';
+import { text } from '../../i18n';
 import { exerciseById, ExerciseId } from '../../sim/course';
 import { ProgressStore } from '../services/progress.store';
 import { TermTextComponent } from '../textbook/term-text.component';
@@ -22,7 +23,7 @@ const GROUND_Y = 66;
     <ion-content>
       <div class="briefing-screen">
         <header class="header">
-          <a class="back" orBackLink="/course" aria-label="Назад" data-test="sheet-back">←</a>
+          <a class="back" orBackLink="/course" [attr.aria-label]="texts.back" data-test="sheet-back">←</a>
         </header>
 
         @if (card(); as briefing) {
@@ -33,10 +34,10 @@ const GROUND_Y = 66;
             @if (briefing.introLine; as introLine) {
               <p class="intro-line" data-test="briefing-intro">{{ introLine }}</p>
             } @else {
-              <svg class="scheme" [attr.viewBox]="'0 0 ' + schemeWidth + ' ' + schemeHeight" role="img" [attr.aria-label]="'Схема: ты — цели, ' + briefing.scheme.distanceText" data-test="briefing-scheme">
+              <svg class="scheme" [attr.viewBox]="'0 0 ' + schemeWidth + ' ' + schemeHeight" role="img" [attr.aria-label]="texts.scheme({ distance: briefing.scheme.distanceText })" data-test="briefing-scheme">
                 <line class="ground" x1="8" [attr.y1]="groundY" [attr.x2]="schemeWidth - 8" [attr.y2]="groundY" />
                 <circle class="shooter" [attr.cx]="shooterX" [attr.cy]="groundY - 10" r="6" />
-                <text class="scheme-caption" [attr.x]="shooterX" [attr.y]="groundY + 16">ты</text>
+                <text class="scheme-caption" [attr.x]="shooterX" [attr.y]="groundY + 16">{{ texts.you }}</text>
                 @if (briefing.scheme.hasFlag) {
                   <g class="flag" data-test="briefing-flag">
                     <line [attr.x1]="shooterX + 24" [attr.y1]="groundY" [attr.x2]="shooterX + 24" [attr.y2]="groundY - 30" />
@@ -55,17 +56,17 @@ const GROUND_Y = 66;
               </svg>
 
               <dl class="facts">
-                <dt>Цели</dt>
+                <dt>{{ texts.facts.targets }}</dt>
                 <dd data-test="sheet-targets">{{ briefing.facts.targets }}</dd>
-                <dt>Выстрелы</dt>
+                <dt>{{ texts.facts.shots }}</dt>
                 <dd data-test="sheet-shots">{{ briefing.facts.shots }}</dd>
-                <dt>Ветер</dt>
+                <dt>{{ texts.facts.wind }}</dt>
                 <dd data-test="sheet-wind">{{ briefing.facts.wind }}</dd>
-                <dt>Условия</dt>
+                <dt>{{ texts.facts.conditions }}</dt>
                 <dd data-test="sheet-atmosphere">{{ briefing.facts.atmosphere }}</dd>
-                <dt>Режим</dt>
+                <dt>{{ texts.facts.mode }}</dt>
                 @if (briefing.modeOptions; as options) {
-                  <dd class="mode-choice" role="radiogroup" aria-label="Режим">
+                  <dd class="mode-choice" role="radiogroup" [attr.aria-label]="texts.facts.mode">
                     @for (option of options; track option.mode) {
                       <button class="mode-option mono" type="button" role="radio" [attr.aria-checked]="chosenMode() === option.mode" [class.chosen]="chosenMode() === option.mode" (click)="chosenMode.set(option.mode)" [attr.data-test]="'sheet-mode-' + option.mode">{{ option.label }}</button>
                     }
@@ -75,7 +76,7 @@ const GROUND_Y = 66;
                 }
               </dl>
 
-              <div class="section-title mono">Зачёт</div>
+              <div class="section-title mono">{{ texts.standards }}</div>
               <ul class="standards">
                 @for (row of briefing.classRows; track $index) {
                   <li class="standard" [attr.data-test]="'briefing-class-' + $index">
@@ -93,19 +94,19 @@ const GROUND_Y = 66;
               <div class="best mono" data-test="briefing-best">{{ best }}</div>
             }
             @if (briefing.instructor) {
-              <ion-toggle class="instructor" [checked]="isInstructorOn()" (ionChange)="isInstructorOn.set($event.detail.checked)" justify="space-between" data-test="briefing-instructor">с инструктором</ion-toggle>
+              <ion-toggle class="instructor" [checked]="isInstructorOn()" (ionChange)="isInstructorOn.set($event.detail.checked)" justify="space-between" data-test="briefing-instructor">{{ texts.withInstructor }}</ion-toggle>
             }
-            <div class="order-stamp" aria-hidden="true">к исполнению</div>
+            <div class="order-stamp" aria-hidden="true">{{ texts.orderStamp }}</div>
           </article>
 
           @if (briefing.termsLine; as terms) {
             <div class="terms mono" data-test="sheet-terms"><or-term-text [text]="terms" /></div>
           }
           <div class="dock">
-            <button class="to-position" type="button" (click)="toPosition()" data-test="to-position">{{ briefing.introLine ? 'Начать' : 'На позицию' }}</button>
+            <button class="to-position" type="button" (click)="toPosition()" data-test="to-position">{{ briefing.introLine ? texts.start : texts.toPosition }}</button>
           </div>
         } @else {
-          <div class="note" data-test="sheet-missing">Такого упражнения нет</div>
+          <div class="note" data-test="sheet-missing">{{ texts.missing }}</div>
         }
       </div>
     </ion-content>
@@ -156,6 +157,7 @@ export class ExerciseSheetPage {
   private readonly router = inject(Router);
   private readonly progress = inject(ProgressStore);
 
+  protected readonly texts = text.screens.exerciseSheet;
   protected readonly schemeWidth = SCHEME_WIDTH;
   protected readonly schemeHeight = SCHEME_HEIGHT;
   protected readonly shooterX = SHOOTER_X;

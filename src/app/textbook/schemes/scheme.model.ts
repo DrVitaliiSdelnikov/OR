@@ -1,5 +1,5 @@
 import { CARTRIDGES, FLAG_DISTANCES_M, RIFLE, WIND_ZONE_LIMITS_M } from '../../../core/content';
-import { decimal } from '../../../i18n/format';
+import { text } from '../../../i18n';
 import { DopeCard, dopeRowAt } from '../../../core/dope-card';
 import { windClockShare } from '../../../core/field';
 import { roundToClicks } from '../../../core/game-formulas';
@@ -11,26 +11,13 @@ import { CardsByCartridge } from '../terms';
 
 export type TermScheme = 'reticle' | 'focal-plane' | 'trajectory' | 'wind-clock' | 'cartridges' | 'zones' | 'group';
 
-export const SCHEME_TERMS: Record<TermScheme, readonly string[]> = {
-  reticle: ['сетка', 'MIL', 'MOA', 'миллинг'],
-  'focal-plane': ['фокальная плоскость', 'кратность'],
-  trajectory: ['ДОПЕ', 'строка ДОПЕ', 'ноль', 'время полёта'],
-  'wind-clock': ['правило часов', 'доля по часам', 'боковая составляющая', 'ветер'],
-  cartridges: ['карточка патрона', 'баллистический коэффициент', 'энергия', 'разброс скорости', 'константа ветра'],
-  zones: ['зоны ветра', 'средний ветер', 'флажок'],
-  group: ['группа', 'СТП', 'поправка по второму выстрелу'],
-};
+const T = text.textbook.schemes;
+
+export const SCHEME_TERMS: Record<TermScheme, readonly string[]> = text.textbook.schemeTerms;
 
 export const RETICLE_SCHEME_HALF_MIL = 3.5;
 const RETICLE_TAP_RADIUS_MIL = 0.75;
-const RETICLE_CAPTIONS: Record<Exclude<ReticleMarkKind, 'label'>, string> = {
-  'mil-dot': 'точка = 1 MIL',
-  'mil-tick': 'штрих = 1 MIL',
-  'half-mil-tick': 'полуметка = 0,5 MIL',
-  'moa-tick': 'штрих = 1 MOA = 0,29 MIL',
-  'five-moa-tick': 'длинный штрих = 5 MOA',
-  'holdover-dot': 'точки ёлки: ряды через 1 MIL вниз, шаг 0,5 MIL вбок',
-};
+const RETICLE_CAPTIONS: Record<Exclude<ReticleMarkKind, 'label'>, string> = T.reticleCaptions;
 
 export interface TappedReticleMark extends ReticleMark {
   caption: string;
@@ -75,13 +62,12 @@ export interface FocalPlaneView {
 export function focalPlaneView(magnification: number): FocalPlaneView {
   const milSpacing = (FOCAL_SCHEME_MIL_AT_FULL_ZOOM * ptPerMil(magnification)) / ptPerMil(FOCAL_SCHEME_MAGNIFICATION);
   const secondPlaneScale = reticleSubtensionScale(SECOND_PLANE_SCOPE, magnification);
-  const isSecondPlaneTrue = magnification === SECOND_PLANE_SCOPE.magnificationMax;
   return {
     gongRadius: FOCAL_SCHEME_GONG_RADIUS_MIL * milSpacing,
     firstPlaneMilSpacing: milSpacing * reticleSubtensionScale(FIRST_PLANE_SCOPE, magnification),
     secondPlaneMilSpacing: milSpacing * secondPlaneScale,
-    firstPlaneCaption: `на ${magnification}× точка = 1 MIL — верно на любой кратности`,
-    secondPlaneCaption: `на ${magnification}× точка = ${decimalText(secondPlaneScale, 1)} MIL — ${isSecondPlaneTrue ? 'верно' : 'верно только на 12×'}`,
+    firstPlaneCaption: T.firstPlaneCaption({ magnification }),
+    secondPlaneCaption: T.secondPlaneCaption({ magnification, dotMil: secondPlaneScale, trueMagnification: SECOND_PLANE_SCOPE.magnificationMax }),
   };
 }
 
@@ -119,7 +105,7 @@ export function windClockView(clockHours: number): WindClockView {
     clockHours,
     share,
     arrowFromDeg: (clockHours * DEGREES_PER_CLOCK_HOUR) % 360,
-    caption: `${clockHours} ч — доля ${decimalText(share, 2)}`,
+    caption: T.windClockCaption({ clockHours, share }),
   };
 }
 
@@ -141,12 +127,12 @@ export function cartridgesView(cards: CardsByCartridge): readonly CartridgeSchem
     return {
       id: cartridge.id,
       name: cartridge.name,
-      facts: [
-        `${decimalText(cartridge.massG, 1)} г`,
-        `${cartridge.muzzleVelocityMps} м/с`,
-        `BC ${decimalText(cartridge.bcG7, 3)}`,
-        `${Math.round(energyJ / ENERGY_ROUNDING_J) * ENERGY_ROUNDING_J} Дж`,
-      ],
+      facts: T.cartridgeFacts({
+        massG: cartridge.massG,
+        muzzleVelocityMps: cartridge.muzzleVelocityMps,
+        bcG7: cartridge.bcG7,
+        energyJ: Math.round(energyJ / ENERGY_ROUNDING_J) * ENERGY_ROUNDING_J,
+      }),
       drop: card.rows.map(row => ({ distanceM: row.distanceM, mil: row.elevationMil })),
       driftPerMps: card.rows.map(row => ({ distanceM: row.distanceM, mil: row.distanceM / row.windConstant })),
     };
@@ -194,15 +180,5 @@ export function groupView(): GroupView {
   const center = analyseGroup(GROUP_EXAMPLE_IMPACTS)!.center;
   const upClicks = roundToClicks(-center.upMrad, GROUP_CLICK_MIL);
   const rightClicks = roundToClicks(-center.rightMrad, GROUP_CLICK_MIL);
-  const offset = `${arrow(center.upMrad, '↑', '↓')} ${decimalText(Math.abs(center.upMrad), 1)} ${arrow(center.rightMrad, '→', '←')} ${decimalText(Math.abs(center.rightMrad), 1)} MIL`;
-  const transfer = `${arrow(upClicks, '↑', '↓')} ${Math.abs(upClicks)} ${arrow(rightClicks, '→', '←')} ${Math.abs(rightClicks)} кл.`;
-  return { impacts: GROUP_EXAMPLE_IMPACTS, center, caption: `СТП ${offset} — перенеси ${transfer}` };
-}
-
-function arrow(value: number, positive: string, negative: string): string {
-  return value >= 0 ? positive : negative;
-}
-
-function decimalText(value: number, maxDigits: number): string {
-  return decimal(Number(value.toFixed(maxDigits)));
+  return { impacts: GROUP_EXAMPLE_IMPACTS, center, caption: T.groupCaption({ upMil: center.upMrad, rightMil: center.rightMrad, upClicks, rightClicks }) };
 }

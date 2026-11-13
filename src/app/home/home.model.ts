@@ -1,4 +1,5 @@
 import { ExerciseClass, Rank } from '../../core/exercise-scoring';
+import { text } from '../../i18n';
 import { courseProgress, CourseResults, exerciseById, ExerciseId, mergeBestClass } from '../../sim/course';
 
 export type ContinueCard =
@@ -14,13 +15,7 @@ export interface RankHeader {
 
 export const ADMISSIONS_TOTAL = 12;
 
-export const RANK_LABELS: Record<Rank, string> = {
-  cadet: 'Курсант',
-  rifleman: 'Стрелок',
-  'senior-rifleman': 'Старший стрелок',
-  sniper: 'Снайпер',
-  'sniper-instructor': 'Снайпер-инструктор',
-};
+export const RANK_LABELS: Record<Rank, string> = text.screens.home.ranks;
 
 export function continueCard(results: CourseResults): ContinueCard {
   const nextId = courseProgress(results).nextExerciseId;

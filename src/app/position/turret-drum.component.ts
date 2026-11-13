@@ -1,4 +1,5 @@
 import { Component, computed, DestroyRef, inject, input, output, signal } from '@angular/core';
+import { text } from '../../i18n';
 import { backLayer } from '../services/back-stack.service';
 import { TurretAxis } from './position.model';
 
@@ -25,7 +26,7 @@ const INERTIA_FRICTION = 0.92;
       <div
         class="tape"
         role="slider"
-        [attr.aria-label]="axis() === 'elevation' ? 'Барабан высоты' : 'Барабан ветра'"
+        [attr.aria-label]="axis() === 'elevation' ? texts.elevationLabel : texts.windageLabel"
         [attr.aria-valuenow]="clicks()"
         (pointerdown)="down($event)"
         (pointermove)="move($event)"
@@ -57,7 +58,7 @@ const INERTIA_FRICTION = 0.92;
             <line class="index" [attr.x1]="halfLength()" [attr.x2]="halfLength()" y1="0" y2="40" />
           }
         </svg>
-        <span class="value mono">{{ valueText() }} <small>{{ clicks() }} кл</small></span>
+        <span class="value mono">{{ valueText() }} <small>{{ clicks() }} {{ texts.clicksUnit }}</small></span>
       </div>
       <button data-own-feedback class="step" type="button" (click)="turn.emit(stepClicks()[1])" [attr.aria-label]="stepLabels()[1]" [attr.data-test]="axis() + '-' + stepNames()[1]">{{ stepLabels()[1] }}</button>
       @if (counter()) {
@@ -66,7 +67,7 @@ const INERTIA_FRICTION = 0.92;
       @if (isLoupeOpen()) {
         <div class="loupe" data-test="drum-loupe" aria-hidden="true">
           <span class="loupe-value mono">{{ valueText() }}</span>
-          <span class="loupe-clicks mono">{{ clicks() }} кл</span>
+          <span class="loupe-clicks mono">{{ clicks() }} {{ texts.clicksUnit }}</span>
           @if (counter()) {
             <span class="loupe-counter mono">{{ counter() }}</span>
           }
@@ -107,6 +108,7 @@ export class TurretDrumComponent {
   readonly counter = input<string>('');
   readonly turn = output<number>();
 
+  protected readonly texts = text.position.drum;
   protected readonly isLoupeOpen = signal(false);
   private readonly loupeLayer = backLayer(() => this.isLoupeOpen(), () => this.isLoupeOpen.set(false));
   protected readonly isVertical = computed(() => this.axis() === 'windage');

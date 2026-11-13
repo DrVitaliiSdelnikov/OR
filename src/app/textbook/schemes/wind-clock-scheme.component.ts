@@ -1,4 +1,5 @@
 import { Component, computed, signal } from '@angular/core';
+import { text } from '../../../i18n';
 import { windClockView } from './scheme.model';
 
 const HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -13,21 +14,21 @@ const DEFAULT_HOUR = 3;
   selector: 'or-wind-clock-scheme',
   template: `
     @let wind = view();
-    <svg viewBox="-108 -108 216 216" role="img" aria-label="Часы ветра: тапни по часу" data-test="wind-clock-scheme">
+    <svg viewBox="-108 -108 216 216" role="img" [attr.aria-label]="texts.label" data-test="wind-clock-scheme">
       <circle class="dial" r="66" />
-      <text class="target" x="0" y="-36">ЦЕЛЬ</text>
+      <text class="target" x="0" y="-36">{{ texts.target }}</text>
       <line class="fire-line" x1="0" y1="0" x2="0" y2="-28" />
       <line class="arrow" [attr.x1]="arrow().fromX" [attr.y1]="arrow().fromY" [attr.x2]="arrow().toX" [attr.y2]="arrow().toY" data-test="wind-arrow" />
       <polygon class="arrow-head" [attr.points]="arrow().head" />
       <circle class="shooter" r="4" />
       @for (hour of hours; track hour.value) {
-        <g class="hour" [class.chosen]="hour.value === wind.clockHours" role="button" [attr.aria-label]="hour.value + ' ч'" (click)="clockHours.set(hour.value)" [attr.data-test]="'scheme-hour-' + hour.value">
+        <g class="hour" [class.chosen]="hour.value === wind.clockHours" role="button" [attr.aria-label]="hour.label" (click)="clockHours.set(hour.value)" [attr.data-test]="'scheme-hour-' + hour.value">
           <circle class="hit" [attr.cx]="hour.x" [attr.cy]="hour.y" r="20" />
           <text [attr.x]="hour.x" [attr.y]="hour.y + 5">{{ hour.value }}</text>
         </g>
       }
     </svg>
-    <p class="caption mono"><b data-test="scheme-caption">{{ wind.caption }}</b> · боковой ветер = ветер × доля</p>
+    <p class="caption mono"><b data-test="scheme-caption">{{ wind.caption }}</b> {{ texts.crosswindRule }}</p>
   `,
   styles: `
     :host { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
@@ -47,9 +48,10 @@ const DEFAULT_HOUR = 3;
   `,
 })
 export class WindClockSchemeComponent {
+  protected readonly texts = text.textbook.schemes.windClock;
   protected readonly clockHours = signal(DEFAULT_HOUR);
   protected readonly view = computed(() => windClockView(this.clockHours()));
-  protected readonly hours = HOURS.map(value => ({ value, ...pointAt(windClockView(value).arrowFromDeg, HOUR_RADIUS) }));
+  protected readonly hours = HOURS.map(value => ({ value, label: this.texts.hour({ clockHours: value }), ...pointAt(windClockView(value).arrowFromDeg, HOUR_RADIUS) }));
   protected readonly arrow = computed(() => {
     const angleDeg = this.view().arrowFromDeg;
     const from = pointAt(angleDeg, ARROW_START_RADIUS);

@@ -1,4 +1,5 @@
 import { Component, computed, input, output } from '@angular/core';
+import { text } from '../../i18n';
 import { Vector2 } from '../../sim/noise';
 import { BreathRing } from './position.model';
 
@@ -49,7 +50,7 @@ const HOLD_RING_RADIUS = 48;
           (pointerup)="up()"
           (pointercancel)="up()"
           data-test="fire"
-        >Огонь</button>
+        >{{ texts.fire }}</button>
         <span class="rounds mono" data-test="rounds">{{ rounds() }}</span>
       </div>
     </div>
@@ -100,6 +101,7 @@ export class FireControlComponent {
   readonly holdPress = output<void>();
   readonly holdRelease = output<void>();
 
+  protected readonly texts = text.position.fireControl;
   protected readonly fireRadius = FIRE_RING_RADIUS;
   protected readonly holdRadius = HOLD_RING_RADIUS;
   protected readonly fireDash = computed(() => dash(this.pressure(), FIRE_RING_RADIUS));

@@ -1,5 +1,6 @@
 import { Component, computed, input, output } from '@angular/core';
 import { Correction } from '../../core/types';
+import { text } from '../../i18n';
 
 const VIEW_SIZE = 200;
 const VIEW_CENTER = VIEW_SIZE / 2;
@@ -21,7 +22,7 @@ interface ScenePoint {
       class="scheme"
       [attr.viewBox]="'0 0 ' + size + ' ' + size"
       role="img"
-      [attr.aria-label]="isPicking() ? 'Отметь, где была сетка' : 'Схема мишени: вызов и попадание'"
+      [attr.aria-label]="isPicking() ? texts.picking : texts.scheme"
       (pointerdown)="tap($event)"
       data-test="target-scheme"
     >
@@ -92,6 +93,7 @@ export class TargetSchemeComponent {
   readonly isPicking = input(false);
   readonly pick = output<Correction>();
 
+  protected readonly texts = text.screens.targetScheme;
   protected readonly size = VIEW_SIZE;
   protected readonly center = VIEW_CENTER;
   private readonly halfViewMil = computed(() => Math.max(MIN_VIEW_HALF_MIL, this.radiusMil() / GONG_SHARE_OF_VIEW / 2));

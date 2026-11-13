@@ -1,4 +1,5 @@
 import { Component, input, output } from '@angular/core';
+import { text } from '../../i18n';
 import { ZoneTable } from './notebook.model';
 import { SpeedWheelComponent } from './speed-wheel.component';
 import { WindClockComponent } from './wind-clock.component';
@@ -21,14 +22,14 @@ export interface WindInput {
       <div class="station mono" data-test="wind-station">{{ stationText() }}</div>
       @if (zones(); as table) {
         <div class="zones" data-test="zone-weights" data-hint="zone-weights">
-          <div class="zones-title mono">веса зон</div>
+          <div class="zones-title mono">{{ texts.zoneWeights }}</div>
           @for (weight of table.weights; track weight.label) {
             <div class="zone mono"><span class="zone-label">{{ weight.label }}</span><span class="zone-weight" data-test="zone-weight">{{ weight.value }}</span></div>
           }
         </div>
         <div class="flags" data-test="flag-readings">
           @for (flag of table.flags; track flag.distanceM) {
-            <div class="flag mono" [class.unread]="!flag.isRead" [attr.data-test]="'flag-' + flag.distanceM">{{ flag.distanceM }} м · {{ flag.text }}</div>
+            <div class="flag mono" [class.unread]="!flag.isRead" [attr.data-test]="'flag-' + flag.distanceM">{{ texts.flag({ distanceM: flag.distanceM, text: flag.text }) }}</div>
           }
         </div>
       }
@@ -67,4 +68,6 @@ export class WindTabComponent {
   readonly zones = input<ZoneTable | null>(null);
   readonly windChange = output<WindInput>();
   readonly toStep = output<void>();
+
+  protected readonly texts = text.notebook.windTab;
 }

@@ -1,5 +1,6 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { Correction } from '../../core/types';
+import { text } from '../../i18n';
 import { PositionSession, PositionShot } from '../position/position-session';
 import { CausesComponent } from './causes.component';
 import { TermTextComponent } from '../textbook/term-text.component';
@@ -8,16 +9,14 @@ import { FlightViewComponent } from './flight-view.component';
 import { checkSheet, correctionText, diagnosisText, shotPointsText, targetPlaques } from './review.model';
 import { TargetSchemeComponent } from './target-scheme.component';
 
-const CALL_DISTANCE_DECIMALS = 1;
-
 @Component({
   selector: 'or-review-sheet',
   imports: [TargetSchemeComponent, CheckSheetComponent, CausesComponent, FlightViewComponent, TermTextComponent],
   template: `
     @let state = view();
-    <section class="review" role="dialog" aria-label="Разбор выстрела" data-test="review-sheet">
+    <section class="review" role="dialog" [attr.aria-label]="texts.title" data-test="review-sheet">
       <header class="head">
-        <div class="title">Разбор выстрела</div>
+        <div class="title">{{ texts.title }}</div>
         <div class="points mono" data-test="review-points">{{ isCallPending() ? '?' : state.points }}</div>
       </header>
 
@@ -33,11 +32,11 @@ const CALL_DISTANCE_DECIMALS = 1;
           />
           <div class="legend mono">
             @if (isCallPending()) {
-              <div class="ask" data-test="call-ask">Отметь, где была сетка</div>
-              <button class="reveal mono" type="button" [disabled]="playerCall() === null" (click)="revealImpact()" data-test="call-reveal">Показать попадание</button>
+              <div class="ask" data-test="call-ask">{{ texts.callAsk }}</div>
+              <button class="reveal mono" type="button" [disabled]="playerCall() === null" (click)="revealImpact()" data-test="call-reveal">{{ texts.reveal }}</button>
             } @else {
-              <div>✛ сетка в момент выстрела</div>
-              <div>● попадание</div>
+              <div>{{ texts.legendReticle }}</div>
+              <div>{{ texts.legendImpact }}</div>
               @if (callVerdict(); as verdict) {
                 <div class="call-verdict" data-test="call-verdict">{{ verdict }}</div>
               }
@@ -70,11 +69,11 @@ const CALL_DISTANCE_DECIMALS = 1;
           }
         </div>
         @if (state.canSaveDope && !isCallPending()) {
-          <button class="dope-link mono" type="button" [disabled]="isDopeSaved()" (click)="saveToDope()" data-hint="review-dope" data-test="review-dope">{{ isDopeSaved() ? 'записано в ДОПЕ' : 'в ДОПЕ →' }}</button>
+          <button class="dope-link mono" type="button" [disabled]="isDopeSaved()" (click)="saveToDope()" data-hint="review-dope" data-test="review-dope">{{ isDopeSaved() ? texts.dopeSaved : texts.toDope }}</button>
         }
         <div class="actions">
-          <button class="recalc mono" type="button" [disabled]="isCallPending()" (click)="recalc.emit()" data-test="review-recalc">Пересчитать и повторить</button>
-          <button class="next mono" type="button" [disabled]="isCallPending()" (click)="next.emit()" data-test="review-next" data-hint="review-next">Дальше</button>
+          <button class="recalc mono" type="button" [disabled]="isCallPending()" (click)="recalc.emit()" data-test="review-recalc">{{ texts.recalc }}</button>
+          <button class="next mono" type="button" [disabled]="isCallPending()" (click)="next.emit()" data-test="review-next" data-hint="review-next">{{ texts.next }}</button>
         </div>
       </footer>
     </section>
@@ -114,6 +113,7 @@ export class ReviewSheetComponent {
   readonly recalc = output<void>();
   readonly saveDope = output<void>();
 
+  protected readonly texts = text.screens.reviewSheet;
   protected readonly playerCall = signal<Correction | null>(null);
   protected readonly callVerdict = signal<string | null>(null);
   protected readonly isCallRevealed = signal(false);
@@ -130,10 +130,10 @@ export class ReviewSheetComponent {
       diagnosis: diagnosisText(review.diagnosis, review.call),
       correction: correctionText(review.correction, review.diagnosis),
       check: review.check ? checkSheet(review.check, session.def.notebookMode ?? 'auto') : null,
-      noCheckText: review.isFirstShotAtTarget ? 'Расчёт не записан — проверять нечего' : 'Проверка — по первому выстрелу',
+      noCheckText: review.isFirstShotAtTarget ? this.texts.noCalcRecorded : this.texts.checkFirstShotOnly,
       plaques: targetPlaques(session.def, session.records, { stageIndex: session.firingLine.stageIndex, targetIndex: session.firingLine.targetIndex }, session.isFinished),
       canSaveDope: review.dopeNoteMil !== null,
-      coldBoreNote: shot.record.isColdBore ? `холодный ствол: ↑ ${coldBore.upMrad.toFixed(2)} · → ${coldBore.rightMrad.toFixed(2)}` : null,
+      coldBoreNote: shot.record.isColdBore ? this.texts.coldBore({ upMil: coldBore.upMrad, rightMil: coldBore.rightMrad }) : null,
     };
   });
 
@@ -145,7 +145,7 @@ export class ReviewSheetComponent {
     const isAccurate = this.session().recordCall(call);
     const actual = this.shot().review.call;
     const missMil = Math.hypot(call.upMrad - actual.upMrad, call.rightMrad - actual.rightMrad);
-    this.callVerdict.set(isAccurate ? 'вызов точный' : `вызов мимо на ${missMil.toFixed(CALL_DISTANCE_DECIMALS)}`);
+    this.callVerdict.set(isAccurate ? this.texts.callAccurate : this.texts.callMissed({ missMil }));
     this.isCallRevealed.set(true);
   }
 

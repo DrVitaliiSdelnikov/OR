@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
+import { text } from '../../i18n';
 import { ProgressStore } from '../services/progress.store';
 import { continueCard, rankHeader } from './home.model';
 
@@ -14,34 +15,34 @@ import { continueCard, rankHeader } from './home.model';
         <header class="header">
           <div>
             <div class="rank" data-test="rank">{{ header().rankLabel }}</div>
-            <div class="admissions" data-test="admissions">допуски {{ header().admissions }} / {{ header().admissionsTotal }}</div>
+            <div class="admissions" data-test="admissions">{{ texts.admissions({ admissions: header().admissions, admissionsTotal: header().admissionsTotal }) }}</div>
           </div>
-          <a class="gear" routerLink="/settings" aria-label="Настройки" data-test="open-settings">⚙</a>
+          <a class="gear" routerLink="/settings" [attr.aria-label]="texts.settings" data-test="open-settings">⚙</a>
         </header>
 
-        <h1 class="title">Огневой рубеж</h1>
+        <h1 class="title">{{ texts.title }}</h1>
 
         <nav class="menu">
-          <a class="tile" routerLink="/course" data-test="tile-course"><span class="number">01</span>Снайперская подготовка</a>
-          <a class="tile" routerLink="/free" data-test="tile-free"><span class="number">02</span>Свободная игра</a>
-          <a class="tile" routerLink="/textbook" data-test="tile-textbook"><span class="number">03</span>Учебник курсанта</a>
-          <a class="tile" routerLink="/journal" data-test="tile-journal"><span class="number">04</span>Журнал стрелка</a>
+          <a class="tile" routerLink="/course" data-test="tile-course"><span class="number">01</span>{{ texts.tiles.course }}</a>
+          <a class="tile" routerLink="/free" data-test="tile-free"><span class="number">02</span>{{ texts.tiles.free }}</a>
+          <a class="tile" routerLink="/textbook" data-test="tile-textbook"><span class="number">03</span>{{ texts.tiles.textbook }}</a>
+          <a class="tile" routerLink="/journal" data-test="tile-journal"><span class="number">04</span>{{ texts.tiles.journal }}</a>
         </nav>
 
         <button class="continue" type="button" (click)="openContinue()" data-test="continue-card">
           @switch (card().kind) {
             @case ('start') {
-              <span class="continue-label">Начать</span>
+              <span class="continue-label">{{ texts.start }}</span>
               <span class="continue-title">{{ cardExercise() }}</span>
             }
             @case ('continue') {
-              <span class="continue-label">Продолжить</span>
+              <span class="continue-label">{{ texts.continue }}</span>
               <span class="continue-title">{{ cardExercise() }}</span>
               <span class="continue-status">{{ cardStatus() }}</span>
             }
             @case ('free-play') {
-              <span class="continue-label">Свободная игра</span>
-              <span class="continue-title">курс пройден</span>
+              <span class="continue-label">{{ texts.freePlay }}</span>
+              <span class="continue-title">{{ texts.coursePassed }}</span>
             }
           }
         </button>
@@ -68,6 +69,7 @@ export class HomePage {
   private readonly progress = inject(ProgressStore);
   private readonly router = inject(Router);
 
+  protected readonly texts = text.screens.home;
   protected readonly header = computed(() => rankHeader(this.progress.course()));
   protected readonly card = computed(() => continueCard(this.progress.course()));
   protected readonly cardExercise = computed(() => {
@@ -76,7 +78,7 @@ export class HomePage {
   });
   protected readonly cardStatus = computed(() => {
     const card = this.card();
-    return card.kind === 'continue' && card.status === 'not-admitted' ? 'не зачтено' : 'новое';
+    return card.kind === 'continue' && card.status === 'not-admitted' ? this.texts.notAdmitted : this.texts.new;
   });
 
   protected openContinue(): void {

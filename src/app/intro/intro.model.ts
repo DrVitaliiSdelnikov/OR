@@ -1,5 +1,5 @@
 import { targetRadiusMrad } from '../../core/content';
-import { decimal } from '../../i18n/format';
+import { text } from '../../i18n';
 import { ptPerMil, ScopeId, scopeById } from '../../sim/scope-model';
 
 export type IntroStepId = 'rifle' | 'scope' | 'drum' | 'zoom' | 'reticles' | 'cartridges' | 'bolt';
@@ -57,40 +57,48 @@ export const START_PROGRESS: IntroProgress = {
   isBoltCycled: false,
 };
 
+const STEPS = text.intro.steps;
+const RIFLE_PARTS = STEPS.rifle.parts;
+const SCOPE_PARTS = STEPS.scope.parts;
+
 export const INTRO_STEPS: readonly IntroStep[] = [
   {
     id: 'rifle',
-    title: 'Винтовка',
-    instruction: 'Это винтовка. Тапни по каждой части — узнаешь, зачем она',
+    title: STEPS.rifle.title,
+    instruction: STEPS.rifle.instruction,
     parts: [
-      { id: 'barrel', name: 'Ствол', caption: 'Разгоняет пулю и задаёт ей направление. Холодный ствол бьёт чуть иначе, чем прогретый' },
-      { id: 'bolt', name: 'Затвор', caption: 'Запирает патрон в стволе. После выстрела — вверх, назад, вперёд, вниз: гильза вылетает, новый патрон в стволе' },
-      { id: 'magazine', name: 'Магазин', caption: 'Пять патронов. Пуст — меняешь магазин' },
-      { id: 'trigger', name: 'Спуск', caption: 'Дави плавно до выстрела. Рывок уводит пулю' },
-      { id: 'scope', name: 'Прицел', caption: 'Приближает цель и показывает, куда смотрит ствол, с поправкой барабанами' },
+      { id: 'barrel', ...RIFLE_PARTS.barrel },
+      { id: 'bolt', ...RIFLE_PARTS.bolt },
+      { id: 'magazine', ...RIFLE_PARTS.magazine },
+      { id: 'trigger', ...RIFLE_PARTS.trigger },
+      { id: 'scope', ...RIFLE_PARTS.scope },
     ],
   },
   {
     id: 'scope',
-    title: 'Прицел',
-    instruction: 'Прицел в разрезе. Тапни по каждой части',
+    title: STEPS.scope.title,
+    instruction: STEPS.scope.instruction,
     parts: [
-      { id: 'objective', name: 'Объектив', caption: 'Большое стекло спереди: собирает свет от цели' },
-      { id: 'eyepiece', name: 'Окуляр', caption: 'Стекло у глаза: в нём ты видишь цель и сетку' },
-      { id: 'elevation', name: 'Барабан ВЕРТ', caption: 'Поднимает и опускает точку попадания: один клик — 0,1 MIL' },
-      { id: 'windage', name: 'Барабан ГОР', caption: 'Сдвигает точку попадания влево и вправо — поправка на ветер' },
-      { id: 'zoom', name: 'Кольцо', caption: `Кольцо кратности: приближение от ${INTRO_SCOPE.magnificationMin}× до ${INTRO_SCOPE.magnificationMax}×` },
+      { id: 'objective', ...SCOPE_PARTS.objective },
+      { id: 'eyepiece', ...SCOPE_PARTS.eyepiece },
+      { id: 'elevation', ...SCOPE_PARTS.elevation },
+      { id: 'windage', ...SCOPE_PARTS.windage },
+      {
+        id: 'zoom',
+        name: SCOPE_PARTS.zoom.name,
+        caption: SCOPE_PARTS.zoom.caption({ magnificationMin: INTRO_SCOPE.magnificationMin, magnificationMax: INTRO_SCOPE.magnificationMax }),
+      },
     ],
   },
-  { id: 'drum', title: 'Барабан', instruction: `Накрути барабан ВЕРТ вверх на ${MIN_DIALLED_CLICKS} кликов — смотри, куда уходит точка попадания` },
-  { id: 'zoom', title: 'Кратность', instruction: 'Покрути кратность вверх и вниз — гонг и метки сетки растут вместе' },
+  { id: 'drum', title: STEPS.drum.title, instruction: STEPS.drum.instruction({ clicks: MIN_DIALLED_CLICKS }) },
+  { id: 'zoom', title: STEPS.zoom.title, instruction: STEPS.zoom.instruction },
   {
     id: 'reticles',
-    title: 'Сетки',
-    instruction: `Тапни по меткам сеток. Потом ответь: гонг ${decimal(MEASURE_GONG_SIZE_M)} м на ${MEASURE_DISTANCE_M} м — сколько MIL он займёт?`,
+    title: STEPS.reticles.title,
+    instruction: STEPS.reticles.instruction({ gongSizeM: MEASURE_GONG_SIZE_M, distanceM: MEASURE_DISTANCE_M }),
   },
-  { id: 'cartridges', title: 'Патроны', instruction: 'Три патрона: тяжелее и обтекаемее — меньше падает и меньше сносится ветром' },
-  { id: 'bolt', title: 'Затвор', instruction: 'Передёрни затвор: тяни рукоять вверх, назад, вперёд, вниз' },
+  { id: 'cartridges', title: STEPS.cartridges.title, instruction: STEPS.cartridges.instruction },
+  { id: 'bolt', title: STEPS.bolt.title, instruction: STEPS.bolt.instruction },
 ];
 
 export function isStepDone(stepId: IntroStepId, progress: IntroProgress): boolean {
@@ -119,7 +127,7 @@ export function measureHint(answerMil: number | null): string | null {
   if (answerMil === null || answerMil === MEASURE.answerMil) {
     return null;
   }
-  return 'Не так. Д = размер × 1000 / mil — отсюда mil = размер × 1000 / Д';
+  return text.intro.measureHint;
 }
 
 export function impactShiftPt(dialledClicks: number, magnification: number): number {

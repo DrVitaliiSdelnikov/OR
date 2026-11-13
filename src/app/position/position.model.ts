@@ -1,5 +1,5 @@
 import { BOLT_STEP_TRAVEL_PT, BOLT_STEPS, BoltStep } from '../../sim/bolt';
-import { decimal } from '../../i18n/format';
+import { text } from '../../i18n';
 import { Vector2 } from '../../sim/noise';
 import { NotebookTotal } from '../../sim/notebook';
 import { formatScopeValue, isHoldoverSettled, ScopeModel } from '../../sim/scope-model';
@@ -10,9 +10,10 @@ import { flagCrosswindText } from '../notebook/notebook.model';
 import { FlagReading } from '../scene/scene.model';
 
 export type TurretAxis = 'elevation' | 'windage';
+export type CorrectionCellKey = TurretAxis | 'distance' | 'holdover';
 
 export interface CorrectionCell {
-  label: 'ВЕРТ' | 'ГОР' | 'ДИСТ' | 'УДЕРЖ.';
+  label: string;
   value: string;
   target: string | null;
   isOnTarget: boolean;
@@ -30,7 +31,7 @@ const TAP_MAX_TRAVEL_PT = 10;
 const TAP_MAX_DURATION_MS = 300;
 const FINGER_TO_MARKER = 1.5;
 const BOLT_TRACK_HOME: Vector2 = { x: 300, y: 110 };
-const BOLT_STEP_LABELS: Record<BoltStep, string> = { up: '1 ↑', back: '2 ← НАЗАД', forward: '3 → ВПЕРЁД', down: '4 ↓' };
+const T = text.position;
 
 export interface BreathRing {
   share: number;
@@ -49,13 +50,13 @@ export function correctionCells(scope: ScopeModel, dial: DialClicks, total: Note
   const elevationMil = dial.elevation * scope.clickMrad;
   const rightMil = -dial.windageLeft * scope.clickMrad;
   const cells: CorrectionCell[] = [
-    axisCell('ВЕРТ', verticalText(scope, elevationMil), hasTotal ? total.elevation.targetClicks : null, dial.elevation, clicks => verticalText(scope, clicks * scope.clickMrad)),
-    axisCell('ГОР', horizontalText(scope, rightMil), hasTotal ? total.windageLeft.targetClicks : null, dial.windageLeft, clicks => horizontalText(scope, -clicks * scope.clickMrad)),
-    { label: 'ДИСТ', value: distanceM === null ? '—' : `${distanceM} м`, target: null, isOnTarget: true },
+    axisCell('elevation', verticalText(scope, elevationMil), hasTotal ? total.elevation.targetClicks : null, dial.elevation, clicks => verticalText(scope, clicks * scope.clickMrad)),
+    axisCell('windage', horizontalText(scope, rightMil), hasTotal ? total.windageLeft.targetClicks : null, dial.windageLeft, clicks => horizontalText(scope, -clicks * scope.clickMrad)),
+    { label: T.cells.labels.distance, value: distanceM === null ? '—' : T.cells.distance({ distanceM }), target: null, isOnTarget: true },
   ];
   const holdRightMil = hasTotal ? total.holdRightMil + total.leadMil : 0;
   if (hasTotal && (!isHoldoverSettled(scope, total.holdUpMil) || !isHoldoverSettled(scope, holdRightMil))) {
-    cells.push({ label: 'УДЕРЖ.', value: `${verticalText(scope, total.holdUpMil)} · ${horizontalText(scope, holdRightMil)}`, target: null, isOnTarget: true });
+    cells.push({ label: T.cells.labels.holdover, value: `${verticalText(scope, total.holdUpMil)} · ${horizontalText(scope, holdRightMil)}`, target: null, isOnTarget: true });
   }
   return cells;
 }
@@ -65,18 +66,19 @@ export function drumCounter(axis: TurretAxis, progress: TurretProgress): string 
     return '';
   }
   if (progress.overshootClicks > 0) {
-    return `лишние ${progress.overshootClicks} кл.`;
+    return T.drum.overshoot({ clicks: progress.overshootClicks });
   }
   const arrows: Record<TurretAxis, { up: string; down: string }> = { elevation: { up: '↑', down: '↓' }, windage: { up: '←', down: '→' } };
   const arrow = progress.direction === 'none' ? '' : ` ${arrows[axis][progress.direction]}`;
-  return `ещё ${progress.remainingClicks} кл.${arrow}`;
+  return T.drum.remaining({ clicks: progress.remainingClicks, arrow });
 }
 
 export function drumCounterText(axis: TurretAxis, progress: TurretProgress | null): string {
   return progress === null ? '' : drumCounter(axis, progress);
 }
 
-function axisCell(label: 'ВЕРТ' | 'ГОР', value: string, targetClicks: number | null, dialClicks: number, format: (clicks: number) => string): CorrectionCell {
+function axisCell(axis: TurretAxis, value: string, targetClicks: number | null, dialClicks: number, format: (clicks: number) => string): CorrectionCell {
+  const label = T.cells.labels[axis];
   if (targetClicks === null) {
     return { label, value, target: '—', isOnTarget: false };
   }
@@ -112,16 +114,16 @@ export function breathRing(state: BreathState, heldS: number): BreathRing {
     return { share: 0, secondsText: '', isCooldown: false };
   }
   const leftS = Math.max(0, BREATH_HOLD_MAX_S - heldS);
-  return { share: leftS / BREATH_HOLD_MAX_S, secondsText: `${leftS.toFixed(1)} с`, isCooldown: false };
+  return { share: leftS / BREATH_HOLD_MAX_S, secondsText: T.breath.seconds({ seconds: leftS }), isCooldown: false };
 }
 
 export function boltSteps(current: BoltStep): BoltStepView[] {
   const currentIndex = BOLT_STEPS.indexOf(current);
-  return BOLT_STEPS.map((step, index) => ({ label: BOLT_STEP_LABELS[step], isCurrent: index === currentIndex, isDone: index < currentIndex }));
+  return BOLT_STEPS.map((step, index) => ({ label: T.bolt.steps[step], isCurrent: index === currentIndex, isDone: index < currentIndex }));
 }
 
 export function boltHeader(current: BoltStep): string {
-  return `Затвор · шаг ${BOLT_STEPS.indexOf(current) + 1} из ${BOLT_STEPS.length}`;
+  return T.bolt.header({ stepNumber: BOLT_STEPS.indexOf(current) + 1, stepCount: BOLT_STEPS.length });
 }
 
 // Г-дорожка в единицах хода затвора: от дома вверх, назад (на экране — влево), вперёд и вниз домой.
@@ -151,14 +153,13 @@ export function isGlassTap(start: Vector2, end: Vector2, durationMs: number): bo
 }
 
 export function flagReadingText(flagDistanceM: number, reading: FlagReading): string {
-  return `${flagDistanceM} м · ${reading.angleDeg}° · ${reading.isAtLimit ? '≥ ' : ''}${flagCrosswindText(reading.crosswindMps)}`;
+  return T.flagReading({ flagDistanceM, angleDeg: reading.angleDeg, isAtLimit: reading.isAtLimit, crosswindText: flagCrosswindText(reading.crosswindMps) });
 }
 
 export function patrolLineText(patrol: PatrolTarget, walkedS: number): string {
   const clock = movementClockAt(patrol.path, walkedS);
   const isCrosswise = clock % CROSSWISE_CLOCK === 0;
-  const speedText = decimal(patrol.path.speedMps, 1);
-  return `${speedText} м/с · ${isCrosswise ? 'поперёк' : 'наискось'} ${headingArrow(clock)}${patrol.isAmbush ? ' · засада' : ''}`;
+  return T.patrolLine({ speedMps: patrol.path.speedMps, isCrosswise, headingArrow: headingArrow(clock), isAmbush: patrol.isAmbush });
 }
 
 function headingArrow(clock: number): string {

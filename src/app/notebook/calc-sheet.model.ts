@@ -2,6 +2,7 @@ import { CheckErrorType } from '../../core/calc-check';
 import { FLAG_DISTANCES_M } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
+import { text } from '../../i18n';
 import { Chip, ChipKind, FLAG_ZONE_KINDS, Notebook, NotebookStepId, softHint, StaleReason, stepSheet } from '../../sim/notebook';
 
 export type FormulaToken = { kind: 'text'; text: string } | { kind: 'slot'; index: number; label: string; placedText: string | null };
@@ -25,74 +26,21 @@ export interface SideOption {
 
 type TemplatePart = string | { slot: ChipKind } | { constant: ChipKind } | { weight: number };
 
-export const STEP_TITLES: Record<NotebookStepId, string> = {
-  distance: 'Дистанция',
-  dope: 'ДОПЕ',
-  atmosphere: 'Атмосфера',
-  zones: 'Ветер по зонам',
-  wind: 'Ветер',
-  lead: 'Упреждение',
-};
-export const TAPE_UNITS: Partial<Record<NotebookStepId, string>> = { distance: 'м', zones: 'м/с' };
+const T = text.notebook.calc;
 
-export const STEP_FORMULAS: Record<NotebookStepId, string> = {
-  distance: 'Д = размер × 1000 / MIL',
-  dope: 'ВЕРТ по строке карточки',
-  atmosphere: 'ΔВЕРТ = (15 − T) / 10 × холоднее + (P − 1013) / 10 × давление',
-  zones: 'V⊥ср = Σ доля × V⊥ зоны',
-  wind: 'W = V⊥ × D / K',
-  lead: 'L = V⊥ цели × t / D × 1000',
-};
-export const SLOT_LABELS: Record<ChipKind, string> = {
-  'target-size': 'размер',
-  'reticle-mil': 'MIL',
-  distance: 'D',
-  'neighbor-distance': 'D',
-  temperature: 'T',
-  pressure: 'P',
-  humidity: 'RH',
-  speed: 'V',
-  crosswind: 'V⊥',
-  'colder-column': 'холоднее',
-  'pressure-column': 'давление',
-  'wind-constant': 'K',
-  'zone-station': 'станция',
-  'zone-200': '200',
-  'zone-400': '400',
-  'zone-600': '600',
-  'target-crosswind': 'V⊥ цели',
-  'target-speed': 'V цели',
-  'time-of-flight': 't',
-  'neighbor-time': 't',
-};
+export const STEP_TITLES: Record<NotebookStepId, string> = T.stepTitles;
+export const TAPE_UNITS: Partial<Record<NotebookStepId, string>> = T.tapeUnits;
+
+export const STEP_FORMULAS: Record<NotebookStepId, string> = T.stepFormulas;
+export const SLOT_LABELS: Record<ChipKind, string> = T.slotLabels;
 const VERTICAL_STEPS: ReadonlySet<NotebookStepId> = new Set(['dope', 'atmosphere']);
-const HINT_TEXTS: Record<CheckErrorType, string> = {
-  substitution: 'проверь, то ли число в слоте',
-  arithmetic: 'проверь умножение и деление',
-  rounding: 'проверь округление до клика',
-  side: 'проверь сторону',
-  units: 'проверь единицы',
-  lead: 'проверь упреждение',
-  reading: 'проверь показания',
-  factor: 'проверь, что учтено',
-  turret: 'проверь барабан',
-};
-const STALE_TEXTS: Record<StaleReason, string> = {
-  cartridge: 'устарело · патрон сменён',
-  distance: 'устарело · новая дистанция',
-  conditions: 'устарело · новый замер',
-  wind: 'устарело · ветер изменён',
-};
+const HINT_TEXTS: Record<CheckErrorType, string> = T.hints;
+const STALE_TEXTS: Record<StaleReason, string> = T.stale;
 const MISSING_TEXTS: Partial<Record<ChipKind, string>> = {
-  'reticle-mil': 'сначала отметь гонг на вкладке «Дистанция»',
-  distance: 'сначала шаг «Дистанция»',
-  temperature: 'сначала сделай замер на вкладке «Условия»',
-  pressure: 'сначала сделай замер на вкладке «Условия»',
-  crosswind: 'сначала введи ветер на вкладке «Ветер»',
-  'zone-station': 'сначала введи ветер на вкладке «Ветер»',
-  ...Object.fromEntries(FLAG_ZONE_KINDS.map((kind, index) => [kind, `сначала тапни флажок ${FLAG_DISTANCES_M[index]} м в стекле`])),
+  ...T.missing,
+  ...Object.fromEntries(FLAG_ZONE_KINDS.map((kind, index) => [kind, T.missingFlag({ distanceM: FLAG_DISTANCES_M[index] })])),
 };
-const MODE_NAMES: Record<NotebookMode, string> = { auto: 'АВТО', 'manual-easy': 'САМ · ЛЁГКИЙ', 'manual-hard': 'САМ · СЛОЖНЫЙ' };
+const MODE_NAMES: Record<NotebookMode, string> = T.modeNames;
 const MAX_DRAFT_LENGTH = 6;
 const MAX_DRAFT_DECIMALS = 3;
 const PERCENT = 100;
@@ -122,10 +70,10 @@ export function hubRows(notebook: Notebook): HubRow[] {
       return { ...base, state: 'stale' as const, valueText: '', note: STALE_TEXTS[state.staleReason] };
     }
     if (!state.isRecorded) {
-      return { ...base, state: 'empty' as const, valueText: '', note: 'не записано' };
+      return { ...base, state: 'empty' as const, valueText: '', note: T.notRecorded };
     }
     const hint = softHint(notebook, step);
-    return { ...base, state: 'recorded' as const, valueText: stepValueText(step, state.tape[state.tape.length - 1]!, state.sign), note: hint ? `записано · ${HINT_TEXTS[hint]}` : 'записано' };
+    return { ...base, state: 'recorded' as const, valueText: stepValueText(step, state.tape[state.tape.length - 1]!, state.sign), note: hint ? T.recordedWithHint({ hint: HINT_TEXTS[hint] }) : T.recorded };
   });
 }
 
@@ -155,60 +103,63 @@ export function formulaTokens(notebook: Notebook, step: NotebookStepId): Formula
 }
 
 export function chipText(chip: Chip, distanceM: number | null): { value: string; source: string } {
-  const rowText = distanceM === null ? '' : ` строка ${Math.round(distanceM)} м`;
+  const rowText = distanceM === null ? '' : T.chipRow({ distanceM: Math.round(distanceM) });
+  const sources = T.chipSources;
   switch (chip.kind) {
     case 'distance':
-      return { value: `${Math.round(chip.value)} м`, source: 'D' };
+      return { value: T.meters({ distanceM: Math.round(chip.value) }), source: 'D' };
     case 'neighbor-distance':
-      return { value: `${Math.round(chip.value)} м`, source: 'D соседней цели' };
+      return { value: T.meters({ distanceM: Math.round(chip.value) }), source: sources.neighborDistance };
     case 'target-size':
-      return { value: `${chip.value} м`, source: 'размер цели' };
+      return { value: T.meters({ distanceM: chip.value }), source: sources.targetSize };
     case 'reticle-mil':
-      return { value: chip.value.toFixed(2), source: 'MIL на сетке' };
+      return { value: chip.value.toFixed(2), source: sources.reticleMil };
     case 'temperature':
-      return { value: `${chip.value} C`, source: 'T станция' };
+      return { value: `${chip.value} C`, source: sources.temperature };
     case 'pressure':
-      return { value: `${chip.value} гПа`, source: 'P станция' };
+      return { value: T.pressure({ pressureHpa: chip.value }), source: sources.pressure };
     case 'humidity':
-      return { value: `${Math.round(chip.value * PERCENT)} %`, source: 'влажность станция' };
+      return { value: `${Math.round(chip.value * PERCENT)} %`, source: sources.humidity };
     case 'speed':
-      return { value: chip.value.toFixed(1), source: 'V ветер' };
+      return { value: chip.value.toFixed(1), source: sources.speed };
     case 'crosswind':
-      return { value: chip.value.toFixed(1), source: 'V⊥ после часов' };
+      return { value: chip.value.toFixed(1), source: sources.crosswind };
     case 'colder-column':
-      return { value: chip.value.toFixed(2), source: `холоднее на 10 °C${rowText}` };
+      return { value: chip.value.toFixed(2), source: T.colderColumnSource({ row: rowText }) };
     case 'pressure-column':
-      return { value: chip.value.toFixed(2), source: `давление +10 гПа${rowText}` };
+      return { value: chip.value.toFixed(2), source: T.pressureColumnSource({ row: rowText }) };
     case 'wind-constant':
       return { value: String(chip.value), source: `K${rowText}` };
     case 'zone-station':
-      return { value: chip.value.toFixed(1), source: 'V⊥ станция' };
+      return { value: chip.value.toFixed(1), source: sources.zoneStation };
     case 'zone-200':
     case 'zone-400':
-    case 'zone-600':
-      return { value: chip.value.toFixed(1), source: chip.isBehindBerm ? `флажок ${chip.kind.slice(5)} м за валом` : `V⊥ флажок ${chip.kind.slice(5)} м` };
+    case 'zone-600': {
+      const distanceText = chip.kind.slice(5);
+      return { value: chip.value.toFixed(1), source: chip.isBehindBerm ? T.flagBehindBermSource({ distanceText }) : T.flagSource({ distanceText }) };
+    }
     case 'target-crosswind':
-      return { value: chip.value.toFixed(1), source: 'V⊥ цели' };
+      return { value: chip.value.toFixed(1), source: sources.targetCrosswind };
     case 'target-speed':
-      return { value: chip.value.toFixed(1), source: 'V цели' };
+      return { value: chip.value.toFixed(1), source: sources.targetSpeed };
     case 'time-of-flight':
-      return { value: `${chip.value.toFixed(2)} с`, source: `t${rowText}` };
+      return { value: T.seconds({ seconds: chip.value }), source: `t${rowText}` };
     case 'neighbor-time':
-      return { value: `${chip.value.toFixed(2)} с`, source: 't соседней строки' };
+      return { value: T.seconds({ seconds: chip.value }), source: sources.neighborTime };
   }
 }
 
 export function tapeLabels(notebook: Notebook, step: NotebookStepId): string[] {
-  const clickText = `до клика ${notebook.context.card.clickMil} =`;
+  const clickText = T.roundToClick({ clickMil: notebook.context.card.clickMil });
   switch (step) {
     case 'distance':
-      return ['Д ='];
+      return [T.tapeDistance];
     case 'dope':
-      return ['ВЕРТ ='];
+      return [T.tapeDope];
     case 'atmosphere':
-      return ['ΔВЕРТ ='];
+      return [T.tapeAtmosphere];
     case 'zones':
-      return ['V⊥ср ='];
+      return [T.tapeZones];
     case 'wind': {
       const constant = stepSheet(notebook, step).printedConstants.find(chip => chip.kind === 'wind-constant');
       return ['V⊥ × D =', `÷ ${constant ? constant.value : 'K'} =`, clickText];
@@ -224,19 +175,19 @@ export function sideOptions(step: NotebookStepId): SideOption[] {
   }
   if (step === 'zones') {
     return [
-      { label: 'Ветер слева', sign: 1 },
-      { label: 'Ветер справа', sign: -1 },
+      { label: T.sides.windLeft, sign: 1 },
+      { label: T.sides.windRight, sign: -1 },
     ];
   }
   if (VERTICAL_STEPS.has(step)) {
     return [
-      { label: '↑ Вверх', sign: 1 },
-      { label: '↓ Вниз', sign: -1 },
+      { label: T.sides.up, sign: 1 },
+      { label: T.sides.down, sign: -1 },
     ];
   }
   return [
-    { label: '← Влево', sign: -1 },
-    { label: 'Вправо →', sign: 1 },
+    { label: T.sides.left, sign: -1 },
+    { label: T.sides.right, sign: 1 },
   ];
 }
 
@@ -244,7 +195,7 @@ export function missingInput(notebook: Notebook, step: NotebookStepId): string |
   const sheet = stepSheet(notebook, step);
   const available = new Set(sheet.chips.map(chip => chip.kind));
   const missing = sheet.slots.find(slot => !available.has(slot.chipKind));
-  return missing ? (MISSING_TEXTS[missing.chipKind] ?? 'нет данных для шага') : null;
+  return missing ? (MISSING_TEXTS[missing.chipKind] ?? T.missingData) : null;
 }
 
 export function editDraft(draft: string, key: DraftKey): string {
@@ -282,7 +233,7 @@ function sideArrow(step: NotebookStepId, sign: 1 | -1): string {
     return sign > 0 ? '↑' : '↓';
   }
   if (step === 'zones') {
-    return sign > 0 ? 'слева' : 'справа';
+    return sign > 0 ? T.windFromLeft : T.windFromRight;
   }
   return sign < 0 ? '←' : '→';
 }
@@ -290,15 +241,15 @@ function sideArrow(step: NotebookStepId, sign: 1 | -1): string {
 function template(notebook: Notebook, step: NotebookStepId): TemplatePart[] {
   switch (step) {
     case 'distance':
-      return ['Д = ', { slot: 'target-size' }, ' × 1000 / ', { slot: 'reticle-mil' }];
+      return [T.templateDistance, { slot: 'target-size' }, ' × 1000 / ', { slot: 'reticle-mil' }];
     case 'dope':
-      return ['ВЕРТ = строка карточки на ', { slot: 'distance' }];
+      return [T.templateDope, { slot: 'distance' }];
     case 'atmosphere':
-      return ['ΔВЕРТ = (15 − ', { slot: 'temperature' }, ') / 10 × ', { constant: 'colder-column' }, ' + (', { slot: 'pressure' }, ' − 1013) / 10 × ', { constant: 'pressure-column' }];
+      return [T.templateAtmosphere,{ slot: 'temperature' }, ') / 10 × ', { constant: 'colder-column' }, ' + (', { slot: 'pressure' }, ' − 1013) / 10 × ', { constant: 'pressure-column' }];
     case 'zones': {
       const weights = notebook.distanceM === null ? [0, 0, 0, 0] : dopeRowAt(notebook.context.card, notebook.distanceM).zoneWeights;
       const zones: ChipKind[] = ['zone-station', 'zone-200', 'zone-400', 'zone-600'];
-      return ['V⊥ср = ', ...zones.flatMap((zone, index) => [...(index > 0 ? [' + '] : []), { weight: weights[index] }, ' × ', { slot: zone }])];
+      return [T.templateZones, ...zones.flatMap((zone, index) => [...(index > 0 ? [' + '] : []), { weight: weights[index] }, ' × ', { slot: zone }])];
     }
     case 'wind':
       return ['W = ', { slot: 'crosswind' }, ' × ', { slot: 'distance' }, ' / ', { constant: 'wind-constant' }];

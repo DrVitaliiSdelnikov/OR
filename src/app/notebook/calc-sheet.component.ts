@@ -1,10 +1,13 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
+import { text } from '../../i18n';
 import { ChipKind, NotebookStepId, stepHasSide } from '../../sim/notebook';
 import { PositionSession } from '../position/position-session';
 import { DraftKey, editDraft, formulaTokens, hubSteps, missingInput, modeBadge, sideOptions, STEP_TITLES, TAPE_UNITS, tapeLabels } from './calc-sheet.model';
 import { ChipTrayComponent } from './chip-tray.component';
 import { KeypadComponent } from './keypad.component';
+
+const FORMULAS_TEXTS = text.notebook.formulas;
 
 @Component({
   selector: 'or-calc-sheet',
@@ -13,7 +16,7 @@ import { KeypadComponent } from './keypad.component';
     @let state = view();
     <section class="calc" data-test="calc-sheet">
       <header class="head">
-        <button class="back" type="button" (click)="back.emit()" data-test="calc-back">← к итогу</button>
+        <button class="back" type="button" (click)="back.emit()" data-test="calc-back">{{ texts.back }}</button>
         <div class="titles">
           <div class="title" data-test="calc-title">{{ state.title }}</div>
           <div class="badge mono" data-test="calc-mode">{{ state.badge }}</div>
@@ -35,7 +38,7 @@ import { KeypadComponent } from './keypad.component';
                 [class.active]="activeSlot() === token.index"
                 [class.filled]="token.placedText !== null"
                 (click)="tapSlot(token.index, token.placedText !== null)"
-                [attr.aria-label]="'Слот ' + token.label"
+                [attr.aria-label]="texts.slot({ label: token.label })"
                 [attr.data-test]="'slot-' + token.index"
               >
                 @if (token.placedText !== null) {
@@ -80,13 +83,13 @@ import { KeypadComponent } from './keypad.component';
         } @else if (activeTape() !== null) {
           <or-keypad (press)="pressKey($event)" />
         } @else {
-          <div class="idle mono">Тап по слоту — чипы, тап по клетке — клавиатура</div>
+          <div class="idle mono">{{ texts.idle }}</div>
         }
       </div>
 
       <footer class="actions">
         <button class="formulas mono" type="button" (click)="formulas.emit()" data-test="calc-formulas">{{ state.formulasLabel }}</button>
-        <button class="record mono" type="button" [disabled]="!state.canRecord" (click)="record()" data-test="calc-record">Записать</button>
+        <button class="record mono" type="button" [disabled]="!state.canRecord" (click)="record()" data-test="calc-record">{{ texts.record }}</button>
       </footer>
     </section>
   `,
@@ -131,6 +134,7 @@ export class CalcSheetComponent {
   readonly changed = output<void>();
   readonly formulas = output<void>();
 
+  protected readonly texts = text.notebook.calcSheet;
   protected readonly activeSlot = signal<number | null>(null);
   protected readonly activeTape = signal<number | null>(null);
   protected readonly draft = signal('');
@@ -147,7 +151,7 @@ export class CalcSheetComponent {
     const activeSlot = this.activeSlot();
     const isSideMissing = stepHasSide(step) && lastValue !== null && lastValue !== 0 && state.sign === null;
     return {
-      title: `${STEP_TITLES[step]} · шаг ${steps.indexOf(step) + 1} из ${steps.length}`,
+      title: this.texts.title({ stepTitle: STEP_TITLES[step], number: steps.indexOf(step) + 1, count: steps.length }),
       badge: modeBadge(notebook.mode),
       missing: missingInput(notebook, step),
       tokens: formulaTokens(notebook, step),
@@ -163,7 +167,7 @@ export class CalcSheetComponent {
       awaitedKind: activeSlot === null ? null : (sheet.slots[activeSlot]?.waitsFor ?? null),
       isGrouped: sheet.isGrouped,
       distanceM: notebook.distanceM,
-      formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? `Формулы −${REFERENCE_PENALTY}` : 'Формулы',
+      formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? FORMULAS_TEXTS.withPenalty({ penalty: REFERENCE_PENALTY }) : FORMULAS_TEXTS.title,
       canRecord: sheet.slots.every(slot => slot.placed !== null) && lastValue !== null && lastValue !== undefined && !isSideMissing,
     };
   });

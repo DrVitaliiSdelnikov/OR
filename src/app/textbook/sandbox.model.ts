@@ -1,6 +1,6 @@
 import { DEFAULT_FREE_PLAY, FreePlaySettings } from '../../sim/free-play';
 import { FLAG_DISTANCES_M } from '../../core/content';
-import { andList } from '../../i18n/format';
+import { text } from '../../i18n';
 import { TeachingView } from '../instructor/teaching.model';
 
 export interface SandboxHint {
@@ -15,58 +15,20 @@ export interface Sandbox {
 }
 
 const CALM_AT_300: Partial<FreePlaySettings> = { distanceM: 300, wind: 'calm' };
+const DOPE_SANDBOX = { distanceM: 450, lowerM: 400, upperM: 500 };
+const S = text.textbook.sandboxes;
 
 export const SANDBOXES: readonly Sandbox[] = [
-  {
-    terms: ['клик', 'барабан'],
-    settings: CALM_AT_300,
-    hint: { anchor: 'drum-elevation', text: 'Один щелчок — 0,1 MIL. Покрути барабан ВЕРТ и смотри, как сдвигается сетка' },
-  },
-  {
-    terms: ['ZERO STOP'],
-    settings: { distanceM: 100, wind: 'calm' },
-    hint: { anchor: 'drum-elevation', text: 'Ты на ноле. Покрути барабан ВЕРТ вниз — ниже ноля он не пойдёт: упор ZERO STOP' },
-  },
-  {
-    terms: ['кратность', 'фокальная плоскость'],
-    settings: { distanceM: 500, wind: 'calm' },
-    hint: { anchor: 'zoom', text: 'Крути кратность — метки сетки растут вместе с гонгом: первая фокальная плоскость, MIL верен на любой кратности' },
-  },
-  {
-    terms: ['сетка', 'миллинг'],
-    settings: { isDistanceUnknown: true, wind: 'calm' },
-    hint: { anchor: 'glass', text: 'Дистанция неизвестна. Измерь гонг сеткой в MIL, потом блокнот → ДИСТАНЦИЯ: внеси замер' },
-  },
-  {
-    terms: ['метеостанция', 'ветер', 'правило часов', 'доля по часам'],
-    settings: { distanceM: 400, wind: 'moderate' },
-    hint: { anchor: 'wind-tile', text: 'Ветер с метеостанции: скорость и час. Тапни — на часах ветра видна доля бокового ветра' },
-  },
-  {
-    terms: ['флажок'],
-    settings: { distanceM: 600, wind: 'strong' },
-    hint: { anchor: 'glass', text: `Флажки на ${andList(FLAG_DISTANCES_M)} м. Чем сильнее ветер поперёк, тем круче полотнище` },
-  },
-  {
-    terms: ['дыхание', 'пульс'],
-    settings: CALM_AT_300,
-    hint: { anchor: 'hold', text: 'Держи — дыхание задержано, сетка успокаивается. Держишь долго — снова качает' },
-  },
-  {
-    terms: ['спуск'],
-    settings: CALM_AT_300,
-    hint: { anchor: 'fire-control', text: 'Дави на спуск плавно, пока не выстрелит. Резкий рывок уводит пулю' },
-  },
-  {
-    terms: ['затвор'],
-    settings: CALM_AT_300,
-    hint: { anchor: 'fire-control', text: 'Выстрели — потом перезаряди затвором: вверх, назад, вперёд, вниз' },
-  },
-  {
-    terms: ['ДОПЕ', 'строка ДОПЕ'],
-    settings: { distanceM: 450, wind: 'calm' },
-    hint: { anchor: 'tile-dope', text: 'Карточка ДОПЕ: для 450 м строки нет — поправка берётся между 400 и 500' },
-  },
+  { terms: S.clicks.terms, settings: CALM_AT_300, hint: { anchor: 'drum-elevation', text: S.clicks.hint } },
+  { terms: S.zeroStop.terms, settings: { distanceM: 100, wind: 'calm' }, hint: { anchor: 'drum-elevation', text: S.zeroStop.hint } },
+  { terms: S.focalPlane.terms, settings: { distanceM: 500, wind: 'calm' }, hint: { anchor: 'zoom', text: S.focalPlane.hint } },
+  { terms: S.milling.terms, settings: { isDistanceUnknown: true, wind: 'calm' }, hint: { anchor: 'glass', text: S.milling.hint } },
+  { terms: S.wind.terms, settings: { distanceM: 400, wind: 'moderate' }, hint: { anchor: 'wind-tile', text: S.wind.hint } },
+  { terms: S.flags.terms, settings: { distanceM: 600, wind: 'strong' }, hint: { anchor: 'glass', text: S.flags.hint({ flagDistancesM: FLAG_DISTANCES_M }) } },
+  { terms: S.breathing.terms, settings: CALM_AT_300, hint: { anchor: 'hold', text: S.breathing.hint } },
+  { terms: S.trigger.terms, settings: CALM_AT_300, hint: { anchor: 'fire-control', text: S.trigger.hint } },
+  { terms: S.bolt.terms, settings: CALM_AT_300, hint: { anchor: 'fire-control', text: S.bolt.hint } },
+  { terms: S.dope.terms, settings: { distanceM: DOPE_SANDBOX.distanceM, wind: 'calm' }, hint: { anchor: 'tile-dope', text: S.dope.hint(DOPE_SANDBOX) } },
 ];
 
 const SANDBOX_TEACHING_ID = 'sandbox';

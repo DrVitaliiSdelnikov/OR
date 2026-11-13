@@ -1,7 +1,8 @@
 import { FLAG_DISTANCES_M } from '../../core/content';
 import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { windClockShare } from '../../core/field';
-import { decimal, plural, PluralForms } from '../../i18n/format';
+import { text } from '../../i18n';
+import { decimal } from '../../i18n/format';
 import { atmosphereCorrectionMil, crosswindMps, windCorrectionMil } from '../../core/game-formulas';
 import { DopeCard, dopeRowAt } from '../../core/dope-card';
 import { CartridgeId } from '../../core/types';
@@ -28,18 +29,14 @@ export interface ZoneTable {
   flags: { distanceM: number; text: string; isRead: boolean }[];
 }
 
-const ZONE_LABELS = ['станция', ...FLAG_DISTANCES_M.map(distanceM => `${distanceM} м`)];
+const T = text.notebook.model;
+const ZONE_LABELS = [T.zoneStation, ...FLAG_DISTANCES_M.map(distanceM => T.meters({ distanceM }))];
+const TAB_ORDER: readonly NotebookTab[] = ['total', 'distance', 'conditions', 'wind', 'dope'];
 
-export const NOTEBOOK_TABS: readonly { id: NotebookTab; label: string }[] = [
-  { id: 'total', label: 'Итог' },
-  { id: 'distance', label: 'Дистанция' },
-  { id: 'conditions', label: 'Условия' },
-  { id: 'wind', label: 'Ветер' },
-  { id: 'dope', label: 'ДОПЕ' },
-];
-export const LOCKED_TABS: readonly string[] = ['Угол', 'Патрон', 'Ещё'];
-export const FACTOR_NAMES: Record<NotebookFactor, string> = { dope: 'ДОПЕ', conditions: 'Условия', wind: 'Ветер', lead: 'Упреждение' };
-export const CARTRIDGE_LETTERS: Record<CartridgeId, string> = { A: 'А', B: 'Б', C: 'В' };
+export const NOTEBOOK_TABS: readonly { id: NotebookTab; label: string }[] = TAB_ORDER.map(id => ({ id, label: T.tabs[id] }));
+export const LOCKED_TABS: readonly string[] = T.lockedTabs;
+export const FACTOR_NAMES: Record<NotebookFactor, string> = T.factorNames;
+export const CARTRIDGE_LETTERS: Record<CartridgeId, string> = T.cartridgeLetters;
 export const MILLING_PT_PER_MIL = 45;
 export const MILLING_GRID_MIL = 4;
 export const MAX_WIND_SPEED_MPS = 15;
@@ -47,7 +44,7 @@ export const MAX_WIND_SPEED_MPS = 15;
 const HOURS_ON_DIAL = 12;
 const HALF_HOURS_ON_DIAL = 24;
 const FULL_TURN_DEG = 360;
-const SPEED_STEP_MPS = 0.1;
+export const SPEED_STEP_MPS = 0.1;
 const SPEED_DECIMALS = 10;
 const MILLING_STEP_MIL = 0.05;
 const SHOTS_IN_STRIP = 5;
@@ -66,16 +63,16 @@ export function totalLine(scope: ScopeModel, total: NotebookTotal): string {
     parts.push(`${windageLeftClicks > 0 ? '←' : '→'} ${formatScopeValue(scope, Math.abs(windageLeftClicks) * scope.clickMrad)}`);
   }
   if (elevationClicks !== 0) {
-    parts.push(`${elevationClicks} кл. вверх`);
+    parts.push(T.clicksUp({ clicks: elevationClicks }));
   }
   if (windageLeftClicks !== 0) {
-    parts.push(`${Math.abs(windageLeftClicks)} кл. ${windageLeftClicks > 0 ? 'влево' : 'вправо'}`);
+    parts.push(T.clicksSideways({ clicks: Math.abs(windageLeftClicks), isLeft: windageLeftClicks > 0 }));
   }
   if (!isHoldoverSettled(scope, total.holdUpMil)) {
-    parts.push(`удержание ${total.holdUpMil < 0 ? '↓' : '↑'} ${formatScopeValue(scope, Math.abs(total.holdUpMil))}`);
+    parts.push(T.hold({ arrow: total.holdUpMil < 0 ? '↓' : '↑', amount: formatScopeValue(scope, Math.abs(total.holdUpMil)) }));
   }
   if (!isHoldoverSettled(scope, total.holdRightMil)) {
-    parts.push(`удержание ${total.holdRightMil < 0 ? '←' : '→'} ${formatScopeValue(scope, Math.abs(total.holdRightMil))}`);
+    parts.push(T.hold({ arrow: total.holdRightMil < 0 ? '←' : '→', amount: formatScopeValue(scope, Math.abs(total.holdRightMil)) }));
   }
   return parts.join(' · ');
 }
@@ -85,20 +82,20 @@ export function contributionText(factor: NotebookFactor, contribution: FactorCon
     return '—';
   }
   if (contribution.clicks === 0) {
-    return '0 кл.';
+    return T.clicks({ clicks: 0 });
   }
   const isPositive = contribution.clicks > 0;
   const arrow = VERTICAL_FACTORS.has(factor) ? (isPositive ? '↑' : '↓') : isPositive ? '→' : '←';
-  return `${arrow} ${Math.abs(contribution.clicks)} кл.`;
+  return `${arrow} ${T.clicks({ clicks: Math.abs(contribution.clicks) })}`;
 }
 
 export function correctionLine(factor: NotebookFactor, contribution: FactorContribution): string {
   if (contribution.mil === null || contribution.clicks === null) {
-    return 'поправка: —';
+    return T.correctionMissing;
   }
   const isPositive = contribution.mil > 0;
   const arrow = contribution.clicks === 0 ? '' : VERTICAL_FACTORS.has(factor) ? (isPositive ? '↑ ' : '↓ ') : isPositive ? '→ ' : '← ';
-  return `поправка ${arrow}${Math.abs(contribution.mil).toFixed(2)} MIL · ${Math.abs(contribution.clicks)} кл.`;
+  return T.correction({ arrow, mil: Math.abs(contribution.mil), clicks: Math.abs(contribution.clicks) });
 }
 
 export function clockFromDialAngle(angleDeg: number): number {
@@ -113,7 +110,7 @@ export function dialAngleFromClock(clock: number): number {
 
 export function clockText(clock: number): string {
   const hours = Math.floor(clock) === 0 ? HOURS_ON_DIAL : Math.floor(clock);
-  return Number.isInteger(clock) ? `${hours} ч` : `${hours}:30`;
+  return T.clock({ hours, isHalfHour: !Number.isInteger(clock) });
 }
 
 export function stepSpeed(speedMps: number, steps: number): number {
@@ -159,17 +156,17 @@ export function factorDetail(notebook: Notebook, factor: NotebookFactor): string
   const { card } = notebook.context;
   const distanceM = notebook.distanceM;
   if (distanceM === null) {
-    return 'дистанция не измерена';
+    return T.distanceNotMeasured;
   }
   const row = dopeRowAt(card, distanceM);
   const distanceText = String(Math.round(distanceM));
   switch (factor) {
     case 'dope':
-      return `строка ${distanceText} м карточки: ↑ ${row.elevationMil.toFixed(1)}`;
+      return T.dopeDetail({ distanceM: Math.round(distanceM), elevationMil: row.elevationMil });
     case 'conditions': {
       const station = notebook.readings.station;
       if (!station) {
-        return 'нет замера';
+        return T.noStationReading;
       }
       const mil = atmosphereCorrectionMil(row, station.temperatureC, station.pressureHpa);
       return `(15 − ${station.temperatureC}) / 10 × ${row.colderBy10CMil.toFixed(2)} + (${station.pressureHpa} − 1013) / 10 × ${row.pressureUp10HpaMil.toFixed(2)} = ${mil < 0 ? '↓' : '↑'} ${Math.abs(mil).toFixed(2)}`;
@@ -177,15 +174,15 @@ export function factorDetail(notebook: Notebook, factor: NotebookFactor): string
     case 'wind': {
       const wind = notebook.readings.wind;
       if (!wind) {
-        return 'ветер не введён';
+        return T.windNotEntered;
       }
       const crosswind = crosswindMps(wind.speedMps, wind.clock);
       const mil = windCorrectionMil(wind.speedMps, wind.clock, distanceM, row.windConstant);
       const side = mil === 0 ? '' : mil < 0 ? '← ' : '→ ';
-      return `${wind.speedMps.toFixed(1)} м/с с ${clockText(wind.clock)} · V⊥ ${crosswind.toFixed(1)} · W = V⊥ × ${distanceText} / ${row.windConstant} = ${side}${Math.abs(mil).toFixed(2)}`;
+      return `${T.windReading({ speedMps: wind.speedMps, clock: clockText(wind.clock) })} · V⊥ ${crosswind.toFixed(1)} · W = V⊥ × ${distanceText} / ${row.windConstant} = ${side}${Math.abs(mil).toFixed(2)}`;
     }
     case 'lead':
-      return 'упреждение — сеткой, на барабаны не идёт';
+      return T.leadDetail;
   }
 }
 
@@ -199,25 +196,24 @@ export function zoneTable(notebook: Notebook): ZoneTable | null {
     weights: ZONE_LABELS.map((label, index) => ({ label, value: weights ? decimal(weights[index], 2) : '—' })),
     flags: FLAG_DISTANCES_M.map((distanceM, index) => {
       if (flagsBehindBerm.includes(index)) {
-        return { distanceM, text: 'за валом', isRead: true };
+        return { distanceM, text: T.flagBehindBerm, isRead: true };
       }
       const crosswindMps = flagCrosswindsMps?.[index] ?? null;
-      return crosswindMps === null ? { distanceM, text: 'тапни флажок в стекле', isRead: false } : { distanceM, text: flagCrosswindText(crosswindMps), isRead: true };
+      return crosswindMps === null ? { distanceM, text: T.flagUnread, isRead: false } : { distanceM, text: flagCrosswindText(crosswindMps), isRead: true };
     }),
   };
 }
 
 export function flagCrosswindText(crosswindMps: number): string {
   if (crosswindMps === 0) {
-    return 'штиль';
+    return T.calm;
   }
-  return `${decimal(Math.abs(crosswindMps), 1)} м/с ${crosswindMps > 0 ? 'слева' : 'справа'}`;
+  return T.flagCrosswind({ crosswindMps });
 }
 
 const CLOCK_HOURS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const SHARE_DIGITS = 2;
 const MOA_DIGITS = 2;
-const POINT_FORMS: PluralForms = ['очко', 'очка', 'очков'];
 
 export function clockShareLines(): string[] {
   const clocksByShare = new Map<number, number[]>();
@@ -225,11 +221,11 @@ export function clockShareLines(): string[] {
     const share = Number(windClockShare(clock).toFixed(SHARE_DIGITS));
     clocksByShare.set(share, [...(clocksByShare.get(share) ?? []), clock]);
   }
-  return [...clocksByShare].map(([share, clocks]) => `${clocks.join(', ')} ч → ${decimal(share)}`);
+  return [...clocksByShare].map(([share, clocks]) => T.clockShare({ clocks, share }));
 }
 
 export function referencePriceText(penalty = REFERENCE_PENALTY): string {
-  return `Справочник стоит ${penalty} ${plural(penalty, POINT_FORMS)}`;
+  return T.referencePrice({ penalty });
 }
 
 export function moaPerMilText(): string {

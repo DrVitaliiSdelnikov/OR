@@ -1,4 +1,5 @@
 import { Component, input, output } from '@angular/core';
+import { text } from '../../i18n';
 import { clockShareLines, moaPerMilText, referencePriceText } from './notebook.model';
 
 export interface FormulaLine {
@@ -10,28 +11,28 @@ export interface FormulaLine {
   selector: 'or-formulas-sheet',
   template: `
     <div class="scrim" (click)="close.emit()"></div>
-    <section class="sheet" role="dialog" aria-label="Справочник формул" data-test="formulas-sheet">
+    <section class="sheet" role="dialog" [attr.aria-label]="texts.label" data-test="formulas-sheet">
       @if (needsConfirm()) {
         <div class="confirm" data-test="formulas-confirm">
           <div class="question">{{ referencePrice }}</div>
           <div class="confirm-actions">
-            <button class="primary mono" type="button" (click)="confirm.emit()" data-test="formulas-open">Открыть</button>
-            <button class="secondary mono" type="button" (click)="close.emit()" data-test="formulas-cancel">Нет</button>
+            <button class="primary mono" type="button" (click)="confirm.emit()" data-test="formulas-open">{{ texts.open }}</button>
+            <button class="secondary mono" type="button" (click)="close.emit()" data-test="formulas-cancel">{{ texts.cancel }}</button>
           </div>
         </div>
       } @else {
-        <div class="title">Формулы</div>
+        <div class="title">{{ title }}</div>
         <div class="lines mono" data-test="formulas-list">
           @for (line of lines(); track line.title) {
             <div class="line"><b>{{ line.title }}</b> {{ line.formula }}</div>
           }
-          <div class="line"><b>Доля по часам</b></div>
+          <div class="line"><b>{{ texts.clockShares }}</b></div>
           @for (share of shares; track share) {
             <div class="line share">{{ share }}</div>
           }
-          <div class="line"><b>Единицы</b> 1 MIL = {{ moaPerMil }} MOA</div>
+          <div class="line"><b>{{ texts.units }}</b> 1 MIL = {{ moaPerMil }} MOA</div>
         </div>
-        <button class="secondary mono" type="button" (click)="close.emit()" data-test="formulas-close">Закрыть</button>
+        <button class="secondary mono" type="button" (click)="close.emit()" data-test="formulas-close">{{ texts.close }}</button>
       }
     </section>
   `,
@@ -49,6 +50,8 @@ export interface FormulaLine {
   `,
 })
 export class FormulasSheetComponent {
+  protected readonly texts = text.notebook.formulasSheet;
+  protected readonly title = text.notebook.formulas.title;
   protected readonly referencePrice = referencePriceText();
   protected readonly moaPerMil = moaPerMilText();
   readonly lines = input.required<FormulaLine[]>();

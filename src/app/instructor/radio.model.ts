@@ -1,3 +1,4 @@
+import { text } from '../../i18n';
 import { NotebookFactor } from '../../sim/notebook';
 import { TurretProgress } from '../../sim/turret-target';
 import { FACTOR_NAMES } from '../notebook/notebook.model';
@@ -7,14 +8,16 @@ export interface RadioLine {
   isImportant: boolean;
 }
 
-export const RADIO_CALLSIGN = 'Старший';
-export const RADIO_EMPTY_CHAMBER: RadioLine = { text: 'дошли патрон затвором', isImportant: true };
+const T = text.radio.plate;
+
+export const RADIO_CALLSIGN = T.callsign;
+export const RADIO_EMPTY_CHAMBER: RadioLine = { text: T.emptyChamber, isImportant: true };
 
 export function forgottenFactorRadio(factor: NotebookFactor): RadioLine {
-  return { text: `стой. Учти ${FACTOR_NAMES[factor].toUpperCase()}`, isImportant: true };
+  return { text: T.forgottenFactor({ factorName: FACTOR_NAMES[factor] }), isImportant: true };
 }
 
 export function offMarksRadio(elevation: TurretProgress | null, windage: TurretProgress | null): RadioLine | null {
   const isOffMark = [elevation, windage].some(progress => progress !== null && !progress.isOnTarget);
-  return isOffMark ? { text: 'барабаны не на метках', isImportant: false } : null;
+  return isOffMark ? { text: T.offMarks, isImportant: false } : null;
 }

@@ -1,5 +1,6 @@
 import { afterNextRender, Component, effect, inject, viewChild } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
+import { text } from '../i18n';
 import { BackStackService, backLayer } from './services/back-stack.service';
 import { FeedbackService } from './services/feedback.service';
 import { ProgressStore } from './services/progress.store';
@@ -19,7 +20,7 @@ const LARGE_TEXT = 'large';
         <or-term-sheet [openTerm]="term" (close)="termSheet.close()" />
       }
       @if (backStack.isExitHintShown()) {
-        <div class="exit-hint" role="status" data-test="exit-hint">Нажмите ещё раз, чтобы выйти</div>
+        <div class="exit-hint" role="status" data-test="exit-hint">{{ texts.exitHint }}</div>
       }
     </ion-app>
   `,
@@ -29,6 +30,7 @@ const LARGE_TEXT = 'large';
   host: { '(document:click)': 'clickButton($event)' },
 })
 export class App {
+  protected readonly texts = text.shell.app;
   private readonly feedback = inject(FeedbackService);
   protected readonly termSheet = inject(TermSheetService);
   protected readonly backStack = inject(BackStackService);

@@ -2,7 +2,7 @@
 <ion-content>
   <div class="position" #positionRoot>
     <header class="header">
-      <button class="back" type="button" (click)="back()" aria-label="Назад" data-test="position-back">←</button>
+      <button class="back" type="button" (click)="back()" [attr.aria-label]="texts.back" data-test="position-back">←</button>
       <div class="titles">
         <div class="title" data-test="position-title">{{ state?.title ?? def()?.title ?? '' }}</div>
         <div class="subtitle mono" data-test="position-subtitle">{{ state?.subtitle ?? '' }}</div>
@@ -15,13 +15,13 @@
           <span>{{ line }}</span>
         }
         @if (state?.isWindUnfilled) {
-          <span class="tile-dot" aria-label="не заполнено"></span>
+          <span class="tile-dot" [attr.aria-label]="texts.notFilled"></span>
         }
       </button>
     </header>
 
     @if (isTaskMissing()) {
-      <div class="notice" data-test="position-unavailable">Упражнение пока недоступно</div>
+      <div class="notice" data-test="position-unavailable">{{ texts.unavailable }}</div>
     }
 
     @if (state?.instructorLine; as line) {
@@ -78,7 +78,7 @@
             <svg class="zone" viewBox="0 0 276 276" aria-hidden="true" data-test="trigger-zone">
               <circle class="zone-ring" cx="138" cy="138" [attr.r]="zone.radius" />
               <circle class="zone-marker" [attr.cx]="138 + zone.markerX" [attr.cy]="138 + zone.markerY" r="5" data-test="trigger-marker" />
-              <text class="zone-label" x="138" [attr.y]="138 + zone.radius + 16">ЗОНА СПУСКА</text>
+              <text class="zone-label" x="138" [attr.y]="138 + zone.radius + 16">{{ texts.triggerZone }}</text>
             </svg>
           }
         </div>
@@ -99,9 +99,9 @@
       </div>
       @if (state) {
         <div class="ring" (pointerdown)="ringDown($event)" (pointermove)="ringMove($event)" (pointerup)="ringUp()" (pointercancel)="ringUp()" data-test="zoom-ring" data-hint="zoom">
-          <button data-own-feedback class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(-1)" aria-label="Уменьшить кратность" data-test="zoom-out">−</button>
+          <button data-own-feedback class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(-1)" [attr.aria-label]="texts.zoomOut" data-test="zoom-out">−</button>
           <span class="ring-value mono" data-test="magnification">{{ state.magnification }}×</span>
-          <button data-own-feedback class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(1)" aria-label="Увеличить кратность" data-test="zoom-in">+</button>
+          <button data-own-feedback class="ring-step" type="button" (pointerdown)="$event.stopPropagation()" (click)="zoom(1)" [attr.aria-label]="texts.zoomIn" data-test="zoom-in">+</button>
         </div>
       }
     </div>
@@ -110,9 +110,9 @@
       <div class="tiles">
         <button class="tile mono" type="button" (click)="openSheet('dope')" data-test="tile-dope" data-hint="tile-dope">{{ state.dope }}</button>
         <button class="tile" type="button" (click)="openSheet('total')" data-test="tile-notebook" data-hint="tile-notebook">
-          Блокнот
+          {{ texts.notebook }}
           @if (state.isNotEntered) {
-            <span class="tile-dot" aria-label="итог не внесён" data-test="notebook-dot"></span>
+            <span class="tile-dot" [attr.aria-label]="texts.notEntered" data-test="notebook-dot"></span>
           }
         </button>
       </div>
@@ -122,7 +122,7 @@
       } @else if (state.isMagazineChangeDue) {
         <div class="fire-row">
           <span class="rounds mono" data-test="rounds">{{ state.rounds }}</span>
-          <button data-own-feedback class="change-magazine" type="button" (click)="changeMagazine()" data-test="change-magazine" data-hint="change-magazine">Сменить магазин</button>
+          <button data-own-feedback class="change-magazine" type="button" (click)="changeMagazine()" data-test="change-magazine" data-hint="change-magazine">{{ texts.changeMagazine }}</button>
         </div>
       } @else {
         <or-fire-control
@@ -208,10 +208,10 @@
 
     @if (isLeaveConfirmOpen()) {
       <div class="confirm" data-test="leave-confirm">
-        <div class="confirm-text">Покинуть позицию? Упражнение не засчитается</div>
+        <div class="confirm-text">{{ texts.leaveQuestion }}</div>
         <div class="confirm-actions">
-          <button class="confirm-stay" type="button" (click)="stay()" data-test="leave-stay">Остаться</button>
-          <button class="confirm-leave" type="button" (click)="leave()" data-test="leave-confirm-yes">Покинуть</button>
+          <button class="confirm-stay" type="button" (click)="stay()" data-test="leave-stay">{{ texts.stay }}</button>
+          <button class="confirm-leave" type="button" (click)="leave()" data-test="leave-confirm-yes">{{ texts.leave }}</button>
         </div>
       </div>
     }

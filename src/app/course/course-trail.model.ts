@@ -1,5 +1,6 @@
 import { ExerciseClass, NotebookMode } from '../../core/exercise-scoring';
-import { decimal, signed } from '../../i18n/format';
+import { text } from '../../i18n';
+import { decimal } from '../../i18n/format';
 import { ValueRange } from '../../core/scenario';
 import { CartridgeId } from '../../core/types';
 import { COURSE, courseProgress, CourseResults, ExerciseDef, ExerciseId, ExerciseTargets, TargetDistance } from '../../sim/course';
@@ -34,9 +35,11 @@ const LARGE_GONG_DIAMETER_M = 0.7;
 const LARGE_GONG_FROM_M = 600;
 const PAPER_TARGET_DISTANCE_M = 100;
 const OBLIQUE_CLOCK_COUNT = 8;
-const CARTRIDGE_LETTERS: Record<CartridgeId, string> = { A: 'А', B: 'Б', C: 'В' };
-export const MODE_LABELS: Record<NotebookMode, string> = { auto: 'АВТО', 'manual-easy': 'САМ · лёгкий', 'manual-hard': 'САМ · сложный' };
+const T = text.screens.exerciseSheet;
+const CARTRIDGE_LETTERS: Record<CartridgeId, string> = T.cartridgeLetters;
+export const MODE_LABELS: Record<NotebookMode, string> = text.screens.courseTrail.modes;
 const STAMPS: Record<Exclude<ExerciseClass, 0>, ClassStamp> = { 1: 'gold', 2: 'silver', 3: 'bronze' };
+export const STAMP_CLASSES: Record<ClassStamp, Exclude<ExerciseClass, 0>> = { gold: 1, silver: 2, bronze: 3 };
 
 export function trailNodes(results: CourseResults, isEverythingUnlocked = false): TrailNode[] {
   const progress = courseProgress(results, isEverythingUnlocked);
@@ -70,11 +73,11 @@ export function exerciseSheet(def: ExerciseDef): ExerciseSheet {
   return {
     id: def.id,
     title: def.title,
-    targets: def.targets ? targetsText(def.targets) : 'без стрельбы',
+    targets: def.targets ? targetsText(def.targets) : T.noShooting,
     shots: shotsText(def),
     wind: windText(conditions.windScale, conditions.windSpeedRangeMps, conditions.windClocks, conditions.isWindUniform),
     atmosphere: atmosphereText(conditions.temperatureRangeC, conditions.pressureRangeHpa),
-    mode: def.notebookMode ? MODE_LABELS[def.notebookMode] : '—',
+    mode: def.notebookMode ? MODE_LABELS[def.notebookMode] : T.none,
     terms: def.terms,
   };
 }
@@ -83,52 +86,52 @@ function targetsText(targets: ExerciseTargets): string {
   const [nearM, farM] = distanceBounds(targets.distance);
   const isPaper = nearM === PAPER_TARGET_DISTANCE_M && farM === PAPER_TARGET_DISTANCE_M;
   const diameters = targets.diameterM !== undefined ? [targets.diameterM] : [gongDiameterM(nearM), gongDiameterM(farM)];
-  const sizeText = diameters[0] === diameters[diameters.length - 1] ? metres(diameters[0]) : `${decimal(diameters[0])}–${metres(diameters[diameters.length - 1])}`;
-  const outAndBack = targets.isOutAndBack ? ', туда и обратно' : '';
-  return `${targets.count} × ${isPaper ? 'бумажная мишень' : 'гонг'} ${sizeText} · ${distanceText(targets.distance)}${outAndBack}`;
+  const lastDiameterM = diameters[diameters.length - 1];
+  const sizeText = diameters[0] === lastDiameterM ? T.metres({ valueM: diameters[0] }) : T.metresRange({ fromM: diameters[0], toM: lastDiameterM });
+  return T.targets({ count: targets.count, isPaper, size: sizeText, distance: distanceText(targets.distance), isOutAndBack: targets.isOutAndBack === true });
 }
 
 function shotsText(def: ExerciseDef): string {
   if (def.stages.length === 0) {
-    return '—';
+    return T.none;
   }
   const [stage] = def.stages;
-  const shots = stage.closesOnHit ? `до ${stage.maxShotsPerTarget} выстрелов на цель` : `${stage.maxShotsPerTarget} выстрелов`;
+  const shots = stage.closesOnHit ? T.shotsUntilHit({ maxShots: stage.maxShotsPerTarget }) : T.shotsFixed({ maxShots: stage.maxShotsPerTarget });
   const letters = def.stages.map(candidate => CARTRIDGE_LETTERS[candidate.cartridgeId]);
-  return `${shots} · ${letters.length > 1 ? `патроны ${letters.join(', ')}` : `патрон ${letters[0]}`}`;
+  return T.shotsWithCartridges({ shots, letters });
 }
 
 function windText(windScale: number | undefined, speedRange: ValueRange | undefined, clocks: readonly number[] | undefined, isUniform: boolean | undefined): string {
   if (windScale === 0) {
-    return 'штиль';
+    return T.calm;
   }
   if (isUniform === false) {
-    return 'разный по зонам';
+    return T.windByZones;
   }
-  const speed = speedRange ? `${rangeText(speedRange)} м/с` : 'по погоде';
+  const speed = speedRange ? T.windSpeed({ range: rangeText(speedRange) }) : T.byWeather;
   if (!clocks) {
     return speed;
   }
-  return clocks.length === OBLIQUE_CLOCK_COUNT ? `${speed} · косой` : `${speed} · с ${clocks.join(' или ')} ч`;
+  return clocks.length === OBLIQUE_CLOCK_COUNT ? T.windOblique({ speed }) : T.windFromClocks({ speed, clocks });
 }
 
 function atmosphereText(temperatureRange: ValueRange | undefined, pressureRange: ValueRange | undefined): string {
   if (!temperatureRange || !pressureRange) {
-    return 'по погоде';
+    return T.byWeather;
   }
   const [coldest, warmest] = temperatureRange;
-  const temperature = coldest === warmest ? `${signed(coldest)} C` : `${signed(coldest)}…${decimal(warmest)} C`;
-  return `${temperature} · ${rangeText(pressureRange)} гПа`;
+  const temperature = coldest === warmest ? T.temperature({ celsius: coldest }) : T.temperatureRange({ coldestC: coldest, warmestC: warmest });
+  return T.atmosphere({ temperature, pressureRange: rangeText(pressureRange) });
 }
 
 function distanceText(distance: TargetDistance): string {
   switch (distance.kind) {
     case 'fixed':
-      return `${distance.distanceM} м`;
+      return T.fixedDistance({ distanceM: distance.distanceM });
     case 'known':
-      return `${distance.fromM}–${distance.toM} м`;
+      return T.knownDistance({ fromM: distance.fromM, toM: distance.toM });
     case 'unknown':
-      return `неизвестная, ${distance.fromM}–${distance.toM} м`;
+      return T.unknownDistance({ fromM: distance.fromM, toM: distance.toM });
   }
 }
 
@@ -142,9 +145,5 @@ function gongDiameterM(distanceM: number): number {
 
 function rangeText([low, high]: ValueRange): string {
   return low === high ? decimal(low) : `${decimal(low)}–${decimal(high)}`;
-}
-
-function metres(value: number): string {
-  return `${decimal(value)} м`;
 }
 

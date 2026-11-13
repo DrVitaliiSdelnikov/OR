@@ -1,4 +1,5 @@
 import { Component, computed, input, output } from '@angular/core';
+import { text } from '../../i18n';
 import { BoltStep } from '../../sim/bolt';
 import { Vector2 } from '../../sim/noise';
 import { boltHandlePosition, boltHeader, boltSteps } from './position.model';
@@ -19,7 +20,7 @@ const LABEL_POSITIONS: readonly Vector2[] = [
   template: `
     <div class="bolt" data-test="bolt-track">
       <div class="header mono" data-test="bolt-header">{{ header() }}</div>
-      <svg class="track" viewBox="0 0 380 150" aria-label="Затвор: вверх, назад, вперёд, вниз">
+      <svg class="track" viewBox="0 0 380 150" [attr.aria-label]="texts.trackLabel">
         <path class="groove-edge" d="M300 110 V50 H160" />
         <path class="groove" d="M300 110 V50 H160" />
         <path class="done" [attr.d]="donePath()" />
@@ -40,7 +41,7 @@ const LABEL_POSITIONS: readonly Vector2[] = [
         <circle class="handle-core" [attr.cx]="handle().x" [attr.cy]="handle().y" r="10" />
       </svg>
       @if (isFireWaitingShown()) {
-        <button data-own-feedback class="waiting" type="button" (click)="waitingTap.emit()" data-test="fire-waiting">Огонь · ждёт затвор</button>
+        <button data-own-feedback class="waiting" type="button" (click)="waitingTap.emit()" data-test="fire-waiting">{{ texts.fireWaiting }}</button>
       }
     </div>
   `,
@@ -67,6 +68,7 @@ export class BoltTrackComponent {
   readonly drag = output<Vector2>();
   readonly waitingTap = output<void>();
 
+  protected readonly texts = text.position.bolt;
   protected readonly labels = LABEL_POSITIONS;
   protected readonly header = computed(() => boltHeader(this.step()));
   protected readonly steps = computed(() => boltSteps(this.step()));

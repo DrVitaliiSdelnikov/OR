@@ -1,6 +1,9 @@
 import type { CheckErrorType, CheckVerdict, PreparationRowInput } from '../../core/calc-check';
 import type { CauseKind } from '../../sim/miss-breakdown';
 import type { GroupShape } from '../../sim/shot-review';
+import { plural, PluralForms } from '../format';
+
+const SHOTS_GENITIVE: PluralForms = ['выстрела', 'выстрелов', 'выстрелов'];
 
 export type ScreenDirection = 'up' | 'down' | 'right' | 'left';
 
@@ -45,7 +48,7 @@ export const review = {
     offset: 'Плотная, но не в центре — ноль прицела',
     tight: 'Плотная группа — основы в порядке',
   } satisfies Record<GroupShape, string>,
-  groupTooSmall: (p: { minShots: number }) => `Диагноз группы — от ${p.minShots} выстрелов`,
+  groupTooSmall: (p: { minShots: number }) => `Диагноз группы — от ${p.minShots} ${plural(p.minShots, SHOTS_GENITIVE)}`,
   paperHit: 'попадание',
   paperMiss: 'мимо',
   miss: 'промах',

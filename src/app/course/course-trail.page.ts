@@ -1,12 +1,11 @@
 import { Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
-import { rankHeader } from '../home/home.model';
+import { text } from '../../i18n';
+import { RANK_LABELS, rankHeader } from '../home/home.model';
 import { ProgressStore } from '../services/progress.store';
-import { ClassStamp, TrailNode, trailNodes } from './course-trail.model';
+import { ClassStamp, STAMP_CLASSES, TrailNode, trailNodes } from './course-trail.model';
 import { BackLinkDirective } from '../services/back-link.directive';
-
-const STAMP_LABELS: Record<ClassStamp, string> = { gold: '1 кл.', silver: '2 кл.', bronze: '3 кл.' };
 
 @Component({
   selector: 'or-course-trail',
@@ -15,10 +14,10 @@ const STAMP_LABELS: Record<ClassStamp, string> = { gold: '1 кл.', silver: '2 �
     <ion-content>
       <div class="trail-screen">
         <header class="header">
-          <a class="back" orBackLink="/" aria-label="Назад" data-test="trail-back">←</a>
+          <a class="back" orBackLink="/" [attr.aria-label]="texts.back" data-test="trail-back">←</a>
           <div>
-            <h1>Снайперская подготовка</h1>
-            <div class="meta" data-test="trail-progress">пройдено {{ header().admissions }} / {{ header().admissionsTotal }} · {{ header().rankLabel }}</div>
+            <h1>{{ texts.title }}</h1>
+            <div class="meta" data-test="trail-progress">{{ texts.progress({ admissions: header().admissions, admissionsTotal: header().admissionsTotal, rank: header().rankLabel }) }}</div>
           </div>
         </header>
 
@@ -37,14 +36,14 @@ const STAMP_LABELS: Record<ClassStamp, string> = { gold: '1 кл.', silver: '2 �
                 <span class="number">{{ node.id }}</span>
                 <span class="name">{{ node.title }}</span>
                 @if (node.state === 'locked') {
-                  <span class="badge" aria-label="закрыто">🔒</span>
+                  <span class="badge" [attr.aria-label]="texts.locked">🔒</span>
                 } @else if (node.isIntro && node.state === 'passed') {
-                  <span class="badge">пройдено</span>
+                  <span class="badge">{{ texts.passed }}</span>
                 } @else if (node.stamp) {
                   <span class="stamp" [class]="'stamp ' + node.stamp" [attr.data-test]="'stamp-' + node.id">{{ stampLabel(node.stamp) }}</span>
                 }
                 @if (node.isAttestation) {
-                  <span class="attestation">аттестация · Снайпер</span>
+                  <span class="attestation">{{ attestationLine }}</span>
                 }
               </button>
             </li>
@@ -79,11 +78,13 @@ export class CourseTrailPage {
   private readonly progress = inject(ProgressStore);
   private readonly router = inject(Router);
 
+  protected readonly texts = text.screens.courseTrail;
+  protected readonly attestationLine = this.texts.attestation({ rank: RANK_LABELS.sniper });
   protected readonly header = computed(() => rankHeader(this.progress.course()));
   protected readonly nodes = computed(() => trailNodes(this.progress.course(), this.progress.settings().isEverythingUnlocked));
 
   protected stampLabel(stamp: ClassStamp): string {
-    return STAMP_LABELS[stamp];
+    return this.texts.stamp({ exerciseClass: STAMP_CLASSES[stamp] });
   }
 
   protected open(node: TrailNode): void {

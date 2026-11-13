@@ -1,5 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { CARTRIDGES } from '../../../core/content';
+import { text } from '../../../i18n';
 import { CardsByCartridge } from '../terms';
 import { CartridgesSchemeComponent } from './cartridges-scheme.component';
 import { FocalPlaneSchemeComponent } from './focal-plane-scheme.component';
@@ -42,21 +43,21 @@ const EXAMPLE_CARTRIDGE_ID = 'B';
           @if (exampleCard(); as card) {
             <or-trajectory-scheme [card]="card" />
           } @else {
-            <p class="pending mono" data-test="scheme-pending">считаю карточку…</p>
+            <p class="pending mono" data-test="scheme-pending">{{ texts.pendingCard }}</p>
           }
         }
         @case ('zones') {
           @if (exampleCard(); as card) {
             <or-zones-scheme [card]="card" />
           } @else {
-            <p class="pending mono" data-test="scheme-pending">считаю карточку…</p>
+            <p class="pending mono" data-test="scheme-pending">{{ texts.pendingCard }}</p>
           }
         }
         @case ('cartridges') {
           @if (allCards(); as built) {
             <or-cartridges-scheme [cards]="built" />
           } @else {
-            <p class="pending mono" data-test="scheme-pending">считаю карточки патронов…</p>
+            <p class="pending mono" data-test="scheme-pending">{{ texts.pendingCartridges }}</p>
           }
         }
       }
@@ -71,6 +72,7 @@ export class TermSchemeComponent {
   readonly scheme = input.required<TermScheme>();
   readonly cards = input<CardsByCartridge | null>(null);
 
+  protected readonly texts = text.textbook.schemes.term;
   protected readonly exampleCard = computed(() => this.cards()?.get(EXAMPLE_CARTRIDGE_ID) ?? null);
   protected readonly allCards = computed(() => {
     const cards = this.cards();

@@ -1,5 +1,6 @@
 import { TermTextComponent } from '../textbook/term-text.component';
 import { Component, effect, input, signal } from '@angular/core';
+import { text } from '../../i18n';
 import { CheckSheetView } from './review.model';
 
 @Component({
@@ -9,7 +10,7 @@ import { CheckSheetView } from './review.model';
     @let sheet = view();
     <section class="check" [class.collapsed]="!isOpen()" data-test="check-sheet">
       <button class="head" type="button" (click)="isOpen.set(!isOpen())" [attr.aria-expanded]="isOpen()" data-test="check-toggle">
-        <span class="title">Проверка расчёта</span>
+        <span class="title">{{ texts.title }}</span>
         <span class="stamp" [class.exact]="sheet.verdict === 'exact'" [class.close]="sheet.verdict === 'close'" [class.error]="sheet.verdict === 'error'" data-test="check-stamp">{{ sheet.stamp }}</span>
       </button>
       @if (isOpen()) {
@@ -17,10 +18,10 @@ import { CheckSheetView } from './review.model';
         <table class="table mono">
           <thead>
             <tr>
-              <th>{{ sheet.isAuto ? 'Что' : 'Шаг' }}</th>
-              <th>Ты</th>
-              <th>{{ sheet.isAuto ? 'Эталон' : 'Формула' }}</th>
-              <th>Разн.</th>
+              <th>{{ sheet.isAuto ? texts.columnWhat : texts.columnStep }}</th>
+              <th>{{ texts.columnPlayer }}</th>
+              <th>{{ sheet.isAuto ? texts.columnReference : texts.columnFormula }}</th>
+              <th>{{ texts.columnDiff }}</th>
             </tr>
           </thead>
           <tbody>
@@ -43,11 +44,11 @@ import { CheckSheetView } from './review.model';
             }
           </div>
         } @else {
-          <div class="clean mono">Расчёт чистый</div>
+          <div class="clean mono">{{ texts.clean }}</div>
         }
         <div class="footer mono">
           <span data-test="check-points">{{ sheet.pointsText }}</span>
-          <span data-test="check-dialed">на барабанах {{ sheet.dialed }}</span>
+          <span data-test="check-dialed">{{ texts.dialed({ dialed: sheet.dialed }) }}</span>
         </div>
       }
     </section>
@@ -78,6 +79,7 @@ import { CheckSheetView } from './review.model';
   `,
 })
 export class CheckSheetComponent {
+  protected readonly texts = text.screens.checkSheet;
   readonly view = input.required<CheckSheetView>();
   readonly isInitiallyOpen = input(false);
   protected readonly isOpen = signal(false);

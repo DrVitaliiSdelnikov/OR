@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { text } from '../../../i18n';
 import { reticleMarks } from '../../../sim/reticle';
 import { ReticleKind } from '../../../sim/scope-model';
 import { nearestReticleMark, RETICLE_SCHEME_HALF_MIL, reticleSchemeMarks, TappedReticleMark } from './scheme.model';
@@ -8,11 +9,9 @@ const HALF_VIEW = RETICLE_SCHEME_HALF_MIL * UNITS_PER_MIL + 5;
 const LONG_TICK_HALF = 2.5;
 const SHORT_TICK_HALF = 1.3;
 const LABEL_RAISE = 4;
-const RETICLES: readonly { kind: ReticleKind; name: string }[] = [
-  { kind: 'tree', name: 'Ёлка' },
-  { kind: 'mil-dot', name: 'MIL-dot' },
-  { kind: 'moa-grid', name: 'MOA' },
-];
+const T = text.textbook.schemes.reticle;
+const RETICLE_KINDS: readonly ReticleKind[] = ['tree', 'mil-dot', 'moa-grid'];
+const RETICLES: readonly { kind: ReticleKind; name: string; label: string }[] = RETICLE_KINDS.map(kind => ({ kind, name: T.names[kind], label: T.label({ name: T.names[kind] }) }));
 
 interface DrawnMark {
   kind: TappedReticleMark['kind'];
@@ -28,7 +27,7 @@ interface DrawnMark {
     <div class="reticles">
       @for (reticle of reticles; track reticle.kind) {
         <figure class="reticle">
-          <svg [attr.viewBox]="viewBox" role="img" [attr.aria-label]="'Сетка ' + reticle.name" (pointerdown)="tap($event, reticle.kind)" [attr.data-test]="'reticle-scheme-' + reticle.kind">
+          <svg [attr.viewBox]="viewBox" role="img" [attr.aria-label]="reticle.label" (pointerdown)="tap($event, reticle.kind)" [attr.data-test]="'reticle-scheme-' + reticle.kind">
             <circle class="glass" [attr.r]="glassRadius" />
             <line class="hair" [attr.x1]="-glassRadius" y1="0" [attr.x2]="glassRadius" y2="0" />
             <line class="hair" x1="0" [attr.y1]="-glassRadius" x2="0" [attr.y2]="glassRadius" />
@@ -70,7 +69,7 @@ interface DrawnMark {
         </figure>
       }
     </div>
-    <p class="caption mono" data-test="scheme-caption">{{ selected()?.mark?.caption ?? 'Тапни по метке сетки' }}</p>
+    <p class="caption mono" data-test="scheme-caption">{{ selected()?.mark?.caption ?? tapHint }}</p>
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -89,6 +88,7 @@ interface DrawnMark {
 })
 export class ReticleSchemeComponent {
   protected readonly reticles = RETICLES;
+  protected readonly tapHint = T.tapHint;
   protected readonly glassRadius = RETICLE_SCHEME_HALF_MIL * UNITS_PER_MIL + 2;
   protected readonly viewBox = `${-HALF_VIEW} ${-HALF_VIEW} ${HALF_VIEW * 2} ${HALF_VIEW * 2}`;
   protected readonly unitsPerMil = UNITS_PER_MIL;

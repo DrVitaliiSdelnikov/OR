@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import { NotebookMode } from '../../core/exercise-scoring';
+import { text } from '../../i18n';
 import { CartridgeId } from '../../core/types';
 import { courseProgress } from '../../sim/course';
 import { allowedFreePlay, FREE_PLAY_DISTANCES_M, WindPreset } from '../../sim/free-play';
@@ -21,15 +22,15 @@ type PickerKind = 'scope' | 'cartridge';
     <ion-content>
       <div class="free" data-test="free-play">
         <header class="header">
-          <a class="back" orBackLink="/" aria-label="Назад" data-test="free-back">←</a>
+          <a class="back" orBackLink="/" [attr.aria-label]="texts.back" data-test="free-back">←</a>
           <div>
-            <h1 class="title">Свободная игра</h1>
-            <div class="subtitle mono">параметры выстрела</div>
+            <h1 class="title">{{ texts.title }}</h1>
+            <div class="subtitle mono">{{ texts.subtitle }}</div>
           </div>
         </header>
 
         <section class="block">
-          <div class="label mono">Дистанция</div>
+          <div class="label mono">{{ texts.distanceLabel }}</div>
           <div class="distance" data-test="free-distance">{{ view.distanceText }}</div>
           <input
             class="slider"
@@ -40,7 +41,7 @@ type PickerKind = 'scope' | 'cartridge';
             [value]="settings().distanceM"
             [disabled]="settings().isDistanceUnknown"
             (input)="setDistance($event)"
-            aria-label="Дистанция, м"
+            [attr.aria-label]="texts.distanceSlider"
             data-test="free-distance-slider"
           />
           <ion-toggle
@@ -49,7 +50,7 @@ type PickerKind = 'scope' | 'cartridge';
             (ionChange)="update({ isDistanceUnknown: $event.detail.checked })"
             justify="space-between"
             data-test="free-unknown"
-            >неизвестная
+            >{{ texts.unknownDistance }}
             @if (view.unknownLock; as lock) {
               <span class="lock mono"> · {{ lock }}</span>
             }
@@ -57,7 +58,7 @@ type PickerKind = 'scope' | 'cartridge';
         </section>
 
         <section class="block">
-          <div class="label mono">Ветер</div>
+          <div class="label mono">{{ texts.wind }}</div>
           <div class="choices">
             @for (wind of view.winds; track wind.id) {
               <button class="choice" type="button" [class.chosen]="wind.isChosen" [disabled]="wind.lock !== null" (click)="update({ wind: wind.id })" [attr.data-test]="'free-wind-' + wind.id">
@@ -72,15 +73,15 @@ type PickerKind = 'scope' | 'cartridge';
 
         <section class="block pair">
           <button class="pick" type="button" (click)="picker.set('scope')" data-test="free-scope">
-            <span class="label mono">Прицел</span>{{ view.scopeTile }}
+            <span class="label mono">{{ texts.scope }}</span>{{ view.scopeTile }}
           </button>
           <button class="pick" type="button" (click)="picker.set('cartridge')" data-test="free-cartridge">
-            <span class="label mono">Патрон</span>{{ view.cartridgeTile }}
+            <span class="label mono">{{ texts.cartridge }}</span>{{ view.cartridgeTile }}
           </button>
         </section>
 
         <section class="block">
-          <div class="label mono">Режим блокнота</div>
+          <div class="label mono">{{ texts.notebookMode }}</div>
           <div class="choices">
             @for (mode of view.modes; track mode.id) {
               <button class="choice" type="button" [class.chosen]="mode.isChosen" [disabled]="mode.lock !== null" (click)="update({ notebookMode: mode.id })" [attr.data-test]="'free-mode-' + mode.id">
@@ -94,19 +95,19 @@ type PickerKind = 'scope' | 'cartridge';
         </section>
 
         <section class="block">
-          <ion-toggle [checked]="settings().isInstructorNear" (ionChange)="update({ isInstructorNear: $event.detail.checked })" justify="space-between" data-test="free-instructor">Инструктор рядом</ion-toggle>
+          <ion-toggle [checked]="settings().isInstructorNear" (ionChange)="update({ isInstructorNear: $event.detail.checked })" justify="space-between" data-test="free-instructor">{{ texts.instructorNear }}</ion-toggle>
         </section>
 
         <div class="dock">
-          <button class="start" type="button" (click)="start()" data-test="free-start">Занять позицию</button>
+          <button class="start" type="button" (click)="start()" data-test="free-start">{{ texts.start }}</button>
         </div>
       </div>
 
       @if (picker(); as kind) {
         <div class="sheet" data-test="free-picker">
           <div class="sheet-head">
-            <span class="label mono">{{ kind === 'scope' ? 'Прицел' : 'Патрон' }}</span>
-            <button class="close mono" type="button" (click)="picker.set(null)" data-test="free-picker-close">Готово</button>
+            <span class="label mono">{{ kind === 'scope' ? texts.scope : texts.cartridge }}</span>
+            <button class="close mono" type="button" (click)="picker.set(null)" data-test="free-picker-close">{{ texts.done }}</button>
           </div>
           @for (item of pickerItems(); track item.id) {
             <button class="item" type="button" [class.chosen]="item.isChosen" [disabled]="item.lock !== null" (click)="choose(kind, item.id)" [attr.data-test]="'free-pick-' + item.id">
@@ -149,6 +150,7 @@ export class FreePlayPage {
   private readonly progress = inject(ProgressStore);
   private readonly feedback = inject(FeedbackService);
 
+  protected readonly texts = text.screens.freePlay;
   protected readonly distances = FREE_PLAY_DISTANCES_M;
   protected readonly distanceStep = FREE_PLAY_DISTANCES_M[1] - FREE_PLAY_DISTANCES_M[0];
   protected readonly picker = signal<PickerKind | null>(null);

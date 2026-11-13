@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import { decimal } from '../../../i18n/format';
+import { text } from '../../../i18n';
 import { CartridgeId } from '../../../core/types';
 import { CardsByCartridge } from '../terms';
 import { cartridgesView } from './scheme.model';
@@ -12,6 +12,8 @@ const CHART_TOP = 8;
 const CHART_BOTTOM = 84;
 const MAX_DISTANCE_M = 1000;
 const LINE_STYLES: Record<CartridgeId, string> = { A: '6 3', B: 'none', C: '1.5 2.5' };
+
+const T = text.textbook.schemes.cartridges;
 
 type Curve = readonly { distanceM: number; mil: number }[];
 
@@ -38,7 +40,7 @@ type Curve = readonly { distanceM: number; mil: number }[];
             @for (line of chart.lines; track line.id) {
               <polyline class="curve" [attr.points]="line.points" [attr.stroke-dasharray]="lineStyles[line.id]" />
             }
-            <text class="small" [attr.x]="chartRight" [attr.y]="chartHeight - 2" text-anchor="end">1000 м · {{ chart.maxText }} MIL</text>
+            <text class="small" [attr.x]="chartRight" [attr.y]="chartHeight - 2" text-anchor="end">{{ chart.axisText }}</text>
           </svg>
           <figcaption class="mono">{{ chart.title }}</figcaption>
         </figure>
@@ -72,8 +74,8 @@ export class CartridgesSchemeComponent {
   protected readonly charts = computed(() => {
     const items = this.cartridges();
     return [
-      chart('падение, MIL', 'cartridges-drop', items.map(item => ({ id: item.id, curve: item.drop }))),
-      chart('снос на 1 м/с, MIL', 'cartridges-drift', items.map(item => ({ id: item.id, curve: item.driftPerMps }))),
+      chart(T.dropTitle, 'cartridges-drop', items.map(item => ({ id: item.id, curve: item.drop }))),
+      chart(T.driftTitle, 'cartridges-drift', items.map(item => ({ id: item.id, curve: item.driftPerMps }))),
     ];
   });
 }
@@ -85,7 +87,7 @@ function chart(title: string, test: string, curves: readonly { id: CartridgeId; 
   return {
     title,
     test,
-    maxText: decimal(Number(maxMil.toFixed(1))),
+    axisText: T.axis({ distanceM: MAX_DISTANCE_M, maxMil }),
     lines: curves.map(item => ({ id: item.id, points: item.curve.map(point => `${x(point.distanceM)},${y(point.mil)}`).join(' ') })),
   };
 }

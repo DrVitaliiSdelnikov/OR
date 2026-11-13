@@ -90,7 +90,7 @@
 | app · итог упражнения и карточка брифинга (A6.3) | [specs/app-result-briefing.md](specs/app-result-briefing.md) | реализовано, слито в `master` 9.11 |
 | app · подсказки инструктора: рация, обучение 01–03, забытый фактор (A6.4) | [specs/app-instructor.md](specs/app-instructor.md) | реализовано, слито в `master` 9.11 |
 | app · флажки по трассе (A9.3a) и движущийся дозор (A9.3b) | [specs/app-zone-flags-patrol.md](specs/app-zone-flags-patrol.md) | реализовано, слито в `master` 12.11 |
-| i18n · каталог текстов с параметрами (A10) | [specs/app-i18n.md](specs/app-i18n.md) | A10a реализовано, слито в `master` 13.11; A10b — план |
+| i18n · каталог текстов с параметрами (A10) | [specs/app-i18n.md](specs/app-i18n.md) | реализовано, слито в `master` 13.11 |
 | app · системная «назад», подтверждение выхода, «прервано» (A8) | [specs/app-back-stack.md](specs/app-back-stack.md) | реализовано, слито в `master` 12.11 |
 | app · сцена в стекле из фото, пределы наведения (A9.1) | [specs/app-scene-photos.md](specs/app-scene-photos.md) | реализовано, слито в `master` 9.11 |
 | app · звук и вибрация по TOKENS (A4) | [specs/app-feedback.md](specs/app-feedback.md) | реализовано, слито в `master` 9.11 |

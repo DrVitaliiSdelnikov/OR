@@ -1,8 +1,10 @@
+import { text } from '../../i18n';
 import { COURSE, CourseResults, ExerciseDef } from '../../sim/course';
 import { schemeOf, TermScheme } from './schemes/scheme.model';
 import { CardsByCartridge, TERM_CARDS, TermCard, TermFormula, TEXTBOOK_CHAPTERS, TextbookChapter } from './terms';
 
 const INTRO_ID = '00';
+const T = text.textbook.model;
 
 export interface TermTile {
   term: string;
@@ -37,7 +39,7 @@ export function openedTerms(results: CourseResults, isEverythingUnlocked: boolea
 export function textbookView(results: CourseResults, isEverythingUnlocked: boolean): TextbookView {
   const opened = openedTerms(results, isEverythingUnlocked);
   return {
-    counterText: `${opened.size} / ${TERM_CARDS.length} терминов`,
+    counterText: T.counter({ opened: opened.size, total: TERM_CARDS.length }),
     chapters: TEXTBOOK_CHAPTERS.map(title => ({
       title,
       terms: TERM_CARDS.filter(card => card.chapter === title).map(card => termTile(card, opened)),
@@ -73,11 +75,11 @@ function termTile(card: TermCard, opened: ReadonlySet<string>): TermTile {
 }
 
 function lockText(def: ExerciseDef): string {
-  return def.id === INTRO_ID ? `откроется во вводном ${INTRO_ID}` : `откроется в упр. ${def.id}`;
+  return def.id === INTRO_ID ? T.lockIntro({ exerciseId: INTRO_ID }) : T.lockExercise({ exerciseId: def.id });
 }
 
 function exerciseLines(term: string): string[] {
-  return exercisesWith(term).map((def, index) => `${index === 0 ? 'впервые' : 'снова'} — упр. ${def.id} · ${def.title}`);
+  return exercisesWith(term).map((def, index) => T.whereLine({ isFirst: index === 0, exerciseId: def.id, title: def.title }));
 }
 
 function exercisesWith(term: string): ExerciseDef[] {

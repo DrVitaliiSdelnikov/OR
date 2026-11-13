@@ -219,57 +219,48 @@ const TITLES = text.content.exerciseTitles;
 export const FIRST_FIRING_EXERCISE_ID: ExerciseId = '01';
 
 export const COURSE: readonly ExerciseDef[] = [
-  exerciseDef('00', TITLES['00'], null, { stages: [], hasColdBore: false, notebookMode: null, conditions: CALM, terms: ['винтовка', 'прицел', 'сетка', 'кратность', 'фокальная плоскость'] }),
+  exerciseDef('00', TITLES['00'], null, { stages: [], hasColdBore: false, notebookMode: null, conditions: CALM }),
   exerciseDef('01', TITLES['01'], { count: 3, distance: { kind: 'fixed', distanceM: 300 } }, {
     hasColdBore: false,
     conditions: { ...CALM, temperatureRangeC: [15, 15], pressureRangeHpa: [1013, 1013] },
-    terms: ['клик', 'MIL', 'MOA', 'барабан', 'ДОПЕ', 'ZERO STOP'],
   }),
   exerciseDef('02', TITLES['02'], { count: 1, distance: { kind: 'fixed', distanceM: 100 }, diameterM: 0.5 }, {
     stages: [{ cartridgeId: 'B', maxShotsPerTarget: 5, closesOnHit: false }],
     hasKnockedSight: true,
     conditions: CALM,
-    terms: ['ноль', 'СТП', 'группа', 'холодный выстрел', 'вызов'],
   }),
-  exerciseDef('03', TITLES['03'], { count: BREATHING_TARGETS, distance: { kind: 'fixed', distanceM: 300 }, diameterM: 0.35 }, { conditions: CALM, terms: ['дыхание', 'спуск', 'затвор', 'пульс'] }),
+  exerciseDef('03', TITLES['03'], { count: BREATHING_TARGETS, distance: { kind: 'fixed', distanceM: 300 }, diameterM: 0.35 }, { conditions: CALM }),
   exerciseDef('04', TITLES['04'], { count: 3, distance: { kind: 'fixed', distanceM: 300 } }, {
     conditions: { ...LIGHT_WIND, windClocks: [3, 9] },
-    terms: ['ветер', 'правило часов', 'флажок', 'метеостанция', 'боковая составляющая'],
   }),
-  exerciseDef('05', TITLES['05'], { count: 3, distance: { kind: 'unknown', fromM: 300, toM: 600 } }, { conditions: LIGHT_WIND, terms: ['миллинг', 'формула тысячной', 'строка ДОПЕ'] }),
+  exerciseDef('05', TITLES['05'], { count: 3, distance: { kind: 'unknown', fromM: 300, toM: 600 } }, { conditions: LIGHT_WIND }),
   exerciseDef('06', TITLES['06'], { count: 4, distance: { kind: 'known', fromM: 400, toM: 500 } }, {
     notebookMode: 'manual-easy',
     conditions: { ...MODERATE_WIND, windClocks: OBLIQUE_CLOCKS },
-    terms: ['доля по часам', 'константа ветра', 'САМ'],
   }),
   exerciseDef('07', TITLES['07'], { count: 4, distance: { kind: 'known', fromM: 500, toM: 600 } }, {
     notebookMode: 'manual-easy',
     conditions: { ...LIGHT_WIND, temperatureRangeC: [-5, 0], pressureRangeHpa: [1025, 1035] },
-    terms: ['плотность воздуха', 'эталон +15 / 1013', 'поправка условий'],
   }),
   exerciseDef('08', TITLES['08'], { count: 1, distance: { kind: 'fixed', distanceM: 600 } }, {
     stages: (['A', 'B', 'C'] as const).map(cartridgeId => ({ ...TWO_SHOTS, cartridgeId })),
     notebookMode: 'manual-easy',
     conditions: MODERATE_WIND,
-    terms: ['баллистический коэффициент', 'энергия', 'разброс скорости', 'карточка патрона'],
   }),
-  exerciseDef('09', TITLES['09'], { count: 4, distance: { kind: 'known', fromM: 500, toM: 700 } }, { notebookMode: 'manual-easy', conditions: ZONE_WIND, terms: ['зоны ветра', 'средний ветер', 'мираж'] }),
+  exerciseDef('09', TITLES['09'], { count: 4, distance: { kind: 'known', fromM: 500, toM: 700 } }, { notebookMode: 'manual-easy', conditions: ZONE_WIND }),
   exerciseDef('10', TITLES['10']({ distanceM: CONFIRM_ZERO_DISTANCE_M }), { count: 3, distance: { kind: 'fixed', distanceM: CONFIRM_ZERO_DISTANCE_M } }, {
     notebookMode: 'manual-hard',
     conditions: LIGHT_WIND,
-    terms: ['поправка по второму выстрелу', 'своя карточка', 'вызов'],
   }),
   exerciseDef('11', TITLES['11'], { count: PATROL_TARGETS, distance: { kind: 'known', fromM: 300, toM: 500 } }, {
     hasPatrol: true,
     notebookMode: 'manual-easy',
     conditions: LIGHT_WIND,
-    terms: ['упреждение', 'сопровождение', 'засада', 'время полёта'],
   }),
   exerciseDef('12', TITLES['12'], { count: 10, distance: { kind: 'unknown', fromM: 200, toM: 700 }, isOutAndBack: true }, {
     notebookMode: 'manual-easy',
     modeChoices: ['manual-easy', 'manual-hard'],
     conditions: ZONE_WIND,
-    terms: [],
   }),
 ];
 
@@ -413,7 +404,7 @@ export function courseProgress(results: CourseResults, isEverythingUnlocked = fa
   };
 }
 
-function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | null, fields: Partial<Omit<ExerciseDef, 'kind' | 'id' | 'title' | 'targets' | 'goals' | 'novelty'>>): ExerciseDef {
+function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | null, fields: Partial<Omit<ExerciseDef, 'kind' | 'id' | 'title' | 'targets' | 'goals' | 'novelty' | 'terms'>>): ExerciseDef {
   return {
     kind: 'exercise',
     id,
@@ -421,6 +412,7 @@ function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | n
     targets,
     goals: GOAL_TEXTS[id],
     novelty: text.content.novelties[id],
+    terms: text.content.exerciseTerms[id],
     stages: [TWO_SHOTS],
     hasColdBore: true,
     hasKnockedSight: false,
@@ -429,7 +421,6 @@ function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | n
     notebookMode: 'auto',
     scopeId: Number(id) >= MIL_DOT_FROM_EXERCISE ? 'course-dot' : 'course-tree',
     conditions: {},
-    terms: [],
     ...fields,
   };
 }

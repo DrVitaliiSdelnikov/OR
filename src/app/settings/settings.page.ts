@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import packageJson from '../../../package.json';
+import { text } from '../../i18n';
 import { backLayer } from '../services/back-stack.service';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
@@ -14,19 +15,21 @@ interface ToggleRow {
   note?: string;
 }
 
+const T = text.screens.settings;
 const SOUND_TOGGLES: readonly ToggleRow[] = [
-  { key: 'isHapticsOn', label: 'Вибрация' },
-  { key: 'isDrumClicksOn', label: 'Щелчки барабанов' },
+  { key: 'isHapticsOn', label: T.toggles.isHapticsOn },
+  { key: 'isDrumClicksOn', label: T.toggles.isDrumClicksOn },
 ];
 const ACCESSIBILITY_TOGGLES: readonly ToggleRow[] = [
-  { key: 'isTapTrigger', label: 'Спуск тапом', note: 'очки не снижает, отмечается в журнале' },
-  { key: 'isTextLarge', label: 'Крупный текст' },
-  { key: 'isTriggerZoneLarger', label: 'Крупнее круг спуска' },
-  { key: 'isMarkerDriftOff', label: 'Без дрейфа маркера' },
+  { key: 'isTapTrigger', label: T.toggles.isTapTrigger, note: T.tapTriggerNote },
+  { key: 'isTextLarge', label: T.toggles.isTextLarge },
+  { key: 'isTriggerZoneLarger', label: T.toggles.isTriggerZoneLarger },
+  { key: 'isMarkerDriftOff', label: T.toggles.isMarkerDriftOff },
 ];
 const DATA_TOGGLES: readonly ToggleRow[] = [
-  { key: 'isEverythingUnlocked', label: 'Открыть всё', note: 'для проверки: открыть весь курс и свободную игру' },
+  { key: 'isEverythingUnlocked', label: T.toggles.isEverythingUnlocked, note: T.unlockEverythingNote },
 ];
+type HandButton = keyof typeof T.hands;
 
 @Component({
   selector: 'or-settings',
@@ -36,15 +39,15 @@ const DATA_TOGGLES: readonly ToggleRow[] = [
     <ion-content>
       <div class="settings" data-test="settings">
         <header class="header">
-          <a class="back" orBackLink="/" aria-label="Назад" data-test="settings-back">←</a>
-          <h1 class="title">Настройки</h1>
+          <a class="back" orBackLink="/" [attr.aria-label]="texts.back" data-test="settings-back">←</a>
+          <h1 class="title">{{ texts.title }}</h1>
         </header>
 
         <section class="group" data-test="settings-group-sound">
-          <h2 class="label mono">Звук и вибрация</h2>
+          <h2 class="label mono">{{ texts.sound }}</h2>
           <label class="setting">
-            <span class="setting-title">Громкость <b class="mono" data-test="settings-volume-value">{{ volumeStep() }} / {{ volumeSteps }}</b></span>
-            <input type="range" min="0" [max]="volumeSteps" step="1" [value]="volumeStep()" (input)="setVolume($event)" aria-label="Громкость" data-test="settings-volume" />
+            <span class="setting-title">{{ texts.volume }} <b class="mono" data-test="settings-volume-value">{{ volumeStep() }} / {{ volumeSteps }}</b></span>
+            <input type="range" min="0" [max]="volumeSteps" step="1" [value]="volumeStep()" (input)="setVolume($event)" [attr.aria-label]="texts.volume" data-test="settings-volume" />
           </label>
           @for (toggle of soundToggles; track toggle.key) {
             <ng-container *ngTemplateOutlet="toggleRow; context: { $implicit: toggle }" />
@@ -52,17 +55,17 @@ const DATA_TOGGLES: readonly ToggleRow[] = [
         </section>
 
         <section class="group" data-test="settings-group-control">
-          <h2 class="label mono">Управление</h2>
+          <h2 class="label mono">{{ texts.control }}</h2>
           <div class="setting">
-            <ion-toggle [checked]="settings.isLeftHanded" (ionChange)="update('isLeftHanded', $event.detail.checked)" justify="space-between" data-test="toggle-isLeftHanded">Левша</ion-toggle>
+            <ion-toggle [checked]="settings.isLeftHanded" (ionChange)="update('isLeftHanded', $event.detail.checked)" justify="space-between" data-test="toggle-isLeftHanded">{{ texts.toggles.isLeftHanded }}</ion-toggle>
             <div class="hands mono" aria-hidden="true" data-test="hand-scheme">
               @for (button of handOrder(); track button) {
-                <span class="hand" [class.fire]="button === 'ОГОНЬ'">{{ button }}</span>
+                <span class="hand" [class.fire]="button === 'fire'">{{ texts.hands[button] }}</span>
               }
             </div>
           </div>
           <div class="setting">
-            <span class="setting-title">Барабаны <span class="note mono">протяжка на один клик</span></span>
+            <span class="setting-title">{{ texts.drums }} <span class="note mono">{{ texts.drumsNote }}</span></span>
             <div class="choices">
               @for (sensitivity of sensitivities; track sensitivity.ptPerClick) {
                 <button
@@ -81,28 +84,28 @@ const DATA_TOGGLES: readonly ToggleRow[] = [
         </section>
 
         <section class="group" data-test="settings-group-access">
-          <h2 class="label mono">Доступность</h2>
+          <h2 class="label mono">{{ texts.accessibility }}</h2>
           @for (toggle of accessibilityToggles; track toggle.key) {
             <ng-container *ngTemplateOutlet="toggleRow; context: { $implicit: toggle }" />
           }
         </section>
 
         <section class="group" data-test="settings-group-data">
-          <h2 class="label mono">Данные</h2>
+          <h2 class="label mono">{{ texts.data }}</h2>
           @for (toggle of dataToggles; track toggle.key) {
             <ng-container *ngTemplateOutlet="toggleRow; context: { $implicit: toggle }" />
           }
-          <button class="reset" type="button" (click)="isResetAsked.set(true)" data-test="reset-progress">Сбросить прогресс</button>
-          <div class="version mono" data-test="settings-version">версия {{ version }}</div>
+          <button class="reset" type="button" (click)="isResetAsked.set(true)" data-test="reset-progress">{{ texts.reset }}</button>
+          <div class="version mono" data-test="settings-version">{{ texts.version({ version: version }) }}</div>
         </section>
       </div>
 
       @if (isResetAsked()) {
         <div class="confirm" role="alertdialog" data-test="reset-confirm">
-          <div class="confirm-text">Сбросить курс, журнал и карточки? Это не отменить</div>
+          <div class="confirm-text">{{ texts.resetQuestion }}</div>
           <div class="confirm-actions">
-            <button class="confirm-yes" type="button" (click)="reset()" data-test="reset-yes">Сбросить</button>
-            <button class="confirm-no" type="button" (click)="isResetAsked.set(false)" data-test="reset-cancel">Отмена</button>
+            <button class="confirm-yes" type="button" (click)="reset()" data-test="reset-yes">{{ texts.resetYes }}</button>
+            <button class="confirm-no" type="button" (click)="isResetAsked.set(false)" data-test="reset-cancel">{{ texts.resetNo }}</button>
           </div>
         </div>
       }
@@ -149,6 +152,7 @@ const DATA_TOGGLES: readonly ToggleRow[] = [
 export class SettingsPage {
   protected readonly progress = inject(ProgressStore);
   private readonly feedback = inject(FeedbackService);
+  protected readonly texts = T;
   protected readonly soundToggles = SOUND_TOGGLES;
   protected readonly accessibilityToggles = ACCESSIBILITY_TOGGLES;
   protected readonly dataToggles = DATA_TOGGLES;
@@ -158,7 +162,7 @@ export class SettingsPage {
   protected readonly isResetAsked = signal(false);
   private readonly resetConfirmLayer = backLayer(() => this.isResetAsked(), () => this.isResetAsked.set(false));
   protected readonly volumeStep = computed(() => Math.round(this.progress.settings().volume * VOLUME_STEPS));
-  protected readonly handOrder = computed(() => (this.progress.settings().isLeftHanded ? ['ОГОНЬ', 'ДЕРЖАТЬ'] : ['ДЕРЖАТЬ', 'ОГОНЬ']));
+  protected readonly handOrder = computed<HandButton[]>(() => (this.progress.settings().isLeftHanded ? ['fire', 'hold'] : ['hold', 'fire']));
 
   protected isOn(key: SettingsFlag): boolean {
     return this.progress.settings()[key];

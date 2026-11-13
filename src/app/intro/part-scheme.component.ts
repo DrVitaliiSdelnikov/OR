@@ -1,4 +1,5 @@
 import { Component, computed, input, output } from '@angular/core';
+import { text } from '../../i18n';
 import { IntroPart } from './intro.model';
 
 interface HitArea {
@@ -30,7 +31,7 @@ const HIT_AREAS: Record<SchemeKind, Record<string, HitArea>> = {
 @Component({
   selector: 'or-part-scheme',
   template: `
-    <svg viewBox="0 0 340 140" class="scheme" role="group" [attr.aria-label]="kind() === 'rifle' ? 'Винтовка сбоку' : 'Прицел в разрезе'" [attr.data-test]="'part-scheme-' + kind()">
+    <svg viewBox="0 0 340 140" class="scheme" role="group" [attr.aria-label]="kind() === 'rifle' ? texts.rifleLabel : texts.scopeLabel" [attr.data-test]="'part-scheme-' + kind()">
       @if (kind() === 'rifle') {
         <path class="body" d="M10 70 L120 58 L196 56 L196 80 L130 84 L60 104 L18 104 Z" />
         <rect class="body" x="196" y="54" width="44" height="22" rx="2" />
@@ -77,7 +78,7 @@ const HIT_AREAS: Record<SchemeKind, Record<string, HitArea>> = {
       @if (chosen(); as part) {
         <b>{{ part.name }}.</b> {{ part.caption }}
       } @else {
-        Тапни по части
+        {{ texts.tapHint }}
       }
     </div>
   `,
@@ -105,6 +106,7 @@ export class PartSchemeComponent {
   readonly chosenId = input<string | null>(null);
   readonly tapPart = output<string>();
 
+  protected readonly texts = text.intro.partScheme;
   protected readonly chosen = computed(() => this.parts().find(part => part.id === this.chosenId()) ?? null);
 
   protected area(partId: string): HitArea {

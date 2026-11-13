@@ -39,24 +39,24 @@ import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
 import { breathRing, correctionCells, drumCounterText, flagReadingText, isGlassTap, markerTarget, patrolLineText, notebookSheetTopPt, pressureText, TurretAxis } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
+import { text } from '../../i18n';
 
 const MARKS_ON_GLASS = 8;
 const UI_REFRESH_S = 0.1;
 const RADIO_MS = 4000;
 const FREE_PLAY_ID = 'free';
 const INSTRUCTOR_ON = 'on';
-const SANDBOX_TITLE = 'Попробовать на прицеле';
 const STOP_BADGE_MS = 900;
 const FLAG_READING_SHOWN_MS = 2000;
 const PINCH_STEP_PT = 40;
 const RING_STEP_PT = 24;
 const ZONE_TO_GLASS = 0.5;
-const HOLD_LABELS = { free: 'Держать', holding: 'Держу', cooldown: 'Выдох' } as const;
 const SEED_RANGE = 1_000_000_000;
 const SHEET_GAP_BELOW_CROSSHAIR_PT = 24;
 const CLICKS_PER_WHOLE_MIL = 10;
 const CLICKS_PER_WHOLE_MOA = 4;
 const CLICKS_PER_TURN = 100;
+const T = text.position.page;
 const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
   unlock: 'bolt-unlock',
   slide: 'bolt-slide',
@@ -89,6 +89,8 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   readonly mode = input<NotebookMode>();
   readonly sandboxTerm = input<string | undefined>(undefined, { alias: 'sandbox' });
 
+  protected readonly texts = T;
+
   private readonly router = inject(Router);
   private readonly feedback = inject(FeedbackService);
   private readonly progress = inject(ProgressStore);
@@ -106,7 +108,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   protected readonly def = computed<PositionTask | null>(() => {
     const sandbox = this.sandbox();
     if (sandbox) {
-      return { ...freePlayTask(sandboxSettings(sandbox)), title: SANDBOX_TITLE };
+      return { ...freePlayTask(sandboxSettings(sandbox)), title: T.sandboxTitle };
     }
     return this.isFreePlay()
       ? freePlayTask(allowedFreePlay(this.progress.freePlay(), courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks))
@@ -178,13 +180,12 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     const playerDistanceM = notebook.distanceM === null ? null : Math.round(notebook.distanceM);
     const wind = notebook.readings.wind;
     const dial = { elevation: session.scope.elevation.clicks, windageLeft: session.scope.windage.clicks };
-    const distanceText = notebook.context.target.distanceM === null ? 'дистанция неизвестна' : `${notebook.context.target.distanceM} м`;
     return {
-      title: isExerciseTask(session.def) ? `Упр. ${session.def.id} · ${session.def.title}` : session.def.title,
+      title: isExerciseTask(session.def) ? T.exerciseTitle({ exerciseId: session.def.id, title: session.def.title }) : session.def.title,
       instructorLine: this.isFreePlay() && !this.sandbox() && this.progress.freePlay().isInstructorNear ? instructorLineText(session.trueCorrection(this.scenarioTimeS(session))) : null,
-      subtitle: `рубеж · ${distanceText} · цель ${session.firingLine.targetIndex + 1} / ${session.setup.targets.length}`,
+      subtitle: T.subtitle({ distanceM: notebook.context.target.distanceM, targetNumber: session.firingLine.targetIndex + 1, targetCount: session.setup.targets.length }),
       patrolLine: session.patrol ? patrolLineText(session.patrol, session.patrolWalkedS(this.scenarioTimeS(session))) : null,
-      wind: wind ? [`${wind.speedMps.toFixed(1)} м/с`, clockText(wind.clock)] : [session.def.conditions.windScale === 0 ? 'штиль' : '—'],
+      wind: wind ? [T.windSpeed({ speedMps: wind.speedMps }), clockText(wind.clock)] : [session.def.conditions.windScale === 0 ? T.calm : '—'],
       isWindUnfilled: !tabs(notebook).wind && session.def.conditions.windScale !== 0,
       isNotEntered: entered === null,
       cells: correctionCells(scope, dial, entered, playerDistanceM),
@@ -203,7 +204,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
         counter: drumCounterText('windage', session.progress('windage')),
       },
       magnification: session.scope.magnification,
-      dope: playerDistanceM === null ? 'ДОПЕ · —' : `ДОПЕ · ${playerDistanceM} м ↑ ${dopeRowAt(notebook.context.card, notebook.distanceM!).elevationMil.toFixed(1)}`,
+      dope: playerDistanceM === null ? T.dopeEmpty : T.dope({ distanceM: playerDistanceM, elevationMil: dopeRowAt(notebook.context.card, notebook.distanceM!).elevationMil }),
       rounds: `${session.firingLine.magazineLeft} / ${session.firingLine.magazineLoaded}`,
       isMagazineChangeDue: session.isMagazineChangeDue,
       isBoltCycleDue: !session.isBoltAutomatic && session.isBoltCycleDue && this.end() === null,
@@ -213,7 +214,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       pressure: session.scope.trigger?.pressure ?? 0,
       pressureLabel: pressureText(session.scope.trigger?.pressure ?? 0),
       breath: breathRing(session.scope.sway.breath.state, session.scope.sway.breath.heldS),
-      holdLabel: HOLD_LABELS[session.scope.sway.breath.state],
+      holdLabel: T.holdLabels[session.scope.sway.breath.state],
       zone: this.zoneView(session),
     };
   });
@@ -776,7 +777,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     }
     if (move.stop) {
       this.feedback.emit('drum-stop');
-      this.stopBadge.set(move.stop === 'zero' ? 'ZERO STOP' : move.stop === 'top' ? 'УПОР ВВЕРХ' : 'УПОР');
+      this.stopBadge.set(T.stopBadges[move.stop]);
       setTimeout(() => this.stopBadge.set(null), STOP_BADGE_MS);
     }
   }

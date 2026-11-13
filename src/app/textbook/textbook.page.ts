@@ -1,5 +1,6 @@
 import { Component, computed, ElementRef, inject, viewChildren } from '@angular/core';
 import { IonContent } from '@ionic/angular/standalone';
+import { text } from '../../i18n';
 import { ProgressStore } from '../services/progress.store';
 import { TermSheetService } from './term-sheet.service';
 import { TermTile, textbookView } from './textbook.model';
@@ -12,9 +13,9 @@ import { BackLinkDirective } from '../services/back-link.directive';
     <ion-content>
       <div class="textbook" data-test="textbook">
         <header class="header">
-          <a class="back" orBackLink="/" aria-label="Назад" data-test="textbook-back">←</a>
+          <a class="back" orBackLink="/" [attr.aria-label]="texts.back" data-test="textbook-back">←</a>
           <div>
-            <h1 class="title">Учебник курсанта</h1>
+            <h1 class="title">{{ texts.title }}</h1>
             <div class="counter mono" data-test="textbook-counter">{{ view().counterText }}</div>
           </div>
         </header>
@@ -67,6 +68,7 @@ export class TextbookPage {
   private readonly termSheet = inject(TermSheetService);
   private readonly chapterSections = viewChildren<ElementRef<HTMLElement>>('chapter');
 
+  protected readonly texts = text.textbook.page;
   protected readonly view = computed(() => textbookView(this.progress.course(), this.progress.settings().isEverythingUnlocked));
 
   protected open(tile: TermTile): void {
