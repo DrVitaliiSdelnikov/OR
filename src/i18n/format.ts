@@ -34,3 +34,7 @@ export function plural(count: number, forms: PluralForms): string {
 export function andList(values: readonly (number | string)[]): string {
   return values.length < 2 ? values.join('') : `${values.slice(0, -1).join(', ')} и ${values[values.length - 1]}`;
 }
+
+export function typedDecimal(draft: string): string {
+  return draft.replace('.', DECIMAL_SEPARATOR);
+}

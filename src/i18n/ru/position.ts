@@ -18,7 +18,7 @@ export const position = {
     clicksUnit: 'кл',
   },
   breath: {
-    seconds: (p: { seconds: number }) => `${p.seconds.toFixed(1)} с`,
+    seconds: (p: { seconds: number }) => `${decimal(p.seconds, 1)} с`,
   },
   bolt: {
     steps: { up: '1 ↑', back: '2 ← НАЗАД', forward: '3 → ВПЕРЁД', down: '4 ↓' } satisfies Record<BoltStep, string>,
@@ -39,10 +39,10 @@ export const position = {
     exerciseTitle: (p: { exerciseId: ExerciseId; title: string }) => `Упр. ${p.exerciseId} · ${p.title}`,
     subtitle: (p: { distanceM: number | null; targetNumber: number; targetCount: number }) =>
       `рубеж · ${p.distanceM === null ? 'дистанция неизвестна' : `${p.distanceM} м`} · цель ${p.targetNumber} / ${p.targetCount}`,
-    windSpeed: (p: { speedMps: number }) => `${p.speedMps.toFixed(1)} м/с`,
+    windSpeed: (p: { speedMps: number }) => `${decimal(p.speedMps, 1)} м/с`,
     calm: 'штиль',
     dopeEmpty: 'ДОПЕ · —',
-    dope: (p: { distanceM: number; elevationMil: number }) => `ДОПЕ · ${p.distanceM} м ↑ ${p.elevationMil.toFixed(1)}`,
+    dope: (p: { distanceM: number; elevationMil: number }) => `ДОПЕ · ${p.distanceM} м ↑ ${decimal(p.elevationMil, 1)}`,
     stopBadges: { zero: 'ZERO STOP', top: 'УПОР ВВЕРХ', side: 'УПОР' } satisfies Record<NonNullable<TurretStop>, string>,
     back: 'Назад',
     notFilled: 'не заполнено',

@@ -84,8 +84,8 @@ describe('scope models from the design system', () => {
   });
 
   it('shows MOA values in MOA', () => {
-    expect(formatScopeValue(scopeById('moa'), 2 * MRAD_PER_MOA)).toBe('2.00');
-    expect(formatScopeValue(scopeById('tree'), 4.63)).toBe('4.6');
+    expect(formatScopeValue(scopeById('moa'), 2 * MRAD_PER_MOA)).toBe('2,00');
+    expect(formatScopeValue(scopeById('tree'), 4.63)).toBe('4,6');
   });
 });
 

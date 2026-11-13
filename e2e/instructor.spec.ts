@@ -33,7 +33,7 @@ test.describe('подсказки инструктора', () => {
     await tapCentreOf(page, 'tile-notebook');
     await expect(page.getByTestId('notebook-sheet')).toBeVisible();
 
-    await expectHint(page, /^ДОПЕ — падение пули: ↑ \d\.\d MIL$/, 'подсказка 3 из 9');
+    await expectHint(page, /^ДОПЕ — падение пули: ↑ \d,\d MIL$/, 'подсказка 3 из 9');
     await page.getByTestId('teaching-ok').click();
     await expectHint(page, 'Внеси итог на барабаны', 'подсказка 4 из 9');
     await page.getByTestId('enter-turrets').click();

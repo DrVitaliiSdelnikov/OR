@@ -27,7 +27,7 @@ describe('briefingCard', () => {
       '2 класс — 85 % и скорость перенесена без ошибки',
       '1 класс — все первым и вклад ветра учтён на всех',
     ]);
-    expect(briefing.mode).toBe('АВТО × 1.0');
+    expect(briefing.mode).toBe('АВТО × 1,0');
     expect(briefing.novelty).toBe('Новое: ветер, метеостанция, флажок у бруствера');
     expect(briefing.termsLine).toBe('узнаешь: ветер · правило часов · флажок · метеостанция · боковая составляющая');
     expect(briefing.best).toBeNull();
@@ -54,8 +54,8 @@ describe('briefingCard', () => {
   });
 
   it('SAM modes carry their multipliers; 01 has no 1st-class skill goal', () => {
-    expect(card('06').mode).toBe('САМ · лёгкий × 1.5');
-    expect(card('10').mode).toBe('САМ · сложный × 2.0');
+    expect(card('06').mode).toBe('САМ · лёгкий × 1,5');
+    expect(card('10').mode).toBe('САМ · сложный × 2,0');
     expect(card('01').classRows[2]).toBe('1 класс — все первым');
     expect(card('02').classRows[2]).toBe('1 класс — все в мишень и холодный — без срыва спуска, контрольный ≤ 0,3 MIL от точки прицеливания');
   });
@@ -69,8 +69,8 @@ describe('briefingCard', () => {
 
   it('12 offers SAM easy or hard with their multipliers; others have no choice', () => {
     expect(card('12').modeOptions).toEqual([
-      { mode: 'manual-easy', label: 'САМ · лёгкий × 1.5' },
-      { mode: 'manual-hard', label: 'САМ · сложный × 2.0' },
+      { mode: 'manual-easy', label: 'САМ · лёгкий × 1,5' },
+      { mode: 'manual-hard', label: 'САМ · сложный × 2,0' },
     ]);
     expect(card('09').modeOptions).toBeNull();
   });

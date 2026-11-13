@@ -105,8 +105,8 @@ describe('teaching — 01 in order', () => {
 describe('teaching — numbers come from the calculation', () => {
   it('01: DOPE and the clicks left are read from the snapshot', () => {
     const glass = next(snapshot('01'))!.id;
-    expect(next(snapshot('01', { hasOpenedNotebook: true, sheetTab: 'total' }), [glass])!.text).toBe('ДОПЕ — падение пули: ↑ 1.6 MIL');
-    expect(next(snapshot('01', { hasOpenedNotebook: true, sheetTab: 'total', dopeMil: 2.3 }), [glass])!.text).toBe('ДОПЕ — падение пули: ↑ 2.3 MIL');
+    expect(next(snapshot('01', { hasOpenedNotebook: true, sheetTab: 'total' }), [glass])!.text).toBe('ДОПЕ — падение пули: ↑ 1,6 MIL');
+    expect(next(snapshot('01', { hasOpenedNotebook: true, sheetTab: 'total', dopeMil: 2.3 }), [glass])!.text).toBe('ДОПЕ — падение пули: ↑ 2,3 MIL');
     const drum = (remaining: number, direction: 'up' | 'down') =>
       next(snapshot('01', { hasOpenedNotebook: true, isEntered: true, elevation: { remainingClicks: remaining, direction, isOnTarget: false, overshootClicks: 0 } }), [glass, 'dope'])!.text;
     expect(drum(16, 'up')).toBe('Крути вверх: ещё 16 кл.');
@@ -156,8 +156,8 @@ describe('teaching — 04 wind and the station', () => {
   it('measured before the hint — straight to «Ветер»; the clock hint shows the station speed', () => {
     const measured = snapshot('04', { hasOpenedNotebook: true, sheetTab: 'total', isStationMeasured: true, stationSpeedMps: 3.2 });
     expect(next(measured)!.anchor).toBe('tab-wind');
-    expect(next({ ...measured, sheetTab: 'wind' })!.text).toBe('Стрелка — откуда дует, по флажку у бруствера. Скорость — 3.2, со станции');
-    expect(next({ ...measured, sheetTab: 'wind', stationSpeedMps: 2.4 })!.text).toContain('Скорость — 2.4');
+    expect(next({ ...measured, sheetTab: 'wind' })!.text).toBe('Стрелка — откуда дует, по флажку у бруствера. Скорость — 3,2, со станции');
+    expect(next({ ...measured, sheetTab: 'wind', stationSpeedMps: 2.4 })!.text).toContain('Скорость — 2,4');
   });
 
   it('a tab hint waits for the sheet; the wind written with its speed ends the script', () => {
@@ -174,11 +174,11 @@ describe('teaching — 05 milling', () => {
     const onTab = snapshot('05', { hasOpenedNotebook: true, sheetTab: 'distance' });
     expect([next(onTab)!.anchor, next(onTab)!.text]).toEqual(['milling', 'Гонг 0,5 м. Коснись верхнего и нижнего края, затем «Посчитать»']);
     const counted = { ...onTab, reticleMil: 1.62, measuredDistanceM: 308.6 };
-    expect([next(counted)!.anchor, next(counted)!.text, next(counted)!.kind]).toEqual(['milling-result', 'Д = 0,5 × 1000 / 1.62 = 309 м', 'explain']);
+    expect([next(counted)!.anchor, next(counted)!.text, next(counted)!.kind]).toEqual(['milling-result', 'Д = 0,5 × 1000 / 1,62 = 309 м', 'explain']);
     expect(next(counted, ['result'])).toBeNull();
     const small = { ...counted, targetSizeM: 0.35, reticleMil: 1.17, measuredDistanceM: 299.1 };
     expect(next({ ...onTab, targetSizeM: 0.35 })!.text).toBe('Гонг 0,35 м. Коснись верхнего и нижнего края, затем «Посчитать»');
-    expect(next(small)!.text).toBe('Д = 0,35 × 1000 / 1.17 = 299 м');
+    expect(next(small)!.text).toBe('Д = 0,35 × 1000 / 1,17 = 299 м');
   });
 });
 

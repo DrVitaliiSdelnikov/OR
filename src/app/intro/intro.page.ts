@@ -1,4 +1,5 @@
 import { Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { decimal } from '../../i18n/format';
 import { FIRST_FIRING_EXERCISE_ID } from '../../sim/course';
 import { text } from '../../i18n';
 import { Router } from '@angular/router';
@@ -164,7 +165,7 @@ export class IntroPage {
   protected readonly hint = computed(() => measureHint(this.progress().answerMil));
   protected readonly impactUpMil = computed(() => this.progress().dialledClicks * scopeById(INTRO_SCENE.scopeId).clickMrad);
   protected readonly impactY = computed(() => GLASS_CENTER_PT - impactShiftPt(this.progress().dialledClicks, INTRO_SCENE.startMagnification));
-  protected readonly drumValueText = computed(() => `↑ ${this.impactUpMil().toFixed(1)}`);
+  protected readonly drumValueText = computed(() => `↑ ${decimal(this.impactUpMil(), 1)}`);
   protected readonly drumCounter = computed(() => this.texts.drumCounter({ clicks: this.progress().dialledClicks }));
   protected readonly allCards = computed(() => {
     const cards = this.textbookCards.cards();

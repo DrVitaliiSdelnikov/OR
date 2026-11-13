@@ -123,12 +123,12 @@ export function dopeTable(card: DopeCard, distanceM: number | null, noteTexts: R
     distanceM === null ? null : card.rows.reduce((best, row) => (Math.abs(row.distanceM - distanceM) < Math.abs(best.distanceM - distanceM) ? row : best)).distanceM;
   return card.rows.map(row => ({
     distanceM: row.distanceM,
-    elevation: row.elevationMil.toFixed(1),
+    elevation: decimal(row.elevationMil, 1),
     clicks: String(row.clicks),
-    timeOfFlight: row.timeOfFlightS.toFixed(2),
+    timeOfFlight: decimal(row.timeOfFlightS, 2),
     windConstant: String(row.windConstant),
-    colderBy10C: row.colderBy10CMil.toFixed(2),
-    pressureUp10Hpa: row.pressureUp10HpaMil.toFixed(2),
+    colderBy10C: decimal(row.colderBy10CMil, 2),
+    pressureUp10Hpa: decimal(row.pressureUp10HpaMil, 2),
     note: noteTexts.get(row.distanceM) ?? '—',
     isCurrent: row.distanceM === nearest,
   }));
@@ -169,7 +169,7 @@ export function factorDetail(notebook: Notebook, factor: NotebookFactor): string
         return T.noStationReading;
       }
       const mil = atmosphereCorrectionMil(row, station.temperatureC, station.pressureHpa);
-      return `(15 − ${station.temperatureC}) / 10 × ${row.colderBy10CMil.toFixed(2)} + (${station.pressureHpa} − 1013) / 10 × ${row.pressureUp10HpaMil.toFixed(2)} = ${mil < 0 ? '↓' : '↑'} ${Math.abs(mil).toFixed(2)}`;
+      return `(15 − ${station.temperatureC}) / 10 × ${decimal(row.colderBy10CMil, 2)} + (${station.pressureHpa} − 1013) / 10 × ${decimal(row.pressureUp10HpaMil, 2)} = ${mil < 0 ? '↓' : '↑'} ${decimal(Math.abs(mil), 2)}`;
     }
     case 'wind': {
       const wind = notebook.readings.wind;
@@ -179,7 +179,7 @@ export function factorDetail(notebook: Notebook, factor: NotebookFactor): string
       const crosswind = crosswindMps(wind.speedMps, wind.clock);
       const mil = windCorrectionMil(wind.speedMps, wind.clock, distanceM, row.windConstant);
       const side = mil === 0 ? '' : mil < 0 ? '← ' : '→ ';
-      return `${T.windReading({ speedMps: wind.speedMps, clock: clockText(wind.clock) })} · V⊥ ${crosswind.toFixed(1)} · W = V⊥ × ${distanceText} / ${row.windConstant} = ${side}${Math.abs(mil).toFixed(2)}`;
+      return `${T.windReading({ speedMps: wind.speedMps, clock: clockText(wind.clock) })} · V⊥ ${decimal(crosswind, 1)} · W = V⊥ × ${distanceText} / ${row.windConstant} = ${side}${decimal(Math.abs(mil), 2)}`;
     }
     case 'lead':
       return T.leadDetail;

@@ -1,4 +1,5 @@
 import { CHECK_ERROR_TERMS } from '../textbook/term-links';
+import { decimal } from '../../i18n/format';
 import { CalcStepInput, CheckedRow, CheckErrorType, CheckVerdict, PreparationRowInput } from '../../core/calc-check';
 import { DopeCard } from '../../core/dope-card';
 import { calcPoints, FIRST_SHOT_POINTS, modeMultiplier, NotebookMode, SECOND_SHOT_POINTS } from '../../core/exercise-scoring';
@@ -156,7 +157,7 @@ export function dopeNoteTexts(notes: readonly DopeNote[], card: DopeCard): Map<n
   const texts = new Map<number, string>();
   for (const note of notes) {
     const row = card.rows.reduce((best, candidate) => (Math.abs(candidate.distanceM - note.distanceM) <= Math.abs(best.distanceM - note.distanceM) ? candidate : best));
-    const value = `${note.elevationMil < 0 ? '↓' : '↑'} ${Math.abs(note.elevationMil).toFixed(1)}`;
+    const value = `${note.elevationMil < 0 ? '↓' : '↑'} ${decimal(Math.abs(note.elevationMil), 1)}`;
     texts.set(row.distanceM, row.distanceM === note.distanceM ? value : T.dopeNoteAt({ value, distanceM: note.distanceM }));
   }
   return texts;
@@ -180,7 +181,7 @@ function manualRows(check: ShotCheck): CheckRowView[] {
     return {
       label: STEP_TITLES[input.step],
       player: `${arrowed(input.step, input.playerMil, trimmed(Math.abs(input.playerMil)))}${unit}`,
-      reference: arrowed(input.step, input.expectedRawMil, (Math.abs(roundToClicks(input.expectedRawMil, clickMil)) * clickMil).toFixed(1)),
+      reference: arrowed(input.step, input.expectedRawMil, decimal(Math.abs(roundToClicks(input.expectedRawMil, clickMil)) * clickMil, 1)),
       diff: diffText(checked),
       status: checked.status,
     };
@@ -225,7 +226,8 @@ function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType): 
   }
   const input = check.inputs.steps[rowIndex];
   const clickMil = check.notebook.context.card.clickMil;
-  const reference = (Math.abs(roundToClicks(input.expectedRawMil, clickMil)) * clickMil).toFixed(1);
+  const referenceMil = Number((Math.abs(roundToClicks(input.expectedRawMil, clickMil)) * clickMil).toFixed(1));
+  const reference = decimal(referenceMil, 1);
   const player = trimmed(Math.abs(input.playerMil));
   switch (type) {
     case 'substitution':
@@ -233,13 +235,13 @@ function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType): 
     case 'side':
       return T.sidePhrase({ direction: sideDirection(input.step, input.expectedRawMil) });
     case 'units':
-      return T.unitsPhrase({ mil: reference, moa: (Number(reference) * MOA_PER_MIL).toFixed(2) });
+      return T.unitsPhrase({ mil: reference, moa: decimal(referenceMil * MOA_PER_MIL, 2) });
     case 'rounding':
-      return T.roundingPhrase({ raw: Math.abs(input.expectedRawMil).toFixed(2), reference, player });
+      return T.roundingPhrase({ raw: decimal(Math.abs(input.expectedRawMil), 2), reference, player });
     case 'lead':
-      return T.leadPhrase({ raw: Math.abs(input.expectedRawMil).toFixed(2), player });
+      return T.leadPhrase({ raw: decimal(Math.abs(input.expectedRawMil), 2), player });
     default:
-      return T.arithmeticPhrase({ raw: Math.abs(input.expectedRawMil).toFixed(2), player });
+      return T.arithmeticPhrase({ raw: decimal(Math.abs(input.expectedRawMil), 2), player });
   }
 }
 
@@ -281,14 +283,14 @@ function dialedText(notebook: Notebook, elevationClicks: number, windageLeftClic
 }
 
 function verticalClicks(clicks: number, clickMil: number): string {
-  return `${clicks < 0 ? '↓' : '↑'} ${(Math.abs(clicks) * clickMil).toFixed(1)}`;
+  return `${clicks < 0 ? '↓' : '↑'} ${decimal(Math.abs(clicks) * clickMil, 1)}`;
 }
 
 function horizontalClicks(windageLeftClicks: number, clickMil: number): string {
   if (windageLeftClicks === 0) {
-    return '0.0';
+    return decimal(0, 1);
   }
-  return `${windageLeftClicks > 0 ? '←' : '→'} ${(Math.abs(windageLeftClicks) * clickMil).toFixed(1)}`;
+  return `${windageLeftClicks > 0 ? '←' : '→'} ${decimal(Math.abs(windageLeftClicks) * clickMil, 1)}`;
 }
 
 function arrowed(step: string, signedMil: number, valueText: string): string {
@@ -336,7 +338,7 @@ function autoSubtitle(rows: readonly CheckRowView[]): string {
 }
 
 function trimmed(value: number): string {
-  return String(Math.round(value * DECIMALS) / DECIMALS);
+  return decimal(Math.round(value * DECIMALS) / DECIMALS);
 }
 
 export function directionArrow(vector: Correction): string {

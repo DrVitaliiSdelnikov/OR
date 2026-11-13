@@ -12,7 +12,7 @@ export const instructor = {
   firstClicks: {
     scope: (p: { distanceM: number }) => `Это прицел. Цель — гонг на ${p.distanceM} м`,
     notebook: 'Открой блокнот: там поправка',
-    dope: (p: { dopeMil: number }) => `ДОПЕ — падение пули: ↑ ${p.dopeMil.toFixed(1)} MIL`,
+    dope: (p: { dopeMil: number }) => `ДОПЕ — падение пули: ↑ ${decimal(p.dopeMil, 1)} MIL`,
     sideDrum: (p: { windageClicks: number }) => `Боковой — ветер. Сегодня штиль, ${p.windageClicks}`,
     aim: 'Наведи перекрестие на гонг: тяни картинку',
     fire: 'Огонь',
@@ -39,7 +39,7 @@ export const instructor = {
     stationTab: 'Станция — во вкладке «Условия»',
     measure: (p: { seconds: number }) => `Держи «Замер» ${p.seconds} с`,
     windTab: 'Скорость есть. Теперь «Ветер»',
-    clock: (p: { speedMps: number }) => `Стрелка — откуда дует, по флажку у бруствера. Скорость — ${p.speedMps.toFixed(1)}, со станции`,
+    clock: (p: { speedMps: number }) => `Стрелка — откуда дует, по флажку у бруствера. Скорость — ${decimal(p.speedMps, 1)}, со станции`,
   },
   zoneFlags: {
     flags: (p: { distancesM: readonly number[] }) => `Ветер по трассе разный. Флажки на ${listText(p.distancesM)} м — левее цели, веди прицел к ним`,
@@ -58,7 +58,7 @@ export const instructor = {
     distanceTab: 'Меряй гонг сеткой — вкладка «Дистанция»',
     milling: (p: { sizeM: number }) => `Гонг ${decimal(p.sizeM)} м. Коснись верхнего и нижнего края, затем «Посчитать»`,
     result: (p: { sizeM: number; reticleMil: number; distanceM: number }) =>
-      `Д = ${decimal(p.sizeM)} × 1000 / ${p.reticleMil.toFixed(2)} = ${Math.round(p.distanceM)} м`,
+      `Д = ${decimal(p.sizeM)} × 1000 / ${decimal(p.reticleMil, 2)} = ${Math.round(p.distanceM)} м`,
   },
   manualEasy: {
     notebook: 'Теперь считаешь сам. Открой блокнот',

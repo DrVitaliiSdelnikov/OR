@@ -71,11 +71,11 @@ test.describe('шторка блокнота (A5.1)', () => {
 
     await page.getByTestId('tab-wind').click();
     const stationText = (await page.getByTestId('wind-station').textContent())!;
-    const stationSpeed = Number(/(\d+\.\d) м\/с/.exec(stationText)![1]);
+    const stationSpeed = Number(/(\d+,\d) м\/с/.exec(stationText)![1].replace(',', '.'));
     await pointClockAt(page, 9);
     await expect(page.getByTestId('wind-clock')).toHaveAttribute('aria-valuenow', '9');
     await setWindSpeed(page, stationSpeed);
-    await expect(page.getByTestId('wind-caption')).toHaveText(`ветер ${stationSpeed.toFixed(1)} м/с с 9 ч`);
+    await expect(page.getByTestId('wind-caption')).toHaveText(`ветер ${stationSpeed.toFixed(1).replace('.', ',')} м/с с 9 ч`);
     await expect(page.getByTestId('sheet-total')).toContainText('← ');
     await expect(page.getByTestId('sheet-total')).toContainText('кл. влево');
 
@@ -83,7 +83,7 @@ test.describe('шторка блокнота (A5.1)', () => {
     await expect(page.getByTestId('notebook-sheet')).toHaveCount(0);
     await expect(page.locator('[data-test="drum-elevation"] [data-test="drum-counter"]')).toContainText('ещё');
     await expect(page.locator('[data-test="drum-windage"] [data-test="drum-counter"]')).toContainText('ещё');
-    await expect(page.getByTestId('wind-tile')).toContainText(`${stationSpeed.toFixed(1)} м/с`);
+    await expect(page.getByTestId('wind-tile')).toContainText(`${stationSpeed.toFixed(1).replace('.', ',')} м/с`);
     await expect(page.getByTestId('wind-tile')).toContainText('9 ч');
   });
 
@@ -107,7 +107,7 @@ test.describe('шторка блокнота (A5.1)', () => {
     await expect(page.getByTestId('sheet-total')).not.toContainText('влево');
     await expect(page.getByTestId('contribution-wind')).toHaveText(/^← \d+ кл\.$/);
     await page.getByTestId('factor-wind').getByRole('button', { name: 'Ветер' }).click();
-    await expect(page.getByTestId('detail-wind')).toContainText('2.5 м/с с 9 ч');
+    await expect(page.getByTestId('detail-wind')).toContainText('2,5 м/с с 9 ч');
   });
 
   test('05: миллинг двумя касаниями и «ПОСЧИТАТЬ» — дистанция, точка ушла, строка ДОПЕ обведена', async ({ page }) => {
@@ -122,7 +122,7 @@ test.describe('шторка блокнота (A5.1)', () => {
     await page.mouse.click(gong.x + gong.width / 2, gong.y + gong.height);
     await expect(page.getByTestId('milling-mark')).toHaveCount(2);
     await page.getByTestId('milling-count').click();
-    await expect(page.getByTestId('milling-result')).toHaveText(/^Д = 0\.\d × 1000 \/ \d\.\d\d = \d{3} м$/);
+    await expect(page.getByTestId('milling-result')).toHaveText(/^Д = 0,\d × 1000 \/ \d,\d\d = \d{3} м$/);
     await expect(page.getByTestId('dot-distance')).toHaveCount(0);
     await expect(page.getByTestId('enter-turrets')).toBeEnabled();
     await page.getByTestId('tab-dope').click();
@@ -155,7 +155,7 @@ test.describe('шторка блокнота (A5.1)', () => {
     await expect(page.locator('[data-test="drum-elevation"] [data-test="drum-target"]')).toHaveCount(0);
     await expect(page.getByTestId('notebook-dot')).toBeVisible();
     await page.getByTestId('tile-notebook').click();
-    await expect(page.getByTestId('sheet-total')).toHaveText(/^↑ \d\.\d · \d+ кл\. вверх$/);
+    await expect(page.getByTestId('sheet-total')).toHaveText(/^↑ \d,\d · \d+ кл\. вверх$/);
     await page.getByTestId('enter-turrets').click();
     await expect(page.locator('[data-test="drum-elevation"] [data-test="drum-target"]')).toHaveCount(1);
     await expect(page.getByTestId('notebook-dot')).toHaveCount(0);

@@ -1,4 +1,5 @@
 import { Component, computed, inject, input, output } from '@angular/core';
+import { decimal } from '../../i18n/format';
 import { FeedbackService } from '../services/feedback.service';
 import { windClockShare } from '../../core/field';
 import { text } from '../../i18n';
@@ -135,7 +136,7 @@ export class WindClockComponent {
 }
 
 function shareText(share: number): string {
-  return share === 1 ? '1' : share === 0 ? '0' : share.toFixed(2).replace(/^0/, '').replace(/0$/, '');
+  return share === 1 ? '1' : share === 0 ? '0' : decimal(share, 2).replace(/^0/, '').replace(/0$/, '');
 }
 
 function pointAt(angleDeg: number, distance: number): { x: number; y: number } {

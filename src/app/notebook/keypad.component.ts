@@ -1,4 +1,5 @@
 import { Component, output } from '@angular/core';
+import { typedDecimal } from '../../i18n/format';
 import { text } from '../../i18n';
 import { DraftKey } from './calc-sheet.model';
 
@@ -9,8 +10,8 @@ const KEYS: readonly DraftKey[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 
   template: `
     <div class="keypad" data-test="keypad">
       @for (key of keys; track key) {
-        <button class="key mono" type="button" [class.secondary]="key === '.' || key === 'back'" (click)="press.emit(key)" [attr.aria-label]="key === 'back' ? texts.erase : key" [attr.data-test]="'key-' + key">
-          {{ key === 'back' ? '⌫' : key }}
+        <button class="key mono" type="button" [class.secondary]="key === '.' || key === 'back'" (click)="press.emit(key)" [attr.aria-label]="key === 'back' ? texts.erase : key === '.' ? decimalKeyLabel : key" [attr.data-test]="'key-' + key">
+          {{ key === 'back' ? '⌫' : key === '.' ? decimalKeyLabel : key }}
         </button>
       }
     </div>
@@ -25,5 +26,6 @@ const KEYS: readonly DraftKey[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 
 export class KeypadComponent {
   readonly press = output<DraftKey>();
   protected readonly keys = KEYS;
+  protected readonly decimalKeyLabel = typedDecimal('.');
   protected readonly texts = text.notebook.keypad;
 }

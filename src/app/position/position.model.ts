@@ -92,7 +92,7 @@ function verticalText(scope: ScopeModel, upMil: number): string {
 
 function horizontalText(scope: ScopeModel, rightMil: number): string {
   const value = formatScopeValue(scope, Math.abs(rightMil));
-  if (Number(value) === 0) {
+  if (value === formatScopeValue(scope, 0)) {
     return value;
   }
   return rightMil < 0 ? `← ${value} L` : `→ ${value} R`;

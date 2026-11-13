@@ -1,4 +1,5 @@
 import { CheckErrorType } from '../../core/calc-check';
+import { decimal } from '../../i18n/format';
 import { DopeCard } from '../../core/dope-card';
 import { ExerciseClass, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId } from '../../core/types';
@@ -238,7 +239,7 @@ export function statsView(journal: readonly JournalSeries[]): StatsView {
 }
 
 function elevationText(mil: number): string {
-  return `${mil < 0 ? '↓' : '↑'} ${Math.abs(mil).toFixed(1)}`;
+  return `${mil < 0 ? '↓' : '↑'} ${decimal(Math.abs(mil), 1)}`;
 }
 
 export function cardsView(cards: readonly DopeCard[], notes: DopeNotes): CardView[] {

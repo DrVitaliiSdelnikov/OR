@@ -1,5 +1,5 @@
 import type { MainCause } from '../../sim/miss-breakdown';
-import { percent } from '../format';
+import { decimal, percent } from '../format';
 
 export const result = {
   classStamp: (p: { exerciseClass: number }) => `${p.exerciseClass} КЛАСС`,
@@ -13,13 +13,13 @@ export const result = {
   secondClassRow: (p: { minShare: number; goal: string; fact: string }) => `≥ ${percent(p.minShare)} и ${p.goal} — ${p.fact}`,
   firstClassRow: (p: { goal: string; fact: string }) => `${p.goal} — ${p.fact}`,
   bothGoals: (p: { allFirst: string; goal: string }) => `${p.allFirst} и ${p.goal}`,
-  factMil: (p: { valueMil: number }) => `${p.valueMil.toFixed(1)} MIL`,
+  factMil: (p: { valueMil: number }) => `${decimal(p.valueMil, 1)} MIL`,
   factTally: (p: { passed: number; total: number }) => `${p.passed} из ${p.total}`,
   factYes: 'да',
   factNo: 'нет',
   sharePercent: (p: { share: number }) => percent(p.share),
   paperHits: (p: { hits: number; shots: number }) => `попаданий ${p.hits} из ${p.shots} · `,
-  multiplied: (p: { multiplier: number; total: number }) => ` × ${p.multiplier} = ${p.total}`,
+  multiplied: (p: { multiplier: number; total: number }) => ` × ${decimal(p.multiplier)} = ${p.total}`,
   referencePenalty: (p: { penalty: number; total: number }) => ` − ${p.penalty} справочник = ${p.total}`,
   score: (p: { prefix: string; targetSum: number; calcSum: number; sum: number; suffix: string }) =>
     `${p.prefix}цели ${p.targetSum} + расчёт ${p.calcSum} = ${p.sum}${p.suffix}`,
@@ -54,6 +54,6 @@ export const briefing = {
   fixedDistance: (p: { distanceM: number }) => `${p.distanceM} м`,
   knownDistance: (p: { fromM: number; toM: number }) => `${p.fromM}–${p.toM} м`,
   unknownDistance: (p: { fromM: number; toM: number }) => `${p.fromM}–${p.toM} м · неизвестно`,
-  mode: (p: { label: string; multiplier: number }) => `${p.label} × ${p.multiplier.toFixed(1)}`,
+  mode: (p: { label: string; multiplier: number }) => `${p.label} × ${decimal(p.multiplier, 1)}`,
   noMode: '—',
 };

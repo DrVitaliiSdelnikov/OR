@@ -1,4 +1,5 @@
 import { CheckErrorType } from '../../core/calc-check';
+import { decimal } from '../../i18n/format';
 import { FLAG_DISTANCES_M } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
@@ -92,7 +93,7 @@ export function formulaTokens(notebook: Notebook, step: NotebookStepId): Formula
       return { kind: 'text', text: part };
     }
     if ('weight' in part) {
-      return { kind: 'text', text: part.weight.toFixed(2) };
+      return { kind: 'text', text: decimal(part.weight, 2) };
     }
     if ('slot' in part) {
       return slotToken(part.slot);
@@ -113,7 +114,7 @@ export function chipText(chip: Chip, distanceM: number | null): { value: string;
     case 'target-size':
       return { value: T.meters({ distanceM: chip.value }), source: sources.targetSize };
     case 'reticle-mil':
-      return { value: chip.value.toFixed(2), source: sources.reticleMil };
+      return { value: decimal(chip.value, 2), source: sources.reticleMil };
     case 'temperature':
       return { value: `${chip.value} C`, source: sources.temperature };
     case 'pressure':
@@ -121,27 +122,27 @@ export function chipText(chip: Chip, distanceM: number | null): { value: string;
     case 'humidity':
       return { value: `${Math.round(chip.value * PERCENT)} %`, source: sources.humidity };
     case 'speed':
-      return { value: chip.value.toFixed(1), source: sources.speed };
+      return { value: decimal(chip.value, 1), source: sources.speed };
     case 'crosswind':
-      return { value: chip.value.toFixed(1), source: sources.crosswind };
+      return { value: decimal(chip.value, 1), source: sources.crosswind };
     case 'colder-column':
-      return { value: chip.value.toFixed(2), source: T.colderColumnSource({ row: rowText }) };
+      return { value: decimal(chip.value, 2), source: T.colderColumnSource({ row: rowText }) };
     case 'pressure-column':
-      return { value: chip.value.toFixed(2), source: T.pressureColumnSource({ row: rowText }) };
+      return { value: decimal(chip.value, 2), source: T.pressureColumnSource({ row: rowText }) };
     case 'wind-constant':
       return { value: String(chip.value), source: `K${rowText}` };
     case 'zone-station':
-      return { value: chip.value.toFixed(1), source: sources.zoneStation };
+      return { value: decimal(chip.value, 1), source: sources.zoneStation };
     case 'zone-200':
     case 'zone-400':
     case 'zone-600': {
       const distanceText = chip.kind.slice(5);
-      return { value: chip.value.toFixed(1), source: chip.isBehindBerm ? T.flagBehindBermSource({ distanceText }) : T.flagSource({ distanceText }) };
+      return { value: decimal(chip.value, 1), source: chip.isBehindBerm ? T.flagBehindBermSource({ distanceText }) : T.flagSource({ distanceText }) };
     }
     case 'target-crosswind':
-      return { value: chip.value.toFixed(1), source: sources.targetCrosswind };
+      return { value: decimal(chip.value, 1), source: sources.targetCrosswind };
     case 'target-speed':
-      return { value: chip.value.toFixed(1), source: sources.targetSpeed };
+      return { value: decimal(chip.value, 1), source: sources.targetSpeed };
     case 'time-of-flight':
       return { value: T.seconds({ seconds: chip.value }), source: `t${rowText}` };
     case 'neighbor-time':
@@ -216,16 +217,16 @@ export function editDraft(draft: string, key: DraftKey): string {
 }
 
 export function modeBadge(mode: NotebookMode): string {
-  return `${MODE_NAMES[mode]} ×${modeMultiplier(mode, false)}`;
+  return `${MODE_NAMES[mode]} ×${decimal(modeMultiplier(mode, false))}`;
 }
 
 function stepValueText(step: NotebookStepId, value: number, sign: 1 | -1 | null): string {
   const unit = TAPE_UNITS[step];
   if (step === 'distance') {
-    return `${value} ${unit}`;
+    return `${decimal(value)} ${unit}`;
   }
   const arrow = value === 0 || sign === null ? '' : `${sideArrow(step, sign)} `;
-  return `${arrow}${value}${unit ? ` ${unit}` : ''}`;
+  return `${arrow}${decimal(value)}${unit ? ` ${unit}` : ''}`;
 }
 
 function sideArrow(step: NotebookStepId, sign: 1 | -1): string {

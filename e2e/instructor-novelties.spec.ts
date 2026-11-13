@@ -33,7 +33,7 @@ test.describe('подсказки для новинок (A6.5)', () => {
     await expectHint(page, 'Держи «Замер» 3 с', 'подсказка 3 из 5');
     await holdMeasure(page);
     await expectHint(page, 'Скорость есть. Теперь «Ветер»', 'подсказка 4 из 5');
-    const stationSpeed = /(\d+\.\d) м\/с/.exec((await page.getByTestId('station-readings').textContent()) ?? '')?.[1];
+    const stationSpeed = /(\d+,\d) м\/с/.exec((await page.getByTestId('station-readings').textContent()) ?? '')?.[1];
     await page.getByTestId('tab-wind').click();
     await expectHint(page, `Стрелка — откуда дует, по флажку у бруствера. Скорость — ${stationSpeed}, со станции`, 'подсказка 5 из 5');
     await page.getByTestId('teaching-ok').click();
@@ -52,7 +52,7 @@ test.describe('подсказки для новинок (A6.5)', () => {
     await page.mouse.click(gong.x + gong.width / 2, gong.y);
     await page.mouse.click(gong.x + gong.width / 2, gong.y + gong.height);
     await page.getByTestId('milling-count').click();
-    await expectHint(page, /^Д = 0,5 × 1000 \/ \d\.\d\d = \d{3} м$/, 'подсказка 4 из 4');
+    await expectHint(page, /^Д = 0,5 × 1000 \/ \d,\d\d = \d{3} м$/, 'подсказка 4 из 4');
   });
 
   test('06: ветер как в 04, затем вырез на «к расчёту: шаг Ветер →» — ссылка видна целиком; шаг открыт — подсказка про чипы', async ({ page }) => {

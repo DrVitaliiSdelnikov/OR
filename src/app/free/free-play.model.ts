@@ -1,4 +1,5 @@
 import { CARTRIDGES } from '../../core/content';
+import { decimal } from '../../i18n/format';
 import { text } from '../../i18n';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId, Correction } from '../../core/types';
@@ -94,8 +95,8 @@ export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlock
 }
 
 export function instructorLineText(correction: Correction): string {
-  const up = `${correction.upMrad >= 0 ? '↑' : '↓'} ${Math.abs(correction.upMrad).toFixed(1)}`;
-  const side = Math.abs(correction.rightMrad) < NOTHING_TO_SHOW_MIL ? '' : ` ${correction.rightMrad > 0 ? '→' : '←'} ${Math.abs(correction.rightMrad).toFixed(1)}`;
+  const up = `${correction.upMrad >= 0 ? '↑' : '↓'} ${decimal(Math.abs(correction.upMrad), 1)}`;
+  const side = Math.abs(correction.rightMrad) < NOTHING_TO_SHOW_MIL ? '' : ` ${correction.rightMrad > 0 ? '→' : '←'} ${decimal(Math.abs(correction.rightMrad), 1)}`;
   return T.instructorLine({ correction: `${up}${side}` });
 }
 

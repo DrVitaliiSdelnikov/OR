@@ -64,7 +64,7 @@ test.describe('свободная игра (A7.1)', () => {
     await setDistance(page, 500);
     await page.getByTestId('free-instructor').click();
     await page.getByTestId('free-start').click();
-    await expect(page.getByTestId('instructor-line')).toHaveText(/^Расчётные данные: ↑ \d+\.\d( [←→] \d+\.\d)? MIL$/);
+    await expect(page.getByTestId('instructor-line')).toHaveText(/^Расчётные данные: ↑ \d+,\d( [←→] \d+,\d)? MIL$/);
     await page.getByTestId('position-back').click();
     await page.waitForURL('**/free');
     await expect(page.getByTestId('free-distance')).toHaveText('500 м');

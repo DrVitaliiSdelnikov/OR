@@ -178,8 +178,8 @@ describe('journal — cards and achievements', () => {
     const [view] = cardsView([card], { B: [{ distanceM: 400, elevationMil: 2.2 }] });
     expect(view.title).toBe('Патрон Б');
     expect(view.rows).toEqual([
-      { distance: '300', factory: '↑ 1.5', player: null },
-      { distance: '400', factory: '↑ 2.0', player: '↑ 2.2' },
+      { distance: '300', factory: '↑ 1,5', player: null },
+      { distance: '400', factory: '↑ 2,0', player: '↑ 2,2' },
     ]);
   });
 

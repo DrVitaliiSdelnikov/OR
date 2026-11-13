@@ -50,7 +50,7 @@ describe('free play screen', () => {
     const view = freePlayView({ ...DEFAULT_FREE_PLAY, distanceM: 650, wind: 'moderate', cartridgeId: 'C', notebookMode: 'manual-easy' }, ALL_OPEN);
     expect(view.distanceText).toBe('650 м');
     expect(view.winds.find(tile => tile.isChosen)!.label).toBe('умеренный');
-    expect(view.modes.find(mode => mode.isChosen)!.label).toBe('САМ · лёгкий × 1.5');
+    expect(view.modes.find(mode => mode.isChosen)!.label).toBe('САМ · лёгкий × 1,5');
     expect(view.cartridgeTile).toBe('Патрон В');
     expect(view.cartridges.find(item => item.id === 'C')!.line).toBe('11,7 г · 775 м/с · BC 0,255');
     expect(view.scopeTile).toBe('Курсовой 3–12× · Ёлка');
@@ -63,8 +63,8 @@ describe('free play screen', () => {
 
 describe('the instructor line', () => {
   it('the true correction with arrows', () => {
-    expect(instructorLineText({ upMrad: 2.43, rightMrad: -0.61 })).toBe('Расчётные данные: ↑ 2.4 ← 0.6 MIL');
-    expect(instructorLineText({ upMrad: 0.8, rightMrad: 0.34 })).toBe('Расчётные данные: ↑ 0.8 → 0.3 MIL');
-    expect(instructorLineText({ upMrad: 1.2, rightMrad: 0.01 })).toBe('Расчётные данные: ↑ 1.2 MIL');
+    expect(instructorLineText({ upMrad: 2.43, rightMrad: -0.61 })).toBe('Расчётные данные: ↑ 2,4 ← 0,6 MIL');
+    expect(instructorLineText({ upMrad: 0.8, rightMrad: 0.34 })).toBe('Расчётные данные: ↑ 0,8 → 0,3 MIL');
+    expect(instructorLineText({ upMrad: 1.2, rightMrad: 0.01 })).toBe('Расчётные данные: ↑ 1,2 MIL');
   });
 });

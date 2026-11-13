@@ -45,7 +45,7 @@ describe('formula with slots', () => {
   });
 
   it('easy: atmosphere prints both card columns; distance and DOPE have only slots', () => {
-    expect(tokenText(notebookAt(600), 'atmosphere')).toMatch(/^ΔВЕРТ = \(15 − \[T\]\) \/ 10 × 0\.1\d \+ \(\[P\] − 1013\) \/ 10 × 0\.0\d$/);
+    expect(tokenText(notebookAt(600), 'atmosphere')).toMatch(/^ΔВЕРТ = \(15 − \[T\]\) \/ 10 × 0,1\d \+ \(\[P\] − 1013\) \/ 10 × 0,0\d$/);
     expect(tokenText(notebookAt(null), 'distance')).toBe('Д = [размер] × 1000 / [MIL]');
     expect(tokenText(notebookAt(300), 'dope')).toBe('ВЕРТ = строка карточки на [D]');
   });
@@ -62,15 +62,15 @@ describe('formula with slots', () => {
 
 describe('chips and tape', () => {
   it('a chip says its value and where it came from', () => {
-    expect(chipText({ kind: 'crosswind', value: 3.2, group: 'instruments' }, 300)).toEqual({ value: '3.2', source: 'V⊥ после часов' });
+    expect(chipText({ kind: 'crosswind', value: 3.2, group: 'instruments' }, 300)).toEqual({ value: '3,2', source: 'V⊥ после часов' });
     expect(chipText({ kind: 'wind-constant', value: 1610, group: 'cartridge' }, 300)).toEqual({ value: '1610', source: 'K строка 300 м' });
     expect(chipText({ kind: 'distance', value: 300, group: 'instruments' }, 300)).toEqual({ value: '300 м', source: 'D' });
     expect(chipText({ kind: 'temperature', value: -5, group: 'instruments' }, 600)).toEqual({ value: '-5 C', source: 'T станция' });
   });
 
   it('the wind tape has three lines with the printed constant; DOPE has one', () => {
-    expect(tapeLabels(enterWind(notebookAt(300), 3.2, 9), 'wind')).toEqual(['V⊥ × D =', '÷ 1610 =', 'до клика 0.1 =']);
-    expect(tapeLabels(enterWind(notebookAt(300, 'manual-hard'), 3.2, 9), 'wind')).toEqual(['V⊥ × D =', '÷ K =', 'до клика 0.1 =']);
+    expect(tapeLabels(enterWind(notebookAt(300), 3.2, 9), 'wind')).toEqual(['V⊥ × D =', '÷ 1610 =', 'до клика 0,1 =']);
+    expect(tapeLabels(enterWind(notebookAt(300, 'manual-hard'), 3.2, 9), 'wind')).toEqual(['V⊥ × D =', '÷ K =', 'до клика 0,1 =']);
     expect(tapeLabels(notebookAt(300), 'dope')).toEqual(['ВЕРТ =']);
     expect(tapeLabels(notebookAt(null), 'distance')).toEqual(['Д =']);
   });
@@ -107,7 +107,7 @@ describe('manual hub', () => {
     const empty = hubRows(notebookAt(300))[2];
     expect(empty).toMatchObject({ step: 'wind', state: 'empty', valueText: '', note: 'не записано' });
     const recorded = hubRows(windRecorded())[2];
-    expect(recorded).toMatchObject({ state: 'recorded', valueText: '← 0.6', note: 'записано' });
+    expect(recorded).toMatchObject({ state: 'recorded', valueText: '← 0,6', note: 'записано' });
     let wrong = enterWind(notebookAt(300), 3.2, 9);
     wrong = placeChip(placeChip(wrong, 'wind', 'crosswind'), 'wind', 'distance');
     wrong = recordStep(setSign(typeTape(wrong, 'wind', 2, 1.2), 'wind', -1), 'wind');
@@ -138,7 +138,7 @@ describe('keypad draft', () => {
 
 describe('mode badge', () => {
   it('names the mode and its multiplier', () => {
-    expect(modeBadge('manual-easy')).toBe('САМ · ЛЁГКИЙ ×1.5');
+    expect(modeBadge('manual-easy')).toBe('САМ · ЛЁГКИЙ ×1,5');
     expect(modeBadge('manual-hard')).toBe('САМ · СЛОЖНЫЙ ×2');
     expect(modeBadge('auto')).toBe('АВТО ×1');
   });
@@ -155,7 +155,7 @@ describe('zones step: flags (A9.3a)', () => {
   it('a flag behind the berm is a zero chip labelled so; the step can be filled', () => {
     const notebook = hideFlagsBehindBerm(readFlag(readFlag(zonedAt(500), 0, 2), 1, 4), [2]);
     const flag600 = stepSheet(notebook, 'zones').chips.find(chip => chip.kind === 'zone-600')!;
-    expect(chipText(flag600, 500)).toEqual({ value: '0.0', source: 'флажок 600 м за валом' });
+    expect(chipText(flag600, 500)).toEqual({ value: '0,0', source: 'флажок 600 м за валом' });
     expect(missingInput(notebook, 'zones')).toBeNull();
   });
 });

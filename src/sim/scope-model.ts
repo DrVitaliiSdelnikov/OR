@@ -1,4 +1,5 @@
 import { text } from '../i18n';
+import { decimal } from '../i18n/format';
 
 export const MRAD_PER_MOA = 0.29089;
 export const MILS_PER_DRUM_TURN = 10;
@@ -138,7 +139,7 @@ export function mradToScopeUnits(scope: ScopeModel, mrad: number): number {
 
 export function formatScopeValue(scope: ScopeModel, mrad: number): string {
   const value = mradToScopeUnits(scope, mrad);
-  return scope.units === 'MIL' ? value.toFixed(1) : value.toFixed(2);
+  return decimal(value, scope.units === 'MIL' ? 1 : 2);
 }
 
 export function halfClickMrad(scope: ScopeModel): number {

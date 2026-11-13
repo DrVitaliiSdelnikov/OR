@@ -109,7 +109,7 @@ test.describe('разбор выстрела (A6.1)', () => {
     await expect(page.getByTestId('rounds')).toHaveText('5 / 5');
     await expect(page.getByTestId('position-subtitle')).toContainText('цель 1 / 3');
     await page.getByTestId('tile-notebook').click();
-    await expect(page.getByTestId('sheet-total')).toHaveText(/^↑ \d\.\d · \d+ кл\. вверх$/);
+    await expect(page.getByTestId('sheet-total')).toHaveText(/^↑ \d,\d · \d+ кл\. вверх$/);
   });
 
   test('10: «Отметь, где была сетка» — тап, «ПОКАЗАТЬ ПОПАДАНИЕ», вердикт вызова', async ({ page }) => {
@@ -123,7 +123,7 @@ test.describe('разбор выстрела (A6.1)', () => {
     await page.mouse.click(scheme.x + scheme.width / 2, scheme.y + scheme.height / 2);
     await expect(page.getByTestId('scheme-player-call')).toBeVisible();
     await page.getByTestId('call-reveal').click();
-    await expect(page.getByTestId('call-verdict')).toHaveText(/^вызов (точный|мимо на \d\.\d)$/);
+    await expect(page.getByTestId('call-verdict')).toHaveText(/^вызов (точный|мимо на \d,\d)$/);
     await expect(page.getByTestId('scheme-impact')).toBeVisible();
     await expect(page.getByTestId('review-next')).toBeEnabled();
   });
@@ -147,7 +147,7 @@ test.describe('разбор выстрела (A6.1)', () => {
     await expect(page.getByTestId('review-dope')).toHaveText('записано в ДОПЕ');
     await page.getByTestId('review-next').click();
     await page.getByTestId('tile-dope').click();
-    await expect(page.getByTestId('dope-note-300')).toHaveText(/^↑ \d\.\d$/);
+    await expect(page.getByTestId('dope-note-300')).toHaveText(/^↑ \d,\d$/);
   });
 
   test('касание не меньше 44 в разборе', async ({ page }) => {

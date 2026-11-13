@@ -93,9 +93,9 @@ test.describe('позиция: спуск с давлением, затвор, �
     await page.mouse.move(hold.x + hold.width / 2, hold.y + hold.height / 2);
     await page.mouse.down();
     await expect(page.getByTestId('air-seconds')).toBeVisible();
-    const first = Number((await page.getByTestId('air-seconds').textContent())!.replace(/[^\d.]/g, ''));
+    const first = Number((await page.getByTestId('air-seconds').textContent())!.replace(/[^\d,]/g, '').replace(',', '.'));
     await page.waitForTimeout(1200);
-    const later = Number((await page.getByTestId('air-seconds').textContent())!.replace(/[^\d.]/g, ''));
+    const later = Number((await page.getByTestId('air-seconds').textContent())!.replace(/[^\d,]/g, '').replace(',', '.'));
     expect(later).toBeLessThan(first);
     await page.mouse.up();
     await expect(page.getByTestId('hold')).toHaveText('Выдох');

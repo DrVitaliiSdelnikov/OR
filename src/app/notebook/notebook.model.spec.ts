@@ -24,15 +24,15 @@ function shot(distanceM: number, isHit: boolean): ExerciseShotRecord {
 
 describe('total line', () => {
   it('set А: up, left, and the clicks in words', () => {
-    expect(totalLine(scope, total(enterWind(notebookAt(300), 3.2, 9)))).toBe('↑ 1.6 · ← 0.6 · 16 кл. вверх · 6 кл. влево');
+    expect(totalLine(scope, total(enterWind(notebookAt(300), 3.2, 9)))).toBe('↑ 1,6 · ← 0,6 · 16 кл. вверх · 6 кл. влево');
   });
 
   it('wind from the right reads to the right', () => {
-    expect(totalLine(scope, total(enterWind(notebookAt(300), 3.2, 3)))).toBe('↑ 1.6 · → 0.6 · 16 кл. вверх · 6 кл. вправо');
+    expect(totalLine(scope, total(enterWind(notebookAt(300), 3.2, 3)))).toBe('↑ 1,6 · → 0,6 · 16 кл. вверх · 6 кл. вправо');
   });
 
   it('no wind leaves out the horizontal part', () => {
-    expect(totalLine(scope, total(notebookAt(300)))).toBe('↑ 1.6 · 16 кл. вверх');
+    expect(totalLine(scope, total(notebookAt(300)))).toBe('↑ 1,6 · 16 кл. вверх');
   });
 
   it('an empty total is a dash', () => {
@@ -41,7 +41,7 @@ describe('total line', () => {
 
   it('set И: a total below ZERO STOP keeps the rest as a hold', () => {
     const belowZero = { ...total(notebookAt(300)), upMil: -0.1, elevation: { targetClicks: 0, holdMil: -0.1 }, holdUpMil: -0.1 };
-    expect(totalLine(scope, belowZero)).toBe('↑ 0.0 · удержание ↓ 0.1');
+    expect(totalLine(scope, belowZero)).toBe('↑ 0,0 · удержание ↓ 0,1');
   });
 });
 
@@ -64,26 +64,26 @@ describe('factor contributions (Б22)', () => {
 
 describe('correction line under the wind and conditions tabs', () => {
   it('set А wind: ← 0.60 MIL · 6 кл.; nothing entered: a dash', () => {
-    expect(correctionLine('wind', factorContributions(enterWind(notebookAt(300), 3.2, 9)).wind)).toBe('поправка ← 0.60 MIL · 6 кл.');
+    expect(correctionLine('wind', factorContributions(enterWind(notebookAt(300), 3.2, 9)).wind)).toBe('поправка ← 0,60 MIL · 6 кл.');
     expect(correctionLine('wind', factorContributions(notebookAt(300)).wind)).toBe('поправка: —');
   });
 
   it('set Г conditions: ↑ 0.2x MIL · 3 кл.', () => {
     const measured = recordStation(notebookAt(600), { temperatureC: -5, pressureHpa: 1030, relativeHumidity: 0.5, windSpeedMps: 3.2, windClock: 9 }, 3, 0);
-    expect(correctionLine('conditions', factorContributions(measured).conditions)).toMatch(/^поправка ↑ 0\.2\d MIL · 3 кл\.$/);
+    expect(correctionLine('conditions', factorContributions(measured).conditions)).toMatch(/^поправка ↑ 0,2\d MIL · 3 кл\.$/);
   });
 });
 
 describe('factor detail with the numbers put in by the game', () => {
   it('set А: DOPE row and the wind', () => {
     const notebook = enterWind(notebookAt(300), 3.2, 9);
-    expect(factorDetail(notebook, 'dope')).toBe('строка 300 м карточки: ↑ 1.6');
-    expect(factorDetail(notebook, 'wind')).toBe('3.2 м/с с 9 ч · V⊥ 3.2 · W = V⊥ × 300 / 1610 = ← 0.60');
+    expect(factorDetail(notebook, 'dope')).toBe('строка 300 м карточки: ↑ 1,6');
+    expect(factorDetail(notebook, 'wind')).toBe('3,2 м/с с 9 ч · V⊥ 3,2 · W = V⊥ × 300 / 1610 = ← 0,60');
   });
 
   it('set Г: the conditions', () => {
     const measured = recordStation(notebookAt(600), { temperatureC: -5, pressureHpa: 1030, relativeHumidity: 0.5, windSpeedMps: 3.2, windClock: 9 }, 3, 0);
-    expect(factorDetail(measured, 'conditions')).toMatch(/^\(15 − -5\) \/ 10 × 0\.1\d \+ \(1030 − 1013\) \/ 10 × 0\.0\d = ↑ 0\.2\d$/);
+    expect(factorDetail(measured, 'conditions')).toMatch(/^\(15 − -5\) \/ 10 × 0,1\d \+ \(1030 − 1013\) \/ 10 × 0,0\d = ↑ 0,2\d$/);
   });
 
   it('says what is missing', () => {
@@ -125,7 +125,7 @@ describe('DOPE table (Б7)', () => {
     const rows = dopeTable(card, 300);
     expect(rows.map(row => row.distanceM)).toEqual([100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]);
     expect(rows.filter(row => row.isCurrent).map(row => row.distanceM)).toEqual([300]);
-    expect(rows[2].elevation).toBe('1.6');
+    expect(rows[2].elevation).toBe('1,6');
     expect(rows[2].clicks).toBe('16');
   });
 

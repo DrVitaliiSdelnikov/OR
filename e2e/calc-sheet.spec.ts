@@ -38,10 +38,10 @@ async function enterWind(page: Page): Promise<void> {
 }
 
 test.describe('лист расчёта САМ (A5.2)', () => {
-  test('06: ИТОГ — плашка «САМ · ЛЁГКИЙ ×1.5» и пустые шаги ДОПЕ, Атмосфера, Ветер', async ({ page }) => {
+  test('06: ИТОГ — плашка «САМ · ЛЁГКИЙ ×1,5» и пустые шаги ДОПЕ, Атмосфера, Ветер', async ({ page }) => {
     await toPosition(page, '06');
     await page.getByTestId('tile-notebook').click();
-    await expect(page.getByTestId('manual-mode')).toHaveText('САМ · ЛЁГКИЙ ×1.5');
+    await expect(page.getByTestId('manual-mode')).toHaveText('САМ · ЛЁГКИЙ ×1,5');
     for (const step of ['dope', 'atmosphere', 'wind']) {
       await expect(page.getByTestId(`step-note-${step}`)).toHaveText('не записано');
     }
@@ -59,14 +59,15 @@ test.describe('лист расчёта САМ (A5.2)', () => {
     await page.getByTestId('chip-distance').click();
     await expect(page.getByTestId('slot-0')).toContainText('м');
     await page.getByTestId('tape-0').click();
+    await expect(page.getByTestId('key-.')).toHaveText(',');
     await typeNumber(page, '3.4');
-    await expect(page.getByTestId('tape-0')).toContainText('3.4');
+    await expect(page.getByTestId('tape-0')).toContainText('3,4');
     await page.getByTestId('side-1').click();
     await page.getByTestId('calc-record').click();
     await expect(page.getByTestId('calc-sheet')).toHaveCount(0);
     await expect(page.getByTestId('step-note-dope')).toHaveText(/^записано/);
-    await expect(page.getByTestId('step-value-dope')).toHaveText('↑ 3.4');
-    await expect(page.getByTestId('sheet-total')).toHaveText(/^↑ 3\.4 · 34 кл\. вверх$/);
+    await expect(page.getByTestId('step-value-dope')).toHaveText('↑ 3,4');
+    await expect(page.getByTestId('sheet-total')).toHaveText(/^↑ 3,4 · 34 кл\. вверх$/);
   });
 
   test('06: шаг Ветер по ссылке с вкладки — V⊥ и D в слоты, K печатью; три клетки, ←; «ВНЕСТИ» — метки', async ({ page }) => {

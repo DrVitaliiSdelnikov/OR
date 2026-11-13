@@ -1,7 +1,7 @@
 import type { CheckErrorType, CheckVerdict, PreparationRowInput } from '../../core/calc-check';
 import type { CauseKind } from '../../sim/miss-breakdown';
 import type { GroupShape } from '../../sim/shot-review';
-import { plural, PluralForms } from '../format';
+import { decimal, plural, PluralForms } from '../format';
 
 const SHOTS_GENITIVE: PluralForms = ['выстрела', 'выстрелов', 'выстрелов'];
 
@@ -56,15 +56,15 @@ export const review = {
   secondShotPoints: (p: { points: number }) => `${p.points} · вторым`,
   diagnosisClean: 'Чисто: сетка на цели, попадание',
   diagnosisData: 'Сетка была на цели — ошибка в данных',
-  diagnosisExecution: (p: { direction: ScreenDirection; mil: number }) => `Сетка ушла ${DIRECTIONS[p.direction]} на ${p.mil.toFixed(1)} — ошибка выполнения`,
+  diagnosisExecution: (p: { direction: ScreenDirection; mil: number }) => `Сетка ушла ${DIRECTIONS[p.direction]} на ${decimal(p.mil, 1)} — ошибка выполнения`,
   repeatClean: 'Данные верны — повтори чисто',
   correctionVertical: (p: { isLow: boolean; mil: number; clicks: number }) =>
-    `Пуля ${p.isLow ? 'ниже' : 'выше'} на ${p.mil.toFixed(1)} → ${p.clicks} кл. ${p.isLow ? 'вверх' : 'вниз'} на барабане`,
+    `Пуля ${p.isLow ? 'ниже' : 'выше'} на ${decimal(p.mil, 1)} → ${p.clicks} кл. ${p.isLow ? 'вверх' : 'вниз'} на барабане`,
   correctionHorizontal: (p: { isLeft: boolean; mil: number; clicks: number }) =>
-    `Пуля ${p.isLeft ? 'левее' : 'правее'} на ${p.mil.toFixed(1)} → ${p.clicks} кл. ${p.isLeft ? 'вправо' : 'влево'} на барабане`,
+    `Пуля ${p.isLeft ? 'левее' : 'правее'} на ${decimal(p.mil, 1)} → ${p.clicks} кл. ${p.isLeft ? 'вправо' : 'влево'} на барабане`,
   noCorrection: 'Поправка не нужна',
   others: (p: { count: number; labels: readonly string[] }) => `ещё ${p.count} · ${p.labels.join(', ')}`,
-  points: (p: { points: number; multiplier: number }) => `+${p.points} за расчёт · ×${p.multiplier}`,
+  points: (p: { points: number; multiplier: number }) => `+${p.points} за расчёт · ×${decimal(p.multiplier)}`,
   plaquePaper: (p: { number: number; hits: number; shots: number }) => `${p.number} · ${p.hits} из ${p.shots}`,
   plaqueCurrent: (p: { number: number }) => `${p.number} · сейчас`,
   plaqueEmpty: (p: { number: number }) => `${p.number} · ·`,
@@ -72,7 +72,7 @@ export const review = {
   dopeNoteAt: (p: { value: string; distanceM: number }) => `${p.value} · ${p.distanceM} м`,
   metres: (p: { distanceM: number }) => `${Math.round(p.distanceM)} м`,
   moaUnit: ' MOA',
-  speed: (p: { speedMps: number }) => `${p.speedMps.toFixed(1)} м/с`,
+  speed: (p: { speedMps: number }) => `${decimal(p.speedMps, 1)} м/с`,
   speedUnit: ' м/с',
   none: '—',
   planned: (p: { value: string }) => `итог ${p.value}`,

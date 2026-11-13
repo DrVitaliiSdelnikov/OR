@@ -8,7 +8,7 @@ const POINT_FORMS: PluralForms = ['очко', 'очка', 'очков'];
 const FORMULAS = 'Формулы';
 
 const meters = (p: { distanceM: number }) => `${p.distanceM} м`;
-const windReading = (p: { speedMps: number; clock: string }) => `${p.speedMps.toFixed(1)} м/с с ${p.clock}`;
+const windReading = (p: { speedMps: number; clock: string }) => `${decimal(p.speedMps, 1)} м/с с ${p.clock}`;
 
 export const notebook = {
   model: {
@@ -23,10 +23,10 @@ export const notebook = {
     clicksSideways: (p: { clicks: number; isLeft: boolean }) => `${p.clicks} кл. ${p.isLeft ? 'влево' : 'вправо'}`,
     hold: (p: { arrow: string; amount: string }) => `удержание ${p.arrow} ${p.amount}`,
     correctionMissing: 'поправка: —',
-    correction: (p: { arrow: string; mil: number; clicks: number }) => `поправка ${p.arrow}${p.mil.toFixed(2)} MIL · ${p.clicks} кл.`,
+    correction: (p: { arrow: string; mil: number; clicks: number }) => `поправка ${p.arrow}${decimal(p.mil, 2)} MIL · ${p.clicks} кл.`,
     clock: (p: { hours: number; isHalfHour: boolean }) => (p.isHalfHour ? `${p.hours}:30` : `${p.hours} ч`),
     distanceNotMeasured: 'дистанция не измерена',
-    dopeDetail: (p: { distanceM: number; elevationMil: number }) => `строка ${p.distanceM} м карточки: ↑ ${p.elevationMil.toFixed(1)}`,
+    dopeDetail: (p: { distanceM: number; elevationMil: number }) => `строка ${p.distanceM} м карточки: ↑ ${decimal(p.elevationMil, 1)}`,
     noStationReading: 'нет замера',
     windNotEntered: 'ветер не введён',
     windReading,
@@ -113,7 +113,7 @@ export const notebook = {
     windFromRight: 'справа',
     chipRow: (p: { distanceM: number }) => ` строка ${p.distanceM} м`,
     meters,
-    seconds: (p: { seconds: number }) => `${p.seconds.toFixed(2)} с`,
+    seconds: (p: { seconds: number }) => `${decimal(p.seconds, 2)} с`,
     pressure: (p: { pressureHpa: number }) => `${p.pressureHpa} гПа`,
     chipSources: {
       neighborDistance: 'D соседней цели',
@@ -133,7 +133,7 @@ export const notebook = {
     pressureColumnSource: (p: { row: string }) => `давление +10 гПа${p.row}`,
     flagBehindBermSource: (p: { distanceText: string }) => `флажок ${p.distanceText} м за валом`,
     flagSource: (p: { distanceText: string }) => `V⊥ флажок ${p.distanceText} м`,
-    roundToClick: (p: { clickMil: number }) => `до клика ${p.clickMil} =`,
+    roundToClick: (p: { clickMil: number }) => `до клика ${decimal(p.clickMil)} =`,
     tapeDistance: 'Д =',
     tapeDope: 'ВЕРТ =',
     tapeAtmosphere: 'ΔВЕРТ =',
@@ -178,7 +178,7 @@ export const notebook = {
     toStep: 'К расчёту: шаг Дистанция →',
     count: 'Посчитать',
     tapGong: 'Коснись верха и низа гонга',
-    size: (p: { sizeMil: number }) => `размер на сетке: ${p.sizeMil.toFixed(2)} MIL`,
+    size: (p: { sizeMil: number }) => `размер на сетке: ${decimal(p.sizeMil, 2)} MIL`,
   },
   dopeTab: {
     distance: 'Дист',
@@ -233,12 +233,12 @@ export const notebook = {
     toWind: 'к расчёту: шаг Ветер →',
     temperature: (p: { temperatureC: number }) => `${p.temperatureC.toFixed(0)} C`,
     pressure: (p: { pressureHpa: number }) => `${p.pressureHpa.toFixed(0)} гПа`,
-    windSpeed: (p: { speedMps: number }) => `${p.speedMps.toFixed(1)} м/с`,
+    windSpeed: (p: { speedMps: number }) => `${decimal(p.speedMps, 1)} м/с`,
     knownDistance: (p: { distanceM: number }) => `Дистанция ${p.distanceM} м · задана упражнением`,
-    millingResult: (p: { sizeM: number; reticleMil: number; distanceM: number }) => `Д = ${p.sizeM} × 1000 / ${p.reticleMil.toFixed(2)} = ${p.distanceM} м`,
+    millingResult: (p: { sizeM: number; reticleMil: number; distanceM: number }) => `Д = ${decimal(p.sizeM)} × 1000 / ${decimal(p.reticleMil, 2)} = ${p.distanceM} м`,
     windCaption: (p: { reading: string }) => `ветер ${p.reading}`,
     windCaptionEmpty: 'тяни стрелку к часу, откуда дует',
-    stationWind: (p: { speedMps: number; time: string }) => `станция: ${p.speedMps.toFixed(1)} м/с · ${p.time}`,
+    stationWind: (p: { speedMps: number; time: string }) => `станция: ${decimal(p.speedMps, 1)} м/с · ${p.time}`,
     stationWindEmpty: 'станция: нет замера',
     dopeHeading: (p: { cartridge: string; zeroM: number; temperatureC: number; pressureHpa: number }) =>
       `Карточка патрона ${p.cartridge} · ноль ${p.zeroM} м · эталон +${p.temperatureC} C / ${p.pressureHpa} гПа`,

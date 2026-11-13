@@ -1,4 +1,5 @@
 import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import { decimal } from '../../i18n/format';
 import { FeedbackService } from '../services/feedback.service';
 import { text } from '../../i18n';
 import { MAX_WIND_SPEED_MPS, SPEED_STEP_MPS, stepSpeed } from './notebook.model';
@@ -69,7 +70,7 @@ export class SpeedWheelComponent {
       }
       const value = current + offset * 0.1;
       const isOutside = value < -1e-9 || value > MAX_WIND_SPEED_MPS + 1e-9;
-      return { offset, text: isOutside ? '' : value.toFixed(1), opacity: 1 - Math.abs(offset) * 0.3 };
+      return { offset, text: isOutside ? '' : decimal(value, 1), opacity: 1 - Math.abs(offset) * 0.3 };
     });
   });
 

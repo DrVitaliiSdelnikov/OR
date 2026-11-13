@@ -57,7 +57,7 @@ describe('resultSheet — stamp and class rows', () => {
     expect(sheetFor('01', hits(3, { isDialExactFirstTry: true })).sheet.classRows[2].text).toBe('все первым — 3 из 3');
     const paper = [shot({ distanceM: 100, isColdBore: true }), shot({ distanceM: 100, impact: { upMrad: 0.1, rightMrad: 0 } }), shot({ distanceM: 100, impact: { upMrad: 0.9, rightMrad: 0 } }), shot({ distanceM: 100 }), shot({ distanceM: 100 })];
     const rows = sheetFor('02', paper).sheet.classRows;
-    expect(rows[1].text).toBe('≥ 85 % и группа 2–4 ≤ 1 MIL — 0.9 MIL');
+    expect(rows[1].text).toBe('≥ 85 % и группа 2–4 ≤ 1 MIL — 0,9 MIL');
     expect(rows[2].text.startsWith('все в мишень и ')).toBe(true);
   });
 });
@@ -65,8 +65,8 @@ describe('resultSheet — stamp and class rows', () => {
 describe('resultSheet — score and record', () => {
   it('targets plus calculation times the multiplier; the reference penalty after it', () => {
     const shots = [...hits(2, { check: { ...speedRight } }), shot({ targetIndex: 2, isHit: false, check: windageOff }), shot({ targetIndex: 2, check: windageOff }), shot({ targetIndex: 3, isHit: false, check: windageOff }), shot({ targetIndex: 3, isHit: false, check: windageOff })];
-    expect(sheetFor('06', shots, undefined, { mode: 'manual-easy' }).sheet.scoreLine).toBe('цели 25 + расчёт 30 = 55 × 1.5 = 83');
-    expect(sheetFor('06', shots, undefined, { mode: 'manual-easy', hasOpenedReference: true }).sheet.scoreLine).toBe('цели 25 + расчёт 30 = 55 × 1.5 = 83 − 30 справочник = 53');
+    expect(sheetFor('06', shots, undefined, { mode: 'manual-easy' }).sheet.scoreLine).toBe('цели 25 + расчёт 30 = 55 × 1,5 = 83');
+    expect(sheetFor('06', shots, undefined, { mode: 'manual-easy', hasOpenedReference: true }).sheet.scoreLine).toBe('цели 25 + расчёт 30 = 55 × 1,5 = 83 − 30 справочник = 53');
   });
 
   it('×1 is not written; paper gives the hit count first', () => {

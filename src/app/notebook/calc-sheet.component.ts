@@ -1,4 +1,5 @@
 import { Component, computed, input, output, signal } from '@angular/core';
+import { decimal, typedDecimal } from '../../i18n/format';
 import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { ChipKind, NotebookStepId, stepHasSide } from '../../sim/notebook';
@@ -174,10 +175,10 @@ export class CalcSheetComponent {
 
   protected cellText(index: number): string {
     if (this.activeTape() === index) {
-      return this.draft() || '·';
+      return typedDecimal(this.draft()) || '·';
     }
     const value = this.view().tape[index];
-    return value === null || value === undefined ? '·' : String(value);
+    return value === null || value === undefined ? '·' : decimal(value);
   }
 
   protected tapSlot(index: number, isFilled: boolean): void {

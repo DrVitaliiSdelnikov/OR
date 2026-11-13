@@ -63,7 +63,7 @@ test.describe('итог упражнения и брифинг (A6.3)', () => {
     await expect(page.getByTestId('briefing-flag')).toBeVisible();
     await expect(page.getByTestId('briefing-distance')).toHaveText('300 м');
     await expect(page.getByTestId('briefing-class-1')).toHaveText('2 класс — 85 % и скорость перенесена без ошибки');
-    await expect(page.getByTestId('sheet-mode')).toHaveText('АВТО × 1.0');
+    await expect(page.getByTestId('sheet-mode')).toHaveText('АВТО × 1,0');
     await expect(page.getByTestId('briefing-novelty')).toHaveText('Новое: ветер, метеостанция, флажок у бруствера');
     await expect(page.getByTestId('sheet-terms')).toContainText('узнаешь: ветер');
     await expect(page.getByTestId('to-position')).toBeInViewport();
