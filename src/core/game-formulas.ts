@@ -7,6 +7,14 @@ const ATMOSPHERE_COLUMN_STEP = 10;
 const CLOCK_HOURS_PER_TURN = 12;
 const TAIL_WIND_CLOCK_HOURS = 6;
 const CLICK_ROUNDING_EPSILON = 1e-9;
+const RADIANS_PER_DEGREE = Math.PI / 180;
+const EARTH_ROTATION_RAD_PER_S = 7.292115e-5;
+const YARDS_PER_MIL_PER_INCH = 27.78;
+const YARDS_PER_MOA_PER_INCH = 95.5;
+const MPS_PER_MPH = 0.44704;
+const METERS_PER_YARD = 0.9144;
+const IMPERIAL_WIND_CONSTANT_ROUNDING = 10;
+const IMPERIAL_LEAD_SCALE = (MPS_PER_MPH / METERS_PER_YARD) * MIL_PER_RADIAN_SCALE;
 
 export function crosswindMps(speedMps: number, clockHours: number): number {
   return speedMps * windClockShare(clockHours);
@@ -64,4 +72,43 @@ export function leadMil(targetSpeedMps: number, movementClockHours: number, time
     return 0;
   }
   return ((targetSpeedMps * windClockShare(movementClockHours) * timeOfFlightS) / distanceM) * MIL_PER_RADIAN_SCALE;
+}
+
+export function inclineElevationMil(dopeElevationMil: number, zeroAngleMil: number, lookAngleDeg: number): number {
+  return (dopeElevationMil + zeroAngleMil) * Math.cos(lookAngleDeg * RADIANS_PER_DEGREE) - zeroAngleMil;
+}
+
+export function coriolisHorizontalMil(timeOfFlightS: number, latitudeDeg: number): number {
+  return MIL_PER_RADIAN_SCALE * EARTH_ROTATION_RAD_PER_S * timeOfFlightS * Math.sin(latitudeDeg * RADIANS_PER_DEGREE);
+}
+
+export function coriolisVerticalMil(timeOfFlightS: number, latitudeDeg: number, azimuthDeg: number): number {
+  return (
+    MIL_PER_RADIAN_SCALE * EARTH_ROTATION_RAD_PER_S * timeOfFlightS * Math.cos(latitudeDeg * RADIANS_PER_DEGREE) * Math.sin(azimuthDeg * RADIANS_PER_DEGREE)
+  );
+}
+
+export function rangeByMillingYards(targetSizeInches: number, sizeOnReticleMil: number): number {
+  if (sizeOnReticleMil <= 0) {
+    throw new RangeError(`size on reticle must be positive, got ${sizeOnReticleMil} MIL`);
+  }
+  return (targetSizeInches * YARDS_PER_MIL_PER_INCH) / sizeOnReticleMil;
+}
+
+export function rangeByMoaYards(targetSizeInches: number, sizeOnReticleMoa: number): number {
+  if (sizeOnReticleMoa <= 0) {
+    throw new RangeError(`size on reticle must be positive, got ${sizeOnReticleMoa} MOA`);
+  }
+  return (targetSizeInches * YARDS_PER_MOA_PER_INCH) / sizeOnReticleMoa;
+}
+
+export function imperialWindConstant(windConstant: number): number {
+  return Math.round(windConstant / (MPS_PER_MPH * METERS_PER_YARD) / IMPERIAL_WIND_CONSTANT_ROUNDING) * IMPERIAL_WIND_CONSTANT_ROUNDING;
+}
+
+export function leadMilImperial(targetSpeedMph: number, movementClockHours: number, timeOfFlightS: number, distanceYards: number): number {
+  if (distanceYards === 0) {
+    return 0;
+  }
+  return (IMPERIAL_LEAD_SCALE * targetSpeedMph * windClockShare(movementClockHours) * timeOfFlightS) / distanceYards;
 }

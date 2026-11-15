@@ -1,4 +1,4 @@
-import { STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C, WIND_ZONE_LIMITS_M } from './content';
+import { FLAT_GEOMETRY, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C, WIND_ZONE_LIMITS_M } from './content';
 import { BallisticsEngine } from './engine';
 import { roundToClicks } from './game-formulas';
 import { Atmosphere, CartridgeId, Loadout, TrajectoryPoint } from './types';
@@ -12,11 +12,13 @@ export interface DopeRow {
   colderBy10CMil: number;
   pressureUp10HpaMil: number;
   zoneWeights: readonly number[];
+  spinDriftMil: number;
 }
 
 export interface DopeCard {
   cartridgeId: CartridgeId;
   clickMil: number;
+  zeroAngleMil: number;
   rows: readonly DopeRow[];
 }
 
@@ -29,6 +31,9 @@ const TIME_DECIMALS = 100;
 const ATMOSPHERE_DECIMALS = 100;
 const WIND_CONSTANT_ROUNDING = 10;
 const ZONE_WEIGHT_PARTS = 20;
+const SPIN_DRIFT_DECIMALS = 100;
+const ZERO_ANGLE_DECIMALS = 100;
+const SPINNING: typeof FLAT_GEOMETRY = { ...FLAT_GEOMETRY, isSpinDriftOn: true };
 
 const STANDARD_ATMOSPHERE: Atmosphere = {
   temperatureC: STANDARD_TEMPERATURE_C,
@@ -37,13 +42,15 @@ const STANDARD_ATMOSPHERE: Atmosphere = {
 };
 
 export async function buildDopeCard(engine: BallisticsEngine, loadout: Loadout, clickMil: number): Promise<DopeCard> {
-  const [standardPoints, crosswindPoints, colderPoints, higherPressurePoints] = await Promise.all([
+  const [standardPoints, crosswindPoints, colderPoints, higherPressurePoints, spinningPoints, zeroAngleMil] = await Promise.all([
     engine.trajectory(loadout, STANDARD_ATMOSPHERE, null),
     engine.trajectory(loadout, STANDARD_ATMOSPHERE, [
       { untilM: Infinity, speedMps: CALIBRATION_CROSSWIND_MPS, fromDeg: CROSSWIND_FROM_LEFT_DEG },
     ]),
     engine.trajectory(loadout, { ...STANDARD_ATMOSPHERE, temperatureC: STANDARD_TEMPERATURE_C - ATMOSPHERE_STEP }, null),
     engine.trajectory(loadout, { ...STANDARD_ATMOSPHERE, pressureHpa: STANDARD_PRESSURE_HPA + ATMOSPHERE_STEP }, null),
+    engine.trajectory(loadout, STANDARD_ATMOSPHERE, null, undefined, undefined, SPINNING),
+    engine.zeroAngleMil(loadout),
   ]);
   const singleZonePoints = await Promise.all(
     WIND_ZONE_LIMITS_M.map((_, windyZone) =>
@@ -76,9 +83,13 @@ export async function buildDopeCard(engine: BallisticsEngine, loadout: Loadout, 
           ATMOSPHERE_DECIMALS,
         ),
         zoneWeights: zoneWeightsAt(singleZonePoints, crosswindPoints, point.distanceM),
+        spinDriftMil: roundTo(
+          BallisticsEngine.required(standardPoints, point.distanceM).rightMrad - BallisticsEngine.required(spinningPoints, point.distanceM).rightMrad,
+          SPIN_DRIFT_DECIMALS,
+        ),
       };
     });
-  return { cartridgeId: loadout.cartridge.id, clickMil, rows };
+  return { cartridgeId: loadout.cartridge.id, clickMil, zeroAngleMil: roundTo(zeroAngleMil, ZERO_ANGLE_DECIMALS), rows };
 }
 
 export function dopeRowAt(card: DopeCard, distanceM: number): DopeRow {
@@ -104,6 +115,7 @@ export function dopeRowAt(card: DopeCard, distanceM: number): DopeRow {
     colderBy10CMil: blend(lower.colderBy10CMil, upper.colderBy10CMil),
     pressureUp10HpaMil: blend(lower.pressureUp10HpaMil, upper.pressureUp10HpaMil),
     zoneWeights: lower.zoneWeights.map((weight, index) => blend(weight, upper.zoneWeights[index])),
+    spinDriftMil: blend(lower.spinDriftMil, upper.spinDriftMil),
   };
 }
 

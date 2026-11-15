@@ -174,7 +174,7 @@ describe('journal — statistics', () => {
 
 describe('journal — cards and achievements', () => {
   it('the factory row in ink and the player note beside it', () => {
-    const card: DopeCard = { cartridgeId: 'B', clickMil: 0.1, rows: [300, 400].map(distanceM => ({ distanceM, elevationMil: distanceM / 200, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0 })) as unknown as DopeCard['rows'] };
+    const card: DopeCard = { cartridgeId: 'B', clickMil: 0.1, zeroAngleMil: 0, rows: [300, 400].map(distanceM => ({ distanceM, elevationMil: distanceM / 200, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0 })) as unknown as DopeCard['rows'] };
     const [view] = cardsView([card], { B: [{ distanceM: 400, elevationMil: 2.2 }] });
     expect(view.title).toBe('Патрон Б');
     expect(view.rows).toEqual([

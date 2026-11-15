@@ -14,7 +14,7 @@ interface RegressionPoint {
   timeS: number;
 }
 
-const REGRESSION = regression as Record<CartridgeId, { trajectory: RegressionPoint[]; dopeRows: DopeRow[] }>;
+const REGRESSION = regression as Record<CartridgeId, { trajectory: RegressionPoint[]; dopeRows: Omit<DopeRow, 'spinDriftMil'>[] }>;
 const STANDARD: Atmosphere = { temperatureC: STANDARD_TEMPERATURE_C, pressureHpa: STANDARD_PRESSURE_HPA, relativeHumidity: STANDARD_RELATIVE_HUMIDITY };
 const CROSSWIND_1_MPS = [{ untilM: Infinity, speedMps: 1, fromDeg: 90 }];
 const RAW_DECIMALS = 3;
@@ -51,11 +51,12 @@ describe('снаряжение курса: регрессия (T1.2)', () => {
     }
   });
 
-  it('строки ДОПЕ А, Б, В — те же, что до правки', async () => {
+  it('строки ДОПЕ А, Б, В — прежние поля те же, что до правки', async () => {
     const engine = new BallisticsEngine();
     for (const cartridge of CARTRIDGES) {
       const card = await buildDopeCard(engine, courseLoadout(cartridge.id), 0.1);
-      expect(card.rows, cartridge.id).toEqual(REGRESSION[cartridge.id].dopeRows);
+      const beforeT14Fields = card.rows.map(row => Object.fromEntries(Object.keys(REGRESSION[cartridge.id].dopeRows[0]).map(key => [key, row[key as keyof DopeRow]])));
+      expect(beforeT14Fields, cartridge.id).toEqual(REGRESSION[cartridge.id].dopeRows);
     }
   });
 

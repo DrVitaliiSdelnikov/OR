@@ -160,8 +160,8 @@ describe('the patrol on the position (A9.3b)', () => {
 
 describe('DOPE tile rounds like the calculation check (T0.4a)', () => {
   const row = (distanceM: number, elevationMil: number): DopeRow =>
-    ({ distanceM, elevationMil, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0, pressureUp10HpaMil: 0, zoneWeights: [1, 0, 0, 0] });
-  const card: DopeCard = { cartridgeId: 'B', clickMil: 0.1, rows: [row(400, 2.8), row(500, 4.1)] };
+    ({ distanceM, elevationMil, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0, pressureUp10HpaMil: 0, zoneWeights: [1, 0, 0, 0], spinDriftMil: 0 });
+  const card: DopeCard = { cartridgeId: 'B', clickMil: 0.1, zeroAngleMil: 0, rows: [row(400, 2.8), row(500, 4.1)] };
 
   it('an interpolated 3,45 reads as the nearest click 3,5, not 3,4', () => {
     expect(dopeTileText(card, 450)).toBe('ДОПЕ · 450 м ↑ 3,5');

@@ -41,6 +41,10 @@ export class BallisticsEngine {
     }));
   }
 
+  async zeroAngleMil(loadout: Loadout): Promise<number> {
+    return (await this.zeroedWeapon(loadout)).zeroElevation.In(Unit.MRad);
+  }
+
   static required(points: readonly TrajectoryPoint[], distanceM: number): RequiredCorrection {
     const point = points.find(candidate => candidate.distanceM === distanceM);
     if (!point) {

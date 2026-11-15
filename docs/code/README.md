@@ -105,3 +105,4 @@
 | core/units · метрика и имперская система (T1.1) | [specs/core-units.md](specs/core-units.md) | реализовано, слито в `master` 15.11 |
 | core · снаряжение вместо глобальной винтовки (T1.2) | [specs/core-loadout.md](specs/core-loadout.md) | реализовано, слито в `master` 15.11 |
 | core · физика: угол, деривация, высота, Кориолис, эталон lob (T1.3) | [specs/core-physics.md](specs/core-physics.md) | реализовано, слито в `master` 15.11 |
+| core · формулы игрока: угол, деривация, Кориолис, имперские (T1.4a) | [specs/core-player-formulas.md](specs/core-player-formulas.md) | реализовано, слито в `master` 15.11 |
