@@ -37,7 +37,7 @@ import { resultSheet, ResultSheetView } from '../result/result.model';
 import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
-import { breathRing, correctionCells, drumCounterText, flagReadingText, isGlassTap, markerTarget, patrolLineText, notebookSheetTopPt, pressureText, TurretAxis } from './position.model';
+import { breathRing, correctionCells, dopeTileText, drumCounterText, flagReadingText, isGlassTap, markerTarget, patrolLineText, notebookSheetTopPt, pressureText, TurretAxis } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
 import { text } from '../../i18n';
 
@@ -204,7 +204,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
         counter: drumCounterText('windage', session.progress('windage')),
       },
       magnification: session.scope.magnification,
-      dope: playerDistanceM === null ? T.dopeEmpty : T.dope({ distanceM: playerDistanceM, elevationMil: dopeRowAt(notebook.context.card, notebook.distanceM!).elevationMil }),
+      dope: playerDistanceM === null ? T.dopeEmpty : dopeTileText(notebook.context.card, notebook.distanceM!),
       rounds: `${session.firingLine.magazineLeft} / ${session.firingLine.magazineLoaded}`,
       isMagazineChangeDue: session.isMagazineChangeDue,
       isBoltCycleDue: !session.isBoltAutomatic && session.isBoltCycleDue && this.end() === null,

@@ -1,3 +1,5 @@
+import { DopeCard, dopeRowAt } from '../../core/dope-card';
+import { roundToClicks } from '../../core/game-formulas';
 import { BOLT_STEP_TRAVEL_PT, BOLT_STEPS, BoltStep } from '../../sim/bolt';
 import { text } from '../../i18n';
 import { Vector2 } from '../../sim/noise';
@@ -59,6 +61,11 @@ export function correctionCells(scope: ScopeModel, dial: DialClicks, total: Note
     cells.push({ label: T.cells.labels.holdover, value: `${verticalText(scope, total.holdUpMil)} · ${horizontalText(scope, holdRightMil)}`, target: null, isOnTarget: true });
   }
   return cells;
+}
+
+export function dopeTileText(card: DopeCard, distanceM: number): string {
+  const elevationMil = roundToClicks(dopeRowAt(card, distanceM).elevationMil, card.clickMil) * card.clickMil;
+  return T.page.dope({ distanceM: Math.round(distanceM), elevationMil });
 }
 
 export function drumCounter(axis: TurretAxis, progress: TurretProgress): string {
