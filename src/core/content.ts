@@ -1,5 +1,5 @@
 import { text } from '../i18n';
-import { Cartridge, CartridgeId, Loadout, Rifle, ShotGeometry, Target } from './types';
+import { CartridgeId, CourseCartridge, Loadout, Rifle, ShotGeometry, Target } from './types';
 
 export const COURSE_RIFLE: Rifle = {
   name: text.content.rifleName,
@@ -16,7 +16,7 @@ export const RIFLE: Rifle = COURSE_RIFLE;
 
 const COURSE_BULLET = { bulletDiameterIn: 0.308, dragModel: 'G7' } as const;
 
-export const CARTRIDGES: readonly Cartridge[] = [
+export const CARTRIDGES: readonly CourseCartridge[] = [
   { id: 'A', ...text.content.cartridges.A, ...COURSE_BULLET, massG: 9.7, bulletLengthMm: 28.5, ballisticCoefficient: 0.19, muzzleVelocityMps: 860, muzzleVelocitySdMps: 10 },
   { id: 'B', ...text.content.cartridges.B, ...COURSE_BULLET, massG: 10.9, bulletLengthMm: 31.2, ballisticCoefficient: 0.218, muzzleVelocityMps: 800, muzzleVelocitySdMps: 7 },
   { id: 'C', ...text.content.cartridges.C, ...COURSE_BULLET, massG: 11.7, bulletLengthMm: 32.5, ballisticCoefficient: 0.255, muzzleVelocityMps: 775, muzzleVelocitySdMps: 6 },
@@ -34,8 +34,12 @@ export const STANDARD_PRESSURE_HPA = 1013;
 export const STANDARD_TEMPERATURE_C = 15;
 export const STANDARD_RELATIVE_HUMIDITY = 0.5;
 
-export function cartridgeById(id: CartridgeId): Cartridge {
+export function cartridgeById(id: CartridgeId): CourseCartridge {
   return CARTRIDGES.find(cartridge => cartridge.id === id) ?? CARTRIDGES[1];
+}
+
+export function isCourseCartridgeId(id: string): id is CartridgeId {
+  return CARTRIDGES.some(cartridge => cartridge.id === id);
 }
 
 export function courseLoadout(id: CartridgeId): Loadout {

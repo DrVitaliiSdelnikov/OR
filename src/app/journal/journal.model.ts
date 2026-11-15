@@ -7,7 +7,7 @@ import { COURSE, courseProgress, CourseResults, ExerciseId, ExerciseResult, Exer
 import { MainCause } from '../../sim/miss-breakdown';
 import { MODE_LABELS } from '../course/course-trail.model';
 import { RANK_LABELS } from '../home/home.model';
-import { CARTRIDGE_LETTERS } from '../notebook/notebook.model';
+import { CARTRIDGE_LETTERS, cartridgeLetter } from '../notebook/notebook.model';
 import { text } from '../../i18n';
 import { classStamp, MAIN_CAUSE_PHRASES, STAMP_TONES, StampTone } from '../result/result.model';
 import { DopeNotes } from '../review/review.model';
@@ -244,7 +244,7 @@ function elevationText(mil: number): string {
 
 export function cardsView(cards: readonly DopeCard[], notes: DopeNotes): CardView[] {
   return cards.map(card => ({
-    title: T.cardTitle({ letter: CARTRIDGE_LETTERS[card.cartridgeId] }),
+    title: T.cardTitle({ letter: cartridgeLetter(card.cartridgeId) }),
     rows: card.rows.map(row => {
       const note = (notes[card.cartridgeId] ?? []).find(item => item.distanceM === row.distanceM);
       return { distance: String(row.distanceM), factory: elevationText(row.elevationMil), player: note ? elevationText(note.elevationMil) : null };

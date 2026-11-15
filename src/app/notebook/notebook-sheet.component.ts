@@ -15,7 +15,7 @@ import { FormulaLine, FormulasSheetComponent } from './formulas-sheet.component'
 import { DopeNote, dopeNoteTexts } from '../review/review.model';
 import { ManualHubComponent } from './manual-hub.component';
 import {
-  CARTRIDGE_LETTERS,
+  cartridgeLetter,
   clockText,
   contributionText,
   correctionLine,
@@ -214,7 +214,7 @@ export class NotebookSheetComponent {
       stationWind: station ? texts.stationWind({ speedMps: station.windSpeedMps, time: stationTime }) : texts.stationWindEmpty,
       windCorrection: correctionLine('wind', factors.wind),
       dopeHeading: texts.dopeHeading({
-        cartridge: CARTRIDGE_LETTERS[notebook.context.card.cartridgeId],
+        cartridge: cartridgeLetter(notebook.context.card.cartridgeId),
         zeroM: COURSE_RIFLE.zeroM,
         temperatureC: STANDARD_TEMPERATURE_C,
         pressureHpa: STANDARD_PRESSURE_HPA,

@@ -25,6 +25,14 @@ export const content = {
     dot: (scope: MagnificationRange) => `Старый ${zoomText(scope)} · MIL-dot · 2-я плоскость`,
   } satisfies Record<ScopeId, (scope: MagnificationRange) => string>,
   freePlayTitle: 'Свободная игра',
+  profilePresets: {
+    '223-77': '.223 · 77 гр',
+    '65-140': '6,5 мм · 140 гр',
+    '308-175': '.308 · 175 гр',
+    '338-300': '.338 · 300 гр',
+    '6-105': '6 мм · 105 гр',
+    '300-215': '.300 магнум · 215 гр',
+  },
   exerciseTitles: {
     '00': 'Винтовка и прицел',
     '01': 'Первые щелчки',

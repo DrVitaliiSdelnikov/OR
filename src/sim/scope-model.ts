@@ -11,7 +11,7 @@ export type ScopeUnits = 'MIL' | 'MOA';
 export type ReticleKind = 'tree' | 'mil-dot' | 'moa-grid';
 
 export interface ScopeModel {
-  id: ScopeId;
+  id: string;
   name: string;
   reticle: ReticleKind;
   magnificationMin: number;
@@ -21,6 +21,10 @@ export interface ScopeModel {
   clickMrad: number;
   elevationTravelMrad: number;
   windageTravelMrad: number;
+}
+
+export interface CatalogScope extends ScopeModel {
+  id: ScopeId;
 }
 
 export interface FreePlayScopeUnlocks {
@@ -42,7 +46,7 @@ const COURSE_BODY = {
 
 const SCOPE_NAMES = text.content.scopes;
 
-export const SCOPES: readonly ScopeModel[] = [
+export const SCOPES: readonly CatalogScope[] = [
   { id: 'course-tree', name: SCOPE_NAMES['course-tree'](COURSE_BODY), reticle: 'tree', ...COURSE_BODY },
   { id: 'course-dot', name: SCOPE_NAMES['course-dot'](COURSE_BODY), reticle: 'mil-dot', ...COURSE_BODY },
   {

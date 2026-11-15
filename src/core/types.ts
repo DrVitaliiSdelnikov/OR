@@ -15,7 +15,7 @@ export interface Rifle {
 }
 
 export interface Cartridge {
-  id: CartridgeId;
+  id: string;
   name: string;
   blurb: string;
   massG: number;
@@ -25,6 +25,10 @@ export interface Cartridge {
   ballisticCoefficient: number;
   muzzleVelocityMps: number;
   muzzleVelocitySdMps: number;
+}
+
+export interface CourseCartridge extends Cartridge {
+  id: CartridgeId;
 }
 
 export interface Loadout {

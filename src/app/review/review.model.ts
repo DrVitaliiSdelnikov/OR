@@ -5,7 +5,7 @@ import { DopeCard } from '../../core/dope-card';
 import { calcPoints, FIRST_SHOT_POINTS, modeMultiplier, NotebookMode, SECOND_SHOT_POINTS } from '../../core/exercise-scoring';
 import { ScreenDirection, text } from '../../i18n';
 import { rangeByMilling, roundToClicks } from '../../core/game-formulas';
-import { CartridgeId, Correction } from '../../core/types';
+import { Correction } from '../../core/types';
 import { ExerciseShotRecord, PositionTask } from '../../sim/course';
 import { factorContributions, Notebook, NOTEBOOK_FACTORS, NotebookFactor, stepSheet, total } from '../../sim/notebook';
 import { CauseKind, MissBreakdown, MissCause } from '../../sim/miss-breakdown';
@@ -39,7 +39,7 @@ export interface DopeNote {
   elevationMil: number;
 }
 
-export type DopeNotes = Partial<Record<CartridgeId, DopeNote[]>>;
+export type DopeNotes = Partial<Record<string, DopeNote[]>>;
 
 export interface CauseRowView {
   kind: CauseKind;
@@ -151,7 +151,7 @@ export function targetPlaques(def: PositionTask, records: readonly ExerciseShotR
   return plaques;
 }
 
-export function withDopeNote(notes: DopeNotes, cartridgeId: CartridgeId, distanceM: number, elevationMil: number): DopeNotes {
+export function withDopeNote(notes: DopeNotes, cartridgeId: string, distanceM: number, elevationMil: number): DopeNotes {
   const others = (notes[cartridgeId] ?? []).filter(note => note.distanceM !== distanceM);
   return { ...notes, [cartridgeId]: [...others, { distanceM, elevationMil }] };
 }

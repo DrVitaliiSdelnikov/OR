@@ -1,4 +1,4 @@
-import { FLAG_DISTANCES_M } from '../../core/content';
+import { FLAG_DISTANCES_M, isCourseCartridgeId } from '../../core/content';
 import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { windClockShare } from '../../core/field';
 import { text } from '../../i18n';
@@ -37,6 +37,10 @@ export const NOTEBOOK_TABS: readonly { id: NotebookTab; label: string }[] = TAB_
 export const LOCKED_TABS: readonly string[] = T.lockedTabs;
 export const FACTOR_NAMES: Record<NotebookFactor, string> = T.factorNames;
 export const CARTRIDGE_LETTERS: Record<CartridgeId, string> = T.cartridgeLetters;
+
+export function cartridgeLetter(cartridgeId: string): string {
+  return isCourseCartridgeId(cartridgeId) ? CARTRIDGE_LETTERS[cartridgeId] : cartridgeId;
+}
 export const MILLING_PT_PER_MIL = 45;
 export const MILLING_GRID_MIL = 4;
 export const MAX_WIND_SPEED_MPS = 15;

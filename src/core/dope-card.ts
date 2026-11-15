@@ -1,7 +1,7 @@
 import { FLAT_GEOMETRY, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C, WIND_ZONE_LIMITS_M } from './content';
 import { BallisticsEngine } from './engine';
 import { roundToClicks } from './game-formulas';
-import { Atmosphere, CartridgeId, Loadout, TrajectoryPoint } from './types';
+import { Atmosphere, Loadout, TrajectoryPoint } from './types';
 
 export interface DopeRow {
   distanceM: number;
@@ -16,7 +16,7 @@ export interface DopeRow {
 }
 
 export interface DopeCard {
-  cartridgeId: CartridgeId;
+  cartridgeId: string;
   clickMil: number;
   zeroAngleMil: number;
   rows: readonly DopeRow[];
