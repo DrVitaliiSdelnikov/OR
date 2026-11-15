@@ -234,6 +234,35 @@ describe('teaching — 11 the patrol', () => {
   });
 });
 
+describe('teaching — 13 the slope', () => {
+  it('the conditions line, the angle step from the tile, the formula in the sheet; 3 hints', () => {
+    const start = next(snapshot('13'))!;
+    expect([start.anchor, start.kind, start.count, start.text]).toEqual(['position-geometry', 'explain', 3, 'Цель выше или ниже — угол места здесь. Под углом пуля падает меньше, чем в ДОПЕ']);
+    const tile = next(snapshot('13'), ['slope'])!;
+    expect([tile.anchor, tile.kind, tile.text]).toEqual(['tile-notebook', 'action', 'Посчитай шаг «Угол места» в блокноте']);
+    const formula = next(snapshot('13', { hasOpenedNotebook: true, sheetTab: 'total', openCalcStep: 'angle' }), ['slope'])!;
+    expect([formula.anchor, formula.number, formula.text]).toEqual(['calc-formula', 3, '(E + Z) × cos − Z: E — строка ДОПЕ, Z — угол нуля из шапки карточки, cos — у фишки прибора']);
+    expect(next(snapshot('13', { recordedSteps: ['angle'] }), ['slope'])).toBeNull();
+    expect(next(snapshot('13', { shotsFired: 1 }))).toBeNull();
+  });
+});
+
+describe('teaching — 14 the long range', () => {
+  it('latitude and azimuth, the steps from the tile, spin drift then Coriolis in the sheet; 4 hints', () => {
+    const start = next(snapshot('14'))!;
+    expect([start.anchor, start.kind, start.count, start.text]).toEqual(['position-geometry', 'explain', 4, 'Широта и азимут — здесь. Дальше 800 м в расчёт входят деривация и вращение Земли']);
+    const tile = next(snapshot('14'), ['earth'])!;
+    expect([tile.anchor, tile.kind, tile.text]).toEqual(['tile-notebook', 'action', 'Посчитай «Деривацию» и «Кориолис» в блокноте']);
+    expect(next(snapshot('14', { recordedSteps: ['spin'] }), ['earth'])!.id).toBe('spin-steps');
+    const spin = next(snapshot('14', { hasOpenedNotebook: true, sheetTab: 'total', openCalcStep: 'spin' }), ['earth'])!;
+    expect([spin.anchor, spin.number, spin.text]).toEqual(['calc-formula', 3, 'Деривация — колонка ДЕР строки ДОПЕ. Поправка — против ухода пули']);
+    const coriolis = next(snapshot('14', { hasOpenedNotebook: true, sheetTab: 'total', openCalcStep: 'coriolis', recordedSteps: ['spin'] }), ['earth'])!;
+    expect([coriolis.anchor, coriolis.number, coriolis.text]).toEqual(['calc-formula', 4, 'Кориолис: 0,0729 × t × sin φ. В северном полушарии пуля уходит вправо — поправка влево']);
+    expect(next(snapshot('14', { recordedSteps: ['spin', 'coriolis'] }), ['earth'])).toBeNull();
+    expect(next(snapshot('14', { shotsFired: 1 }))).toBeNull();
+  });
+});
+
 describe('teaching — 08 cartridge change', () => {
   it('waits for the empty magazine, names the next cartridge, then its own card', () => {
     expect(next(snapshot('08', { shotsFired: 1 }))).toBeNull();
@@ -286,8 +315,8 @@ describe('teaching — 02 and 03 moments', () => {
     expect(next({ ...fired, isBoltCycleDue: false, shotsFired: 2 }, ['breath'])).toBeNull();
   });
 
-  it('scripts: 01–06, 08–11; none for 00, 07, 12', () => {
-    expect((['01', '02', '03', '04', '05', '06', '08', '09', '10', '11'] as ExerciseId[]).every(id => teachingScript(id) !== null)).toBe(true);
+  it('scripts: 01–06, 08–11, 13–14; none for 00, 07, 12', () => {
+    expect((['01', '02', '03', '04', '05', '06', '08', '09', '10', '11', '13', '14'] as ExerciseId[]).every(id => teachingScript(id) !== null)).toBe(true);
     expect((['00', '07', '12'] as ExerciseId[]).map(teachingScript)).toEqual([null, null, null]);
   });
 });
@@ -325,7 +354,7 @@ describe('every cut-out has its element', () => {
 
   it('each anchor of 01–03 is marked with data-hint', () => {
     const samples = [snapshot('02', { lastCorrection: { upClicks: 3, rightClicks: 0 } }), snapshot('02', { lastCorrection: { upClicks: 0, rightClicks: 3 } })];
-    const anchors = new Set((['01', '02', '03', '04', '05', '06', '08', '10'] as ExerciseId[]).flatMap(id => teachingScript(id)!.flatMap(step => samples.map(sample => step.anchor(sample)))));
+    const anchors = new Set((['01', '02', '03', '04', '05', '06', '08', '10', '13', '14'] as ExerciseId[]).flatMap(id => teachingScript(id)!.flatMap(step => samples.map(sample => step.anchor(sample)))));
     for (const anchor of [...anchors].filter(name => !name.startsWith('factor-') && !name.startsWith('tab-') && !name.startsWith('step-'))) {
       expect(markup.includes(`data-hint="${anchor}"`), anchor).toBe(true);
     }

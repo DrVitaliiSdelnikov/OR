@@ -1,6 +1,6 @@
 import { modeMultiplier, NotebookMode, SECOND_CLASS_SHARE, THIRD_CLASS_SHARE } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
-import { CourseResults, ExerciseDef, TargetDistance } from '../../sim/course';
+import { ATTESTATION_ID, CourseResults, ExerciseDef, TargetDistance } from '../../sim/course';
 import { teachingScript } from '../instructor/teaching.model';
 import { classStamp, firstClassGoalText, isPaperExercise } from '../result/result.model';
 import { exerciseSheet, ExerciseSheet, MODE_LABELS } from './course-trail.model';
@@ -27,7 +27,6 @@ export interface BriefingCard {
   introLine: string | null;
 }
 
-const ATTESTATION_ID = '12';
 const INTRO_ID = '00';
 const T = text.briefing;
 

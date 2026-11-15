@@ -28,15 +28,16 @@ beforeAll(async () => {
 });
 
 describe('карточки терминов', () => {
-  it('у каждого термина курса есть карточка, лишних нет, всего 47', () => {
+  it('у каждого термина курса есть карточка, лишних нет, всего 55', () => {
     const cardTerms = TERM_CARDS.map(card => card.term);
     expect(new Set(cardTerms).size).toBe(cardTerms.length);
     expect([...cardTerms].sort()).toEqual([...COURSE_TERMS].sort());
-    expect(cardTerms).toHaveLength(47);
+    expect(cardTerms).toHaveLength(55);
   });
 
-  it('глава — одна из 12, в каждой главе есть термины', () => {
-    expect(TEXTBOOK_CHAPTERS).toHaveLength(12);
+  it('глава — одна из 13, в каждой главе есть термины', () => {
+    expect(TEXTBOOK_CHAPTERS).toHaveLength(13);
+    expect(TEXTBOOK_CHAPTERS[12]).toBe('Угол и вращение Земли');
     TERM_CARDS.forEach(card => expect(TEXTBOOK_CHAPTERS).toContain(card.chapter));
     TEXTBOOK_CHAPTERS.forEach(chapter => expect(TERM_CARDS.some(card => card.chapter === chapter)).toBe(true));
   });
@@ -73,13 +74,27 @@ describe('открытые термины', () => {
     expect(opened.has('миллинг')).toBe(false);
   });
 
-  it('«открыть всё» — все 47', () => {
-    expect(openedTerms(results([], false), true).size).toBe(47);
+  it('«открыть всё» — все 55', () => {
+    expect(openedTerms(results([], false), true).size).toBe(55);
+  });
+
+  it('допуск к 13 открывает угол места, угол нуля, правило косинуса и высоту; деривация — допуском к 14', () => {
+    const toAttestation: ExerciseId[] = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+    expect(openedTerms(results(toAttestation), false).has('угол места')).toBe(false);
+    const after13 = openedTerms(results([...toAttestation, '13']), false);
+    for (const term of ['угол места', 'угол нуля', 'правило косинуса', 'высота стрельбища']) {
+      expect(after13.has(term), term).toBe(true);
+    }
+    expect(after13.has('деривация')).toBe(false);
+    const after14 = openedTerms(results([...toAttestation, '13', '14']), false);
+    for (const term of ['деривация', 'твист', 'Кориолис', 'Этвёш']) {
+      expect(after14.has(term), term).toBe(true);
+    }
   });
 });
 
 describe('оглавление', () => {
-  it('12 глав по порядку, каждый термин ровно в одной', () => {
+  it('13 глав по порядку, каждый термин ровно в одной', () => {
     const view = textbookView(results([]), false);
     expect(view.chapters.map(chapter => chapter.title)).toEqual(TEXTBOOK_CHAPTERS);
     const listed = view.chapters.flatMap(chapter => chapter.terms.map(tile => tile.term));
@@ -99,10 +114,10 @@ describe('оглавление', () => {
     expect(tiles.find(item => item.term === 'клик')).toMatchObject({ isOpen: true, lockText: null });
   });
 
-  it('счётчик «N / 47 терминов»', () => {
-    expect(textbookView(results([]), false).counterText).toBe('5 / 47 терминов');
-    expect(textbookView(results(['01']), false).counterText).toBe('11 / 47 терминов');
-    expect(textbookView(results([], false), true).counterText).toBe('47 / 47 терминов');
+  it('счётчик «N / 55 терминов»', () => {
+    expect(textbookView(results([]), false).counterText).toBe('5 / 55 терминов');
+    expect(textbookView(results(['01']), false).counterText).toBe('11 / 55 терминов');
+    expect(textbookView(results([], false), true).counterText).toBe('55 / 55 терминов');
   });
 });
 
@@ -116,6 +131,35 @@ describe('карточка термина', () => {
     expect(sheet.example).toContain(`/ ${windConstant}`);
     expect(sheet.example).toContain(`= ${commaText(correctionMil, 2)} MIL`);
     expect(sheet.example).toContain(`${Math.abs(roundToClicks(correctionMil, CLICK_MIL))}\u00a0кл.`);
+  });
+
+  it('правило косинуса: пример по строке 600 м карточки Б, ∠ 25°, угол нуля из шапки, cos до 0,01, как у фишки', () => {
+    const card = cards.get('B')!;
+    const row = dopeRowAt(card, 600);
+    const cos = Math.round(Math.cos((25 * Math.PI) / 180) * 100) / 100;
+    const inclinedMil = (row.elevationMil + card.zeroAngleMil) * cos - card.zeroAngleMil;
+    const sheet = termSheetView('правило косинуса', openedTerms(results([], false), true), cards);
+    expect(sheet.formula?.line).toBe('E∠ = (E + Z) × cos θ − Z');
+    expect(sheet.example).toContain(`(${commaText(row.elevationMil, 1)} + ${commaText(card.zeroAngleMil, 2)}) × ${commaText(cos, 2)}`);
+    expect(sheet.example).toContain(`= ${commaText(inclinedMil, 2)} MIL`);
+    expect(termSheetView('угол нуля', openedTerms(results([], false), true), cards).example).toContain(`Z = ${commaText(card.zeroAngleMil, 2)} MIL`);
+  });
+
+  it('деривация, Кориолис, Этвёш: примеры на 1000 м по строке карточки Б, широта 55°, азимут 90°', () => {
+    const row = dopeRowAt(cards.get('B')!, 1000);
+    const opened = openedTerms(results([], false), true);
+    expect(termSheetView('деривация', opened, cards).example).toContain(`${commaText(row.spinDriftMil, 2)} MIL`);
+    const coriolisMil = 0.0729 * row.timeOfFlightS * Math.round(Math.sin((55 * Math.PI) / 180) * 100) / 100;
+    expect(termSheetView('Кориолис', opened, cards).example).toContain(`= ${commaText(coriolisMil, 2)} MIL`);
+    const eotvosMil = 0.0729 * row.timeOfFlightS * (Math.round(Math.cos((55 * Math.PI) / 180) * 100) / 100);
+    expect(termSheetView('Этвёш', opened, cards).example).toContain(`= ${commaText(eotvosMil, 2)} MIL`);
+    expect(termSheetView('Этвёш', opened, null).example).toBeNull();
+  });
+
+  it('твист и высота стрельбища: из винтовки курса и стандартной атмосферы', () => {
+    const opened = openedTerms(results([], false), true);
+    expect(termSheetView('твист', opened, null).example).toContain('1 оборот на 10″, правый');
+    expect(termSheetView('высота стрельбища', opened, null).example).toContain('1500 м — 846 гПа');
   });
 
   it('пример, которому нужна карточка ДОПЕ, ждёт её; формула тысячной считается сразу', () => {

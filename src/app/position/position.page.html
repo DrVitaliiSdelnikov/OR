@@ -10,7 +10,7 @@
           <div class="subtitle mono" data-test="position-patrol" data-hint="position-patrol">{{ patrolLine }}</div>
         }
         @if (state?.geometryLine; as geometryLine) {
-          <div class="subtitle mono" data-test="position-geometry">{{ geometryLine }}</div>
+          <div class="subtitle mono" data-test="position-geometry" data-hint="position-geometry">{{ geometryLine }}</div>
         }
       </div>
       <button class="wind-tile mono" type="button" [disabled]="!state" (click)="openSheet('wind')" data-test="wind-tile" data-hint="wind-tile">

@@ -1,3 +1,4 @@
+import { standardPressureHpaAt } from '../../core/scenario';
 import { cartridgeById, COURSE_RIFLE, FLAG_DEG_PER_MPS, FLAG_DISTANCES_M, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
 import { DopeCard, DopeRow, dopeRowAt } from '../../core/dope-card';
 import { impactSoundDelayS, windClockShare } from '../../core/field';
@@ -66,6 +67,13 @@ const ZONES_EXAMPLE_DISTANCE_M = 500;
 const ATMOSPHERE_EXAMPLE = { distanceM: 600, temperatureC: -5, pressureHpa: 1030 };
 const LEAD_EXAMPLE = { targetSpeedMps: 1.1, clockHours: 3, distanceM: 400 };
 const SECOND_SHOT_EXAMPLE = { rightMil: 0.3, downMil: 0.2 };
+const LOOK_ANGLE_EXAMPLE = { upDeg: 15, downDeg: 15 };
+const COSINE_EXAMPLE = { distanceM: 600, angleDeg: 25 };
+const ALTITUDE_EXAMPLE = { lowAltitudeM: 0, highAltitudeM: 1500 };
+const EARTH_EXAMPLE = { distanceM: 1000, latitudeDeg: 55, azimuthDeg: 90 };
+const EARTH_ROTATION_MIL_PER_S = 0.0729;
+const RADIANS_PER_DEGREE = Math.PI / 180;
+const CHIP_TRIG_SCALE = 100;
 
 const CARD_TEXTS = T.terms({ rifleName: COURSE_RIFLE.name, zeroM: COURSE_RIFLE.zeroM, flagDistancesM: FLAG_DISTANCES_M });
 
@@ -86,6 +94,8 @@ function clickCount(mil: number): number {
 }
 
 const exampleCartridgeName = (): string => cartridgeById(EXAMPLE_CARTRIDGE_ID).name;
+
+const chipTrig = (trig: (radians: number) => number, degrees: number): number => Math.round(trig(degrees * RADIANS_PER_DEGREE) * CHIP_TRIG_SCALE) / CHIP_TRIG_SCALE;
 
 const EXAMPLES: Partial<Record<TermId, TermExample>> = {
   coldBore: () => {
@@ -240,6 +250,67 @@ const EXAMPLES: Partial<Record<TermId, TermExample>> = {
           leadMil: leadMil(LEAD_EXAMPLE.targetSpeedMps, LEAD_EXAMPLE.clockHours, row.timeOfFlightS, LEAD_EXAMPLE.distanceM),
         })
       : null;
+  },
+  lookAngle: () => EXAMPLE.lookAngle({ ...LOOK_ANGLE_EXAMPLE, cos: chipTrig(Math.cos, LOOK_ANGLE_EXAMPLE.upDeg) }),
+  zeroAngle: cards => {
+    const card = cards?.get(EXAMPLE_CARTRIDGE_ID);
+    return card ? EXAMPLE.zeroAngle({ cartridgeName: exampleCartridgeName(), zeroM: COURSE_RIFLE.zeroM, zeroAngleMil: card.zeroAngleMil }) : null;
+  },
+  cosineRule: cards => {
+    const card = cards?.get(EXAMPLE_CARTRIDGE_ID);
+    if (!card) {
+      return null;
+    }
+    const row = dopeRowAt(card, COSINE_EXAMPLE.distanceM);
+    const cos = chipTrig(Math.cos, COSINE_EXAMPLE.angleDeg);
+    const inclinedMil = (row.elevationMil + card.zeroAngleMil) * cos - card.zeroAngleMil;
+    return EXAMPLE.cosineRule({
+      cartridgeName: exampleCartridgeName(),
+      ...COSINE_EXAMPLE,
+      elevationMil: row.elevationMil,
+      zeroAngleMil: card.zeroAngleMil,
+      cos,
+      inclinedMil,
+      clicks: clickCount(row.elevationMil - inclinedMil),
+    });
+  },
+  rangeAltitude: () =>
+    EXAMPLE.rangeAltitude({
+      ...ALTITUDE_EXAMPLE,
+      lowPressureHpa: standardPressureHpaAt(ALTITUDE_EXAMPLE.lowAltitudeM),
+      highPressureHpa: standardPressureHpaAt(ALTITUDE_EXAMPLE.highAltitudeM),
+    }),
+  spinDrift: cards => {
+    const row = exampleRow(cards, EARTH_EXAMPLE.distanceM);
+    return row ? EXAMPLE.spinDrift({ cartridgeName: exampleCartridgeName(), distanceM: EARTH_EXAMPLE.distanceM, spinDriftMil: row.spinDriftMil, clicks: clickCount(row.spinDriftMil) }) : null;
+  },
+  twist: () => EXAMPLE.twist({ rifleName: COURSE_RIFLE.name, twistInches: COURSE_RIFLE.twistInchesPerTurn, isRight: COURSE_RIFLE.twistDirection === 'right' }),
+  coriolis: cards => {
+    const row = exampleRow(cards, EARTH_EXAMPLE.distanceM);
+    if (!row) {
+      return null;
+    }
+    const sinLatitude = chipTrig(Math.sin, EARTH_EXAMPLE.latitudeDeg);
+    return EXAMPLE.coriolis({
+      distanceM: EARTH_EXAMPLE.distanceM,
+      timeOfFlightS: row.timeOfFlightS,
+      latitudeDeg: EARTH_EXAMPLE.latitudeDeg,
+      sinLatitude,
+      coriolisMil: EARTH_ROTATION_MIL_PER_S * row.timeOfFlightS * sinLatitude,
+    });
+  },
+  eotvos: cards => {
+    const row = exampleRow(cards, EARTH_EXAMPLE.distanceM);
+    if (!row) {
+      return null;
+    }
+    const cosLatitude = chipTrig(Math.cos, EARTH_EXAMPLE.latitudeDeg);
+    return EXAMPLE.eotvos({
+      ...EARTH_EXAMPLE,
+      timeOfFlightS: row.timeOfFlightS,
+      cosLatitude,
+      eotvosMil: EARTH_ROTATION_MIL_PER_S * row.timeOfFlightS * cosLatitude * chipTrig(Math.sin, EARTH_EXAMPLE.azimuthDeg),
+    });
   },
   secondShotCorrection: () =>
     EXAMPLE.secondShotCorrection({

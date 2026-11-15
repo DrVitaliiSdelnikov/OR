@@ -24,8 +24,12 @@ describe('continue card', () => {
     });
   });
 
-  it('course finished: free play', () => {
-    expect(continueCard(results(Object.fromEntries(ADMISSION_IDS.map(id => [id, 3]))))).toEqual({ kind: 'free-play' });
+  it('course finished with 13–14: free play', () => {
+    expect(continueCard(results(Object.fromEntries([...ADMISSION_IDS, '13', '14'].map(id => [id, 3]))))).toEqual({ kind: 'free-play' });
+  });
+
+  it('after the attestation: continue with 13', () => {
+    expect(continueCard(results(Object.fromEntries(ADMISSION_IDS.map(id => [id, 3]))))).toEqual({ kind: 'continue', exerciseId: '13', title: 'Горный склон', status: 'new' });
   });
 });
 

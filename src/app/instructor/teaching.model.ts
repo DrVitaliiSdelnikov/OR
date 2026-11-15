@@ -1,5 +1,5 @@
 import { ExerciseId, FIRST_FIRING_EXERCISE_ID } from '../../sim/course';
-import { FactorContribution, NotebookFactor } from '../../sim/notebook';
+import { FactorContribution, NotebookFactor, NotebookStepId } from '../../sim/notebook';
 import { BREATH_HOLD_CALM_S } from '../../sim/sway';
 import { FLAG_DISTANCES_M } from '../../core/content';
 import { FULL_MEASUREMENT_S } from '../../sim/notebook';
@@ -42,6 +42,8 @@ const isRangeMeasured = (state: InstructorSnapshot): boolean => state.reticleMil
 const isWindStepRecorded = (state: InstructorSnapshot): boolean => state.recordedSteps.includes('wind');
 const isZonesStepRecorded = (state: InstructorSnapshot): boolean => state.recordedSteps.includes('zones');
 const isLeadStepRecorded = (state: InstructorSnapshot): boolean => state.recordedSteps.includes('lead');
+const isStepRecorded = (step: NotebookStepId) => (state: InstructorSnapshot): boolean => state.recordedSteps.includes(step);
+const isCalcStepOpen = (step: NotebookStepId) => (state: InstructorSnapshot): boolean => state.openCalcStep === step;
 const isAnyFlagRead = (state: InstructorSnapshot): boolean => state.flagsRead > 0;
 const isFirstReviewClosed = (state: InstructorSnapshot): boolean => state.shotsFired > 1 || (hasFired(state) && !state.isReviewOpen);
 
@@ -327,6 +329,68 @@ const PATROL: readonly TeachingStep[] = [
   },
 ];
 
+const SLOPE: readonly TeachingStep[] = [
+  {
+    id: 'slope',
+    kind: 'explain',
+    anchor: fixed('position-geometry'),
+    text: fixed(T.slope.slope),
+    isDue: always,
+    isDone: hasFired,
+  },
+  {
+    id: 'angle-step',
+    kind: 'action',
+    anchor: fixed('tile-notebook'),
+    text: fixed(T.slope.angleStep),
+    isDue: isScreenFree,
+    isDone: state => isSheetOpen(state) || isStepRecorded('angle')(state) || hasFired(state),
+  },
+  {
+    id: 'angle-formula',
+    kind: 'explain',
+    anchor: fixed('calc-formula'),
+    text: fixed(T.slope.angleFormula),
+    isDue: isCalcStepOpen('angle'),
+    isDone: state => isStepRecorded('angle')(state) || hasFired(state),
+  },
+];
+
+const LONG_RANGE: readonly TeachingStep[] = [
+  {
+    id: 'earth',
+    kind: 'explain',
+    anchor: fixed('position-geometry'),
+    text: fixed(T.longRange.earth),
+    isDue: always,
+    isDone: hasFired,
+  },
+  {
+    id: 'spin-steps',
+    kind: 'action',
+    anchor: fixed('tile-notebook'),
+    text: fixed(T.longRange.steps),
+    isDue: isScreenFree,
+    isDone: state => isSheetOpen(state) || (isStepRecorded('spin')(state) && isStepRecorded('coriolis')(state)) || hasFired(state),
+  },
+  {
+    id: 'spin-formula',
+    kind: 'explain',
+    anchor: fixed('calc-formula'),
+    text: fixed(T.longRange.spinFormula),
+    isDue: isCalcStepOpen('spin'),
+    isDone: state => isStepRecorded('spin')(state) || hasFired(state),
+  },
+  {
+    id: 'coriolis-formula',
+    kind: 'explain',
+    anchor: fixed('calc-formula'),
+    text: fixed(T.longRange.coriolisFormula),
+    isDue: isCalcStepOpen('coriolis'),
+    isDone: state => isStepRecorded('coriolis')(state) || hasFired(state),
+  },
+];
+
 const MILLING: readonly TeachingStep[] = [
   {
     ...notebookStep(T.milling.notebook),
@@ -430,6 +494,8 @@ const SCRIPTS: Partial<Record<ExerciseId, readonly TeachingStep[]>> = {
   '09': ZONE_FLAGS,
   '10': MANUAL_HARD,
   '11': PATROL,
+  '13': SLOPE,
+  '14': LONG_RANGE,
 };
 
 export function teachingScript(exerciseId: ExerciseId): readonly TeachingStep[] | null {

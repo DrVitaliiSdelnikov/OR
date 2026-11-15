@@ -14,8 +14,8 @@ test.describe('учебник курсанта (A7.3)', () => {
     await page.goto('/');
     await page.getByTestId('tile-textbook').click();
     await page.waitForURL('**/textbook');
-    await expect(page.getByTestId('textbook-counter')).toHaveText('11 / 47 терминов');
-    await expect(page.locator('[data-test^="textbook-chapter-"]')).toHaveCount(12);
+    await expect(page.getByTestId('textbook-counter')).toHaveText('11 / 55 терминов');
+    await expect(page.locator('[data-test^="textbook-chapter-"]')).toHaveCount(13);
     await expect(page.getByTestId('textbook-term')).toHaveCount(11);
     const milling = page.getByTestId('textbook-term-locked').filter({ hasText: 'миллинг' });
     await expect(milling).toContainText('откроется в упр. 05');

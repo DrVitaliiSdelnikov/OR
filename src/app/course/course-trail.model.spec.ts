@@ -7,9 +7,9 @@ function results(bestClasses: CourseResults['bestClasses'], isIntroCompleted = t
 }
 
 describe('trail nodes', () => {
-  it('first launch: thirteen nodes, only the intro is current, the rest locked', () => {
+  it('first launch: fifteen nodes, only the intro is current, the rest locked', () => {
     const nodes = trailNodes(results({}, false));
-    expect(nodes.map(node => node.id)).toEqual(['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']);
+    expect(nodes.map(node => node.id)).toEqual(['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14']);
     expect(nodes[0].state).toBe('current');
     expect(nodes.slice(1).every(node => node.state === 'locked')).toBe(true);
   });
@@ -41,9 +41,19 @@ describe('trail nodes', () => {
   });
 
   it('a finished course has no current node', () => {
-    const allIds = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+    const allIds = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14'];
     const nodes = trailNodes(results(Object.fromEntries(allIds.map(id => [id, 2]))));
     expect(nodes.every(node => node.state === 'passed')).toBe(true);
+  });
+
+  it('after the attestation 13 is current and 14 locked; the attestation mark stays on 12', () => {
+    const toAttestation = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+    const nodes = trailNodes(results(Object.fromEntries(toAttestation.map(id => [id, 3]))));
+    expect(nodes.slice(-3).map(node => [node.id, node.state, node.isAttestation])).toEqual([
+      ['12', 'passed', true],
+      ['13', 'current', false],
+      ['14', 'locked', false],
+    ]);
   });
 });
 
@@ -85,6 +95,16 @@ describe('exercise sheet', () => {
     expect(sheet.targets).toBe('10 × гонг 0,5–0,7 м · неизвестная, 200–700 м, туда и обратно');
     expect(sheet.wind).toBe('разный по зонам');
     expect(sheet.atmosphere).toBe('по погоде');
+  });
+
+  it('13: the slope and the altitude in the conditions; 14: spin drift and the latitude; 0.7 m gongs at 800–1000 m', () => {
+    const slope = exerciseSheet(exerciseById('13')!);
+    expect(slope.targets).toBe('4 × гонг 0,5–0,7 м · 400–700 м');
+    expect(slope.atmosphere).toBe('по погоде · ∠ 10–25° вверх или вниз · высота 1000–1500 м');
+    const longRange = exerciseSheet(exerciseById('14')!);
+    expect(longRange.targets).toBe('4 × гонг 0,7 м · 800–1000 м');
+    expect(longRange.atmosphere).toBe('по погоде · деривация · широта 40–60°');
+    expect(longRange.mode).toBe('САМ · лёгкий');
   });
 
   it('00 has no targets', () => {

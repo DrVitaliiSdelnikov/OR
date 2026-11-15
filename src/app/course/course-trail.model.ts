@@ -1,9 +1,9 @@
 import { ExerciseClass, NotebookMode } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { decimal } from '../../i18n/format';
-import { ValueRange } from '../../core/scenario';
+import { ScenarioOptions, ValueRange } from '../../core/scenario';
 import { CartridgeId } from '../../core/types';
-import { COURSE, courseProgress, CourseResults, ExerciseDef, ExerciseId, ExerciseTargets, TargetDistance } from '../../sim/course';
+import { ATTESTATION_ID, COURSE, courseProgress, CourseResults, ExerciseDef, ExerciseId, ExerciseTargets, TargetDistance } from '../../sim/course';
 
 export interface ExerciseSheet {
   id: ExerciseId;
@@ -29,7 +29,6 @@ export interface TrailNode {
 }
 
 const INTRO_ID: ExerciseId = '00';
-const ATTESTATION_ID: ExerciseId = '12';
 const GONG_DIAMETER_M = 0.5;
 const LARGE_GONG_DIAMETER_M = 0.7;
 const LARGE_GONG_FROM_M = 600;
@@ -76,7 +75,7 @@ export function exerciseSheet(def: ExerciseDef): ExerciseSheet {
     targets: def.targets ? targetsText(def.targets) : T.noShooting,
     shots: shotsText(def),
     wind: windText(conditions.windScale, conditions.windSpeedRangeMps, conditions.windClocks, conditions.isWindUniform),
-    atmosphere: atmosphereText(conditions.temperatureRangeC, conditions.pressureRangeHpa),
+    atmosphere: [atmosphereText(conditions.temperatureRangeC, conditions.pressureRangeHpa), ...terrainTexts(conditions)].join(T.conditionsSeparator),
     mode: def.notebookMode ? MODE_LABELS[def.notebookMode] : T.none,
     terms: def.terms,
   };
@@ -122,6 +121,15 @@ function atmosphereText(temperatureRange: ValueRange | undefined, pressureRange:
   const [coldest, warmest] = temperatureRange;
   const temperature = coldest === warmest ? T.temperature({ celsius: coldest }) : T.temperatureRange({ coldestC: coldest, warmestC: warmest });
   return T.atmosphere({ temperature, pressureRange: rangeText(pressureRange) });
+}
+
+function terrainTexts(conditions: ScenarioOptions): string[] {
+  return [
+    ...(conditions.lookAngleRangeDeg ? [T.slope({ range: rangeText(conditions.lookAngleRangeDeg), isEitherWay: conditions.isLookAngleEitherWay === true })] : []),
+    ...(conditions.altitudeRangeM ? [T.altitude({ range: rangeText(conditions.altitudeRangeM) })] : []),
+    ...(conditions.isSpinDriftOn ? [T.spinDrift] : []),
+    ...(conditions.coriolisLatitudeRangeDeg ? [T.latitude({ range: rangeText(conditions.coriolisLatitudeRangeDeg) })] : []),
+  ];
 }
 
 function distanceText(distance: TargetDistance): string {

@@ -55,10 +55,9 @@ function point(upMrad: number, rightMrad: number): Correction {
 const SEEDS = Array.from({ length: 40 }, (_, index) => 1000 + index * 37);
 
 describe('COURSE catalog', () => {
-  it('has the intro and twelve exercises in order', () => {
-    expect(COURSE.map(def => def.id)).toEqual(['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']);
+  it('has the intro, twelve exercises to the attestation and 13–14 after it, in order', () => {
+    expect(COURSE.map(def => def.id)).toEqual(['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14']);
     expect(exercise('00').targets).toBeNull();
-    expect(exerciseById('13' as ExerciseId)).toBeUndefined();
   });
 
   it('exercise 08 is three stages with cartridges A, B and C', () => {
@@ -546,7 +545,7 @@ describe('course progress', () => {
     expect(courseProgress({ isIntroCompleted: true, bestClasses: { ...allTop, '12': 0 } }).freePlayUnlocks.secondFocalPlaneScope).toBe(false);
     expect(courseProgress({ isIntroCompleted: true, bestClasses: { '09': 3 } }).freePlayUnlocks.longRangeScope).toBe(true);
     expect(finished.rank).toBe('sniper-instructor');
-    expect(finished.nextExerciseId).toBeNull();
+    expect(finished.nextExerciseId).toBe('13');
     const oneSecond: CourseResults['bestClasses'] = { ...allTop, '07': 2 };
     expect(courseProgress({ isIntroCompleted: true, bestClasses: oneSecond }).rank).toBe('sniper');
   });

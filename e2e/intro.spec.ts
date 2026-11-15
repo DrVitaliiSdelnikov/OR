@@ -89,7 +89,7 @@ test.describe('упр. 00 «Винтовка и прицел» (A7.5)', () => {
     await expect(page.getByTestId('node-00')).toContainText('пройдено');
     await expect(page.getByTestId('node-01')).toBeEnabled();
     await page.goto('/textbook');
-    await expect(page.getByTestId('textbook-counter')).toHaveText('5 / 47 терминов');
+    await expect(page.getByTestId('textbook-counter')).toHaveText('5 / 55 терминов');
     await page.goto('/journal');
     await expect(page.getByTestId('journal-empty')).toBeVisible();
   });

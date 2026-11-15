@@ -23,7 +23,7 @@ import { MainCause } from './miss-breakdown';
 import { CALL_TOLERANCE_MIL, ShotDiagnosis } from './shot-review';
 import { text } from '../i18n';
 
-export type ExerciseId = '00' | '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10' | '11' | '12';
+export type ExerciseId = '00' | '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10' | '11' | '12' | '13' | '14';
 
 export type TargetDistance =
   | { kind: 'fixed'; distanceM: number }
@@ -177,6 +177,8 @@ const LIGHT_WIND: ScenarioOptions = { isWindUniform: true, windSpeedRangeMps: [2
 const MODERATE_WIND: ScenarioOptions = { isWindUniform: true, windSpeedRangeMps: [4, 6] };
 const ZONE_WIND: ScenarioOptions = { isWindUniform: false };
 const OBLIQUE_CLOCKS = [1, 2, 4, 5, 7, 8, 10, 11];
+const MOUNTAIN_SLOPE: ScenarioOptions = { lookAngleRangeDeg: [10, 25], isLookAngleEitherWay: true, altitudeRangeM: [1000, 1500] };
+const EARTH_ROTATION: ScenarioOptions = { isSpinDriftOn: true, coriolisLatitudeRangeDeg: [40, 60] };
 const KNOWN_DISTANCE_STEP_M = 50;
 const UNKNOWN_DISTANCE_STEP_M = 5;
 const GONG_DIAMETER_M = 0.5;
@@ -198,6 +200,7 @@ const POINTS_PER_PAPER_HIT = 10;
 const DISTANCE_EPSILON_MIL = 1e-9;
 const MET: GoalCheck = { isMet: true };
 const NOT_MET: GoalCheck = { isMet: false };
+const EARTH_ROTATION_STEPS: readonly CheckRowKind[] = ['spin', 'coriolis', 'eotvos'];
 const NO_SCORE: ScoreParts = { targetSum: 0, calcSum: 0, multiplier: 1, referencePenalty: 0 };
 
 const GOALS = text.content.goals;
@@ -218,6 +221,7 @@ const GOAL_TEXTS: Record<ExerciseId, ExerciseGoalTexts> = {
 const TITLES = text.content.exerciseTitles;
 
 export const FIRST_FIRING_EXERCISE_ID: ExerciseId = '01';
+export const ATTESTATION_ID: ExerciseId = '12';
 
 export const COURSE: readonly ExerciseDef[] = [
   exerciseDef('00', TITLES['00'], null, { stages: [], hasColdBore: false, notebookMode: null, conditions: CALM }),
@@ -263,6 +267,14 @@ export const COURSE: readonly ExerciseDef[] = [
     modeChoices: ['manual-easy', 'manual-hard'],
     conditions: ZONE_WIND,
   }),
+  exerciseDef('13', TITLES['13'], { count: 4, distance: { kind: 'known', fromM: 400, toM: 700 } }, {
+    notebookMode: 'manual-easy',
+    conditions: { ...LIGHT_WIND, ...MOUNTAIN_SLOPE },
+  }),
+  exerciseDef('14', TITLES['14'], { count: 4, distance: { kind: 'known', fromM: 800, toM: 1000 } }, {
+    notebookMode: 'manual-easy',
+    conditions: { ...LIGHT_WIND, ...EARTH_ROTATION },
+  }),
 ];
 
 const SKILL_GOALS: Record<ExerciseId, (run: ExerciseRun) => SkillGoals> = {
@@ -297,6 +309,14 @@ const SKILL_GOALS: Record<ExerciseId, (run: ExerciseRun) => SkillGoals> = {
   }),
   '11': patrolGoals,
   '12': run => ({ skill: { isMet: run.shots.length > 0 && !run.hasOpenedReference }, top: { isMet: run.mode === 'manual-hard' } }),
+  '13': run => ({
+    skill: tallyChecks(run, check => isStepWithoutError(check, 'angle')),
+    top: tallyChecks(run, check => check.verdict === 'exact' && check.rowVerdicts.angle !== undefined),
+  }),
+  '14': run => ({
+    skill: tallyChecks(run, check => isStepWithoutError(check, 'spin') && isStepWithoutError(check, 'coriolis')),
+    top: tallyChecks(run, check => check.verdict === 'exact' && EARTH_ROTATION_STEPS.every(step => check.rowVerdicts[step] !== undefined)),
+  }),
 };
 
 export function withChosenMode<T extends PositionTask>(def: T, mode: NotebookMode | undefined): T {
@@ -373,7 +393,7 @@ export function mergeBestClass(previous: ExerciseClass | undefined, next: Exerci
 }
 
 export function courseProgress(results: CourseResults, isEverythingUnlocked = false): CourseProgress {
-  const exercises = COURSE.filter(def => def.targets);
+  const exercises = COURSE.slice(0, COURSE.findIndex(def => def.id === ATTESTATION_ID) + 1).filter(def => def.targets);
   const isAdmitted = (id: ExerciseId): boolean => (results.bestClasses[id] ?? 0) !== 0;
   const admissions = exercises.filter(def => isAdmitted(def.id)).length;
   const isEveryExerciseTopClass = exercises.every(def => results.bestClasses[def.id] === 1);
@@ -536,6 +556,11 @@ function firstShots(run: ExerciseRun): ExerciseShotRecord[] {
 function tally<T>(items: readonly T[], predicate: (item: T) => boolean): GoalCheck {
   const passed = items.filter(predicate).length;
   return { isMet: items.length > 0 && passed === items.length, passed, total: items.length };
+}
+
+function isStepWithoutError(check: ShotCheckSummary, step: CheckRowKind): boolean {
+  const verdict = check.rowVerdicts[step];
+  return verdict !== undefined && verdict !== 'error';
 }
 
 function tallyChecks(run: ExerciseRun, predicate: (check: ShotCheckSummary) => boolean): GoalCheck {

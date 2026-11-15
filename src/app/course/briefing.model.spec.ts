@@ -83,6 +83,20 @@ describe('briefingCard', () => {
     expect(card('07').instructor).toBeNull();
   });
 
+  it('13 and 14 are training after the attestation: «Новое», terms, the conditions in the facts, the coach on', () => {
+    const slope = card('13');
+    expect(slope.header).toBe('ЗАДАНИЕ 13 · УЧЕБНОЕ');
+    expect(slope.novelty).toContain('угол места');
+    expect(slope.termsLine).toContain('угол места');
+    expect(slope.facts.atmosphere).toContain('∠ 10–25°');
+    expect(slope.instructor).toEqual({ isDefaultOn: true });
+    const longRange = card('14');
+    expect(longRange.header).toBe('ЗАДАНИЕ 14 · УЧЕБНОЕ');
+    expect(longRange.termsLine).toContain('деривация');
+    expect(longRange.facts.atmosphere).toContain('широта 40–60°');
+    expect(longRange.instructor).toEqual({ isDefaultOn: true });
+  });
+
   it('the facts stay from the sheet', () => {
     expect(card('04').facts.wind).toContain('м/с');
   });

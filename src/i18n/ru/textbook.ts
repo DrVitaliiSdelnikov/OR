@@ -18,6 +18,7 @@ const CHAPTERS = [
   'Стрелок',
   'Движущиеся цели',
   'Разбор',
+  'Угол и вращение Земли',
 ] as const;
 
 export type TextbookChapter = (typeof CHAPTERS)[number];
@@ -501,6 +502,100 @@ const terms = (p: { rifleName: string; zeroM: number; flagDistancesM: readonly n
       places: ['разбор · карандаш «в ДОПЕ»', 'журнал · карточки'],
       related: ['ДОПЕ', 'поправка по второму выстрелу'],
     },
+    lookAngle: {
+      term: 'угол места',
+      forms: ['угла места', 'углом места', 'углу места'],
+      chapter: 'Угол и вращение Земли',
+      phrase: 'Угол между линией прицела и горизонтом: цель выше — «+», ниже — «−». Вверх и вниз поправка одна: пуле важен только наклон.',
+      formula: { line: 'θ', variables: [{ symbol: 'θ', meaning: 'угол места, градусы' }] },
+      places: ['позиция · строка условий «∠ ±N°»', 'блокнот · шаг «Угол места»'],
+      related: ['правило косинуса', 'угол нуля'],
+    },
+    zeroAngle: {
+      term: 'угол нуля',
+      forms: ['угла нуля', 'углом нуля'],
+      chapter: 'Угол и вращение Земли',
+      phrase: `При ноле на ${p.zeroM} м ствол смотрит чуть выше линии прицела. Под углом наклоняется весь выстрел, поэтому угол нуля входит в расчёт.`,
+      formula: { line: 'Z', variables: [{ symbol: 'Z', meaning: 'угол нуля из шапки карточки ДОПЕ, MIL' }] },
+      places: ['карточка ДОПЕ · шапка', 'блокнот · шаг «Угол места»'],
+      related: ['правило косинуса', 'ноль'],
+    },
+    cosineRule: {
+      term: 'правило косинуса',
+      forms: ['правила косинуса', 'правилом косинуса'],
+      chapter: 'Угол и вращение Земли',
+      phrase: 'Под углом сила тяжести тянет пулю поперёк линии прицела слабее, и пуля падает меньше. Возвышение по ДОПЕ вместе с углом нуля умножают на cos угла.',
+      formula: {
+        line: 'E∠ = (E + Z) × cos θ − Z',
+        variables: [
+          { symbol: 'E∠', meaning: 'возвышение под углом, MIL' },
+          { symbol: 'E', meaning: 'возвышение из строки ДОПЕ, MIL' },
+          { symbol: 'Z', meaning: 'угол нуля, MIL' },
+          { symbol: 'θ', meaning: 'угол места' },
+        ],
+      },
+      places: ['блокнот · шаг «Угол места»'],
+      related: ['угол места', 'угол нуля', 'ДОПЕ'],
+    },
+    rangeAltitude: {
+      term: 'высота стрельбища',
+      forms: ['высоты стрельбища', 'высоте стрельбища'],
+      chapter: 'Угол и вращение Земли',
+      phrase: 'В горах давление ниже, воздух реже, пуля теряет меньше скорости и падает меньше. Станция показывает давление на месте, его и берут в расчёт условий.',
+      places: ['упр. 13 · горный склон', 'блокнот · шаг «Условия»'],
+      related: ['плотность воздуха', 'поправка условий'],
+    },
+    spinDrift: {
+      term: 'деривация',
+      forms: ['деривации', 'деривацию', 'деривацией'],
+      chapter: 'Угол и вращение Земли',
+      phrase: 'Пуля вращается от нарезов и на лету уходит в сторону вращения: при правых нарезах — вправо. Чем дальше, тем больше. Величина — в колонке ДЕР карточки ДОПЕ.',
+      formula: { line: 'ДЕР', variables: [{ symbol: 'ДЕР', meaning: 'колонка карточки ДОПЕ, MIL' }] },
+      places: ['карточка ДОПЕ · колонка ДЕР', 'блокнот · шаг «Деривация»'],
+      related: ['твист', 'Кориолис'],
+    },
+    twist: {
+      term: 'твист',
+      forms: ['твиста', 'твистом'],
+      chapter: 'Угол и вращение Земли',
+      phrase: 'Шаг нарезов: на сколько дюймов ствола пуля делает один оборот. Направление нарезов задаёт сторону деривации.',
+      places: ['винтовка · ствол'],
+      related: ['деривация'],
+    },
+    coriolis: {
+      term: 'Кориолис',
+      forms: ['Кориолиса', 'Кориолисом'],
+      chapter: 'Угол и вращение Земли',
+      phrase: 'Пока пуля летит, Земля под ней поворачивается. В северном полушарии пуля уходит вправо, в южном — влево; сильнее у полюсов.',
+      formula: {
+        line: 'K = 0,0729 × t × sin φ',
+        variables: [
+          { symbol: 'K', meaning: 'поправка вбок, MIL' },
+          { symbol: '0,0729', meaning: 'вращение Земли × 1000' },
+          { symbol: 't', meaning: 'время полёта из строки ДОПЕ, с' },
+          { symbol: 'φ', meaning: 'широта' },
+        ],
+      },
+      places: ['позиция · строка условий «NN° с. ш.»', 'блокнот · шаг «Кориолис»'],
+      related: ['Этвёш', 'время полёта', 'деривация'],
+    },
+    eotvos: {
+      term: 'Этвёш',
+      forms: ['Этвёша', 'Этвёшем'],
+      chapter: 'Угол и вращение Земли',
+      phrase: 'Вертикальная часть вращения Земли: выстрел на восток идёт чуть выше, на запад — ниже. Доли клика, но на 1000 м заметны.',
+      formula: {
+        line: 'Э = 0,0729 × t × cos φ × sin A',
+        variables: [
+          { symbol: 'Э', meaning: 'поправка по вертикали, MIL' },
+          { symbol: 't', meaning: 'время полёта, с' },
+          { symbol: 'φ', meaning: 'широта' },
+          { symbol: 'A', meaning: 'азимут выстрела' },
+        ],
+      },
+      places: ['позиция · строка условий «аз. N°»', 'блокнот · шаг «Этвёш»'],
+      related: ['Кориолис', 'время полёта'],
+    },
   }) satisfies Record<string, TermTexts>;
 
 const termExamples = {
@@ -554,6 +649,22 @@ const termExamples = {
     `${p.cartridgeName}, ${p.distanceM} м, ${decimal(p.temperatureC)} °C, ${p.pressureHpa} гПа: ${decimal(p.colderTens, 0)} × ${decimal(p.colderMil, 2)} + ${decimal(p.pressureTens, 1)} × ${decimal(p.pressureMil, 2)} = ${decimal(p.correctionMil, 2)} MIL → ${clickCount(p.clicks)} вверх`,
   lead: (p: { targetSpeedMps: number; distanceM: number; timeOfFlightS: number; leadMil: number }) =>
     `шаг ${decimal(p.targetSpeedMps)} м/с поперёк, ${p.distanceM} м: L = ${decimal(p.targetSpeedMps)} × ${decimal(p.timeOfFlightS, 2)} / ${p.distanceM} × 1000 = ${decimal(p.leadMil, 2)} MIL`,
+  lookAngle: (p: { upDeg: number; downDeg: number; cos: number }) =>
+    `«∠ +${p.upDeg}°» — цель выше на ${p.upDeg}°, «∠ −${p.downDeg}°» — ниже. cos +${p.upDeg}° = cos −${p.downDeg}° = ${decimal(p.cos, 2)}: поправка одна`,
+  zeroAngle: (p: { cartridgeName: string; zeroM: number; zeroAngleMil: number }) =>
+    `${p.cartridgeName}, ноль на ${p.zeroM} м: Z = ${decimal(p.zeroAngleMil, 2)} MIL`,
+  cosineRule: (p: { cartridgeName: string; distanceM: number; angleDeg: number; elevationMil: number; zeroAngleMil: number; cos: number; inclinedMil: number; clicks: number }) =>
+    `${p.cartridgeName}, ${p.distanceM} м, ∠ ${p.angleDeg}°: (${decimal(p.elevationMil, 1)} + ${decimal(p.zeroAngleMil, 2)}) × ${decimal(p.cos, 2)} − ${decimal(p.zeroAngleMil, 2)} = ${decimal(p.inclinedMil, 2)} MIL — на ${clickCount(p.clicks)} меньше ДОПЕ`,
+  rangeAltitude: (p: { lowAltitudeM: number; lowPressureHpa: number; highAltitudeM: number; highPressureHpa: number }) =>
+    `обычное давление: ${p.lowAltitudeM} м — ${decimal(p.lowPressureHpa, 0)} гПа, ${p.highAltitudeM} м — ${decimal(p.highPressureHpa, 0)} гПа`,
+  spinDrift: (p: { cartridgeName: string; distanceM: number; spinDriftMil: number; clicks: number }) =>
+    `${p.cartridgeName}, ${p.distanceM} м: ДЕР ${decimal(p.spinDriftMil, 2)} MIL вправо → ГОР ${clickCount(p.clicks)} влево`,
+  twist: (p: { rifleName: string; twistInches: number; isRight: boolean }) =>
+    `${p.rifleName}: 1 оборот на ${p.twistInches}″, ${p.isRight ? 'правый' : 'левый'} — деривация ${p.isRight ? 'вправо' : 'влево'}`,
+  coriolis: (p: { distanceM: number; timeOfFlightS: number; latitudeDeg: number; sinLatitude: number; coriolisMil: number }) =>
+    `${p.distanceM} м, t = ${decimal(p.timeOfFlightS, 2)} с, ${p.latitudeDeg}° с. ш.: 0,0729 × ${decimal(p.timeOfFlightS, 2)} × ${decimal(p.sinLatitude, 2)} = ${decimal(p.coriolisMil, 2)} MIL`,
+  eotvos: (p: { distanceM: number; timeOfFlightS: number; latitudeDeg: number; cosLatitude: number; azimuthDeg: number; eotvosMil: number }) =>
+    `${p.distanceM} м на восток (аз. ${p.azimuthDeg}°), ${p.latitudeDeg}° с. ш.: 0,0729 × ${decimal(p.timeOfFlightS, 2)} × ${decimal(p.cosLatitude, 2)} × 1 = ${decimal(p.eotvosMil, 2)} MIL`,
   secondShotCorrection: (p: { rightMil: number; downMil: number; windageClicks: number; elevationClicks: number }) =>
     `ушёл на ${decimal(p.rightMil)} MIL вправо и ${decimal(p.downMil)} ниже: ГОР ${clickCount(p.windageClicks)} влево, ВЕРТ ${clickCount(p.elevationClicks)} вверх`,
 };

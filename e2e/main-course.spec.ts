@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedProgress } from './helpers';
+import { positionFromBriefing, seedProgress } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 const MIN_TOUCH_PX = 44;
@@ -30,11 +30,11 @@ test.describe('главный экран и курс-тропа', () => {
     await expect(page.getByTestId('sheet-title')).toHaveText('Дистанции: ДОПЕ и дальномер');
   });
 
-  test('тропа: 13 узлов, штампы, текущий, закрытые не нажимаются', async ({ page }) => {
+  test('тропа: 15 узлов, штампы, текущий, закрытые не нажимаются', async ({ page }) => {
     await seedCourse(page, true, { '01': 1, '02': 2, '03': 3 });
     await page.goto('/');
     await page.getByTestId('tile-course').click();
-    await expect(page.locator('[data-test^="node-"]')).toHaveCount(13);
+    await expect(page.locator('[data-test^="node-"]')).toHaveCount(15);
     await expect(page.getByTestId('stamp-01')).toHaveText('1 кл.');
     await expect(page.getByTestId('stamp-02')).toHaveText('2 кл.');
     await expect(page.getByTestId('stamp-03')).toHaveText('3 кл.');
@@ -54,7 +54,7 @@ test.describe('главный экран и курс-тропа', () => {
     await expect(page.getByTestId('sheet-wind')).toHaveText('штиль');
     await expect(page.getByTestId('to-position')).toBeEnabled();
     await page.getByTestId('sheet-back').click();
-    await expect(page.locator('[data-test^="node-"]')).toHaveCount(13);
+    await expect(page.locator('[data-test^="node-"]')).toHaveCount(15);
   });
 
   test('вводное открывается; шестерёнка, учебник и журнал открываются', async ({ page }) => {
@@ -87,5 +87,44 @@ test.describe('главный экран и курс-тропа', () => {
         expect(height, path).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
       }
     }
+  });
+});
+
+test.describe('после зачёта: 13 «Горный склон» и 14 «Дальний рубеж» (В45)', () => {
+  const TO_ATTESTATION = { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3, '06': 3, '07': 3, '08': 3, '09': 3, '10': 3, '11': 3, '12': 3 };
+
+  test('после 12: 13 текущий, 14 закрыт; лист 13 — склон и высота; позиция — «∠ ±N°» и шаг «Угол места»; звание и допуски по 12', async ({ page }) => {
+    await seedCourse(page, true, TO_ATTESTATION);
+    await page.goto('/');
+    await expect(page.getByTestId('admissions')).toHaveText('допуски 12 / 12');
+    await page.getByTestId('tile-course').click();
+    await expect(page.getByTestId('node-13')).toHaveAttribute('data-state', 'current');
+    await expect(page.getByTestId('node-14')).toBeDisabled();
+    const overflowPx = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflowPx).toBeLessThanOrEqual(0);
+    await page.getByTestId('node-13').click();
+    await expect(page.getByTestId('briefing-header')).toHaveText('ЗАДАНИЕ 13 · УЧЕБНОЕ');
+    await expect(page.getByTestId('sheet-atmosphere')).toHaveText('по погоде · ∠ 10–25° вверх или вниз · высота 1000–1500 м');
+    await positionFromBriefing(page, '13');
+    await expect(page.getByTestId('position-geometry')).toHaveText(/^∠ [+−](1\d|2[0-5])°$/);
+    await page.getByTestId('tile-notebook').click();
+    await expect(page.getByTestId('step-angle')).toBeVisible();
+    await expect(page.getByTestId('step-spin')).toHaveCount(0);
+  });
+
+  test('14 с тренером: первая подсказка — на строке широты; в листе шаги деривации, Кориолиса и Этвёша', async ({ page }) => {
+    await seedCourse(page, true, { ...TO_ATTESTATION, '13': 3 });
+    await positionFromBriefing(page, '14', true);
+    await expect(page.getByTestId('position-geometry')).toHaveText(/^\d\d° [сю]\. ш\. · аз\. \d{1,3}°$/);
+    await expect(page.getByTestId('teaching-text')).toHaveText('Широта и азимут — здесь. Дальше 800 м в расчёт входят деривация и вращение Земли');
+    await expect(page.getByTestId('teaching-count')).toHaveText('подсказка 1 из 4');
+    await expect(page.getByTestId('teaching-cutout')).toBeVisible();
+    await page.getByTestId('teaching-ok').click();
+    await expect(page.getByTestId('teaching-text')).toHaveText('Посчитай «Деривацию» и «Кориолис» в блокноте');
+    await page.getByTestId('tile-notebook').click();
+    for (const step of ['spin', 'coriolis', 'eotvos']) {
+      await expect(page.getByTestId(`step-${step}`)).toBeVisible();
+    }
+    await expect(page.getByTestId('step-angle')).toHaveCount(0);
   });
 });
