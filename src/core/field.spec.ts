@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cartridgeById } from './content';
+import { courseLoadout } from './content';
 import { BallisticsEngine } from './engine';
 import { impactSoundDelayS, speedOfSoundMps, windClockShare } from './field';
 
@@ -40,19 +40,19 @@ describe('atmosphere helpers', () => {
 
 describe('BallisticsEngine.interpolated', () => {
   it('returns exact samples unchanged', async () => {
-    const points = await new BallisticsEngine().trajectory(cartridgeById('B'), null, null);
+    const points = await new BallisticsEngine().trajectory(courseLoadout('B'), null, null);
     expect(BallisticsEngine.interpolated(points, 500)).toEqual(BallisticsEngine.required(points, 500));
   });
 
   it('blends between samples for 525 m', async () => {
-    const points = await new BallisticsEngine().trajectory(cartridgeById('B'), null, null);
+    const points = await new BallisticsEngine().trajectory(courseLoadout('B'), null, null);
     const at500 = BallisticsEngine.required(points, 500).upMrad;
     const at600 = BallisticsEngine.required(points, 600).upMrad;
     expect(BallisticsEngine.interpolated(points, 525).upMrad).toBeCloseTo(at500 + (at600 - at500) * 0.25, 6);
   });
 
   it('rejects distances beyond the trajectory', async () => {
-    const points = await new BallisticsEngine().trajectory(cartridgeById('B'), null, null);
+    const points = await new BallisticsEngine().trajectory(courseLoadout('B'), null, null);
     expect(() => BallisticsEngine.interpolated(points, 1100)).toThrow();
     expect(() => BallisticsEngine.interpolated(points, 1000)).not.toThrow();
   });

@@ -1,4 +1,4 @@
-import { CARTRIDGES, FLAG_DISTANCES_M, RIFLE, WIND_ZONE_LIMITS_M } from '../../../core/content';
+import { CARTRIDGES, COURSE_RIFLE, FLAG_DISTANCES_M, WIND_ZONE_LIMITS_M } from '../../../core/content';
 import { text } from '../../../i18n';
 import { DopeCard, dopeRowAt } from '../../../core/dope-card';
 import { windClockShare } from '../../../core/field';
@@ -82,7 +82,7 @@ export interface TrajectoryView {
 export function trajectoryView(card: DopeCard): TrajectoryView {
   return {
     points: card.rows.map(row => ({ distanceM: row.distanceM, elevationMil: row.elevationMil })),
-    zeroM: RIFLE.zeroM,
+    zeroM: COURSE_RIFLE.zeroM,
     timeMarks: TIME_MARK_DISTANCES_M.map(distanceM => {
       const row = dopeRowAt(card, distanceM);
       return { distanceM, elevationMil: row.elevationMil, timeOfFlightS: row.timeOfFlightS };
@@ -130,7 +130,7 @@ export function cartridgesView(cards: CardsByCartridge): readonly CartridgeSchem
       facts: T.cartridgeFacts({
         massG: cartridge.massG,
         muzzleVelocityMps: cartridge.muzzleVelocityMps,
-        bcG7: cartridge.bcG7,
+        ballisticCoefficient: cartridge.ballisticCoefficient,
         energyJ: Math.round(energyJ / ENERGY_ROUNDING_J) * ENERGY_ROUNDING_J,
       }),
       drop: card.rows.map(row => ({ distanceM: row.distanceM, mil: row.elevationMil })),
@@ -177,7 +177,7 @@ export interface GroupView {
 }
 
 export function groupView(): GroupView {
-  const center = analyseGroup(GROUP_EXAMPLE_IMPACTS)!.center;
+  const center = analyseGroup(GROUP_EXAMPLE_IMPACTS, COURSE_RIFLE.groupSigmaMrad)!.center;
   const upClicks = roundToClicks(-center.upMrad, GROUP_CLICK_MIL);
   const rightClicks = roundToClicks(-center.rightMrad, GROUP_CLICK_MIL);
   return { impacts: GROUP_EXAMPLE_IMPACTS, center, caption: T.groupCaption({ upMil: center.upMrad, rightMil: center.rightMrad, upClicks, rightClicks }) };

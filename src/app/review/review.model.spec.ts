@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { checkManualSteps, checkPreparation } from '../../core/calc-check';
-import { cartridgeById } from '../../core/content';
+import { COURSE_RIFLE, courseLoadout } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { NotebookMode } from '../../core/exercise-scoring';
@@ -16,7 +16,7 @@ const scope = scopeById('course-dot');
 let card: DopeCard;
 
 beforeAll(async () => {
-  card = await buildDopeCard(new BallisticsEngine(), cartridgeById('B'), 0.1);
+  card = await buildDopeCard(new BallisticsEngine(), courseLoadout('B'), 0.1);
 });
 
 function notebookAt(distanceM: number, mode: NotebookMode): Notebook {
@@ -257,15 +257,15 @@ describe('groupText', () => {
   const at = (upMrad: number, rightMrad: number): Correction => ({ upMrad, rightMrad });
 
   it('fewer than 3 shots — no diagnosis yet', () => {
-    expect(groupText([at(0, 0), at(0.1, 0)])).toBe('Диагноз группы — от 3 выстрелов');
+    expect(groupText([at(0, 0), at(0.1, 0)], COURSE_RIFLE.groupSigmaMrad)).toBe('Диагноз группы — от 3 выстрелов');
   });
 
   it('3 shots and more — the fundamentals by the group shape', () => {
-    expect(groupText([at(0.3, 0), at(-0.3, 0.02), at(0, -0.02)])).toBe('Вертикальная струна — дыхание');
-    expect(groupText([at(0, 0.3), at(0.02, -0.3), at(-0.02, 0)])).toBe('Горизонтальная струна — завал оружия');
-    expect(groupText([at(1, 1), at(-1, -1), at(0.5, -0.8)])).toBe('Разброс — позиция, окуляр');
-    expect(groupText([at(-0.3, 0.3), at(-0.32, 0.28), at(-0.28, 0.31)])).toBe('Низко-вправо — кисть, спуск');
-    expect(groupText([at(0.4, 0), at(0.42, 0.02), at(0.38, -0.02)])).toBe('Плотная, но не в центре — ноль прицела');
-    expect(groupText([at(0.05, 0), at(-0.03, 0.02), at(0, -0.04)])).toBe('Плотная группа — основы в порядке');
+    expect(groupText([at(0.3, 0), at(-0.3, 0.02), at(0, -0.02)], COURSE_RIFLE.groupSigmaMrad)).toBe('Вертикальная струна — дыхание');
+    expect(groupText([at(0, 0.3), at(0.02, -0.3), at(-0.02, 0)], COURSE_RIFLE.groupSigmaMrad)).toBe('Горизонтальная струна — завал оружия');
+    expect(groupText([at(1, 1), at(-1, -1), at(0.5, -0.8)], COURSE_RIFLE.groupSigmaMrad)).toBe('Разброс — позиция, окуляр');
+    expect(groupText([at(-0.3, 0.3), at(-0.32, 0.28), at(-0.28, 0.31)], COURSE_RIFLE.groupSigmaMrad)).toBe('Низко-вправо — кисть, спуск');
+    expect(groupText([at(0.4, 0), at(0.42, 0.02), at(0.38, -0.02)], COURSE_RIFLE.groupSigmaMrad)).toBe('Плотная, но не в центре — ноль прицела');
+    expect(groupText([at(0.05, 0), at(-0.03, 0.02), at(0, -0.04)], COURSE_RIFLE.groupSigmaMrad)).toBe('Плотная группа — основы в порядке');
   });
 });

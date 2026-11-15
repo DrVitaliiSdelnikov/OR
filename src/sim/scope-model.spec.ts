@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARTRIDGES, cartridgeById } from '../core/content';
+import { CARTRIDGES, courseLoadout } from '../core/content';
 import { buildDopeCard, dopeRowAt } from '../core/dope-card';
 import { BallisticsEngine } from '../core/engine';
 import { atmosphereCorrectionMil, windCorrectionMil } from '../core/game-formulas';
@@ -138,7 +138,7 @@ describe('travel against the core', () => {
   it('the course and long-range scopes fit 1000 m with cartridges A, B, C at −10 C', async () => {
     const engine = new BallisticsEngine();
     for (const cartridge of CARTRIDGES) {
-      const card = await buildDopeCard(engine, cartridge, 0.1);
+      const card = await buildDopeCard(engine, courseLoadout(cartridge.id), 0.1);
       const row = dopeRowAt(card, 1000);
       const coldElevationMil = row.elevationMil + atmosphereCorrectionMil(row, -10, 1013);
       for (const id of ['course-tree', 'course-dot', 'tree'] as const) {
@@ -148,7 +148,7 @@ describe('travel against the core', () => {
   });
 
   it('course windage: the strongest course wind (9 m/s) fits at 700 m; 12 m/s at 1000 m stops and the rest is held', async () => {
-    const card = await buildDopeCard(new BallisticsEngine(), cartridgeById('B'), 0.1);
+    const card = await buildDopeCard(new BallisticsEngine(), courseLoadout('B'), 0.1);
     const scope = scopeById('course-dot');
     const at700 = Math.abs(windCorrectionMil(9, 9, 700, dopeRowAt(card, 700).windConstant));
     expect(at700).toBeLessThanOrEqual(scope.windageTravelMrad);

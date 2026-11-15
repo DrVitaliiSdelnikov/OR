@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CARTRIDGES, FLAG_DISTANCES_M, RIFLE } from '../../../core/content';
+import { CARTRIDGES, COURSE_RIFLE, courseLoadout, FLAG_DISTANCES_M } from '../../../core/content';
 import { buildDopeCard, DopeCard, dopeRowAt } from '../../../core/dope-card';
 import { BallisticsEngine } from '../../../core/engine';
 import { windClockShare } from '../../../core/field';
@@ -26,7 +26,7 @@ const cards = new Map<string, DopeCard>() as Map<'A' | 'B' | 'C', DopeCard>;
 beforeAll(async () => {
   const engine = new BallisticsEngine();
   for (const cartridge of CARTRIDGES) {
-    cards.set(cartridge.id, await buildDopeCard(engine, cartridge, CLICK_MIL));
+    cards.set(cartridge.id, await buildDopeCard(engine, courseLoadout(cartridge.id), CLICK_MIL));
   }
 }, 60000);
 
@@ -84,8 +84,8 @@ describe('траектория (U6)', () => {
   it('точки кривой — строки карточки Б, ноль в 100 м', () => {
     const view = trajectoryView(cards.get('B')!);
     expect(view.points).toEqual(cards.get('B')!.rows.map(row => ({ distanceM: row.distanceM, elevationMil: row.elevationMil })));
-    expect(view.zeroM).toBe(RIFLE.zeroM);
-    expect(view.points.find(point => point.distanceM === RIFLE.zeroM)!.elevationMil).toBe(0);
+    expect(view.zeroM).toBe(COURSE_RIFLE.zeroM);
+    expect(view.points.find(point => point.distanceM === COURSE_RIFLE.zeroM)!.elevationMil).toBe(0);
   });
 
   it('метки времени полёта — из колонки t', () => {
@@ -142,7 +142,7 @@ describe('зоны ветра', () => {
 describe('группа', () => {
   it('СТП — центр группы; перенос — в обратную сторону, в кликах', () => {
     const view = groupView();
-    const center = analyseGroup(GROUP_EXAMPLE_IMPACTS)!.center;
+    const center = analyseGroup(GROUP_EXAMPLE_IMPACTS, COURSE_RIFLE.groupSigmaMrad)!.center;
     expect(view.center).toEqual(center);
     expect(view.caption).toBe('СТП ↓ 0,8 → 0,5 MIL — перенеси ↑ 8 ← 5 кл.');
   });

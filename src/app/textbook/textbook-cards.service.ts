@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { cartridgeById, CARTRIDGES } from '../../core/content';
+import { cartridgeById, CARTRIDGES, courseLoadout } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { CartridgeId } from '../../core/types';
@@ -27,7 +27,7 @@ export class TextbookCards {
     const engine = new BallisticsEngine();
     const cards = new Map<CartridgeId, DopeCard>();
     for (const cartridge of [cartridgeById(EXAMPLE_CARTRIDGE_ID), ...CARTRIDGES.filter(other => other.id !== EXAMPLE_CARTRIDGE_ID)]) {
-      cards.set(cartridge.id, await buildDopeCard(engine, cartridge, CARD_CLICK_MIL));
+      cards.set(cartridge.id, await buildDopeCard(engine, courseLoadout(cartridge.id), CARD_CLICK_MIL));
       this.built.set(new Map(cards));
     }
   }

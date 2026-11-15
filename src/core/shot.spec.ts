@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { cartridgeById, RIFLE } from './content';
+import { COURSE_RIFLE, courseLoadout } from './content';
 import { BallisticsEngine } from './engine';
 import { createScenario, windAt } from './scenario';
 import { targetMotionMil } from './moving-target';
@@ -7,44 +7,44 @@ import { resolveShot } from './shot';
 import { Correction } from './types';
 
 const engine = new BallisticsEngine();
-const cartridge = cartridgeById('B');
+const loadout = courseLoadout('B');
 const target500 = { distanceM: 500, diameterM: 0.5 };
 const scenario = createScenario(20261032, { windScale: 0 });
 let perfectDial: Correction;
 
 beforeAll(async () => {
-  const points = await engine.trajectory(cartridge, scenario.atmosphere, windAt(scenario, scenario.startTimeS));
+  const points = await engine.trajectory(loadout, scenario.atmosphere, windAt(scenario, scenario.startTimeS));
   const required = BallisticsEngine.required(points, target500.distanceM);
   perfectDial = { upMrad: required.upMrad, rightMrad: required.rightMrad };
 });
 
 describe('resolveShot', () => {
   it('a perfect dial leaves no decision error', async () => {
-    const result = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 0);
+    const result = await resolveShot(engine, scenario, loadout, target500, perfectDial, 0);
     expect(result.decision.upMrad).toBeCloseTo(0, 2);
     expect(result.decision.rightMrad).toBeCloseTo(0, 2);
   });
 
   it('is reproducible for the same seed, shot and dial', async () => {
-    const first = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 1);
-    const second = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 1);
+    const first = await resolveShot(engine, scenario, loadout, target500, perfectDial, 1);
+    const second = await resolveShot(engine, scenario, loadout, target500, perfectDial, 1);
     expect(first).toEqual(second);
   });
 
   it('a large hold moves the impact by the hold', async () => {
-    const centered = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 2);
-    const held = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 2, { hold: { upMrad: 0, rightMrad: 2 } });
+    const centered = await resolveShot(engine, scenario, loadout, target500, perfectDial, 2);
+    const held = await resolveShot(engine, scenario, loadout, target500, perfectDial, 2, { hold: { upMrad: 0, rightMrad: 2 } });
     expect(held.impact.rightMrad - centered.impact.rightMrad).toBeCloseTo(2, 1);
     expect(held.isHit).toBe(false);
   });
 
   it('a wrong elevation of 1 mrad misses a 0.5 mrad plate', async () => {
-    const result = await resolveShot(engine, scenario, cartridge, target500, { ...perfectDial, upMrad: perfectDial.upMrad + 1 }, 0);
+    const result = await resolveShot(engine, scenario, loadout, target500, { ...perfectDial, upMrad: perfectDial.upMrad + 1 }, 0);
     expect(result.isHit).toBe(false);
   });
 
   it('orders the probabilities: optimum ≥ with decision ≥ with decision and hold', async () => {
-    const result = await resolveShot(engine, scenario, cartridge, target500, { ...perfectDial, upMrad: perfectDial.upMrad + 0.2 }, 0, {
+    const result = await resolveShot(engine, scenario, loadout, target500, { ...perfectDial, upMrad: perfectDial.upMrad + 0.2 }, 0, {
       hold: { upMrad: 0.2, rightMrad: 0 },
     });
     expect(result.optimumProbability).toBeGreaterThanOrEqual(result.decisionProbability);
@@ -52,31 +52,38 @@ describe('resolveShot', () => {
   });
 
   it('luck is the hit outcome minus the hit chance', async () => {
-    const result = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 0);
+    const result = await resolveShot(engine, scenario, loadout, target500, perfectDial, 0);
     expect(result.luck).toBeCloseTo((result.isHit ? 1 : 0) - result.hitProbability, 6);
     expect(result.luck).toBeGreaterThanOrEqual(-1);
     expect(result.luck).toBeLessThanOrEqual(1);
   });
 
   it('a cold bore shot lands shifted by the rifle cold bore shift', async () => {
-    const warm = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 3);
-    const cold = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 3, { isColdBore: true });
+    const warm = await resolveShot(engine, scenario, loadout, target500, perfectDial, 3);
+    const cold = await resolveShot(engine, scenario, loadout, target500, perfectDial, 3, { isColdBore: true });
     expect(warm.coldBore).toEqual({ upMrad: 0, rightMrad: 0 });
-    expect(cold.coldBore).toEqual(RIFLE.coldBoreShiftMil);
+    expect(cold.coldBore).toEqual(COURSE_RIFLE.coldBoreShiftMil);
     expect(cold.impact.upMrad - warm.impact.upMrad).toBeCloseTo(0.15, 6);
     expect(cold.impact.rightMrad - warm.impact.rightMrad).toBeCloseTo(0.05, 6);
   });
 
+  it('the cold bore shift and the group come from the rifle of the loadout (T1.2)', async () => {
+    const otherRifle = { ...loadout, rifle: { ...loadout.rifle, coldBoreShiftMil: { upMrad: -0.4, rightMrad: 0.2 }, groupSigmaMrad: 0 } };
+    const cold = await resolveShot(engine, scenario, otherRifle, target500, perfectDial, 3, { isColdBore: true });
+    expect(cold.coldBore).toEqual({ upMrad: -0.4, rightMrad: 0.2 });
+    expect(Math.hypot(cold.group.upMrad, cold.group.rightMrad)).toBe(0);
+  });
+
   it('the hit chance of a cold bore shot accounts for the shift', async () => {
     const dialUnderShift = { upMrad: perfectDial.upMrad - 0.3, rightMrad: perfectDial.rightMrad - 0.1 };
-    const warm = await resolveShot(engine, scenario, cartridge, target500, dialUnderShift, 4);
-    const cold = await resolveShot(engine, scenario, cartridge, target500, dialUnderShift, 4, { isColdBore: true });
+    const warm = await resolveShot(engine, scenario, loadout, target500, dialUnderShift, 4);
+    const cold = await resolveShot(engine, scenario, loadout, target500, dialUnderShift, 4, { isColdBore: true });
     expect(cold.hitProbability).toBeGreaterThan(warm.hitProbability);
   });
 
   it('a knocked sight shifts the impact by the sight offset', async () => {
-    const straight = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 5);
-    const knocked = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 5, { sightOffset: { upMrad: -0.8, rightMrad: 0.6 } });
+    const straight = await resolveShot(engine, scenario, loadout, target500, perfectDial, 5);
+    const knocked = await resolveShot(engine, scenario, loadout, target500, perfectDial, 5, { sightOffset: { upMrad: -0.8, rightMrad: 0.6 } });
     expect(straight.sightOffset).toEqual({ upMrad: 0, rightMrad: 0 });
     expect(knocked.impact.upMrad - straight.impact.upMrad).toBeCloseTo(-0.8, 6);
     expect(knocked.impact.rightMrad - straight.impact.rightMrad).toBeCloseTo(0.6, 6);
@@ -84,8 +91,8 @@ describe('resolveShot', () => {
   });
 
   it('a target walking right while the bullet flies leaves the impact behind it by its motion', async () => {
-    const standing = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 6);
-    const walking = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 6, { targetLateralVelocityMps: 1.2 });
+    const standing = await resolveShot(engine, scenario, loadout, target500, perfectDial, 6);
+    const walking = await resolveShot(engine, scenario, loadout, target500, perfectDial, 6, { targetLateralVelocityMps: 1.2 });
     const motionMil = targetMotionMil(1.2, walking.timeOfFlightS, target500.distanceM);
     expect(standing.targetMotion).toEqual({ upMrad: 0, rightMrad: 0 });
     expect(walking.targetMotion.upMrad).toBe(0);
@@ -95,10 +102,10 @@ describe('resolveShot', () => {
   });
 
   it('holding the lead puts the bullet where it would hit a standing target', async () => {
-    const standing = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 7);
-    const probe = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 7, { targetLateralVelocityMps: -0.7 });
+    const standing = await resolveShot(engine, scenario, loadout, target500, perfectDial, 7);
+    const probe = await resolveShot(engine, scenario, loadout, target500, perfectDial, 7, { targetLateralVelocityMps: -0.7 });
     const leadHoldMil = targetMotionMil(-0.7, probe.timeOfFlightS, target500.distanceM);
-    const led = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 7, {
+    const led = await resolveShot(engine, scenario, loadout, target500, perfectDial, 7, {
       targetLateralVelocityMps: -0.7,
       hold: { upMrad: 0, rightMrad: leadHoldMil },
     });
@@ -106,23 +113,23 @@ describe('resolveShot', () => {
   });
 
   it('the hit chance drops without the lead', async () => {
-    const probe = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 8, { targetLateralVelocityMps: 0.7 });
+    const probe = await resolveShot(engine, scenario, loadout, target500, perfectDial, 8, { targetLateralVelocityMps: 0.7 });
     const leadHoldMil = targetMotionMil(0.7, probe.timeOfFlightS, target500.distanceM);
-    const led = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 8, { targetLateralVelocityMps: 0.7, hold: { upMrad: 0, rightMrad: leadHoldMil } });
+    const led = await resolveShot(engine, scenario, loadout, target500, perfectDial, 8, { targetLateralVelocityMps: 0.7, hold: { upMrad: 0, rightMrad: leadHoldMil } });
     expect(probe.hitProbability).toBeLessThan(led.hitProbability);
   });
 
   it('a target between the 100 m rows is solved exactly, not refused', async () => {
     const target450 = { distanceM: 450, diameterM: 0.5 };
-    const points = await engine.trajectory(cartridge, scenario.atmosphere, windAt(scenario, scenario.startTimeS), cartridge.muzzleVelocityMps, 450);
+    const points = await engine.trajectory(loadout, scenario.atmosphere, windAt(scenario, scenario.startTimeS), loadout.cartridge.muzzleVelocityMps, 450);
     const required = BallisticsEngine.required(points, 450);
-    const result = await resolveShot(engine, scenario, cartridge, target450, { upMrad: required.upMrad, rightMrad: required.rightMrad }, 0);
+    const result = await resolveShot(engine, scenario, loadout, target450, { upMrad: required.upMrad, rightMrad: required.rightMrad }, 0);
     expect(result.decision.upMrad).toBeCloseTo(0, 2);
     expect(result.decision.rightMrad).toBeCloseTo(0, 2);
   });
 
   it('plate radius is 0.5 mrad at 500 m', async () => {
-    const result = await resolveShot(engine, scenario, cartridge, target500, perfectDial, 0);
+    const result = await resolveShot(engine, scenario, loadout, target500, perfectDial, 0);
     expect(result.radiusMrad).toBe(0.5);
   });
 });

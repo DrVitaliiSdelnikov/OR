@@ -78,7 +78,7 @@ export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlock
     cartridges: CARTRIDGES.map(cartridge => ({
       id: cartridge.id,
       label: cartridge.name,
-      line: T.cartridgeLine({ massG: cartridge.massG, muzzleVelocityMps: cartridge.muzzleVelocityMps, bcG7: cartridge.bcG7 }),
+      line: T.cartridgeLine({ massG: cartridge.massG, muzzleVelocityMps: cartridge.muzzleVelocityMps, ballisticCoefficient: cartridge.ballisticCoefficient }),
       lock: lockOf(cartridge.id === 'B' ? null : 'cartridgesAC', unlocks),
       isChosen: settings.cartridgeId === cartridge.id,
     })),

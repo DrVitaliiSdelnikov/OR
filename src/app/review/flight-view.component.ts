@@ -1,4 +1,5 @@
 import { Component, computed, input, signal } from '@angular/core';
+import { COURSE_RIFLE } from '../../core/content';
 import { Correction } from '../../core/types';
 import { text } from '../../i18n';
 import { FlightPaths, FlightPoint } from '../../sim/flight-path';
@@ -80,7 +81,7 @@ export class FlightViewComponent {
   protected readonly right = PLOT_RIGHT;
   protected readonly middle = VIEW_HEIGHT / 2;
   protected readonly kind = signal<FlightViewKind>('side');
-  protected readonly groupLine = computed(() => groupText(this.group()));
+  protected readonly groupLine = computed(() => groupText(this.group(), COURSE_RIFLE.groupSigmaMrad));
   protected readonly scene = computed(() => {
     const valueOf = (point: FlightPoint): number => (this.kind() === 'side' ? point.heightCm : -point.sideCm);
     const { bullet, centre } = this.flight();

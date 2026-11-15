@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { checkManualSteps, checkPreparation } from '../core/calc-check';
-import { CARTRIDGES } from '../core/content';
+import { CARTRIDGES, courseLoadout } from '../core/content';
 import { buildDopeCard, DopeCard, dopeRowAt } from '../core/dope-card';
 import { BallisticsEngine } from '../core/engine';
 import { GaugeReading } from '../core/scenario';
@@ -48,7 +48,7 @@ const scope = scopeById('tree');
 beforeAll(async () => {
   const engine = new BallisticsEngine();
   for (const cartridge of CARTRIDGES) {
-    cards.set(cartridge.id, await buildDopeCard(engine, cartridge, CLICK_MIL));
+    cards.set(cartridge.id, await buildDopeCard(engine, courseLoadout(cartridge.id), CLICK_MIL));
   }
 });
 

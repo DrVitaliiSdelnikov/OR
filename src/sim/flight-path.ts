@@ -1,4 +1,3 @@
-import { RIFLE } from '../core/content';
 import { BallisticsEngine } from '../core/engine';
 import { Correction, TrajectoryPoint } from '../core/types';
 
@@ -30,9 +29,9 @@ export function flightSamples(points: readonly TrajectoryPoint[], distanceM: num
  * Пуля над линией прицела в точке r = (угол ствола − нужная поправка в r) × r. Угол ствола выбирается так,
  * чтобы линия кончилась в точке `impact` на дистанции цели; пунктир — то же с концом в центре.
  */
-export function flightPaths(samples: readonly FlightSample[], impact: Correction): FlightPaths {
+export function flightPaths(samples: readonly FlightSample[], impact: Correction, sightHeightCm: number): FlightPaths {
   const end = samples[samples.length - 1].required;
-  const muzzle: FlightPoint = { distanceM: 0, heightCm: -RIFLE.sightHeightCm, sideCm: 0 };
+  const muzzle: FlightPoint = { distanceM: 0, heightCm: -sightHeightCm, sideCm: 0 };
   const pathTo = (endPoint: Correction): FlightPoint[] => [
     muzzle,
     ...samples.map(sample => ({

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { cartridgeById } from '../../core/content';
+import { courseLoadout } from '../../core/content';
 import { buildDopeCard, DopeCard, dopeRowAt } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { roundToClicks, windCorrectionMil } from '../../core/game-formulas';
@@ -24,7 +24,7 @@ function commaText(value: number, digits: number): string {
 }
 
 beforeAll(async () => {
-  cards.set('B', await buildDopeCard(new BallisticsEngine(), cartridgeById('B'), CLICK_MIL));
+  cards.set('B', await buildDopeCard(new BallisticsEngine(), courseLoadout('B'), CLICK_MIL));
 });
 
 describe('карточки терминов', () => {

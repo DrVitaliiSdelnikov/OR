@@ -1,4 +1,4 @@
-import { cartridgeById } from '../../core/content';
+import { courseLoadout } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { CheckErrorType, checkManualSteps, checkPreparation, CheckResult } from '../../core/calc-check';
@@ -6,7 +6,7 @@ import { targetRadiusMrad } from '../../core/content';
 import { mulberry32 } from '../../core/rng';
 import { clockFromDeg, createScenario, gaugeWindAt, lateralWindMps, Scenario, windAt } from '../../core/scenario';
 import { resolveShot, ShotResult } from '../../core/shot';
-import { CartridgeId, Correction, Target } from '../../core/types';
+import { CartridgeId, Correction, Loadout, Target } from '../../core/types';
 import { BoltCycleResult, BoltEvent } from '../../sim/bolt';
 import { CheckRowKind, exerciseResult, ExerciseResult, ExerciseSetup, ExerciseShotRecord, isExerciseTask, PositionTask, setupTask, ShotCheckSummary } from '../../sim/course';
 import { FiringEvent, FiringLine } from '../../sim/firing-line';
@@ -157,7 +157,7 @@ export class PositionSession {
     const cartridgeIds = [...new Set(options.def.stages.map(stage => stage.cartridgeId))];
     const cards = new Map<CartridgeId, DopeCard>();
     for (const cartridgeId of cartridgeIds) {
-      cards.set(cartridgeId, await buildDopeCard(options.engine, cartridgeById(cartridgeId), CARD_CLICK_MIL));
+      cards.set(cartridgeId, await buildDopeCard(options.engine, courseLoadout(cartridgeId), CARD_CLICK_MIL));
     }
     const scenario = createScenario(options.seed, setup.scenarioOptions);
     return new PositionSession(options.def, setup, scenario, cards, options.engine, options.accessibility, options.recalcNotebook);
@@ -377,7 +377,7 @@ export class PositionSession {
     if (!outcome) {
       return null;
     }
-    const result = await resolveShot(this.engine, this.scenario, cartridgeById(this.firingLine.cartridgeId), target, outcome.dial, this.shotRecords.length, {
+    const result = await resolveShot(this.engine, this.scenario, this.loadout, target, outcome.dial, this.shotRecords.length, {
       timeS,
       hold: outcome.hold,
       isColdBore,
@@ -499,15 +499,19 @@ export class PositionSession {
     });
   }
 
+  private get loadout(): Loadout {
+    return courseLoadout(this.firingLine.cartridgeId);
+  }
+
   private async flightOf(target: Target, timeS: number, result: ShotResult): Promise<FlightPaths> {
     const points = await this.engine.trajectory(
-      cartridgeById(this.firingLine.cartridgeId),
+      this.loadout,
       this.scenario.atmosphere,
       windAt(this.scenario, timeS),
       result.actualMuzzleVelocityMps,
       target.distanceM / FLIGHT_SAMPLES,
     );
-    return flightPaths(flightSamples(points, target.distanceM), result.impact);
+    return flightPaths(flightSamples(points, target.distanceM), result.impact, this.loadout.rifle.sightHeightCm);
   }
 
   private isDialExact(): boolean {

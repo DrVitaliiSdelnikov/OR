@@ -1,9 +1,9 @@
-import { RIFLE, targetRadiusMrad } from './content';
+import { targetRadiusMrad } from './content';
 import { BallisticsEngine } from './engine';
 import { targetMotionMil } from './moving-target';
 import { gaussian, mulberry32 } from './rng';
 import { Scenario, windAt } from './scenario';
-import { Cartridge, Correction, Target } from './types';
+import { Correction, Loadout, Target } from './types';
 
 export interface ShotOptions {
   timeS?: number;
@@ -56,31 +56,32 @@ const subtract = (minuend: Correction, subtrahend: Correction): Correction => ({
 export async function resolveShot(
   engine: BallisticsEngine,
   scenario: Scenario,
-  cartridge: Cartridge,
+  loadout: Loadout,
   target: Target,
   dial: Correction,
   shotIndex: number,
   options: ShotOptions = {},
 ): Promise<ShotResult> {
+  const { rifle, cartridge } = loadout;
   const fireTimeS = options.timeS ?? scenario.startTimeS;
   const hold = options.hold ?? NO_OFFSET;
-  const coldBore = options.isColdBore ? RIFLE.coldBoreShiftMil : NO_OFFSET;
+  const coldBore = options.isColdBore ? rifle.coldBoreShiftMil : NO_OFFSET;
   const sightOffset = options.sightOffset ?? NO_OFFSET;
   const windAtShot = windAt(scenario, fireTimeS);
   const random = mulberry32(scenario.seed * 7919 + shotIndex * 104729 + target.distanceM);
   const velocityDeviationMps = gaussian(random) * cartridge.muzzleVelocitySdMps;
   const actualMuzzleVelocityMps = cartridge.muzzleVelocityMps + velocityDeviationMps;
-  const groupRightMrad = gaussian(random) * RIFLE.groupSigmaMrad;
-  const groupUpMrad = gaussian(random) * RIFLE.groupSigmaMrad;
+  const groupRightMrad = gaussian(random) * rifle.groupSigmaMrad;
+  const groupUpMrad = gaussian(random) * rifle.groupSigmaMrad;
 
   const sampleStepM = target.distanceM;
   const [nominal, actual, vacuumLike, atmosphereOnly, fasterBullet, meanWind] = await Promise.all([
-    engine.trajectory(cartridge, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps, sampleStepM),
-    engine.trajectory(cartridge, scenario.atmosphere, windAtShot, actualMuzzleVelocityMps, sampleStepM),
-    engine.trajectory(cartridge, null, null, cartridge.muzzleVelocityMps, sampleStepM),
-    engine.trajectory(cartridge, scenario.atmosphere, null, cartridge.muzzleVelocityMps, sampleStepM),
-    engine.trajectory(cartridge, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps + cartridge.muzzleVelocitySdMps, sampleStepM),
-    engine.trajectory(cartridge, scenario.atmosphere, scenario.zones, cartridge.muzzleVelocityMps, sampleStepM),
+    engine.trajectory(loadout, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps, sampleStepM),
+    engine.trajectory(loadout, scenario.atmosphere, windAtShot, actualMuzzleVelocityMps, sampleStepM),
+    engine.trajectory(loadout, null, null, cartridge.muzzleVelocityMps, sampleStepM),
+    engine.trajectory(loadout, scenario.atmosphere, null, cartridge.muzzleVelocityMps, sampleStepM),
+    engine.trajectory(loadout, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps + cartridge.muzzleVelocitySdMps, sampleStepM),
+    engine.trajectory(loadout, scenario.atmosphere, scenario.zones, cartridge.muzzleVelocityMps, sampleStepM),
   ]);
   const distanceM = target.distanceM;
   const ideal = BallisticsEngine.required(nominal, distanceM);
@@ -112,8 +113,8 @@ export async function resolveShot(
     let hits = 0;
     for (let sample = 0; sample < MONTE_CARLO_SAMPLES; sample++) {
       const velocitySample = gaussian(sampleRandom) * cartridge.muzzleVelocitySdMps;
-      const upSample = offset.upMrad + upPerVelocityMps * velocitySample + gaussian(sampleRandom) * RIFLE.groupSigmaMrad;
-      const rightSample = offset.rightMrad + rightPerVelocityMps * velocitySample + gaussian(sampleRandom) * RIFLE.groupSigmaMrad;
+      const upSample = offset.upMrad + upPerVelocityMps * velocitySample + gaussian(sampleRandom) * rifle.groupSigmaMrad;
+      const rightSample = offset.rightMrad + rightPerVelocityMps * velocitySample + gaussian(sampleRandom) * rifle.groupSigmaMrad;
       if (Math.hypot(upSample, rightSample) <= radiusMrad) {
         hits++;
       }

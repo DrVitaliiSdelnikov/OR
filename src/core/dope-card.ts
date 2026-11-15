@@ -1,7 +1,7 @@
 import { STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C, WIND_ZONE_LIMITS_M } from './content';
 import { BallisticsEngine } from './engine';
 import { roundToClicks } from './game-formulas';
-import { Atmosphere, Cartridge, CartridgeId, TrajectoryPoint } from './types';
+import { Atmosphere, CartridgeId, Loadout, TrajectoryPoint } from './types';
 
 export interface DopeRow {
   distanceM: number;
@@ -36,19 +36,19 @@ const STANDARD_ATMOSPHERE: Atmosphere = {
   relativeHumidity: STANDARD_RELATIVE_HUMIDITY,
 };
 
-export async function buildDopeCard(engine: BallisticsEngine, cartridge: Cartridge, clickMil: number): Promise<DopeCard> {
+export async function buildDopeCard(engine: BallisticsEngine, loadout: Loadout, clickMil: number): Promise<DopeCard> {
   const [standardPoints, crosswindPoints, colderPoints, higherPressurePoints] = await Promise.all([
-    engine.trajectory(cartridge, STANDARD_ATMOSPHERE, null),
-    engine.trajectory(cartridge, STANDARD_ATMOSPHERE, [
+    engine.trajectory(loadout, STANDARD_ATMOSPHERE, null),
+    engine.trajectory(loadout, STANDARD_ATMOSPHERE, [
       { untilM: Infinity, speedMps: CALIBRATION_CROSSWIND_MPS, fromDeg: CROSSWIND_FROM_LEFT_DEG },
     ]),
-    engine.trajectory(cartridge, { ...STANDARD_ATMOSPHERE, temperatureC: STANDARD_TEMPERATURE_C - ATMOSPHERE_STEP }, null),
-    engine.trajectory(cartridge, { ...STANDARD_ATMOSPHERE, pressureHpa: STANDARD_PRESSURE_HPA + ATMOSPHERE_STEP }, null),
+    engine.trajectory(loadout, { ...STANDARD_ATMOSPHERE, temperatureC: STANDARD_TEMPERATURE_C - ATMOSPHERE_STEP }, null),
+    engine.trajectory(loadout, { ...STANDARD_ATMOSPHERE, pressureHpa: STANDARD_PRESSURE_HPA + ATMOSPHERE_STEP }, null),
   ]);
   const singleZonePoints = await Promise.all(
     WIND_ZONE_LIMITS_M.map((_, windyZone) =>
       engine.trajectory(
-        cartridge,
+        loadout,
         STANDARD_ATMOSPHERE,
         WIND_ZONE_LIMITS_M.map((untilM, zoneIndex) => ({
           untilM,
@@ -78,7 +78,7 @@ export async function buildDopeCard(engine: BallisticsEngine, cartridge: Cartrid
         zoneWeights: zoneWeightsAt(singleZonePoints, crosswindPoints, point.distanceM),
       };
     });
-  return { cartridgeId: cartridge.id, clickMil, rows };
+  return { cartridgeId: loadout.cartridge.id, clickMil, rows };
 }
 
 export function dopeRowAt(card: DopeCard, distanceM: number): DopeRow {

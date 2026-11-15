@@ -1,0 +1,650 @@
+{
+  "A": {
+    "trajectory": [
+      {
+        "distanceM": 100,
+        "dropMrad": 0.00016469466600476924,
+        "windagePerMpsMrad": 0.05878815572703067,
+        "timeS": 0.1221579679412583
+      },
+      {
+        "distanceM": 200,
+        "dropMrad": -0.5607207010298211,
+        "windagePerMpsMrad": 0.1236869303377348,
+        "timeS": 0.2572956854380585
+      },
+      {
+        "distanceM": 300,
+        "dropMrad": -1.4124954830838137,
+        "windagePerMpsMrad": 0.19550043308433632,
+        "timeS": 0.4074875691426123
+      },
+      {
+        "distanceM": 400,
+        "dropMrad": -2.4573869210921493,
+        "windagePerMpsMrad": 0.27530106990474024,
+        "timeS": 0.5752369986889718
+      },
+      {
+        "distanceM": 500,
+        "dropMrad": -3.706101145420854,
+        "windagePerMpsMrad": 0.36482913116306254,
+        "timeS": 0.7638102590129374
+      },
+      {
+        "distanceM": 600,
+        "dropMrad": -5.198919730133126,
+        "windagePerMpsMrad": 0.4664585112505528,
+        "timeS": 0.9775499136802095
+      },
+      {
+        "distanceM": 700,
+        "dropMrad": -6.999623677626525,
+        "windagePerMpsMrad": 0.583064697810347,
+        "timeS": 1.2220991994763195
+      },
+      {
+        "distanceM": 800,
+        "dropMrad": -9.199015374304224,
+        "windagePerMpsMrad": 0.7172048807254336,
+        "timeS": 1.5039969082263431
+      },
+      {
+        "distanceM": 900,
+        "dropMrad": -11.887145372477956,
+        "windagePerMpsMrad": 0.8566107816336916,
+        "timeS": 1.8174617681501226
+      },
+      {
+        "distanceM": 1000,
+        "dropMrad": -15.061168516557652,
+        "windagePerMpsMrad": 0.9865365478111663,
+        "timeS": 2.149327683880365
+      }
+    ],
+    "dopeRows": [
+      {
+        "distanceM": 100,
+        "elevationMil": 0,
+        "clicks": 0,
+        "timeOfFlightS": 0.12,
+        "windConstant": 1700,
+        "colderBy10CMil": 0,
+        "pressureUp10HpaMil": 0,
+        "zoneWeights": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "distanceM": 200,
+        "elevationMil": 0.6,
+        "clicks": 6,
+        "timeOfFlightS": 0.26,
+        "windConstant": 1620,
+        "colderBy10CMil": 0.01,
+        "pressureUp10HpaMil": 0,
+        "zoneWeights": [
+          0.95,
+          0.05,
+          0,
+          0
+        ]
+      },
+      {
+        "distanceM": 300,
+        "elevationMil": 1.4,
+        "clicks": 14,
+        "timeOfFlightS": 0.41,
+        "windConstant": 1530,
+        "colderBy10CMil": 0.02,
+        "pressureUp10HpaMil": 0.01,
+        "zoneWeights": [
+          0.7,
+          0.3,
+          0,
+          0
+        ]
+      },
+      {
+        "distanceM": 400,
+        "elevationMil": 2.5,
+        "clicks": 25,
+        "timeOfFlightS": 0.58,
+        "windConstant": 1450,
+        "colderBy10CMil": 0.03,
+        "pressureUp10HpaMil": 0.01,
+        "zoneWeights": [
+          0.55,
+          0.45,
+          0,
+          0
+        ]
+      },
+      {
+        "distanceM": 500,
+        "elevationMil": 3.7,
+        "clicks": 37,
+        "timeOfFlightS": 0.76,
+        "windConstant": 1370,
+        "colderBy10CMil": 0.06,
+        "pressureUp10HpaMil": 0.02,
+        "zoneWeights": [
+          0.45,
+          0.45,
+          0.1,
+          0
+        ]
+      },
+      {
+        "distanceM": 600,
+        "elevationMil": 5.2,
+        "clicks": 52,
+        "timeOfFlightS": 0.98,
+        "windConstant": 1290,
+        "colderBy10CMil": 0.11,
+        "pressureUp10HpaMil": 0.04,
+        "zoneWeights": [
+          0.35,
+          0.4,
+          0.25,
+          0
+        ]
+      },
+      {
+        "distanceM": 700,
+        "elevationMil": 7,
+        "clicks": 70,
+        "timeOfFlightS": 1.22,
+        "windConstant": 1200,
+        "colderBy10CMil": 0.17,
+        "pressureUp10HpaMil": 0.06,
+        "zoneWeights": [
+          0.3,
+          0.35,
+          0.25,
+          0.1
+        ]
+      },
+      {
+        "distanceM": 800,
+        "elevationMil": 9.2,
+        "clicks": 92,
+        "timeOfFlightS": 1.5,
+        "windConstant": 1120,
+        "colderBy10CMil": 0.27,
+        "pressureUp10HpaMil": 0.09,
+        "zoneWeights": [
+          0.25,
+          0.3,
+          0.25,
+          0.2
+        ]
+      },
+      {
+        "distanceM": 900,
+        "elevationMil": 11.9,
+        "clicks": 119,
+        "timeOfFlightS": 1.82,
+        "windConstant": 1050,
+        "colderBy10CMil": 0.41,
+        "pressureUp10HpaMil": 0.13,
+        "zoneWeights": [
+          0.2,
+          0.3,
+          0.25,
+          0.25
+        ]
+      },
+      {
+        "distanceM": 1000,
+        "elevationMil": 15.1,
+        "clicks": 151,
+        "timeOfFlightS": 2.15,
+        "windConstant": 1010,
+        "colderBy10CMil": 0.57,
+        "pressureUp10HpaMil": 0.18,
+        "zoneWeights": [
+          0.2,
+          0.25,
+          0.25,
+          0.3
+        ]
+      }
+    ]
+  },
+  "B": {
+    "trajectory": [
+      {
+        "distanceM": 100,
+        "dropMrad": 0.00016928382545804716,
+        "windagePerMpsMrad": 0.056717768342634534,
+        "timeS": 0.1306718819132869
+      },
+      {
+        "distanceM": 200,
+        "dropMrad": -0.6677036403367713,
+        "windagePerMpsMrad": 0.11858865747680414,
+        "timeS": 0.27371793551382906
+      },
+      {
+        "distanceM": 300,
+        "dropMrad": -1.6263234732885836,
+        "windagePerMpsMrad": 0.18621224120017682,
+        "timeS": 0.4308639675629061
+      },
+      {
+        "distanceM": 400,
+        "dropMrad": -2.774562537125064,
+        "windagePerMpsMrad": 0.26052391762947075,
+        "timeS": 0.6042099449205982
+      },
+      {
+        "distanceM": 500,
+        "dropMrad": -4.1181746765332985,
+        "windagePerMpsMrad": 0.3428893346978976,
+        "timeS": 0.7964451187096593
+      },
+      {
+        "distanceM": 600,
+        "dropMrad": -5.689309232718388,
+        "windagePerMpsMrad": 0.435021432341407,
+        "timeS": 1.0110133742826815
+      },
+      {
+        "distanceM": 700,
+        "dropMrad": -7.5382279722188645,
+        "windagePerMpsMrad": 0.5389088393501705,
+        "timeS": 1.2522367549122981
+      },
+      {
+        "distanceM": 800,
+        "dropMrad": -9.734332794439032,
+        "windagePerMpsMrad": 0.6564928221188852,
+        "timeS": 1.5251948651052725
+      },
+      {
+        "distanceM": 900,
+        "dropMrad": -12.358699743607103,
+        "windagePerMpsMrad": 0.7833716865102506,
+        "timeS": 1.8300351234671741
+      },
+      {
+        "distanceM": 1000,
+        "dropMrad": -15.431246819381933,
+        "windagePerMpsMrad": 0.9036059544565357,
+        "timeS": 2.1536065407726595
+      }
+    ],
+    "dopeRows": [
+      {
+        "distanceM": 100,
+        "elevationMil": 0,
+        "clicks": 0,
+        "timeOfFlightS": 0.13,
+        "windConstant": 1760,
+        "colderBy10CMil": 0,
+        "pressureUp10HpaMil": 0,
+        "zoneWeights": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "distanceM": 200,
+        "elevationMil": 0.7,
+        "clicks": 7,
+        "timeOfFlightS": 0.27,
+        "windConstant": 1690,
+        "colderBy10CMil": 0.01,
+        "pressureUp10HpaMil": 0,
+        "zoneWeights": [
+          0.95,
+          0.05,
+          0,
+          0
+        ]
+      },
+      {
+        "distanceM": 300,
+        "elevationMil": 1.6,
+        "clicks": 16,
+        "timeOfFlightS": 0.43,
+        "windConstant": 1610,
+        "colderBy10CMil": 0.02,
+        "pressureUp10HpaMil": 0.01,
+        "zoneWeights": [
+          0.7,
+          0.3,
+          0,
+          0
+        ]
+      },
+      {
+        "distanceM": 400,
+        "elevationMil": 2.8,
+        "clicks": 28,
+        "timeOfFlightS": 0.6,
+        "windConstant": 1540,
+        "colderBy10CMil": 0.03,
+        "pressureUp10HpaMil": 0.01,
+        "zoneWeights": [
+          0.55,
+          0.4,
+          0.05,
+          0
+        ]
+      },
+      {
+        "distanceM": 500,
+        "elevationMil": 4.1,
+        "clicks": 41,
+        "timeOfFlightS": 0.8,
+        "windConstant": 1460,
+        "colderBy10CMil": 0.06,
+        "pressureUp10HpaMil": 0.02,
+        "zoneWeights": [
+          0.45,
+          0.45,
+          0.1,
+          0
+        ]
+      },
+      {
+        "distanceM": 600,
+        "elevationMil": 5.7,
+        "clicks": 57,
+        "timeOfFlightS": 1.01,
+        "windConstant": 1380,
+        "colderBy10CMil": 0.1,
+        "pressureUp10HpaMil": 0.03,
+        "zoneWeights": [
+          0.35,
+          0.4,
+          0.25,
+          0
+        ]
+      },
+      {
+        "distanceM": 700,
+        "elevationMil": 7.5,
+        "clicks": 75,
+        "timeOfFlightS": 1.25,
+        "windConstant": 1300,
+        "colderBy10CMil": 0.16,
+        "pressureUp10HpaMil": 0.05,
+        "zoneWeights": [
+          0.3,
+          0.35,
+          0.25,
+          0.1
+        ]
+      },
+      {
+        "distanceM": 800,
+        "elevationMil": 9.7,
+        "clicks": 97,
+        "timeOfFlightS": 1.53,
+        "windConstant": 1220,
+        "colderBy10CMil": 0.25,
+        "pressureUp10HpaMil": 0.08,
+        "zoneWeights": [
+          0.25,
+          0.3,
+          0.3,
+          0.15
+        ]
+      },
+      {
+        "distanceM": 900,
+        "elevationMil": 12.4,
+        "clicks": 124,
+        "timeOfFlightS": 1.83,
+        "windConstant": 1150,
+        "colderBy10CMil": 0.36,
+        "pressureUp10HpaMil": 0.12,
+        "zoneWeights": [
+          0.2,
+          0.3,
+          0.25,
+          0.25
+        ]
+      },
+      {
+        "distanceM": 1000,
+        "elevationMil": 15.4,
+        "clicks": 154,
+        "timeOfFlightS": 2.15,
+        "windConstant": 1110,
+        "colderBy10CMil": 0.51,
+        "pressureUp10HpaMil": 0.16,
+        "zoneWeights": [
+          0.2,
+          0.25,
+          0.25,
+          0.3
+        ]
+      }
+    ]
+  },
+  "C": {
+    "trajectory": [
+      {
+        "distanceM": 100,
+        "dropMrad": 0.00015396959969206153,
+        "windagePerMpsMrad": 0.05048401087937411,
+        "timeS": 0.13408077578146396
+      },
+      {
+        "distanceM": 200,
+        "dropMrad": -0.7039042717455883,
+        "windagePerMpsMrad": 0.10487092549614492,
+        "timeS": 0.2790389287222901
+      },
+      {
+        "distanceM": 300,
+        "dropMrad": -1.68399423321914,
+        "windagePerMpsMrad": 0.16354736779763748,
+        "timeS": 0.4361613158542459
+      },
+      {
+        "distanceM": 400,
+        "dropMrad": -2.8328159503070633,
+        "windagePerMpsMrad": 0.2271189352010201,
+        "timeS": 0.6069770338626053
+      },
+      {
+        "distanceM": 500,
+        "dropMrad": -4.1473490780296345,
+        "windagePerMpsMrad": 0.29643279296147323,
+        "timeS": 0.793378202347103
+      },
+      {
+        "distanceM": 600,
+        "dropMrad": -5.646995026111442,
+        "windagePerMpsMrad": 0.37251871793136404,
+        "timeS": 0.9977053738266748
+      },
+      {
+        "distanceM": 700,
+        "dropMrad": -7.363499995422054,
+        "windagePerMpsMrad": 0.4565811977648434,
+        "timeS": 1.2228333089333434
+      },
+      {
+        "distanceM": 800,
+        "dropMrad": -9.340156026207794,
+        "windagePerMpsMrad": 0.5499136057488001,
+        "timeS": 1.47218967152582
+      },
+      {
+        "distanceM": 900,
+        "dropMrad": -11.632869166146534,
+        "windagePerMpsMrad": 0.6536622273298507,
+        "timeS": 1.749587094823134
+      },
+      {
+        "distanceM": 1000,
+        "dropMrad": -14.303016908685327,
+        "windagePerMpsMrad": 0.7639910813069671,
+        "timeS": 2.0543144279229724
+      }
+    ],
+    "dopeRows": [
+      {
+        "distanceM": 100,
+        "elevationMil": 0,
+        "clicks": 0,
+        "timeOfFlightS": 0.13,
+        "windConstant": 1980,
+        "colderBy10CMil": 0,
+        "pressureUp10HpaMil": 0,
+        "zoneWeights": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "distanceM": 200,
+        "elevationMil": 0.7,
+        "clicks": 7,
+        "timeOfFlightS": 0.28,
+        "windConstant": 1910,
+        "colderBy10CMil": 0.01,
+        "pressureUp10HpaMil": 0,
+        "zoneWeights": [
+          0.95,
+          0.05,
+          0,
+          0
+        ]
+      },
+      {
+        "distanceM": 300,
+        "elevationMil": 1.7,
+        "clicks": 17,
+        "timeOfFlightS": 0.44,
+        "windConstant": 1830,
+        "colderBy10CMil": 0.01,
+        "pressureUp10HpaMil": 0,
+        "zoneWeights": [
+          0.75,
+          0.25,
+          0,
+          0
+        ]
+      },
+      {
+        "distanceM": 400,
+        "elevationMil": 2.8,
+        "clicks": 28,
+        "timeOfFlightS": 0.61,
+        "windConstant": 1760,
+        "colderBy10CMil": 0.03,
+        "pressureUp10HpaMil": 0.01,
+        "zoneWeights": [
+          0.55,
+          0.4,
+          0.05,
+          0
+        ]
+      },
+      {
+        "distanceM": 500,
+        "elevationMil": 4.1,
+        "clicks": 41,
+        "timeOfFlightS": 0.79,
+        "windConstant": 1690,
+        "colderBy10CMil": 0.05,
+        "pressureUp10HpaMil": 0.02,
+        "zoneWeights": [
+          0.45,
+          0.45,
+          0.1,
+          0
+        ]
+      },
+      {
+        "distanceM": 600,
+        "elevationMil": 5.6,
+        "clicks": 56,
+        "timeOfFlightS": 1,
+        "windConstant": 1610,
+        "colderBy10CMil": 0.08,
+        "pressureUp10HpaMil": 0.03,
+        "zoneWeights": [
+          0.4,
+          0.4,
+          0.2,
+          0
+        ]
+      },
+      {
+        "distanceM": 700,
+        "elevationMil": 7.4,
+        "clicks": 74,
+        "timeOfFlightS": 1.22,
+        "windConstant": 1530,
+        "colderBy10CMil": 0.13,
+        "pressureUp10HpaMil": 0.04,
+        "zoneWeights": [
+          0.3,
+          0.35,
+          0.25,
+          0.1
+        ]
+      },
+      {
+        "distanceM": 800,
+        "elevationMil": 9.3,
+        "clicks": 93,
+        "timeOfFlightS": 1.47,
+        "windConstant": 1450,
+        "colderBy10CMil": 0.19,
+        "pressureUp10HpaMil": 0.06,
+        "zoneWeights": [
+          0.25,
+          0.35,
+          0.25,
+          0.15
+        ]
+      },
+      {
+        "distanceM": 900,
+        "elevationMil": 11.6,
+        "clicks": 116,
+        "timeOfFlightS": 1.75,
+        "windConstant": 1380,
+        "colderBy10CMil": 0.28,
+        "pressureUp10HpaMil": 0.09,
+        "zoneWeights": [
+          0.2,
+          0.3,
+          0.25,
+          0.25
+        ]
+      },
+      {
+        "distanceM": 1000,
+        "elevationMil": 14.3,
+        "clicks": 143,
+        "timeOfFlightS": 2.05,
+        "windConstant": 1310,
+        "colderBy10CMil": 0.39,
+        "pressureUp10HpaMil": 0.13,
+        "zoneWeights": [
+          0.2,
+          0.25,
+          0.25,
+          0.3
+        ]
+      }
+    ]
+  }
+}

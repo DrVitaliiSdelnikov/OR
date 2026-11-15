@@ -368,8 +368,8 @@ export function causesView(breakdown: MissBreakdown): CausesView {
   };
 }
 
-export function groupText(points: readonly Correction[]): string {
-  const group = analyseGroup(points);
+export function groupText(points: readonly Correction[], rifleSpreadMil: number): string {
+  const group = analyseGroup(points, rifleSpreadMil);
   return group ? T.groupTexts[group.shape] : T.groupTooSmall({ minShots: MIN_GROUP_SHOTS });
 }
 

@@ -1,12 +1,17 @@
 export type CartridgeId = 'A' | 'B' | 'C';
 
+export type TwistDirection = 'right' | 'left';
+
+export type DragModel = 'G1' | 'G7';
+
 export interface Rifle {
   name: string;
   sightHeightCm: number;
   zeroM: number;
   groupSigmaMrad: number;
-  bulletDiameterIn: number;
   coldBoreShiftMil: Correction;
+  twistInchesPerTurn: number;
+  twistDirection: TwistDirection;
 }
 
 export interface Cartridge {
@@ -14,9 +19,17 @@ export interface Cartridge {
   name: string;
   blurb: string;
   massG: number;
-  bcG7: number;
+  bulletDiameterIn: number;
+  bulletLengthMm: number;
+  dragModel: DragModel;
+  ballisticCoefficient: number;
   muzzleVelocityMps: number;
   muzzleVelocitySdMps: number;
+}
+
+export interface Loadout {
+  rifle: Rifle;
+  cartridge: Cartridge;
 }
 
 export interface Target {

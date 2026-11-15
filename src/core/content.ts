@@ -1,19 +1,25 @@
 import { text } from '../i18n';
-import { Cartridge, CartridgeId, Rifle, Target } from './types';
+import { Cartridge, CartridgeId, Loadout, Rifle, Target } from './types';
 
-export const RIFLE: Rifle = {
+export const COURSE_RIFLE: Rifle = {
   name: text.content.rifleName,
   sightHeightCm: 5,
   zeroM: 100,
   groupSigmaMrad: 0.1,
-  bulletDiameterIn: 0.308,
   coldBoreShiftMil: { upMrad: 0.15, rightMrad: 0.05 },
+  twistInchesPerTurn: 10,
+  twistDirection: 'right',
 };
 
+/** @deprecated T1.2: винтовка берётся из снаряжения задачи — `COURSE_RIFLE` или `courseLoadout`. Удалить в T1.5. */
+export const RIFLE: Rifle = COURSE_RIFLE;
+
+const COURSE_BULLET = { bulletDiameterIn: 0.308, dragModel: 'G7' } as const;
+
 export const CARTRIDGES: readonly Cartridge[] = [
-  { id: 'A', ...text.content.cartridges.A, massG: 9.7, bcG7: 0.19, muzzleVelocityMps: 860, muzzleVelocitySdMps: 10 },
-  { id: 'B', ...text.content.cartridges.B, massG: 10.9, bcG7: 0.218, muzzleVelocityMps: 800, muzzleVelocitySdMps: 7 },
-  { id: 'C', ...text.content.cartridges.C, massG: 11.7, bcG7: 0.255, muzzleVelocityMps: 775, muzzleVelocitySdMps: 6 },
+  { id: 'A', ...text.content.cartridges.A, ...COURSE_BULLET, massG: 9.7, bulletLengthMm: 28.5, ballisticCoefficient: 0.19, muzzleVelocityMps: 860, muzzleVelocitySdMps: 10 },
+  { id: 'B', ...text.content.cartridges.B, ...COURSE_BULLET, massG: 10.9, bulletLengthMm: 31.2, ballisticCoefficient: 0.218, muzzleVelocityMps: 800, muzzleVelocitySdMps: 7 },
+  { id: 'C', ...text.content.cartridges.C, ...COURSE_BULLET, massG: 11.7, bulletLengthMm: 32.5, ballisticCoefficient: 0.255, muzzleVelocityMps: 775, muzzleVelocitySdMps: 6 },
 ];
 
 export const MAX_TRAJECTORY_M = 1000;
@@ -28,6 +34,10 @@ export const STANDARD_RELATIVE_HUMIDITY = 0.5;
 
 export function cartridgeById(id: CartridgeId): Cartridge {
   return CARTRIDGES.find(cartridge => cartridge.id === id) ?? CARTRIDGES[1];
+}
+
+export function courseLoadout(id: CartridgeId): Loadout {
+  return { rifle: COURSE_RIFLE, cartridge: cartridgeById(id) };
 }
 
 export function targetRadiusMrad(target: Target): number {

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { cartridgeById } from '../../core/content';
+import { courseLoadout } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { NotebookMode } from '../../core/exercise-scoring';
@@ -13,8 +13,8 @@ let cards: Map<string, DopeCard>;
 beforeAll(async () => {
   const engine = new BallisticsEngine();
   cards = new Map([
-    ['B', await buildDopeCard(engine, cartridgeById('B'), 0.1)],
-    ['C', await buildDopeCard(engine, cartridgeById('C'), 0.1)],
+    ['B', await buildDopeCard(engine, courseLoadout('B'), 0.1)],
+    ['C', await buildDopeCard(engine, courseLoadout('C'), 0.1)],
   ]);
 });
 

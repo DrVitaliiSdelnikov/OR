@@ -1,22 +1,22 @@
 import { Ammo, Atmo, Calculator, DragModel, DragTables, Shot, UNew, Unit, Weapon, Wind } from 'js-ballistics';
-import { MAX_TRAJECTORY_M, RIFLE, TRAJECTORY_STEP_M } from './content';
-import { Atmosphere, Cartridge, CartridgeId, RequiredCorrection, TrajectoryPoint, WindZone } from './types';
+import { MAX_TRAJECTORY_M, TRAJECTORY_STEP_M } from './content';
+import { Atmosphere, Cartridge, Loadout, RequiredCorrection, TrajectoryPoint, WindZone } from './types';
 
 export class BallisticsEngine {
   private readonly calculator = new Calculator();
-  private readonly zeroedWeapons = new Map<CartridgeId, Weapon>();
+  private readonly zeroedWeapons = new Map<string, Promise<Weapon>>();
 
   async trajectory(
-    cartridge: Cartridge,
+    loadout: Loadout,
     atmosphere: Atmosphere | null,
     windZones: readonly WindZone[] | null,
-    muzzleVelocityMps = cartridge.muzzleVelocityMps,
+    muzzleVelocityMps = loadout.cartridge.muzzleVelocityMps,
     stepM = TRAJECTORY_STEP_M,
   ): Promise<TrajectoryPoint[]> {
-    const weapon = await this.zeroedWeapon(cartridge);
+    const weapon = await this.zeroedWeapon(loadout);
     const shot = new Shot({
       weapon,
-      ammo: this.ammo(cartridge, muzzleVelocityMps),
+      ammo: this.ammo(loadout.cartridge, muzzleVelocityMps),
       atmo: atmosphere ? this.atmo(atmosphere) : Atmo.standard(),
       winds: this.winds(windZones ?? []),
     });
@@ -68,24 +68,30 @@ export class BallisticsEngine {
     };
   }
 
-  private async zeroedWeapon(cartridge: Cartridge): Promise<Weapon> {
-    const cached = this.zeroedWeapons.get(cartridge.id);
+  private zeroedWeapon(loadout: Loadout): Promise<Weapon> {
+    const key = zeroKey(loadout);
+    const cached = this.zeroedWeapons.get(key);
     if (cached) {
       return cached;
     }
-    const weapon = new Weapon({ sightHeight: UNew.Centimeter(RIFLE.sightHeightCm) });
+    const zeroing = this.zeroWeapon(loadout);
+    this.zeroedWeapons.set(key, zeroing);
+    return zeroing;
+  }
+
+  private async zeroWeapon({ rifle, cartridge }: Loadout): Promise<Weapon> {
+    const weapon = new Weapon({ sightHeight: UNew.Centimeter(rifle.sightHeightCm) });
     const zeroShot = new Shot({ weapon, ammo: this.ammo(cartridge, cartridge.muzzleVelocityMps), atmo: Atmo.standard() });
-    await this.calculator.setWeaponZero(zeroShot, UNew.Meter(RIFLE.zeroM));
-    this.zeroedWeapons.set(cartridge.id, weapon);
+    await this.calculator.setWeaponZero(zeroShot, UNew.Meter(rifle.zeroM));
     return weapon;
   }
 
   private ammo(cartridge: Cartridge, muzzleVelocityMps: number): Ammo {
     const dragModel = new DragModel({
-      bc: cartridge.bcG7,
-      dragTable: DragTables['G7'],
+      bc: cartridge.ballisticCoefficient,
+      dragTable: DragTables[cartridge.dragModel],
       weight: UNew.Gram(cartridge.massG),
-      diameter: UNew.Inch(RIFLE.bulletDiameterIn),
+      diameter: UNew.Inch(cartridge.bulletDiameterIn),
     });
     return new Ammo({ dm: dragModel, mv: UNew.MPS(muzzleVelocityMps) });
   }
@@ -109,4 +115,16 @@ export class BallisticsEngine {
       });
     });
   }
+}
+
+function zeroKey({ rifle, cartridge }: Loadout): string {
+  return [
+    rifle.sightHeightCm,
+    rifle.zeroM,
+    cartridge.bulletDiameterIn,
+    cartridge.massG,
+    cartridge.dragModel,
+    cartridge.ballisticCoefficient,
+    cartridge.muzzleVelocityMps,
+  ].join('|');
 }

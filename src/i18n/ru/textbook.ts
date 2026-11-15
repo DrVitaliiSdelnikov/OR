@@ -1,3 +1,4 @@
+import type { DragModel } from '../../core/types';
 import type { CheckErrorType } from '../../core/calc-check';
 import type { CauseKind, MainCause } from '../../sim/miss-breakdown';
 import type { ReticleMarkKind } from '../../sim/reticle';
@@ -512,9 +513,9 @@ const termExamples = {
   milling: (p: { gongSizeM: number; milledMil: number; rangeM: number }) => `гонг ${decimal(p.gongSizeM)} м занял в сетке ${decimal(p.milledMil)} MIL → ${decimal(p.rangeM, 0)} м`,
   mil: (p: { mil: number; distanceM: number; sizeCm: number }) => `${decimal(p.mil)} MIL на ${p.distanceM} м = ${decimal(p.mil)} × ${p.distanceM} / 10 = ${decimal(p.sizeCm, 1)} см`,
   moa: (p: { mil: number; moa: number; moaClickMil: number }) => `${decimal(p.mil)} MIL = ${decimal(p.moa, 2)} MOA; клик MOA-прицела ¼ MOA = ${decimal(p.moaClickMil, 3)} MIL`,
-  cartridgeCard: (p: { name: string; massG: number; muzzleVelocityMps: number; muzzleVelocitySdMps: number; bcG7: number }) =>
-    `${p.name}: ${decimal(p.massG, 1)} г, ${p.muzzleVelocityMps} ± ${p.muzzleVelocitySdMps} м/с, G7 ${decimal(p.bcG7, 3)}`,
-  ballisticCoefficient: (p: { cartridges: readonly { name: string; bcG7: number }[] }) => p.cartridges.map(cartridge => `${cartridge.name} — ${decimal(cartridge.bcG7, 3)}`).join(' · '),
+  cartridgeCard: (p: { name: string; massG: number; muzzleVelocityMps: number; muzzleVelocitySdMps: number; dragModel: DragModel; ballisticCoefficient: number }) =>
+    `${p.name}: ${decimal(p.massG, 1)} г, ${p.muzzleVelocityMps} ± ${p.muzzleVelocitySdMps} м/с, ${p.dragModel} ${decimal(p.ballisticCoefficient, 3)}`,
+  ballisticCoefficient: (p: { cartridges: readonly { name: string; ballisticCoefficient: number }[] }) => p.cartridges.map(cartridge => `${cartridge.name} — ${decimal(cartridge.ballisticCoefficient, 3)}`).join(' · '),
   energy: (p: { name: string; massKg: number; muzzleVelocityMps: number; energyJ: number }) => `${p.name}: ${decimal(p.massKg, 4)} × ${p.muzzleVelocityMps}² / 2 ≈ ${p.energyJ} Дж`,
   velocitySpread: (p: { name: string; muzzleVelocityMps: number; muzzleVelocitySdMps: number }) => `${p.name}: ${p.muzzleVelocityMps} ± ${p.muzzleVelocitySdMps} м/с`,
   dope: (p: { cartridgeName: string; distanceM: number; elevationMil: number; clicks: number }) => `${p.cartridgeName}, ${p.distanceM} м: ВЕРТ ${decimal(p.elevationMil, 1)} MIL = ${p.clicks} кл.`,
@@ -657,10 +658,10 @@ export const textbook = {
     secondPlaneCaption: (p: { magnification: number; dotMil: number; trueMagnification: number }) =>
       `на ${p.magnification}× точка = ${roundedDecimal(p.dotMil, 1)} MIL — ${p.magnification === p.trueMagnification ? 'верно' : `верно только на ${p.trueMagnification}×`}`,
     windClockCaption: (p: { clockHours: number; share: number }) => `${p.clockHours} ч — доля ${roundedDecimal(p.share, 2)}`,
-    cartridgeFacts: (p: { massG: number; muzzleVelocityMps: number; bcG7: number; energyJ: number }) => [
+    cartridgeFacts: (p: { massG: number; muzzleVelocityMps: number; ballisticCoefficient: number; energyJ: number }) => [
       `${roundedDecimal(p.massG, 1)} г`,
       `${p.muzzleVelocityMps} м/с`,
-      `BC ${roundedDecimal(p.bcG7, 3)}`,
+      `BC ${roundedDecimal(p.ballisticCoefficient, 3)}`,
       `${p.energyJ} Дж`,
     ],
     groupCaption: (p: { upMil: number; rightMil: number; upClicks: number; rightClicks: number }) => {

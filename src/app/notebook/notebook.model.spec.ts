@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { cartridgeById } from '../../core/content';
+import { courseLoadout } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { ExerciseShotRecord } from '../../sim/course';
@@ -11,7 +11,7 @@ const scope = scopeById('course-tree');
 let card: DopeCard;
 
 beforeAll(async () => {
-  card = await buildDopeCard(new BallisticsEngine(), cartridgeById('B'), 0.1);
+  card = await buildDopeCard(new BallisticsEngine(), courseLoadout('B'), 0.1);
 });
 
 function notebookAt(distanceM: number | null): Notebook {

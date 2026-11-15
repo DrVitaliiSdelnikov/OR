@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { cartridgeById, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C } from './content';
+import { cartridgeById, courseLoadout, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C } from './content';
 import { buildDopeCard, DopeCard, dopeRowAt } from './dope-card';
 import { BallisticsEngine } from './engine';
 import { leadMil } from './game-formulas';
@@ -93,12 +93,12 @@ describe('the lead formula against the core', () => {
   let card: DopeCard;
 
   beforeAll(async () => {
-    card = await buildDopeCard(engine, cartridge, 0.1);
+    card = await buildDopeCard(engine, courseLoadout(cartridge.id), 0.1);
   });
 
   it('differs by less than half a click on 300–500 m', async () => {
     for (const distanceM of [300, 350, 400, 450, 500]) {
-      const points = await engine.trajectory(cartridge, standard, null, cartridge.muzzleVelocityMps, distanceM);
+      const points = await engine.trajectory(courseLoadout(cartridge.id), standard, null, cartridge.muzzleVelocityMps, distanceM);
       const coreTimeOfFlightS = BallisticsEngine.required(points, distanceM).timeS;
       const cardTimeOfFlightS = dopeRowAt(card, distanceM).timeOfFlightS;
       for (const speedMps of [0.4, 0.6, 1.1, 1.7]) {

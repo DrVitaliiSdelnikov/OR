@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { Correction } from '../core/types';
+import { COURSE_RIFLE } from '../core/content';
 import { analyseGroup, diagnoseShot, dopeNoteElevationMil, isCallAccurate, secondShotCorrection, warmImpact } from './shot-review';
 
 const CLICK_MIL = 0.1;
+const RIFLE_SPREAD_MIL = COURSE_RIFLE.groupSigmaMrad;
 const AIM_POINT: Correction = { upMrad: 0, rightMrad: 0 };
 
 function point(upMrad: number, rightMrad: number): Correction {
@@ -93,11 +95,11 @@ describe('cold bore in the review', () => {
 
 describe('analyseGroup', () => {
   it('needs at least three shots', () => {
-    expect(analyseGroup([point(0, 0), point(0.1, 0)])).toBeNull();
+    expect(analyseGroup([point(0, 0), point(0.1, 0)], RIFLE_SPREAD_MIL)).toBeNull();
   });
 
   it('finds the centre and the spread', () => {
-    const group = analyseGroup([point(-0.4, 0.05), point(0, -0.05), point(0.4, 0)])!;
+    const group = analyseGroup([point(-0.4, 0.05), point(0, -0.05), point(0.4, 0)], RIFLE_SPREAD_MIL)!;
     expect(group.center.upMrad).toBeCloseTo(0, 9);
     expect(group.center.rightMrad).toBeCloseTo(0, 9);
     expect(group.spreadMil.up).toBeCloseTo(0.3266, 4);
@@ -105,38 +107,44 @@ describe('analyseGroup', () => {
   });
 
   it('a vertical string points to breathing', () => {
-    expect(analyseGroup([point(-0.4, 0.05), point(0, -0.05), point(0.4, 0)])!.shape).toBe('vertical-string');
+    expect(analyseGroup([point(-0.4, 0.05), point(0, -0.05), point(0.4, 0)], RIFLE_SPREAD_MIL)!.shape).toBe('vertical-string');
   });
 
   it('a horizontal string points to a canted rifle', () => {
-    expect(analyseGroup([point(0.05, -0.4), point(-0.05, 0), point(0, 0.4)])!.shape).toBe('horizontal-string');
+    expect(analyseGroup([point(0.05, -0.4), point(-0.05, 0), point(0, 0.4)], RIFLE_SPREAD_MIL)!.shape).toBe('horizontal-string');
   });
 
   it('a tight group low and right points to the hand and the trigger', () => {
-    expect(analyseGroup([point(-0.32, 0.28), point(-0.28, 0.32), point(-0.3, 0.3)])!.shape).toBe('low-right');
+    expect(analyseGroup([point(-0.32, 0.28), point(-0.28, 0.32), point(-0.3, 0.3)], RIFLE_SPREAD_MIL)!.shape).toBe('low-right');
   });
 
   it('a tight group off the centre is a data problem', () => {
-    expect(analyseGroup([point(0.02, 0.28), point(-0.02, 0.32), point(0, 0.3)])!.shape).toBe('offset');
+    expect(analyseGroup([point(0.02, 0.28), point(-0.02, 0.32), point(0, 0.3)], RIFLE_SPREAD_MIL)!.shape).toBe('offset');
   });
 
   it('shots all over are scattered', () => {
-    expect(analyseGroup([point(-0.6, 0.5), point(0, -0.5), point(0.6, 0)])!.shape).toBe('scattered');
+    expect(analyseGroup([point(-0.6, 0.5), point(0, -0.5), point(0.6, 0)], RIFLE_SPREAD_MIL)!.shape).toBe('scattered');
   });
 
   it('a wide vertical group is scattered first, not a string', () => {
-    expect(analyseGroup([point(-0.8, 0.02), point(0, -0.02), point(0.8, 0)])!.shape).toBe('scattered');
+    expect(analyseGroup([point(-0.8, 0.02), point(0, -0.02), point(0.8, 0)], RIFLE_SPREAD_MIL)!.shape).toBe('scattered');
   });
 
   it('a round group is not a string', () => {
-    expect(analyseGroup([point(-0.3, 0), point(0, 0.3), point(0.3, 0), point(0, -0.3)])!.shape).toBe('tight');
+    expect(analyseGroup([point(-0.3, 0), point(0, 0.3), point(0.3, 0), point(0, -0.3)], RIFLE_SPREAD_MIL)!.shape).toBe('tight');
   });
 
   it('a tight group low and left is an offset, not the hand-and-trigger pattern', () => {
-    expect(analyseGroup([point(-0.32, -0.28), point(-0.28, -0.32), point(-0.3, -0.3)])!.shape).toBe('offset');
+    expect(analyseGroup([point(-0.32, -0.28), point(-0.28, -0.32), point(-0.3, -0.3)], RIFLE_SPREAD_MIL)!.shape).toBe('offset');
+  });
+
+  it('the spread is judged against the rifle of the loadout: scattered for a 0.1 MIL rifle is a string for a 0.2 MIL one (T1.2)', () => {
+    const wideVertical = [point(-0.6, 0.02), point(0, -0.02), point(0.6, 0)];
+    expect(analyseGroup(wideVertical, 0.1)!.shape).toBe('scattered');
+    expect(analyseGroup(wideVertical, 0.2)!.shape).toBe('vertical-string');
   });
 
   it('a tight group on the centre is fine', () => {
-    expect(analyseGroup([point(0.05, 0), point(-0.05, 0.03), point(0, -0.03)])!.shape).toBe('tight');
+    expect(analyseGroup([point(0.05, 0), point(-0.05, 0.03), point(0, -0.03)], RIFLE_SPREAD_MIL)!.shape).toBe('tight');
   });
 });

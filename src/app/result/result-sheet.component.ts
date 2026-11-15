@@ -1,4 +1,5 @@
 import { Component, computed, inject, input, OnInit, output } from '@angular/core';
+import { COURSE_RIFLE } from '../../core/content';
 import { Correction } from '../../core/types';
 import { text } from '../../i18n';
 import { groupText } from '../review/review.model';
@@ -132,7 +133,7 @@ export class ResultSheetComponent implements OnInit {
   protected readonly noErrors = text.result.noErrors;
   private readonly feedback = inject(FeedbackService);
   protected readonly termSheet = inject(TermSheetService);
-  protected readonly groupLine = computed(() => groupText(this.group()));
+  protected readonly groupLine = computed(() => groupText(this.group(), COURSE_RIFLE.groupSigmaMrad));
 
   ngOnInit(): void {
     this.feedback.emit('stamp');

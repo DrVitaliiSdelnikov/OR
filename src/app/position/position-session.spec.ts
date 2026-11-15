@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RIFLE } from '../../core/content';
+import { COURSE_RIFLE } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { gaugeWindAt, lateralWindMps, windAt } from '../../core/scenario';
@@ -170,7 +170,7 @@ describe('PositionSession — exercise 02', () => {
     expect(shots.every(shot => shot.record.targetIndex === 0)).toBe(true);
     expect(shots[4].events).toEqual(['target-closed', 'exercise-done']);
     const coldImpact = shots[0].result.impact;
-    expect(shots[0].result.coldBore).toEqual(RIFLE.coldBoreShiftMil);
+    expect(shots[0].result.coldBore).toEqual(COURSE_RIFLE.coldBoreShiftMil);
     expect(shots[0].result.sightOffset).toEqual(offset);
     expect(Math.hypot(coldImpact.upMrad, coldImpact.rightMrad)).toBeGreaterThan(0.3);
   });
@@ -594,7 +594,7 @@ describe('PositionSession — shot review (A6.1)', () => {
     const session = await start('02', 23);
     const shot = (await shoot(session, ON_TARGET))!;
     expect(shot.record.isColdBore).toBe(true);
-    expect(shot.review.warmImpact.upMrad).toBeCloseTo(shot.result.impact.upMrad - RIFLE.coldBoreShiftMil.upMrad, 9);
+    expect(shot.review.warmImpact.upMrad).toBeCloseTo(shot.result.impact.upMrad - COURSE_RIFLE.coldBoreShiftMil.upMrad, 9);
   });
 
   it('a clean call gives a DOPE note; an execution miss gives none', async () => {
@@ -719,7 +719,7 @@ describe('PositionSession — why the bullet went there (A6.2)', () => {
     session.turn('elevation', 3);
     const shot = (await shoot(session, ON_TARGET))!;
     const cold = causeOf(shot, 'cold-bore');
-    expect(cold.vector).toEqual(RIFLE.coldBoreShiftMil);
+    expect(cold.vector).toEqual(COURSE_RIFLE.coldBoreShiftMil);
     expect(cold.isPlayerError).toBe(false);
     const zero = causeOf(shot, 'zero');
     expect(zero.vector.upMrad).toBeCloseTo(session.setup.sightOffset.upMrad + 0.3, 6);

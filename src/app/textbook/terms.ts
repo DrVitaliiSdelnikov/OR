@@ -1,4 +1,4 @@
-import { cartridgeById, FLAG_DEG_PER_MPS, FLAG_DISTANCES_M, RIFLE, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
+import { cartridgeById, COURSE_RIFLE, FLAG_DEG_PER_MPS, FLAG_DISTANCES_M, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
 import { DopeCard, DopeRow, dopeRowAt } from '../../core/dope-card';
 import { impactSoundDelayS, windClockShare } from '../../core/field';
 import {
@@ -67,7 +67,7 @@ const ATMOSPHERE_EXAMPLE = { distanceM: 600, temperatureC: -5, pressureHpa: 1030
 const LEAD_EXAMPLE = { targetSpeedMps: 1.1, clockHours: 3, distanceM: 400 };
 const SECOND_SHOT_EXAMPLE = { rightMil: 0.3, downMil: 0.2 };
 
-const CARD_TEXTS = T.terms({ rifleName: RIFLE.name, zeroM: RIFLE.zeroM, flagDistancesM: FLAG_DISTANCES_M });
+const CARD_TEXTS = T.terms({ rifleName: COURSE_RIFLE.name, zeroM: COURSE_RIFLE.zeroM, flagDistancesM: FLAG_DISTANCES_M });
 
 type TermId = keyof typeof CARD_TEXTS;
 type TermExample = (cards: CardsByCartridge | null) => string | null;
@@ -89,10 +89,10 @@ const exampleCartridgeName = (): string => cartridgeById(EXAMPLE_CARTRIDGE_ID).n
 
 const EXAMPLES: Partial<Record<TermId, TermExample>> = {
   coldBore: () => {
-    const shift = RIFLE.coldBoreShiftMil;
+    const shift = COURSE_RIFLE.coldBoreShiftMil;
     const distanceM = COLD_BORE_EXAMPLE_DISTANCE_M;
     return EXAMPLE.coldBore({
-      rifleName: RIFLE.name,
+      rifleName: COURSE_RIFLE.name,
       distanceM,
       upMil: shift.upMrad,
       upCm: cmOnTarget(shift.upMrad, distanceM),
@@ -121,10 +121,11 @@ const EXAMPLES: Partial<Record<TermId, TermExample>> = {
       massG: cartridge.massG,
       muzzleVelocityMps: cartridge.muzzleVelocityMps,
       muzzleVelocitySdMps: cartridge.muzzleVelocitySdMps,
-      bcG7: cartridge.bcG7,
+      dragModel: cartridge.dragModel,
+      ballisticCoefficient: cartridge.ballisticCoefficient,
     });
   },
-  ballisticCoefficient: () => EXAMPLE.ballisticCoefficient({ cartridges: EXAMPLE_CARTRIDGE_IDS.map(id => ({ name: cartridgeById(id).name, bcG7: cartridgeById(id).bcG7 })) }),
+  ballisticCoefficient: () => EXAMPLE.ballisticCoefficient({ cartridges: EXAMPLE_CARTRIDGE_IDS.map(id => ({ name: cartridgeById(id).name, ballisticCoefficient: cartridgeById(id).ballisticCoefficient })) }),
   energy: () => {
     const cartridge = cartridgeById(EXAMPLE_CARTRIDGE_ID);
     const massKg = cartridge.massG / GRAMS_PER_KG;

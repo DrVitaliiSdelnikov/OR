@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CARTRIDGES, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C, WIND_ZONE_LIMITS_M } from './content';
+import { CARTRIDGES, courseLoadout, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C, WIND_ZONE_LIMITS_M } from './content';
 import { buildDopeCard, DopeCard, dopeRowAt } from './dope-card';
 import { BallisticsEngine } from './engine';
 import { atmosphereCorrectionMil, averageCrosswindMps, windCorrectionMil } from './game-formulas';
@@ -21,7 +21,7 @@ function card(cartridgeId: CartridgeId): DopeCard {
 
 beforeAll(async () => {
   for (const cartridge of CARTRIDGES) {
-    cards.set(cartridge.id, await buildDopeCard(engine, cartridge, CLICK_MIL));
+    cards.set(cartridge.id, await buildDopeCard(engine, courseLoadout(cartridge.id), CLICK_MIL));
   }
 });
 
@@ -41,7 +41,7 @@ describe('buildDopeCard', () => {
 
   it('matches the engine in standard air on every row of every cartridge', async () => {
     for (const cartridge of CARTRIDGES) {
-      const points = await engine.trajectory(cartridge, atmosphere(STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA), null);
+      const points = await engine.trajectory(courseLoadout(cartridge.id), atmosphere(STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA), null);
       for (const row of card(cartridge.id).rows) {
         expect(Math.abs(row.elevationMil - BallisticsEngine.required(points, row.distanceM).upMrad)).toBeLessThanOrEqual(0.05);
         expect(row.clicks).toBe(Math.round(row.elevationMil / CLICK_MIL));
@@ -98,7 +98,7 @@ describe('game formulas against the engine', () => {
   it('wind formula is within one click for 100–1000 m and up to 12 m/s', async () => {
     for (const cartridge of CARTRIDGES) {
       for (const speedMps of [4, 8, 12]) {
-        const points = await engine.trajectory(cartridge, atmosphere(STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA), [
+        const points = await engine.trajectory(courseLoadout(cartridge.id), atmosphere(STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA), [
           { untilM: Infinity, speedMps, fromDeg: FULL_CROSSWIND_FROM_LEFT_DEG },
         ]);
         for (const row of card(cartridge.id).rows) {
@@ -117,9 +117,9 @@ describe('game formulas against the engine', () => {
   async function worstAtmosphereErrorMil(maxDistanceM: number, minDistanceM: number): Promise<number> {
     let worstMil = 0;
     for (const cartridge of CARTRIDGES) {
-      const standardPoints = await engine.trajectory(cartridge, atmosphere(STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA), null);
+      const standardPoints = await engine.trajectory(courseLoadout(cartridge.id), atmosphere(STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA), null);
       for (const [temperatureC, pressureHpa] of weatherGrid) {
-        const points = await engine.trajectory(cartridge, atmosphere(temperatureC, pressureHpa), null);
+        const points = await engine.trajectory(courseLoadout(cartridge.id), atmosphere(temperatureC, pressureHpa), null);
         for (const row of card(cartridge.id).rows.filter(candidate => candidate.distanceM >= minDistanceM && candidate.distanceM <= maxDistanceM)) {
           const engineShiftMil = BallisticsEngine.required(points, row.distanceM).upMrad - BallisticsEngine.required(standardPoints, row.distanceM).upMrad;
           worstMil = Math.max(worstMil, Math.abs(atmosphereCorrectionMil(row, temperatureC, pressureHpa) - engineShiftMil));
@@ -173,8 +173,8 @@ describe('zone weights', () => {
     for (const cartridge of CARTRIDGES) {
       const zonesWith = (windyZone: number | null) =>
         WIND_ZONE_LIMITS_M.map((untilM, index) => ({ untilM, speedMps: windyZone === null || windyZone === index ? 1 : 0, fromDeg: FULL_CROSSWIND_FROM_LEFT_DEG }));
-      const full = await engine.trajectory(cartridge, standard, zonesWith(null));
-      const perZone = await Promise.all(WIND_ZONE_LIMITS_M.map((_, index) => engine.trajectory(cartridge, standard, zonesWith(index))));
+      const full = await engine.trajectory(courseLoadout(cartridge.id), standard, zonesWith(null));
+      const perZone = await Promise.all(WIND_ZONE_LIMITS_M.map((_, index) => engine.trajectory(courseLoadout(cartridge.id), standard, zonesWith(index))));
       for (const row of card(cartridge.id).rows.filter(candidate => candidate.distanceM >= 200)) {
         const totalMil = BallisticsEngine.required(full, row.distanceM).rightMrad;
         perZone.forEach((points, index) => {
@@ -201,7 +201,7 @@ describe('zone weights', () => {
     for (let seed = 1; seed <= 20; seed++) {
       const { zones } = createScenario(seed * 101, { isWindUniform: false });
       for (const distanceM of [200, 350, 500, 550, 600, 650, 700]) {
-        const points = await engine.trajectory(cartridge, standard, zones, cartridge.muzzleVelocityMps, distanceM);
+        const points = await engine.trajectory(courseLoadout(cartridge.id), standard, zones, cartridge.muzzleVelocityMps, distanceM);
         const engineMil = BallisticsEngine.required(points, distanceM).rightMrad;
         const row = dopeRowAt(card('B'), distanceM);
         const averageMps = averageCrosswindMps(zones.map(zone => lateralWindMps(zone)), row.zoneWeights);

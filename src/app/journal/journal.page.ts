@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FIRST_FIRING_EXERCISE_ID } from '../../sim/course';
 import { RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
-import { cartridgeById, CARTRIDGES } from '../../core/content';
+import { CARTRIDGES, courseLoadout } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { text } from '../../i18n';
@@ -199,7 +199,7 @@ export class JournalPage {
     const engine = new BallisticsEngine();
     const cards: DopeCard[] = [];
     for (const cartridge of CARTRIDGES) {
-      cards.push(await buildDopeCard(engine, cartridgeById(cartridge.id), CARD_CLICK_MIL));
+      cards.push(await buildDopeCard(engine, courseLoadout(cartridge.id), CARD_CLICK_MIL));
     }
     this.dopeCards.set(cards);
   }

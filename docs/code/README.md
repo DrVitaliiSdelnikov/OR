@@ -103,3 +103,4 @@
 | app · обучающие подсказки для новинок 04–10 (A6.5) | [specs/app-instructor-novelties.md](specs/app-instructor-novelties.md) | реализовано, слито в `master` 9.11; 09 и 11 — вместе с их механиками |
 | sim · упреждение без стороны (В43, T0.4) | [specs/sim-lead-unsigned.md](specs/sim-lead-unsigned.md) | реализовано, слито в `master` 15.11 |
 | core/units · метрика и имперская система (T1.1) | [specs/core-units.md](specs/core-units.md) | реализовано, слито в `master` 15.11 |
+| core · снаряжение вместо глобальной винтовки (T1.2) | [specs/core-loadout.md](specs/core-loadout.md) | реализовано, слито в `master` 15.11 |

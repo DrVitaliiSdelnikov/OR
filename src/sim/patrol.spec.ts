@@ -1,10 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { cartridgeById } from '../core/content';
+import { courseLoadout } from '../core/content';
 import { buildDopeCard, DopeCard } from '../core/dope-card';
 import { BallisticsEngine } from '../core/engine';
 import { patrolPositionM } from '../core/moving-target';
 import { exerciseById, setupTask } from './course';
-import { createNotebook, factorContributions } from './notebook';
+import { createNotebook, factorContributions, movementDirection } from './notebook';
 import { movementClockAt, movingShotOptions, PATROL_SPEEDS_MPS, patrolPlan, targetOffsetMil } from './patrol';
 import { scopeById } from './scope-model';
 
@@ -85,7 +85,7 @@ describe('course and notebook', () => {
   let card: DopeCard;
 
   beforeAll(async () => {
-    card = await buildDopeCard(new BallisticsEngine(), cartridgeById('B'), 0.1);
+    card = await buildDopeCard(new BallisticsEngine(), courseLoadout('B'), 0.1);
   });
 
   it('exercise 11 gets the patrol plan; exercise 10 does not', () => {
@@ -95,7 +95,7 @@ describe('course and notebook', () => {
     expect(setupTask(exerciseById('10')!, 9).patrol).toBeUndefined();
   });
 
-  it('the lead points the way the target walks now', () => {
+  it('the lead has no side; the way the target walks flips on the turn (В43)', () => {
     const path = { speedMps: 1.1, movementClock: 3, startOffsetM: 0, halfWidthM: 8.8 };
     const leadAt = (timeS: number) =>
       factorContributions(
@@ -111,7 +111,9 @@ describe('course and notebook', () => {
           'auto',
         ),
       ).lead.mil!;
+    const afterTurnS = 8.8 / 1.1 + 2;
     expect(leadAt(2)).toBeGreaterThan(0);
-    expect(leadAt(8.8 / 1.1 + 2)).toBeLessThan(0);
+    expect(leadAt(afterTurnS)).toBeCloseTo(leadAt(2), 9);
+    expect(movementDirection(movementClockAt(path, afterTurnS))).toBe(-movementDirection(movementClockAt(path, 2)));
   });
 });

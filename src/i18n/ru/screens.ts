@@ -84,7 +84,7 @@ export const screens = {
     unknownDistance: 'неизвестная',
     distance: (p: { distanceM: number }) => `${p.distanceM} м`,
     mode: (p: { label: string; multiplier: number }) => `${p.label} × ${decimal(p.multiplier, 1)}`,
-    cartridgeLine: (p: { massG: number; muzzleVelocityMps: number; bcG7: number }) => `${decimal(p.massG, 1)} г · ${p.muzzleVelocityMps} м/с · BC ${decimal(p.bcG7, 3)}`,
+    cartridgeLine: (p: { massG: number; muzzleVelocityMps: number; ballisticCoefficient: number }) => `${decimal(p.massG, 1)} г · ${p.muzzleVelocityMps} м/с · BC ${decimal(p.ballisticCoefficient, 3)}`,
     instructorLine: (p: { correction: string }) => `Расчётные данные: ${p.correction} MIL`,
     back: BACK,
     title: 'Свободная игра',

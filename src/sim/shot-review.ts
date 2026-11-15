@@ -1,4 +1,3 @@
-import { RIFLE } from '../core/content';
 import { roundToClicks } from '../core/game-formulas';
 import { Correction } from '../core/types';
 
@@ -69,7 +68,7 @@ export function dopeNoteElevationMil(dialUpMil: number, call: Correction, impact
   return dialUpMil + (call.upMrad - impact.upMrad);
 }
 
-export function analyseGroup(impacts: readonly Correction[]): GroupAnalysis | null {
+export function analyseGroup(impacts: readonly Correction[], rifleSpreadMil: number): GroupAnalysis | null {
   if (impacts.length < MIN_GROUP_SHOTS) {
     return null;
   }
@@ -78,11 +77,10 @@ export function analyseGroup(impacts: readonly Correction[]): GroupAnalysis | nu
     up: standardDeviation(impacts.map(impact => impact.upMrad)),
     right: standardDeviation(impacts.map(impact => impact.rightMrad)),
   };
-  return { center, spreadMil, shape: groupShape(center, spreadMil) };
+  return { center, spreadMil, shape: groupShape(center, spreadMil, rifleSpreadMil) };
 }
 
-function groupShape(center: Correction, spreadMil: { up: number; right: number }): GroupShape {
-  const rifleSpreadMil = RIFLE.groupSigmaMrad;
+function groupShape(center: Correction, spreadMil: { up: number; right: number }, rifleSpreadMil: number): GroupShape {
   if (Math.max(spreadMil.up, spreadMil.right) > SCATTERED_SPREADS * rifleSpreadMil) {
     return 'scattered';
   }
