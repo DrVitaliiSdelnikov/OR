@@ -4,7 +4,7 @@ import { FLAG_DISTANCES_M } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
-import { Chip, ChipKind, FLAG_ZONE_KINDS, Notebook, NotebookStepId, softHint, StaleReason, stepSheet } from '../../sim/notebook';
+import { Chip, ChipKind, FLAG_ZONE_KINDS, Notebook, NotebookStepId, softHint, StaleReason, stepHasSide, stepSheet } from '../../sim/notebook';
 
 export type FormulaToken = { kind: 'text'; text: string } | { kind: 'slot'; index: number; label: string; placedText: string | null };
 export type HubRowState = 'empty' | 'recorded' | 'stale';
@@ -171,7 +171,7 @@ export function tapeLabels(notebook: Notebook, step: NotebookStepId): string[] {
 }
 
 export function sideOptions(step: NotebookStepId): SideOption[] {
-  if (step === 'distance') {
+  if (!stepHasSide(step)) {
     return [];
   }
   if (step === 'zones') {

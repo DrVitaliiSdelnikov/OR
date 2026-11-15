@@ -33,6 +33,7 @@ import {
   NotebookFactor,
   NotebookStepId,
   NotebookTotal,
+  movementDirection,
   openReference,
   placeChip,
   recordStation,
@@ -52,7 +53,7 @@ import {
 } from '../../sim/notebook';
 import { scopeById, TurretMove } from '../../sim/scope-model';
 import { FireOutcome, ScopeSession } from '../../sim/scope-session';
-import { diagnoseShot, dopeNoteElevationMil, isCallAccurate, secondShotCorrection, ShotDiagnosis, TurretCorrection, warmImpact } from '../../sim/shot-review';
+import { callFromHeldLead, diagnoseShot, dopeNoteElevationMil, isCallAccurate, isLeadBackward, secondShotCorrection, ShotDiagnosis, TurretCorrection, warmImpact } from '../../sim/shot-review';
 import { TriggerAccessibility } from '../../sim/trigger';
 import { TurretProgress, turretProgress } from '../../sim/turret-target';
 import { movementClockAt, movingShotOptions, PatrolTarget, targetOffsetMil } from '../../sim/patrol';
@@ -83,6 +84,7 @@ export interface ShotReview {
   isFirstShotAtTarget: boolean;
   check: ShotCheck | null;
   dopeNoteMil: number | null;
+  isLeadBackward: boolean;
   targetRadiusMil: number;
   distanceM: number;
   cartridgeId: CartridgeId;
@@ -203,6 +205,11 @@ export class PositionSession {
       this.currentNotebook = changeContext(this.currentNotebook, { target: { ...this.notebookTarget(), movement: { speedMps: patrol.path.speedMps, clock } } });
     }
     return targetOffsetMil(patrol.path, this.target.distanceM, walkedS);
+  }
+
+  get leadDirection(): -1 | 0 | 1 {
+    const movement = this.currentNotebook.context.target.movement;
+    return this.patrol && movement ? movementDirection(movement.clock) : 0;
   }
 
   get total(): NotebookTotal {
@@ -382,7 +389,11 @@ export class PositionSession {
     this.shotCalls.push(outcome.hold);
     const flight = await this.flightOf(target, timeS, result);
     const isFirstShotAtTarget = !this.shotRecords.some(record => record.stageIndex === stageIndex && record.targetIndex === targetIndex);
-    const diagnosis = diagnoseShot(outcome.hold, result.isHit);
+    const plannedAtShot = total(notebookAtShot);
+    const leadDirection = this.leadDirection;
+    const heldCall = callFromHeldLead(outcome.hold, plannedAtShot.leadMil, leadDirection);
+    const isLeadBehind = isLeadBackward(outcome.hold, plannedAtShot.holdRightMil, plannedAtShot.leadMil, leadDirection, notebookAtShot.context.card.clickMil);
+    const diagnosis = diagnoseShot(heldCall, result.isHit);
     const record: ExerciseShotRecord = {
       stageIndex,
       targetIndex,
@@ -397,7 +408,7 @@ export class PositionSession {
       windSpeedMps: windAt(this.scenario, timeS)[0].speedMps,
       ...(check ? { check } : {}),
       ...(rangeEstimateM !== undefined ? { rangeEstimateM } : {}),
-      ...(patrol ? { isAmbush: patrol.isAmbush } : {}),
+      ...(patrol ? { isAmbush: patrol.isAmbush, isLeadBackward: isLeadBehind } : {}),
     };
     this.shotRecords.push(record);
     const events = this.firingLine.recordShot(result.isHit);
@@ -409,10 +420,11 @@ export class PositionSession {
       impact: result.impact,
       warmImpact: warm,
       diagnosis,
-      correction: events.includes('target-closed') ? null : secondShotCorrection(outcome.hold, warm, clickMil, diagnosis),
+      correction: events.includes('target-closed') ? null : secondShotCorrection(heldCall, warm, clickMil, diagnosis),
       isFirstShotAtTarget,
       check: isFirstShotAtTarget ? shotCheck : null,
-      dopeNoteMil: dopeNoteElevationMil(dialUpMil, outcome.hold, warm, diagnosis),
+      dopeNoteMil: dopeNoteElevationMil(dialUpMil, heldCall, warm, diagnosis),
+      isLeadBackward: isLeadBehind,
       targetRadiusMil: targetRadiusMrad(target),
       distanceM: target.distanceM,
       cartridgeId: this.firingLine.cartridgeId,

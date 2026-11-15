@@ -31,6 +31,17 @@ test.describe('движущийся дозор (A9.3b)', () => {
     await expect(page.getByTestId('cause-lead')).toContainText('Упреждение');
   });
 
+  test('В43 11: шаг «Упреждение» без кнопок ←/→ — сторону берут в прицеле; брифинг: «ни разу упреждение назад»', async ({ page }) => {
+    await toPatrol(page);
+    await page.getByTestId('tile-notebook').click();
+    await page.getByTestId('step-lead').click();
+    await expect(page.getByTestId('units')).toBeVisible();
+    await expect(page.getByTestId('side-1')).toHaveCount(0);
+    await expect(page.getByTestId('side--1')).toHaveCount(0);
+    await page.goto('/course/11');
+    await expect(page.getByTestId('briefing-class-1')).toHaveText('2 класс — 85 % и ≥ 7 из 10 и ни разу упреждение назад');
+  });
+
   test('E9 11 с инструктором: первая подсказка — у строки дозора', async ({ page }) => {
     await page.goto('/position/11?instructor=on');
     await expect(page.getByTestId('teaching-text')).toHaveText('Скорость и направление цели — здесь. Стрелка меняется на развороте');

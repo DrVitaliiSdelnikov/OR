@@ -47,7 +47,7 @@ export interface BoltStepView {
   isDone: boolean;
 }
 
-export function correctionCells(scope: ScopeModel, dial: DialClicks, total: NotebookTotal | null, distanceM: number | null): CorrectionCell[] {
+export function correctionCells(scope: ScopeModel, dial: DialClicks, total: NotebookTotal | null, distanceM: number | null, leadDirection: -1 | 0 | 1 = 0): CorrectionCell[] {
   const hasTotal = total !== null && !total.isEmpty;
   const elevationMil = dial.elevation * scope.clickMrad;
   const rightMil = -dial.windageLeft * scope.clickMrad;
@@ -56,7 +56,7 @@ export function correctionCells(scope: ScopeModel, dial: DialClicks, total: Note
     axisCell('windage', horizontalText(scope, rightMil), hasTotal ? total.windageLeft.targetClicks : null, dial.windageLeft, clicks => horizontalText(scope, -clicks * scope.clickMrad)),
     { label: T.cells.labels.distance, value: distanceM === null ? '—' : T.cells.distance({ distanceM }), target: null, isOnTarget: true },
   ];
-  const holdRightMil = hasTotal ? total.holdRightMil + total.leadMil : 0;
+  const holdRightMil = hasTotal ? total.holdRightMil + leadDirection * total.leadMil : 0;
   if (hasTotal && (!isHoldoverSettled(scope, total.holdUpMil) || !isHoldoverSettled(scope, holdRightMil))) {
     cells.push({ label: T.cells.labels.holdover, value: `${verticalText(scope, total.holdUpMil)} · ${horizontalText(scope, holdRightMil)}`, target: null, isOnTarget: true });
   }

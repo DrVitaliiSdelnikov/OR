@@ -150,6 +150,24 @@ describe('AUTO', () => {
     expect(factorContributions(notebook).lead.isOn).toBe(true);
   });
 
+  it('В43: a target walking left still gives a lead without a side', () => {
+    const notebook = createNotebook(context({ target: { sizeM: 0.5, distanceM: 400, movement: { speedMps: 1.2, clock: 9 } } }), 'auto');
+    expect(total(notebook).leadMil).toBeCloseTo(1.8, 2);
+  });
+
+  it('В43: the lead step is recorded without a side and checked by its size whichever way the target walks', () => {
+    const walkingLeft = createNotebook(context({ target: { sizeM: 0.5, distanceM: 400, movement: { speedMps: 1.2, clock: 9 } } }), 'manual-easy');
+    let solved = walkingLeft;
+    for (const chip of ['target-crosswind', 'time-of-flight', 'distance'] as const) {
+      solved = placeChip(solved, 'lead', chip);
+    }
+    solved = recordStep(typeTape(solved, 'lead', 2, 1.8), 'lead');
+    expect(stepHasSide('lead')).toBe(false);
+    expect(total(solved).leadMil).toBeCloseTo(1.8, 9);
+    const leadInput = checkInputs(solved, { trueWindClock: 9, dialedElevationClicks: 0, dialedWindageLeftClicks: 0 }).steps.filter(step => step.step === 'lead');
+    expect(checkManualSteps(leadInput, CLICK_MIL).rows).toMatchObject([{ status: 'exact', errorTypes: [] }]);
+  });
+
   it('set К: the zone average 2.85 m/s gives ← 1.24, 12 clicks', () => {
     let notebook = createNotebook(context({ target: { sizeM: 0.5, distanceM: 600 }, hasZones: true }), 'auto');
     notebook = enterWind(notebook, 3, 9);

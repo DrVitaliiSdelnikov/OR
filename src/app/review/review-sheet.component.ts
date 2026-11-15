@@ -127,7 +127,7 @@ export class ReviewSheetComponent {
     const coldBore = shot.result.coldBore;
     return {
       points: shotPointsText(shot.record.isHit, review.isFirstShotAtTarget, isPaper),
-      diagnosis: diagnosisText(review.diagnosis, review.call),
+      diagnosis: diagnosisText(review.diagnosis, review.call, review.isLeadBackward),
       correction: correctionText(review.correction, review.diagnosis),
       check: review.check ? checkSheet(review.check, session.def.notebookMode ?? 'auto') : null,
       noCheckText: review.isFirstShotAtTarget ? this.texts.noCalcRecorded : this.texts.checkFirstShotOnly,

@@ -387,7 +387,7 @@ export function recordStep(notebook: Notebook, step: NotebookStepId): Notebook {
 }
 
 export function stepHasSide(step: NotebookStepId): boolean {
-  return step !== 'distance';
+  return step !== 'distance' && step !== 'lead';
 }
 
 export function softHint(notebook: Notebook, step: NotebookStepId): CheckErrorType | null {
@@ -554,7 +554,7 @@ function playerStepMil(notebook: Notebook, step: NotebookStepId): number | null 
   if (step === 'zones') {
     return zoneWindMil(notebook, [(state.sign ?? 1) * finalValue]);
   }
-  return (state.sign ?? 1) * finalValue;
+  return stepHasSide(step) ? (state.sign ?? 1) * finalValue : finalValue;
 }
 
 function autoDopeMil(notebook: Notebook): number | null {
@@ -586,7 +586,7 @@ function autoLeadMil(notebook: Notebook): number | null {
     return null;
   }
   const row = dopeRowAt(notebook.context.card, notebook.distanceM);
-  return movementSign(movement.clock) * leadMil(movement.speedMps, movement.clock, row.timeOfFlightS, notebook.distanceM);
+  return leadMil(movement.speedMps, movement.clock, row.timeOfFlightS, notebook.distanceM);
 }
 
 function zoneCrosswindsMps(notebook: Notebook): number[] {
@@ -629,7 +629,7 @@ export function signedCrosswindMps(wind: { speedMps: number; clock: number }): n
   return fromLeftSign * crosswindMps(wind.speedMps, wind.clock);
 }
 
-function movementSign(clock: number): number {
+export function movementDirection(clock: number): 1 | -1 {
   const hours = normalizedClock(clock);
   return hours > 0 && hours < CLOCK_HALF_TURN ? 1 : -1;
 }

@@ -335,7 +335,7 @@ describe('skillGoals', () => {
     expect(goalsMet(exercise('10'), run(badCall)).isTopSkillGoalMet).toBe(false);
   });
 
-  it('11: at least 7 of 10 targets hit and no SIDE error; top — 10 of 10, ambush targets first shot', () => {
+  it('11: at least 7 of 10 targets hit and never a backward lead (В43); top — 10 of 10, ambush targets first shot', () => {
     const sevenHit = Array.from({ length: 10 }, (_, targetIndex) => [
       shot({ targetIndex, isHit: targetIndex < 7, check: check('exact') }),
       ...(targetIndex < 7 ? [] : [shot({ targetIndex, isHit: false, check: check('exact') })]),
@@ -343,8 +343,10 @@ describe('skillGoals', () => {
     expect(goalsMet(exercise('11'), run(sevenHit))).toEqual({ isSkillGoalMet: true, isTopSkillGoalMet: false });
     const sixHit = sevenHit.map(record => (record.targetIndex === 6 ? { ...record, isHit: false } : record));
     expect(goalsMet(exercise('11'), run(sixHit)).isSkillGoalMet).toBe(false);
-    const sideError = sevenHit.map((record, index) => (index === 0 ? { ...record, check: check('error', { errorTypes: ['side'] }) } : record));
-    expect(goalsMet(exercise('11'), run(sideError)).isSkillGoalMet).toBe(false);
+    const leadBackward = sevenHit.map((record, index) => (index === 0 ? { ...record, isLeadBackward: true } : record));
+    expect(goalsMet(exercise('11'), run(leadBackward)).isSkillGoalMet).toBe(false);
+    const calcSideError = sevenHit.map((record, index) => (index === 0 ? { ...record, check: check('error', { errorTypes: ['side'] }) } : record));
+    expect(goalsMet(exercise('11'), run(calcSideError)).isSkillGoalMet).toBe(true);
     const allHitAmbushSecond = [
       ...firstShotHits(9, { check: check('exact') }),
       shot({ targetIndex: 9, isHit: false, isAmbush: true, check: check('exact') }),
@@ -602,7 +604,7 @@ describe('goal texts and titles follow the course constants (В7, A10)', () => {
     expect(exercise('03').goals.first).toBe(`все ${exercise('03').targets!.count} с задержкой дыхания в окне`);
     expect(exercise('05').goals).toEqual({ second: 'дальность ±10 % на всех', first: 'дальность ±5 % на всех' });
     expect(exercise('10').goals.first).toBe('вызов точен (≤ 0,2 MIL) на всех');
-    expect(exercise('11').goals).toEqual({ second: `≥ 7 из ${exercise('11').targets!.count} и ни одной ошибки СТОРОНА`, first: '10 из 10, засадой — все первым выстрелом' });
+    expect(exercise('11').goals).toEqual({ second: `≥ 7 из ${exercise('11').targets!.count} и ни разу упреждение назад`, first: '10 из 10, засадой — все первым выстрелом' });
   });
 
   it('10 is named after its distance', () => {

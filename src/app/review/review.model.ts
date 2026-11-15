@@ -73,7 +73,10 @@ export function shotPointsText(isHit: boolean, isFirstShotAtTarget: boolean, isP
   return isFirstShotAtTarget ? T.firstShotPoints({ points: FIRST_SHOT_POINTS }) : T.secondShotPoints({ points: SECOND_SHOT_POINTS });
 }
 
-export function diagnosisText(diagnosis: ShotDiagnosis, call: Correction): string {
+export function diagnosisText(diagnosis: ShotDiagnosis, call: Correction, isLeadBackward = false): string {
+  if (isLeadBackward) {
+    return T.diagnosisLeadBackward;
+  }
   if (diagnosis === 'clean') {
     return T.diagnosisClean;
   }
@@ -294,7 +297,7 @@ function horizontalClicks(windageLeftClicks: number, clickMil: number): string {
 }
 
 function arrowed(step: string, signedMil: number, valueText: string): string {
-  if (signedMil === 0) {
+  if (signedMil === 0 || step === 'lead') {
     return valueText;
   }
   const arrow = VERTICAL_STEPS.has(step) ? (signedMil > 0 ? '↑' : '↓') : signedMil > 0 ? '→' : '←';

@@ -6,7 +6,7 @@ import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells,
 
 const scope = scopeById('course-tree');
 
-function total(elevationClicks: number, windageLeftClicks: number, holdUpMil = 0, holdRightMil = 0): NotebookTotal {
+function total(elevationClicks: number, windageLeftClicks: number, holdUpMil = 0, holdRightMil = 0, leadMil = 0): NotebookTotal {
   return {
     isEmpty: false,
     upMil: elevationClicks * 0.1 + holdUpMil,
@@ -15,7 +15,7 @@ function total(elevationClicks: number, windageLeftClicks: number, holdUpMil = 0
     windageLeft: { targetClicks: windageLeftClicks, holdMil: -holdRightMil },
     holdUpMil,
     holdRightMil,
-    leadMil: 0,
+    leadMil,
   };
 }
 
@@ -42,6 +42,12 @@ describe('correction cells (Б4)', () => {
   it('an empty notebook shows → —', () => {
     const cells = correctionCells(scope, { elevation: 3, windageLeft: 0 }, null, 300);
     expect(cells[0]).toEqual({ label: 'ВЕРТ', value: '↑ 0,3', target: '—', isOnTarget: false });
+  });
+
+  it('В43: the hold cell takes the lead side from where the target walks now', () => {
+    const walking = total(0, 0, 0, 0, 0.9);
+    expect(correctionCells(scope, { elevation: 0, windageLeft: 0 }, walking, 400, 1)[3].value).toMatch(/→ 0,9 R$/);
+    expect(correctionCells(scope, { elevation: 0, windageLeft: 0 }, walking, 400, -1)[3].value).toMatch(/← 0,9 L$/);
   });
 
   it('the hold cell appears only when a turret ran out of travel', () => {
@@ -145,7 +151,7 @@ describe('the patrol on the position (A9.3b)', () => {
 
   it('the lead is held with the reticle: it joins the УДЕРЖ. cell, the drum stays on the wind', () => {
     const withLead = { ...total(16, 6), leadMil: 1.8 };
-    const cells = correctionCells(scope, { elevation: 16, windageLeft: 6 }, withLead, 400);
+    const cells = correctionCells(scope, { elevation: 16, windageLeft: 6 }, withLead, 400, 1);
     expect(cells[1].target).toBeNull();
     expect(cells[3]).toEqual({ label: 'УДЕРЖ.', value: '↑ 0,0 · → 1,8 R', target: null, isOnTarget: true });
   });

@@ -188,7 +188,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       wind: wind ? [T.windSpeed({ speedMps: wind.speedMps }), clockText(wind.clock)] : [session.def.conditions.windScale === 0 ? T.calm : '—'],
       isWindUnfilled: !tabs(notebook).wind && session.def.conditions.windScale !== 0,
       isNotEntered: entered === null,
-      cells: correctionCells(scope, dial, entered, playerDistanceM),
+      cells: correctionCells(scope, dial, entered, playerDistanceM, session.leadDirection),
       elevation: {
         clicks: dial.elevation,
         target: entered?.elevation.targetClicks ?? null,

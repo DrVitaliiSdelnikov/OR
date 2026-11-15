@@ -817,3 +817,38 @@ describe('PositionSession — the patrol (11, A9.3b)', () => {
     expect(near.review.breakdown.causes.map(cause => cause.kind)).toContain('lead');
   });
 });
+
+describe('PositionSession — lead without a side (В43)', () => {
+  async function withLeadStep(): Promise<{ session: PositionSession; leadMil: number; shiftMil: number; walkingSign: number }> {
+    const session = await start('11');
+    const path = session.patrol!.path;
+    const startS = session.scenario.startTimeS;
+    const shiftMil = session.followPatrol(startS)!;
+    const sheet = session.stepSheet('lead');
+    const chip = (kind: string): number => sheet.chips.find(candidate => candidate.kind === kind)!.value;
+    const leadMil = ((chip('target-crosswind') * chip('time-of-flight')) / chip('distance')) * 1000;
+    for (const kind of ['target-crosswind', 'time-of-flight', 'distance'] as const) {
+      session.placeChip('lead', kind);
+    }
+    session.typeTape('lead', 2, leadMil);
+    session.recordStep('lead');
+    const walkingSign = Math.sign(targetOffsetMil(path, session.target.distanceM, 0.1) - targetOffsetMil(path, session.target.distanceM, 0));
+    return { session, leadMil, shiftMil, walkingSign };
+  }
+
+  it('the reticle held ahead by the lead is not an execution error and not a backward lead', async () => {
+    const { session, leadMil, shiftMil, walkingSign } = await withLeadStep();
+    expect(leadMil).toBeGreaterThan(0.2);
+    const shot = (await shoot(session, { x: shiftMil + walkingSign * leadMil, y: 0 }))!;
+    expect(shot.record.diagnosis).not.toBe('execution');
+    expect(shot.record.isLeadBackward).toBe(false);
+  });
+
+  it('the reticle held behind the gong is a backward lead and an execution error', async () => {
+    const { session, leadMil, shiftMil, walkingSign } = await withLeadStep();
+    const shot = (await shoot(session, { x: shiftMil - walkingSign * leadMil, y: 0 }))!;
+    expect(shot.record.diagnosis).toBe('execution');
+    expect(shot.record.isLeadBackward).toBe(true);
+    expect(shot.review.isLeadBackward).toBe(true);
+  });
+});

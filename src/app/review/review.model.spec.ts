@@ -47,6 +47,7 @@ describe('diagnosis and correction', () => {
   it('says where the reticle went on an execution miss', () => {
     expect(diagnosisText('execution', { upMrad: 0.1, rightMrad: 0.4 })).toBe('Сетка ушла вправо на 0,4 — ошибка выполнения');
     expect(diagnosisText('execution', { upMrad: -0.6, rightMrad: 0.1 })).toBe('Сетка ушла вниз на 0,6 — ошибка выполнения');
+    expect(diagnosisText('execution', { upMrad: 0, rightMrad: -1.2 }, true)).toBe('Упреждение назад: сетка позади цели — выноси по ходу');
     expect(diagnosisText('data', { upMrad: 0, rightMrad: 0 })).toBe('Сетка была на цели — ошибка в данных');
     expect(diagnosisText('clean', { upMrad: 0, rightMrad: 0 })).toBe('Чисто: сетка на цели, попадание');
   });
@@ -97,6 +98,18 @@ describe('check sheet, SAM', () => {
     const sheet = checkSheet(windSheet('crosswind', 0.7, 1), 'manual-hard');
     expect(sheet.rows[0].diff).toBe('СТОРОНА');
     expect(sheet.mainError?.phrase).toBe('Число верное, сторона обратная: брать влево');
+  });
+});
+
+describe('check sheet, the lead (В43)', () => {
+  it('the lead has no side: both columns are plain numbers', () => {
+    let notebook = createNotebook({ card, scope, target: { sizeM: 0.5, distanceM: 400, movement: { speedMps: 1.2, clock: 9 } }, hasZones: false, canTakeWindFromStation: false, seed: 3 }, 'manual-easy');
+    for (const chip of ['target-crosswind', 'time-of-flight', 'distance'] as const) {
+      notebook = placeChip(notebook, 'lead', chip);
+    }
+    notebook = recordStep(typeTape(notebook, 'lead', 2, 1.8), 'lead');
+    const sheet = checkSheet(snapshot(notebook, { trueWindClock: 9, dialedElevationClicks: 0, dialedWindageLeftClicks: 0 }), 'manual-easy');
+    expect(sheet.rows.find(row => row.label === 'Упреждение')).toMatchObject({ player: '1,8', reference: '1,8' });
   });
 });
 

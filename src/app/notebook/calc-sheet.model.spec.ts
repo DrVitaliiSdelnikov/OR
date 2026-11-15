@@ -88,6 +88,10 @@ describe('chips and tape', () => {
     expect(sideOptions('distance')).toEqual([]);
   });
 
+  it('В43: the lead step has no side buttons — the side is taken in the glass', () => {
+    expect(sideOptions('lead')).toEqual([]);
+  });
+
   it('says which input is missing before a step can be filled', () => {
     expect(missingInput(notebookAt(300), 'wind')).toBe('сначала введи ветер на вкладке «Ветер»');
     expect(missingInput(notebookAt(300), 'atmosphere')).toBe('сначала сделай замер на вкладке «Условия»');

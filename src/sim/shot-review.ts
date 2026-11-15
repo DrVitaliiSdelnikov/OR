@@ -41,6 +41,17 @@ export function diagnoseShot(call: Correction, isHit: boolean): ShotDiagnosis {
   return isHit ? 'clean' : 'data';
 }
 
+export function callFromHeldLead(call: Correction, leadMil: number, leadDirection: -1 | 0 | 1): Correction {
+  return { upMrad: call.upMrad, rightMrad: call.rightMrad - leadDirection * leadMil };
+}
+
+export function isLeadBackward(call: Correction, plannedHoldRightMil: number, leadMil: number, leadDirection: -1 | 0 | 1, clickMil: number): boolean {
+  if (leadDirection === 0 || leadMil < clickMil) {
+    return false;
+  }
+  return (call.rightMrad - plannedHoldRightMil) * leadDirection < -CALL_TOLERANCE_MIL;
+}
+
 export function secondShotCorrection(call: Correction, impact: Correction, clickMil: number, diagnosis: ShotDiagnosis): TurretCorrection {
   if (diagnosis === 'execution') {
     return { upClicks: 0, rightClicks: 0 };

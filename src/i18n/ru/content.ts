@@ -62,7 +62,7 @@ export const content = {
       first: `вызов точен (≤ ${decimal(p.callToleranceMil)} MIL) на всех`,
     }),
     '11': (p: { minTargetsHit: number; targets: number }): ExerciseGoalTexts => ({
-      second: `≥ ${p.minTargetsHit} из ${p.targets} и ни одной ошибки СТОРОНА`,
+      second: `≥ ${p.minTargetsHit} из ${p.targets} и ни разу упреждение назад`,
       first: `${p.targets} из ${p.targets}, засадой — все первым выстрелом`,
     }),
     '12': { second: 'без справочника', first: 'САМ сложный' },

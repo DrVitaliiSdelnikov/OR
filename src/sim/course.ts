@@ -105,6 +105,7 @@ export interface ExerciseShotRecord {
   rangeEstimateM?: number;
   isCallAccurate?: boolean;
   isAmbush?: boolean;
+  isLeadBackward?: boolean;
   mainCause?: MainCause | null;
   windSpeedMps?: number;
 }
@@ -511,10 +512,10 @@ function checkVerdictGoals(run: ExerciseRun): SkillGoals {
 function patrolGoals(run: ExerciseRun): SkillGoals {
   const targets = targetShots(run);
   const hitTargets = targets.filter(shots => shots.some(record => record.isHit)).length;
-  const hasNoSideError = tallyChecks(run, check => !check.errorTypes.includes('side')).isMet;
+  const hasNoBackwardLead = run.shots.every(record => !record.isLeadBackward);
   const isEveryAmbushFirstShot = targets.every(shots => !shots[0].isAmbush || shots[0].isHit);
   return {
-    skill: { isMet: hitTargets >= PATROL_MIN_TARGETS_HIT && hasNoSideError, passed: hitTargets, total: PATROL_TARGETS },
+    skill: { isMet: hitTargets >= PATROL_MIN_TARGETS_HIT && hasNoBackwardLead, passed: hitTargets, total: PATROL_TARGETS },
     top: { isMet: hitTargets === PATROL_TARGETS && isEveryAmbushFirstShot, passed: hitTargets, total: PATROL_TARGETS },
   };
 }
