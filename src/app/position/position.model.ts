@@ -1,5 +1,6 @@
 import { DopeCard, dopeRowAt } from '../../core/dope-card';
 import { roundToClicks } from '../../core/game-formulas';
+import { ShotGeometry } from '../../core/types';
 import { BOLT_STEP_TRAVEL_PT, BOLT_STEPS, BoltStep } from '../../sim/bolt';
 import { text } from '../../i18n';
 import { Vector2 } from '../../sim/noise';
@@ -161,6 +162,16 @@ export function isGlassTap(start: Vector2, end: Vector2, durationMs: number): bo
 
 export function flagReadingText(flagDistanceM: number, reading: FlagReading): string {
   return T.flagReading({ flagDistanceM, angleDeg: reading.angleDeg, isAtLimit: reading.isAtLimit, crosswindText: flagCrosswindText(reading.crosswindMps) });
+}
+
+const GEOMETRY_PARTS = text.notebook.model.geometryParts;
+
+export function geometryLineText(geometry: ShotGeometry): string | null {
+  const parts = [
+    ...(geometry.lookAngleDeg === 0 ? [] : [GEOMETRY_PARTS.lookAngleText(geometry.lookAngleDeg)]),
+    ...(geometry.coriolis ? [GEOMETRY_PARTS.latitudeText(geometry.coriolis.latitudeDeg), GEOMETRY_PARTS.azimuthText(geometry.coriolis.azimuthDeg)] : []),
+  ];
+  return parts.length === 0 ? null : parts.join(' · ');
 }
 
 export function patrolLineText(patrol: PatrolTarget, walkedS: number): string {

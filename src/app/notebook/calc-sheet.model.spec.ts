@@ -5,7 +5,7 @@ import { BallisticsEngine } from '../../core/engine';
 import { NotebookMode } from '../../core/exercise-scoring';
 import { changeContext, createNotebook, enterWind, hideFlagsBehindBerm, Notebook, placeChip, readFlag, recordStation, recordStep, setSign, stepSheet, typeTape } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
-import { chipText, editDraft, formulaTokens, hubRows, missingInput, modeBadge, sideOptions, tapeLabels } from './calc-sheet.model';
+import { chipText, editDraft, formulaTokens, hubRows, hubSteps, missingInput, modeBadge, sideOptions, tapeLabels } from './calc-sheet.model';
 
 const scope = scopeById('course-dot');
 let cards: Map<string, DopeCard>;
@@ -168,5 +168,43 @@ describe('zones step: flags (A9.3a)', () => {
     const flag600 = stepSheet(notebook, 'zones').chips.find(chip => chip.kind === 'zone-600')!;
     expect(chipText(flag600, 500)).toEqual({ value: '0,0', source: 'флажок 600 м за валом' });
     expect(missingInput(notebook, 'zones')).toBeNull();
+  });
+});
+
+describe('шаги угла, деривации и Кориолиса в листе (T1.4b)', () => {
+  const withGeometry = (geometry: { lookAngleDeg: number; coriolis: { latitudeDeg: number; azimuthDeg: number } | null; isSpinDriftOn: boolean }) =>
+    createNotebook({ card: cards.get('B')!, scope, target: { sizeM: 0.5, distanceM: 600 }, hasZones: false, canTakeWindFromStation: false, seed: 3, geometry }, 'manual-easy');
+
+  it('шаги видны только по условиям сценария; в курсе — как раньше', () => {
+    expect(hubSteps(notebookAt(600))).toEqual(['dope', 'atmosphere', 'wind']);
+    expect(hubSteps(withGeometry({ lookAngleDeg: 15, coriolis: null, isSpinDriftOn: false }))).toEqual(['dope', 'angle', 'atmosphere', 'wind']);
+    expect(hubSteps(withGeometry({ lookAngleDeg: 0, coriolis: { latitudeDeg: 55, azimuthDeg: 90 }, isSpinDriftOn: true }))).toEqual([
+      'dope',
+      'atmosphere',
+      'wind',
+      'spin',
+      'coriolis',
+      'eotvos',
+    ]);
+  });
+
+  it('стороны: у угла нет, деривация и Кориолис ←/→, Этвёш ↑/↓', () => {
+    expect(sideOptions('angle')).toEqual([]);
+    expect(sideOptions('spin').map(option => option.sign)).toEqual([-1, 1]);
+    expect(sideOptions('coriolis').map(option => option.label)).toEqual(sideOptions('wind').map(option => option.label));
+    expect(sideOptions('eotvos').map(option => option.label)).toEqual(sideOptions('dope').map(option => option.label));
+  });
+
+  it('фишки прибора показывают градусы рядом со значением', () => {
+    const notebook = withGeometry({ lookAngleDeg: -15, coriolis: { latitudeDeg: -40, azimuthDeg: 120 }, isSpinDriftOn: false });
+    const chips = [...stepSheet(notebook, 'angle').chips, ...stepSheet(notebook, 'eotvos').chips];
+    const textOf = (kind: string) => chipText(chips.find(chip => chip.kind === kind)!, 600);
+    expect(textOf('cos-angle')).toEqual({ value: '0,97', source: '∠ −15°' });
+    expect(textOf('cos-latitude')).toEqual({ value: '0,77', source: '40° ю. ш.' });
+    expect(textOf('sin-azimuth')).toEqual({ value: '0,87', source: 'аз. 120°' });
+  });
+
+  it('лента угла — три строки', () => {
+    expect(tapeLabels(withGeometry({ lookAngleDeg: 15, coriolis: null, isSpinDriftOn: false }), 'angle')).toEqual(['ВЕРТ + Z =', '× cos =', '− Z =']);
   });
 });

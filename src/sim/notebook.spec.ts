@@ -326,7 +326,18 @@ describe('stale steps', () => {
 
   it('a new station reading makes only conditions stale; a new wind only the wind', () => {
     const remeasured = recordStation(solved(), station({ temperatureC: 0 }), 3, 20);
-    expect(staleness(remeasured)).toEqual({ distance: null, dope: null, atmosphere: 'conditions', zones: null, wind: null, lead: null });
+    expect(staleness(remeasured)).toEqual({
+      distance: null,
+      dope: null,
+      atmosphere: 'conditions',
+      zones: null,
+      wind: null,
+      lead: null,
+      angle: null,
+      spin: null,
+      coriolis: null,
+      eotvos: null,
+    });
     const rewound = enterWind(solved(), 4, 9);
     expect(staleness(rewound).wind).toBe('wind');
     expect(staleness(rewound).atmosphere).toBeNull();

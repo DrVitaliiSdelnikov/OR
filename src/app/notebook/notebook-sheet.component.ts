@@ -4,7 +4,7 @@ import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { backLayer } from '../services/back-stack.service';
 import { FeedbackService } from '../services/feedback.service';
-import { factorContributions, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
+import { factorContributions, NotebookFactor, NotebookStepId, tabs, visibleFactors } from '../../sim/notebook';
 import { PositionSession } from '../position/position-session';
 import { CalcSheetComponent } from './calc-sheet.component';
 import { hubRows, hubSteps, modeBadge, STEP_FORMULAS, STEP_TITLES } from './calc-sheet.model';
@@ -35,7 +35,6 @@ import { WindInput, WindTabComponent } from './wind-tab.component';
 
 const SWIPE_CLOSE_PT = 80;
 const LOCKED_NOTICE_MS = 1800;
-const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', 'lead'];
 const FORMULAS_TEXTS = text.notebook.formulas;
 const MODEL_TEXTS = text.notebook.model;
 
@@ -180,7 +179,7 @@ export class NotebookSheetComponent {
       time: stationTime,
       isShort: station.isShort,
     };
-    const factorRows: FactorRow[] = FACTOR_ORDER.filter(factor => factor !== 'lead' || notebook.context.target.movement !== undefined).map(factor => ({
+    const factorRows: FactorRow[] = visibleFactors(notebook).map(factor => ({
       factor,
       name: FACTOR_NAMES[factor],
       isOn: notebook.factorsOn[factor],

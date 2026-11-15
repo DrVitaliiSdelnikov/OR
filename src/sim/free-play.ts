@@ -6,11 +6,13 @@ import { NotebookMode } from '../core/exercise-scoring';
 import { freePlayScopes, ScopeId, SCOPES } from './scope-model';
 
 export type WindPreset = 'calm' | 'light' | 'moderate' | 'strong' | 'gusty';
+export type Terrain = 'plain' | 'mountains' | 'long-range';
 
 export interface FreePlaySettings {
   distanceM: number;
   isDistanceUnknown: boolean;
   wind: WindPreset;
+  terrain: Terrain;
   scopeId: ScopeId;
   cartridgeId: CartridgeId;
   notebookMode: NotebookMode;
@@ -21,6 +23,7 @@ export const DEFAULT_FREE_PLAY: FreePlaySettings = {
   distanceM: 300,
   isDistanceUnknown: false,
   wind: 'light',
+  terrain: 'plain',
   scopeId: 'course-tree',
   cartridgeId: 'B',
   notebookMode: 'auto',
@@ -40,15 +43,23 @@ export const WIND_PRESETS: Record<WindPreset, ScenarioOptions> = {
   gusty: { isWindUniform: false, windSpeedRangeMps: [3, 7] },
 };
 
+export const TERRAIN_PRESETS: Record<Terrain, { conditions: ScenarioOptions; fromM: number; toM: number }> = {
+  plain: { conditions: {}, fromM: MIN_DISTANCE_M, toM: MAX_DISTANCE_M },
+  mountains: { conditions: { lookAngleRangeDeg: [10, 25], isLookAngleEitherWay: true, altitudeRangeM: [1000, 1500] }, fromM: MIN_DISTANCE_M, toM: 700 },
+  'long-range': { conditions: { isSpinDriftOn: true, coriolisLatitudeRangeDeg: [40, 60] }, fromM: 600, toM: MAX_DISTANCE_M },
+};
+
 const DEFAULT_SHOTS_PER_TARGET = 5;
 
 export function freePlayTask(settings: FreePlaySettings): FreePlayTask {
+  const terrain = TERRAIN_PRESETS[settings.terrain];
+  const fixedDistanceM = Math.min(terrain.toM, Math.max(terrain.fromM, settings.distanceM));
   return {
     kind: 'free',
     title: text.content.freePlayTitle,
     targets: {
       count: 1,
-      distance: settings.isDistanceUnknown ? { kind: 'unknown', fromM: MIN_DISTANCE_M, toM: MAX_DISTANCE_M } : { kind: 'fixed', distanceM: settings.distanceM },
+      distance: settings.isDistanceUnknown ? { kind: 'unknown', fromM: terrain.fromM, toM: terrain.toM } : { kind: 'fixed', distanceM: fixedDistanceM },
     },
     stages: [{ cartridgeId: settings.cartridgeId, maxShotsPerTarget: DEFAULT_SHOTS_PER_TARGET, closesOnHit: false }],
     hasColdBore: false,
@@ -57,7 +68,7 @@ export function freePlayTask(settings: FreePlaySettings): FreePlayTask {
     trigger: 'pressure',
     notebookMode: settings.notebookMode,
     scopeId: settings.scopeId,
-    conditions: WIND_PRESETS[settings.wind],
+    conditions: { ...WIND_PRESETS[settings.wind], ...terrain.conditions },
   };
 }
 
@@ -74,6 +85,9 @@ export function knownFreePlay(stored: Partial<FreePlaySettings> | undefined): Fr
   }
   if (stored.wind && stored.wind in WIND_PRESETS) {
     known.wind = stored.wind;
+  }
+  if (stored.terrain && stored.terrain in TERRAIN_PRESETS) {
+    known.terrain = stored.terrain;
   }
   if (stored.scopeId && SCOPES.some(scope => scope.id === stored.scopeId)) {
     known.scopeId = stored.scopeId;

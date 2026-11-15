@@ -571,6 +571,7 @@ export class PositionSession {
       hasZones: this.def.conditions.isWindUniform === false,
       canTakeWindFromStation: false,
       seed: this.scenario.seed,
+      geometry: this.scenario.geometry,
     };
   }
 

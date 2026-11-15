@@ -216,3 +216,27 @@ describe('formulas reference (A10)', () => {
     expect(moaPerMilText()).toBe('3,44');
   });
 });
+
+describe('расшифровка новых факторов в итоге (T1.4b)', () => {
+  it('угол, деривация, Кориолис и Этвёш — формула с числами и стрелкой', () => {
+    const notebook = createNotebook(
+      {
+        card,
+        scope,
+        target: { sizeM: 0.5, distanceM: 600 },
+        hasZones: false,
+        canTakeWindFromStation: false,
+        seed: 1,
+        geometry: { lookAngleDeg: 20, coriolis: { latitudeDeg: 55, azimuthDeg: 270 }, isSpinDriftOn: true },
+      },
+      'auto',
+    );
+    const factors = factorContributions(notebook);
+    expect(factorDetail(notebook, 'angle')).toMatch(/^\(\d+,\d \+ 1,\d\d\) × 0,94 − 1,\d\d = ↑ \d+,\d\d$/);
+    const inclinedText = (factors.dope.mil! + factors.angle.mil!).toFixed(2).replace('.', ',');
+    expect(factorDetail(notebook, 'angle').endsWith(`= ↑ ${inclinedText}`)).toBe(true);
+    expect(factorDetail(notebook, 'spin')).toMatch(/^колонка ДЕР: пуля уходит вправо на 0,\d\d → поправка ← 0,\d\d$/);
+    expect(factorDetail(notebook, 'coriolis')).toMatch(/^0,0729 × \d,\d\d × 0,82 = ← 0,0\d$/);
+    expect(factorDetail(notebook, 'eotvos')).toMatch(/^0,0729 × \d,\d\d × 0,57 × 1,00 = ↑ 0,0\d$/);
+  });
+});

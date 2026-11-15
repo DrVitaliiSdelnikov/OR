@@ -1,6 +1,6 @@
 import type { NotebookMode, Rank } from '../../core/exercise-scoring';
 import type { CartridgeId } from '../../core/types';
-import type { WindPreset } from '../../sim/free-play';
+import type { Terrain, WindPreset } from '../../sim/free-play';
 import { decimal, plural, PluralForms, signed } from '../format';
 
 const SHOTS: PluralForms = ['выстрел', 'выстрела', 'выстрелов'];
@@ -80,6 +80,13 @@ export const screens = {
   },
   freePlay: {
     winds: { calm: 'штиль', light: 'слабый', moderate: 'умеренный', strong: 'сильный', gusty: 'порывистый' } satisfies Record<WindPreset, string>,
+    terrains: { plain: 'равнина', mountains: 'горы', 'long-range': 'дальний рубеж' } satisfies Record<Terrain, string>,
+    terrainLines: {
+      plain: '',
+      mountains: 'угол 10–25°, высота 1000–1500 м, до 700 м',
+      'long-range': 'деривация и Кориолис, 600–1000 м',
+    } satisfies Record<Terrain, string>,
+    terrain: 'Местность',
     opensIn: (p: { exerciseId: string }) => `откроется в упр. ${p.exerciseId}`,
     unknownDistance: 'неизвестная',
     distance: (p: { distanceM: number }) => `${p.distanceM} м`,

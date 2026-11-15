@@ -55,7 +55,9 @@ export interface ScenarioOptions {
   windClocks?: readonly number[];
   altitudeRangeM?: ValueRange;
   lookAngleRangeDeg?: ValueRange;
+  isLookAngleEitherWay?: boolean;
   coriolis?: CoriolisInput;
+  coriolisLatitudeRangeDeg?: ValueRange;
   isSpinDriftOn?: boolean;
 }
 
@@ -64,6 +66,8 @@ const TERRAIN_SEED_SALT = 0x5eed7e44;
 const ISA_SEA_LEVEL_PRESSURE_HPA = 1013.25;
 const ISA_PRESSURE_ALTITUDE_FACTOR_PER_M = 2.25577e-5;
 const ISA_PRESSURE_EXPONENT = 5.25588;
+const AZIMUTH_STEP_DEG = 5;
+const AZIMUTH_STEPS_PER_TURN = 360 / AZIMUTH_STEP_DEG;
 
 export function standardPressureHpaAt(altitudeM: number): number {
   return ISA_SEA_LEVEL_PRESSURE_HPA * (1 - ISA_PRESSURE_ALTITUDE_FACTOR_PER_M * altitudeM) ** ISA_PRESSURE_EXPONENT;
@@ -106,8 +110,8 @@ export function createScenario(seed: number, options: ScenarioOptions = {}): Sce
     }
   }
   const geometry: ShotGeometry = {
-    lookAngleDeg: options.lookAngleRangeDeg ? Math.round(valueInRange(options.lookAngleRangeDeg, terrainRandom())) : 0,
-    coriolis: options.coriolis ?? null,
+    lookAngleDeg: options.lookAngleRangeDeg ? lookAngleDeg(options.lookAngleRangeDeg, options.isLookAngleEitherWay ?? false, terrainRandom) : 0,
+    coriolis: options.coriolis ?? (options.coriolisLatitudeRangeDeg ? randomPlace(options.coriolisLatitudeRangeDeg, terrainRandom) : null),
     isSpinDriftOn: options.isSpinDriftOn ?? false,
   };
   const baseSpeedMps = 1 + random() * 5;
@@ -171,6 +175,18 @@ export function createScenario(seed: number, options: ScenarioOptions = {}): Sce
     zones,
     gauge,
     flags: flagReadings(zones),
+  };
+}
+
+function lookAngleDeg(range: ValueRange, isEitherWay: boolean, random: () => number): number {
+  const sizeDeg = Math.round(valueInRange(range, random()));
+  return isEitherWay && random() < 0.5 ? -sizeDeg : sizeDeg;
+}
+
+function randomPlace(latitudeRange: ValueRange, random: () => number): CoriolisInput {
+  return {
+    latitudeDeg: Math.round(valueInRange(latitudeRange, random())),
+    azimuthDeg: Math.floor(random() * AZIMUTH_STEPS_PER_TURN) * AZIMUTH_STEP_DEG,
   };
 }
 

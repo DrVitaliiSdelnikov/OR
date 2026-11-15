@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DopeCard, DopeRow } from '../../core/dope-card';
 import { NotebookTotal } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
-import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, dopeTileText, drumCounter, flagReadingText, isGlassTap, patrolLineText, markerTarget, NOTEBOOK_SHEET_MIN_HEIGHT_PT, notebookSheetTopPt, pressureText } from './position.model';
+import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, dopeTileText, drumCounter, flagReadingText, geometryLineText, isGlassTap, patrolLineText, markerTarget, NOTEBOOK_SHEET_MIN_HEIGHT_PT, notebookSheetTopPt, pressureText } from './position.model';
 
 const scope = scopeById('course-tree');
 
@@ -169,5 +169,19 @@ describe('DOPE tile rounds like the calculation check (T0.4a)', () => {
 
   it('a printed row reads as printed', () => {
     expect(dopeTileText(card, 400)).toBe('ДОПЕ · 400 м ↑ 2,8');
+  });
+});
+
+describe('строка условий (T1.4b)', () => {
+  it('только заданные части: угол со знаком, широта с полушарием, азимут', () => {
+    expect(geometryLineText({ lookAngleDeg: 0, coriolis: null, isSpinDriftOn: false })).toBeNull();
+    expect(geometryLineText({ lookAngleDeg: 15, coriolis: null, isSpinDriftOn: false })).toBe('∠ +15°');
+    expect(geometryLineText({ lookAngleDeg: -20, coriolis: null, isSpinDriftOn: true })).toBe('∠ −20°');
+    expect(geometryLineText({ lookAngleDeg: 0, coriolis: { latitudeDeg: 55, azimuthDeg: 120 }, isSpinDriftOn: true })).toBe('55° с. ш. · аз. 120°');
+    expect(geometryLineText({ lookAngleDeg: 10, coriolis: { latitudeDeg: -40, azimuthDeg: 0 }, isSpinDriftOn: false })).toBe('∠ +10° · 40° ю. ш. · аз. 0°');
+  });
+
+  it('одна деривация строки не даёт: её видно в блокноте', () => {
+    expect(geometryLineText({ lookAngleDeg: 0, coriolis: null, isSpinDriftOn: true })).toBeNull();
   });
 });

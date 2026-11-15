@@ -106,3 +106,4 @@
 | core · снаряжение вместо глобальной винтовки (T1.2) | [specs/core-loadout.md](specs/core-loadout.md) | реализовано, слито в `master` 15.11 |
 | core · физика: угол, деривация, высота, Кориолис, эталон lob (T1.3) | [specs/core-physics.md](specs/core-physics.md) | реализовано, слито в `master` 15.11 |
 | core · формулы игрока: угол, деривация, Кориолис, имперские (T1.4a) | [specs/core-player-formulas.md](specs/core-player-formulas.md) | реализовано, слито в `master` 15.11 |
+| sim/notebook · шаги угла, деривации и Кориолиса, местность (T1.4b) | [specs/sim-notebook-geometry.md](specs/sim-notebook-geometry.md) | реализовано, слито в `master` 15.11 |

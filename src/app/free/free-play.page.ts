@@ -5,7 +5,7 @@ import { NotebookMode } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { CartridgeId } from '../../core/types';
 import { courseProgress } from '../../sim/course';
-import { allowedFreePlay, FREE_PLAY_DISTANCES_M, WindPreset } from '../../sim/free-play';
+import { allowedFreePlay, FREE_PLAY_DISTANCES_M, Terrain, WindPreset } from '../../sim/free-play';
 import { ScopeId } from '../../sim/scope-model';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
@@ -71,6 +71,22 @@ type PickerKind = 'scope' | 'cartridge';
           </div>
         </section>
 
+        <section class="block">
+          <div class="label mono">{{ texts.terrain }}</div>
+          <div class="choices">
+            @for (terrain of view.terrains; track terrain.id) {
+              <button class="choice" type="button" [class.chosen]="terrain.isChosen" (click)="update({ terrain: terrain.id })" [attr.data-test]="'free-terrain-' + terrain.id">
+                {{ terrain.label }}
+              </button>
+            }
+          </div>
+          @for (terrain of view.terrains; track terrain.id) {
+            @if (terrain.isChosen && terrain.line) {
+              <div class="terrain-line mono" data-test="free-terrain-line">{{ terrain.line }}</div>
+            }
+          }
+        </section>
+
         <section class="block pair">
           <button class="pick" type="button" (click)="picker.set('scope')" data-test="free-scope">
             <span class="label mono">{{ texts.scope }}</span>{{ view.scopeTile }}
@@ -133,6 +149,7 @@ type PickerKind = 'scope' | 'cartridge';
     .choice.chosen, .item.chosen { border-color: var(--device-accent); color: var(--device-accent); }
     .choice:disabled, .item:disabled { color: var(--device-text-muted); }
     .lock { display: block; font-size: var(--type-min); color: var(--device-text-muted); }
+    .terrain-line { margin-top: 6px; font-size: var(--type-min); color: var(--device-text-muted); }
     .pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
     .pick { display: flex; flex-direction: column; gap: var(--space-1); }
     ion-toggle { min-height: var(--touch-min); }
@@ -159,7 +176,7 @@ export class FreePlayPage {
   protected readonly state = computed(() => freePlayView(this.settings(), this.unlocks()));
   protected readonly pickerItems = computed<ChoiceView<ScopeId | CartridgeId>[]>(() => (this.picker() === 'scope' ? this.state().scopes : this.state().cartridges));
 
-  protected update(patch: Partial<{ distanceM: number; isDistanceUnknown: boolean; wind: WindPreset; notebookMode: NotebookMode; isInstructorNear: boolean; scopeId: ScopeId; cartridgeId: CartridgeId }>): void {
+  protected update(patch: Partial<{ distanceM: number; isDistanceUnknown: boolean; wind: WindPreset; terrain: Terrain; notebookMode: NotebookMode; isInstructorNear: boolean; scopeId: ScopeId; cartridgeId: CartridgeId }>): void {
     this.progress.updateFreePlay(patch);
   }
 

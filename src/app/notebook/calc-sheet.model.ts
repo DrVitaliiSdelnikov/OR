@@ -4,7 +4,7 @@ import { FLAG_DISTANCES_M } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
-import { Chip, ChipKind, FLAG_ZONE_KINDS, Notebook, NotebookStepId, softHint, StaleReason, stepHasSide, stepSheet } from '../../sim/notebook';
+import { Chip, ChipKind, FLAG_ZONE_KINDS, geometryFactorsOn, Notebook, NotebookStepId, softHint, StaleReason, stepHasSide, stepSheet } from '../../sim/notebook';
 
 export type FormulaToken = { kind: 'text'; text: string } | { kind: 'slot'; index: number; label: string; placedText: string | null };
 export type HubRowState = 'empty' | 'recorded' | 'stale';
@@ -34,7 +34,7 @@ export const TAPE_UNITS: Partial<Record<NotebookStepId, string>> = T.tapeUnits;
 
 export const STEP_FORMULAS: Record<NotebookStepId, string> = T.stepFormulas;
 export const SLOT_LABELS: Record<ChipKind, string> = T.slotLabels;
-const VERTICAL_STEPS: ReadonlySet<NotebookStepId> = new Set(['dope', 'atmosphere']);
+const VERTICAL_STEPS: ReadonlySet<NotebookStepId> = new Set(['dope', 'atmosphere', 'angle', 'eotvos']);
 const HINT_TEXTS: Record<CheckErrorType, string> = T.hints;
 const STALE_TEXTS: Record<StaleReason, string> = T.stale;
 const MISSING_TEXTS: Partial<Record<ChipKind, string>> = {
@@ -52,11 +52,22 @@ export function hubSteps(notebook: Notebook): NotebookStepId[] {
   if (target.distanceM === null) {
     steps.push('distance');
   }
-  steps.push('dope', 'atmosphere');
+  const geometryFactors = geometryFactorsOn(notebook.context);
+  steps.push('dope');
+  if (geometryFactors.angle) {
+    steps.push('angle');
+  }
+  steps.push('atmosphere');
   if (hasZones) {
     steps.push('zones');
   }
   steps.push('wind');
+  if (geometryFactors.spin) {
+    steps.push('spin');
+  }
+  if (geometryFactors.coriolis) {
+    steps.push('coriolis', 'eotvos');
+  }
   if (target.movement) {
     steps.push('lead');
   }
@@ -151,6 +162,21 @@ export function chipText(chip: Chip, distanceM: number | null): { value: string;
       return { value: T.seconds({ seconds: chip.value }), source: `t${rowText}` };
     case 'neighbor-time':
       return { value: T.seconds({ seconds: chip.value }), source: sources.neighborTime };
+    case 'dope-elevation':
+      return { value: decimal(chip.value, 1), source: T.dopeElevationSource({ row: rowText }) };
+    case 'zero-angle':
+      return { value: decimal(chip.value, 2), source: T.zeroAngleSource };
+    case 'spin-drift':
+      return { value: decimal(chip.value, 2), source: T.spinDriftSource({ row: rowText }) };
+    case 'earth-rotation':
+      return { value: decimal(chip.value, 4), source: T.earthRotationSource };
+    case 'cos-angle':
+      return { value: decimal(chip.value, 2), source: T.angleSource({ lookAngleDeg: chip.degrees ?? 0 }) };
+    case 'sin-latitude':
+    case 'cos-latitude':
+      return { value: decimal(chip.value, 2), source: T.latitudeSource({ latitudeDeg: chip.degrees ?? 0 }) };
+    case 'sin-azimuth':
+      return { value: decimal(chip.value, 2), source: T.azimuthSource({ azimuthDeg: chip.degrees ?? 0 }) };
   }
 }
 
@@ -171,6 +197,14 @@ export function tapeLabels(notebook: Notebook, step: NotebookStepId): string[] {
     }
     case 'lead':
       return ['V⊥ × t =', '÷ D × 1000 =', clickText];
+    case 'angle':
+      return [...T.tapeAngle];
+    case 'spin':
+      return [T.tapeSpin];
+    case 'coriolis':
+      return [T.tapeCoriolis];
+    case 'eotvos':
+      return [T.tapeEotvos];
   }
 }
 
@@ -260,5 +294,13 @@ function template(notebook: Notebook, step: NotebookStepId): TemplatePart[] {
       return ['W = ', { slot: 'crosswind' }, ' × ', { slot: 'distance' }, ' / ', { constant: 'wind-constant' }];
     case 'lead':
       return ['L = ', { slot: 'target-crosswind' }, ' × ', { slot: 'time-of-flight' }, ' / ', { slot: 'distance' }, ' × 1000'];
+    case 'angle':
+      return [T.templateAngle, { slot: 'dope-elevation' }, ' + ', { slot: 'zero-angle' }, ') × ', { slot: 'cos-angle' }, ' − Z'];
+    case 'spin':
+      return [T.templateSpin, { slot: 'spin-drift' }];
+    case 'coriolis':
+      return [T.templateCoriolis, { constant: 'earth-rotation' }, ' × ', { slot: 'time-of-flight' }, ' × ', { slot: 'sin-latitude' }];
+    case 'eotvos':
+      return [T.templateEotvos, { constant: 'earth-rotation' }, ' × ', { slot: 'time-of-flight' }, ' × ', { slot: 'cos-latitude' }, ' × ', { slot: 'sin-azimuth' }];
   }
 }

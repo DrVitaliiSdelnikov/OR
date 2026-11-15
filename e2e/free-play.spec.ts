@@ -74,3 +74,59 @@ test.describe('свободная игра (A7.1)', () => {
     await expect(page.getByTestId('instructor-line')).toHaveCount(0);
   });
 });
+
+test.describe('местность: угол, деривация, Кориолис (T1.4b)', () => {
+  const UNTIL_06 = { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3, '06': 3 };
+
+  async function expectNoHorizontalScroll(page: Page): Promise<void> {
+    const overflowPt = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflowPt).toBeLessThanOrEqual(0);
+  }
+
+  test('горы, САМ: строка условий «∠ ±N°» в одну строку; в блокноте шаг «Угол места», лента из трёх строк, cos у фишки', async ({ page }) => {
+    await seed(page, UNTIL_06);
+    await page.goto('/free');
+    await page.getByTestId('free-terrain-mountains').click();
+    await expect(page.getByTestId('free-terrain-line')).toContainText('до 700 м');
+    await page.getByTestId('free-mode-manual-easy').click();
+    await page.getByTestId('free-start').click();
+    const geometryLine = page.getByTestId('position-geometry');
+    await expect(geometryLine).toHaveText(/^∠ [+−](1\d|2[0-5])°$/);
+    const lineBox = await geometryLine.boundingBox();
+    expect(lineBox!.height).toBeLessThan(24);
+    await expectNoHorizontalScroll(page);
+    await page.getByTestId('tile-notebook').click();
+    await page.getByTestId('step-angle').click();
+    await expect(page.getByTestId('calc-title')).toHaveText('Угол места · шаг 2 из 4');
+    await expect(page.getByTestId('tape-2')).toBeVisible();
+    await expect(page.getByTestId('tape-3')).toHaveCount(0);
+    await page.getByTestId('slot-2').click();
+    await expect(page.getByTestId('calc-sheet')).toContainText(/∠ [+−]\d+°/);
+  });
+
+  test('дальний рубеж, АВТО: «NN° с. ш. · аз. N°»; в итоге факторы «Деривация», «Кориолис», «Этвёш» включены', async ({ page }) => {
+    await seed(page);
+    await page.goto('/free');
+    await page.getByTestId('free-terrain-long-range').click();
+    await page.getByTestId('free-start').click();
+    await expect(page.getByTestId('position-subtitle')).toContainText(/(6|7|8|9)\d\d м|1000 м/);
+    await expect(page.getByTestId('position-geometry')).toHaveText(/^\d\d° [сю]\. ш\. · аз\. \d{1,3}°$/);
+    await expectNoHorizontalScroll(page);
+    await page.getByTestId('tile-notebook').click();
+    for (const factor of ['spin', 'coriolis', 'eotvos']) {
+      await expect(page.getByTestId(`factor-${factor}`)).toBeVisible();
+    }
+    await expect(page.getByTestId('factor-angle')).toHaveCount(0);
+  });
+
+  test('равнина — строки условий и новых факторов нет', async ({ page }) => {
+    await seed(page);
+    await page.goto('/free');
+    await page.getByTestId('free-start').click();
+    await expect(page.getByTestId('position-title')).toHaveText('Свободная игра');
+    await expect(page.getByTestId('position-geometry')).toHaveCount(0);
+    await page.getByTestId('tile-notebook').click();
+    await expect(page.getByTestId('factor-dope')).toBeVisible();
+    await expect(page.getByTestId('factor-spin')).toHaveCount(0);
+  });
+});

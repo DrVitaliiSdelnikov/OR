@@ -37,7 +37,7 @@ import { resultSheet, ResultSheetView } from '../result/result.model';
 import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
-import { breathRing, correctionCells, dopeTileText, drumCounterText, flagReadingText, isGlassTap, markerTarget, patrolLineText, notebookSheetTopPt, pressureText, TurretAxis } from './position.model';
+import { breathRing, correctionCells, dopeTileText, drumCounterText, flagReadingText, geometryLineText, isGlassTap, markerTarget, patrolLineText, notebookSheetTopPt, pressureText, TurretAxis } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
 import { text } from '../../i18n';
 
@@ -185,6 +185,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       instructorLine: this.isFreePlay() && !this.sandbox() && this.progress.freePlay().isInstructorNear ? instructorLineText(session.trueCorrection(this.scenarioTimeS(session))) : null,
       subtitle: T.subtitle({ distanceM: notebook.context.target.distanceM, targetNumber: session.firingLine.targetIndex + 1, targetCount: session.setup.targets.length }),
       patrolLine: session.patrol ? patrolLineText(session.patrol, session.patrolWalkedS(this.scenarioTimeS(session))) : null,
+      geometryLine: geometryLineText(session.scenario.geometry),
       wind: wind ? [T.windSpeed({ speedMps: wind.speedMps }), clockText(wind.clock)] : [session.def.conditions.windScale === 0 ? T.calm : '—'],
       isWindUnfilled: !tabs(notebook).wind && session.def.conditions.windScale !== 0,
       isNotEntered: entered === null,

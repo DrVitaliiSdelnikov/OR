@@ -7,7 +7,7 @@ import { atmosphereCorrectionMil, crosswindMps, windCorrectionMil } from '../../
 import { DopeCard, dopeRowAt } from '../../core/dope-card';
 import { CartridgeId } from '../../core/types';
 import { ExerciseShotRecord } from '../../sim/course';
-import { FactorContribution, Notebook, NotebookFactor, NotebookTotal } from '../../sim/notebook';
+import { FactorContribution, factorContributions, geometryOf, Notebook, NotebookFactor, NotebookTotal } from '../../sim/notebook';
 import { formatScopeValue, isHoldoverSettled, MRAD_PER_MOA, ScopeModel } from '../../sim/scope-model';
 
 export type NotebookTab = 'total' | 'distance' | 'conditions' | 'wind' | 'dope';
@@ -50,7 +50,9 @@ const MILLING_STEP_MIL = 0.05;
 const SHOTS_IN_STRIP = 5;
 const RANGE_DAY_START_MIN = 14 * 60;
 const MINUTES_PER_HOUR = 60;
-const VERTICAL_FACTORS: ReadonlySet<NotebookFactor> = new Set(['dope', 'conditions']);
+const VERTICAL_FACTORS: ReadonlySet<NotebookFactor> = new Set(['dope', 'conditions', 'angle', 'eotvos']);
+const RADIANS_PER_DEGREE = Math.PI / 180;
+const TRIG_DECIMALS = 100;
 
 export function totalLine(scope: ScopeModel, total: NotebookTotal): string {
   if (total.isEmpty) {
@@ -183,6 +185,34 @@ export function factorDetail(notebook: Notebook, factor: NotebookFactor): string
     }
     case 'lead':
       return T.leadDetail;
+    case 'angle':
+    case 'spin':
+    case 'coriolis':
+    case 'eotvos':
+      return geometryFactorDetail(notebook, factor, row.elevationMil, row.spinDriftMil, row.timeOfFlightS);
+  }
+}
+
+function geometryFactorDetail(notebook: Notebook, factor: 'angle' | 'spin' | 'coriolis' | 'eotvos', elevationMil: number, spinDriftMil: number, timeS: number): string {
+  const geometry = geometryOf(notebook.context);
+  const mil = factorContributions(notebook)[factor].mil ?? 0;
+  const trig = (value: number): number => Math.round(Math.abs(value) * TRIG_DECIMALS) / TRIG_DECIMALS;
+  const latitudeRad = (geometry.coriolis?.latitudeDeg ?? 0) * RADIANS_PER_DEGREE;
+  const azimuthRad = (geometry.coriolis?.azimuthDeg ?? 0) * RADIANS_PER_DEGREE;
+  switch (factor) {
+    case 'angle':
+      return T.angleDetail({
+        elevationMil,
+        zeroAngleMil: notebook.context.card.zeroAngleMil,
+        cosAngle: trig(Math.cos(geometry.lookAngleDeg * RADIANS_PER_DEGREE)),
+        inclinedMil: elevationMil + mil,
+      });
+    case 'spin':
+      return T.spinDetail({ spinDriftMil });
+    case 'coriolis':
+      return T.coriolisDetail({ timeS, sinLatitude: trig(Math.sin(latitudeRad)), mil });
+    case 'eotvos':
+      return T.eotvosDetail({ timeS, cosLatitude: trig(Math.cos(latitudeRad)), sinAzimuth: trig(Math.sin(azimuthRad)), mil });
   }
 }
 

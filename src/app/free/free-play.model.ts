@@ -4,7 +4,7 @@ import { text } from '../../i18n';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId, Correction } from '../../core/types';
 import { FreePlayUnlocks } from '../../sim/course';
-import { FreePlaySettings, WindPreset } from '../../sim/free-play';
+import { FreePlaySettings, Terrain, WindPreset } from '../../sim/free-play';
 import { ScopeId, SCOPES } from '../../sim/scope-model';
 import { MODE_LABELS } from '../course/course-trail.model';
 
@@ -20,6 +20,7 @@ export interface FreePlayView {
   distanceText: string;
   unknownLock: string | null;
   winds: ChoiceView<WindPreset>[];
+  terrains: ChoiceView<Terrain>[];
   modes: ChoiceView<NotebookMode>[];
   cartridges: ChoiceView<CartridgeId>[];
   scopes: ChoiceView<ScopeId>[];
@@ -29,6 +30,8 @@ export interface FreePlayView {
 
 const T = text.screens.freePlay;
 const WIND_LABELS: Record<WindPreset, string> = T.winds;
+const TERRAIN_LABELS: Record<Terrain, string> = T.terrains;
+const TERRAIN_LINES: Record<Terrain, string> = T.terrainLines;
 const SCOPE_OPENED_BY: Record<ScopeId, keyof FreePlayUnlocks | null> = {
   'course-tree': null,
   'course-dot': 'milDotScope',
@@ -67,6 +70,13 @@ export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlock
       line: '',
       lock: lockOf(id === 'gusty' ? 'gustyWind' : null, unlocks),
       isChosen: settings.wind === id,
+    })),
+    terrains: (Object.keys(TERRAIN_LABELS) as Terrain[]).map(id => ({
+      id,
+      label: TERRAIN_LABELS[id],
+      line: TERRAIN_LINES[id],
+      lock: null,
+      isChosen: settings.terrain === id,
     })),
     modes: (Object.keys(MODE_LABELS) as NotebookMode[]).map(id => ({
       id,

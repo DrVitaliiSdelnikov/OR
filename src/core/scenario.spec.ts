@@ -164,6 +164,20 @@ describe('createScenario — местность и геометрия (T1.3)', (
     expect(mountain.startTimeS).toBe(plain.startTimeS);
   });
 
+  it('угол в любую сторону: по модулю в диапазоне, встречаются и подъём, и спуск', () => {
+    const angles = Array.from({ length: 40 }, (_, seed) => createScenario(seed, { lookAngleRangeDeg: [10, 25], isLookAngleEitherWay: true }).geometry.lookAngleDeg);
+    expect(angles.every(angle => Math.abs(angle) >= 10 && Math.abs(angle) <= 25)).toBe(true);
+    expect(angles.some(angle => angle > 0)).toBe(true);
+    expect(angles.some(angle => angle < 0)).toBe(true);
+  });
+
+  it('широта из диапазона, азимут — кратный 5° по всему кругу', () => {
+    const places = Array.from({ length: 40 }, (_, seed) => createScenario(seed, { coriolisLatitudeRangeDeg: [40, 60] }).geometry.coriolis!);
+    expect(places.every(place => place.latitudeDeg >= 40 && place.latitudeDeg <= 60 && Number.isInteger(place.latitudeDeg))).toBe(true);
+    expect(places.every(place => place.azimuthDeg >= 0 && place.azimuthDeg < 360 && place.azimuthDeg % 5 === 0)).toBe(true);
+    expect(new Set(places.map(place => Math.floor(place.azimuthDeg / 90))).size).toBe(4);
+  });
+
   it('угол, Кориолис и деривация берутся из условий; угол — в диапазоне', () => {
     const scenario = createScenario(7, { lookAngleRangeDeg: [-20, -10], coriolis: { latitudeDeg: 55, azimuthDeg: 90 }, isSpinDriftOn: true });
     expect(scenario.geometry.lookAngleDeg).toBeGreaterThanOrEqual(-20);

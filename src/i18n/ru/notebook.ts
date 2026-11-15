@@ -8,14 +8,27 @@ const POINT_FORMS: PluralForms = ['очко', 'очка', 'очков'];
 const FORMULAS = 'Формулы';
 
 const meters = (p: { distanceM: number }) => `${decimal(p.distanceM)} м`;
+const lookAngleText = (lookAngleDeg: number) => `∠ ${lookAngleDeg > 0 ? '+' : '−'}${Math.abs(lookAngleDeg)}°`;
+const latitudeText = (latitudeDeg: number) => `${Math.abs(latitudeDeg)}° ${latitudeDeg >= 0 ? 'с. ш.' : 'ю. ш.'}`;
+const azimuthText = (azimuthDeg: number) => `аз. ${azimuthDeg}°`;
 const windReading = (p: { speedMps: number; clock: string }) => `${decimal(p.speedMps, 1)} м/с с ${p.clock}`;
 
 export const notebook = {
   model: {
     tabs: { total: 'Итог', distance: 'Дистанция', conditions: 'Условия', wind: 'Ветер', dope: 'ДОПЕ' },
     lockedTabs: ['Угол', 'Патрон', 'Ещё'],
-    factorNames: { dope: 'ДОПЕ', conditions: 'Условия', wind: 'Ветер', lead: 'Упреждение' } satisfies Record<NotebookFactor, string>,
+    factorNames: {
+      dope: 'ДОПЕ',
+      conditions: 'Условия',
+      wind: 'Ветер',
+      lead: 'Упреждение',
+      angle: 'Угол',
+      spin: 'Деривация',
+      coriolis: 'Кориолис',
+      eotvos: 'Этвёш',
+    } satisfies Record<NotebookFactor, string>,
     cartridgeLetters: { A: 'А', B: 'Б', C: 'В' } satisfies Record<CartridgeId, string>,
+    geometryParts: { lookAngleText, latitudeText, azimuthText },
     zoneStation: 'станция',
     meters,
     clicks: (p: { clicks: number }) => `${p.clicks} кл.`,
@@ -31,6 +44,13 @@ export const notebook = {
     windNotEntered: 'ветер не введён',
     windReading,
     leadDetail: 'упреждение — сеткой, на барабаны не идёт',
+    angleDetail: (p: { elevationMil: number; zeroAngleMil: number; cosAngle: number; inclinedMil: number }) =>
+      `(${decimal(p.elevationMil, 1)} + ${decimal(p.zeroAngleMil, 2)}) × ${decimal(p.cosAngle, 2)} − ${decimal(p.zeroAngleMil, 2)} = ↑ ${decimal(p.inclinedMil, 2)}`,
+    spinDetail: (p: { spinDriftMil: number }) => `колонка ДЕР: пуля уходит вправо на ${decimal(p.spinDriftMil, 2)} → поправка ← ${decimal(p.spinDriftMil, 2)}`,
+    coriolisDetail: (p: { timeS: number; sinLatitude: number; mil: number }) =>
+      `0,0729 × ${decimal(p.timeS, 2)} × ${decimal(p.sinLatitude, 2)} = ${p.mil < 0 ? '←' : '→'} ${decimal(Math.abs(p.mil), 2)}`,
+    eotvosDetail: (p: { timeS: number; cosLatitude: number; sinAzimuth: number; mil: number }) =>
+      `0,0729 × ${decimal(p.timeS, 2)} × ${decimal(p.cosLatitude, 2)} × ${decimal(p.sinAzimuth, 2)} = ${p.mil < 0 ? '↓' : '↑'} ${decimal(Math.abs(p.mil), 2)}`,
     flagBehindBerm: 'за валом',
     flagUnread: 'тапни флажок в стекле',
     calm: 'штиль',
@@ -46,6 +66,10 @@ export const notebook = {
       zones: 'Ветер по зонам',
       wind: 'Ветер',
       lead: 'Упреждение',
+      angle: 'Угол места',
+      spin: 'Деривация',
+      coriolis: 'Кориолис',
+      eotvos: 'Этвёш',
     } satisfies Record<NotebookStepId, string>,
     tapeUnits: { distance: 'м', zones: 'м/с' } satisfies Partial<Record<NotebookStepId, string>>,
     stepFormulas: {
@@ -55,6 +79,10 @@ export const notebook = {
       zones: 'V⊥ср = Σ доля × V⊥ зоны',
       wind: 'W = V⊥ × D / K',
       lead: 'L = V⊥ цели × t / D × 1000',
+      angle: 'ВЕРТ∠ = (ВЕРТ + Z) × cos угла − Z',
+      spin: 'ДЕР по строке карточки, поправка против ухода',
+      coriolis: 'К = 0,0729 × t × sin широты',
+      eotvos: 'Э = 0,0729 × t × cos широты × sin азимута',
     } satisfies Record<NotebookStepId, string>,
     slotLabels: {
       'target-size': 'размер',
@@ -77,6 +105,14 @@ export const notebook = {
       'target-speed': 'V цели',
       'time-of-flight': 't',
       'neighbor-time': 't',
+      'dope-elevation': 'ВЕРТ',
+      'zero-angle': 'Z',
+      'cos-angle': 'cos угла',
+      'spin-drift': 'ДЕР',
+      'earth-rotation': '0,0729',
+      'sin-latitude': 'sin широты',
+      'cos-latitude': 'cos широты',
+      'sin-azimuth': 'sin азимута',
     } satisfies Record<ChipKind, string>,
     hints: {
       substitution: 'проверь, то ли число в слоте',
@@ -138,6 +174,21 @@ export const notebook = {
     tapeDope: 'ВЕРТ =',
     tapeAtmosphere: 'ΔВЕРТ =',
     tapeZones: 'V⊥ср =',
+    tapeAngle: ['ВЕРТ + Z =', '× cos =', '− Z ='],
+    tapeSpin: 'ДЕР =',
+    tapeCoriolis: 'К =',
+    tapeEotvos: 'Э =',
+    templateAngle: 'ВЕРТ∠ = (',
+    templateSpin: 'ДЕР = колонка карточки: ',
+    templateCoriolis: 'К = ',
+    templateEotvos: 'Э = ',
+    angleSource: (p: { lookAngleDeg: number }) => lookAngleText(p.lookAngleDeg),
+    latitudeSource: (p: { latitudeDeg: number }) => latitudeText(p.latitudeDeg),
+    azimuthSource: (p: { azimuthDeg: number }) => azimuthText(p.azimuthDeg),
+    zeroAngleSource: 'шапка карточки',
+    earthRotationSource: '1000 × Ω',
+    spinDriftSource: (p: { row: string }) => `ДЕР${p.row}`,
+    dopeElevationSource: (p: { row: string }) => `ВЕРТ${p.row}`,
     sides: {
       windLeft: 'Ветер слева',
       windRight: 'Ветер справа',

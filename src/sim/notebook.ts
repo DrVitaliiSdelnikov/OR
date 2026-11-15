@@ -1,16 +1,19 @@
 import { CalcStepInput, CalcStepKind, CheckErrorType, checkManualSteps, PreparationRowInput } from '../core/calc-check';
 import { DopeCard, dopeRowAt } from '../core/dope-card';
 import { NotebookMode } from '../core/exercise-scoring';
+import { FLAT_GEOMETRY } from '../core/content';
 import { atmosphereCorrectionMil, averageCrosswindMps, crosswindMps, leadMil, rangeByMilling, roundToClicks, windCorrectionMil } from '../core/game-formulas';
 import { mulberry32 } from '../core/rng';
 import { GaugeReading } from '../core/scenario';
-import { Correction } from '../core/types';
+import { Correction, ShotGeometry } from '../core/types';
 import { ScopeModel, Turret } from './scope-model';
 import { TurretTarget, turretTarget } from './turret-target';
 
-export type NotebookStepId = 'distance' | 'dope' | 'atmosphere' | 'zones' | 'wind' | 'lead';
-export type NotebookFactor = 'dope' | 'conditions' | 'wind' | 'lead';
-export const NOTEBOOK_FACTORS: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', 'lead'];
+export type NotebookStepId = 'distance' | 'dope' | 'atmosphere' | 'zones' | 'wind' | 'lead' | 'angle' | 'spin' | 'coriolis' | 'eotvos';
+export type NotebookFactor = 'dope' | 'conditions' | 'wind' | 'lead' | 'angle' | 'spin' | 'coriolis' | 'eotvos';
+export type GeometryFactor = 'angle' | 'spin' | 'coriolis' | 'eotvos';
+export const GEOMETRY_FACTORS: readonly GeometryFactor[] = ['angle', 'spin', 'coriolis', 'eotvos'];
+export const NOTEBOOK_FACTORS: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', 'lead', ...GEOMETRY_FACTORS];
 export type StaleReason = 'cartridge' | 'distance' | 'conditions' | 'wind';
 export type ChipGroup = 'instruments' | 'steps' | 'cartridge';
 export type ChipKind =
@@ -33,7 +36,15 @@ export type ChipKind =
   | 'target-crosswind'
   | 'target-speed'
   | 'time-of-flight'
-  | 'neighbor-time';
+  | 'neighbor-time'
+  | 'dope-elevation'
+  | 'zero-angle'
+  | 'cos-angle'
+  | 'spin-drift'
+  | 'earth-rotation'
+  | 'sin-latitude'
+  | 'cos-latitude'
+  | 'sin-azimuth';
 
 export interface TargetMovement {
   speedMps: number;
@@ -54,6 +65,7 @@ export interface NotebookContext {
   hasZones: boolean;
   canTakeWindFromStation: boolean;
   seed: number;
+  geometry?: ShotGeometry;
 }
 
 export interface StationRecord extends GaugeReading {
@@ -96,6 +108,7 @@ export interface Chip {
   value: number;
   group: ChipGroup;
   isBehindBerm?: true;
+  degrees?: number;
 }
 
 export interface SheetSlot {
@@ -166,13 +179,17 @@ interface StepDefinition {
 }
 
 export const FLAG_ZONE_KINDS = ['zone-200', 'zone-400', 'zone-600'] as const;
-const STEP_ORDER: readonly NotebookStepId[] = ['distance', 'dope', 'atmosphere', 'zones', 'wind', 'lead'];
+const STEP_ORDER: readonly NotebookStepId[] = ['distance', 'dope', 'atmosphere', 'zones', 'wind', 'lead', 'angle', 'spin', 'coriolis', 'eotvos'];
 const STALE_ORDER: readonly StaleReason[] = ['cartridge', 'distance', 'conditions', 'wind'];
 export const FULL_MEASUREMENT_S = 3;
 const TRAPS_IN_HARD = 2;
 const GROUPED_FROM_CHIPS = 6;
 const NEIGHBOR_ROW_M = 100;
 const CLOCK_HALF_TURN = 6;
+const RADIANS_PER_DEGREE = Math.PI / 180;
+const EARTH_ROTATION_MIL_PER_S = 0.0729;
+const TRIG_DECIMALS = 100;
+const STEPS_WITHOUT_SIDE: ReadonlySet<NotebookStepId> = new Set(['distance', 'lead', 'angle']);
 
 const STEPS: Record<NotebookStepId, StepDefinition> = {
   distance: { kind: 'distance', slots: ['target-size', 'reticle-mil'], constants: [], traps: ['neighbor-distance', 'temperature'], tapeLength: 1, dependsOn: [] },
@@ -209,6 +226,31 @@ const STEPS: Record<NotebookStepId, StepDefinition> = {
     tapeLength: 3,
     dependsOn: ['cartridge', 'distance'],
   },
+  angle: {
+    kind: 'angle',
+    slots: ['dope-elevation', 'zero-angle', 'cos-angle'],
+    constants: [],
+    traps: ['neighbor-distance', 'time-of-flight'],
+    tapeLength: 3,
+    dependsOn: ['cartridge', 'distance'],
+  },
+  spin: { kind: 'spin', slots: ['spin-drift'], constants: [], traps: ['time-of-flight', 'wind-constant'], tapeLength: 1, dependsOn: ['cartridge', 'distance'] },
+  coriolis: {
+    kind: 'coriolis',
+    slots: ['time-of-flight', 'sin-latitude'],
+    constants: ['earth-rotation'],
+    traps: ['cos-latitude', 'neighbor-time'],
+    tapeLength: 1,
+    dependsOn: ['cartridge', 'distance'],
+  },
+  eotvos: {
+    kind: 'eotvos',
+    slots: ['time-of-flight', 'cos-latitude', 'sin-azimuth'],
+    constants: ['earth-rotation'],
+    traps: ['sin-latitude', 'neighbor-time'],
+    tapeLength: 1,
+    dependsOn: ['cartridge', 'distance'],
+  },
 };
 
 const CHIP_GROUPS: Record<ChipKind, ChipGroup> = {
@@ -232,6 +274,14 @@ const CHIP_GROUPS: Record<ChipKind, ChipGroup> = {
   'target-speed': 'instruments',
   'time-of-flight': 'cartridge',
   'neighbor-time': 'cartridge',
+  'dope-elevation': 'cartridge',
+  'zero-angle': 'cartridge',
+  'cos-angle': 'instruments',
+  'spin-drift': 'cartridge',
+  'earth-rotation': 'cartridge',
+  'sin-latitude': 'instruments',
+  'cos-latitude': 'instruments',
+  'sin-azimuth': 'instruments',
 };
 
 export function createNotebook(context: NotebookContext, mode: NotebookMode): Notebook {
@@ -240,7 +290,7 @@ export function createNotebook(context: NotebookContext, mode: NotebookMode): No
     context,
     mode,
     readings: { reticleMil: null, station: null, wind: null, flagCrosswindsMps: null, flagsBehindBerm: [], stationVersion: 0, windVersion: 0 },
-    factorsOn: { dope: true, conditions: false, wind: true, lead: context.target.movement !== undefined },
+    factorsOn: { dope: true, conditions: false, wind: true, lead: context.target.movement !== undefined, ...geometryFactorsOn(context) },
     steps,
     distanceM: context.target.distanceM,
     hasOpenedReference: false,
@@ -298,7 +348,13 @@ export function changeContext(notebook: Notebook, change: Partial<NotebookContex
   const context = { ...notebook.context, ...change };
   const distanceM = change.target ? change.target.distanceM : notebook.distanceM;
   const readings = change.target ? { ...notebook.readings, reticleMil: null } : notebook.readings;
-  return refreshStale({ ...notebook, context, readings, distanceM, factorsOn: { ...notebook.factorsOn, lead: context.target.movement !== undefined } });
+  return refreshStale({
+    ...notebook,
+    context,
+    readings,
+    distanceM,
+    factorsOn: { ...notebook.factorsOn, lead: context.target.movement !== undefined, ...(change.geometry ? geometryFactorsOn(context) : {}) },
+  });
 }
 
 export function toggleFactor(notebook: Notebook, factor: NotebookFactor): Notebook {
@@ -321,6 +377,34 @@ export function factorContributions(notebook: Notebook): Record<NotebookFactor, 
     conditions: contribution('conditions', autoConditionsMil(notebook)),
     wind: contribution('wind', autoWindMil(notebook, notebook.readings.wind)),
     lead: contribution('lead', autoLeadMil(notebook)),
+    angle: contribution('angle', autoAngleMil(notebook)),
+    spin: contribution('spin', autoSpinMil(notebook)),
+    coriolis: contribution('coriolis', autoCoriolisMil(notebook)),
+    eotvos: contribution('eotvos', autoEotvosMil(notebook)),
+  };
+}
+
+export function visibleFactors(notebook: Notebook): NotebookFactor[] {
+  const geometryFactors = geometryFactorsOn(notebook.context);
+  return NOTEBOOK_FACTORS.filter(factor => {
+    if (factor === 'lead') {
+      return notebook.context.target.movement !== undefined;
+    }
+    return factor in geometryFactors ? geometryFactors[factor as GeometryFactor] : true;
+  });
+}
+
+export function geometryOf(context: NotebookContext): ShotGeometry {
+  return context.geometry ?? FLAT_GEOMETRY;
+}
+
+export function geometryFactorsOn(context: NotebookContext): Record<GeometryFactor, boolean> {
+  const geometry = geometryOf(context);
+  return {
+    angle: geometry.lookAngleDeg !== 0,
+    spin: geometry.isSpinDriftOn,
+    coriolis: geometry.coriolis !== null,
+    eotvos: geometry.coriolis !== null,
   };
 }
 
@@ -334,7 +418,16 @@ export function stepSheet(notebook: Notebook, step: NotebookStepId): StepSheet {
   const traps = isHard ? definition.traps.filter(kind => available[kind] !== undefined).slice(0, TRAPS_IN_HARD) : [];
   const chipKinds = [...slotKinds, ...traps].filter(kind => available[kind] !== undefined);
   const chips = shuffleInPlace(
-    chipKinds.map(kind => ({ kind, value: available[kind]!, group: CHIP_GROUPS[kind], ...(isFlagBehindBerm(notebook.readings, kind) ? { isBehindBerm: true as const } : {}) })),
+    chipKinds.map(kind => {
+      const degrees = geometryChipDegrees(notebook.context, kind);
+      return {
+        kind,
+        value: available[kind]!,
+        group: CHIP_GROUPS[kind],
+        ...(isFlagBehindBerm(notebook.readings, kind) ? { isBehindBerm: true as const } : {}),
+        ...(degrees === null ? {} : { degrees }),
+      };
+    }),
     notebook.context.seed + STEP_ORDER.indexOf(step),
   );
   const printedConstants = isHard ? [] : definition.constants.filter(kind => available[kind] !== undefined).map(kind => ({ kind, value: available[kind]!, group: CHIP_GROUPS[kind] }));
@@ -387,7 +480,7 @@ export function recordStep(notebook: Notebook, step: NotebookStepId): Notebook {
 }
 
 export function stepHasSide(step: NotebookStepId): boolean {
-  return step !== 'distance' && step !== 'lead';
+  return !STEPS_WITHOUT_SIDE.has(step);
 }
 
 export function softHint(notebook: Notebook, step: NotebookStepId): CheckErrorType | null {
@@ -422,8 +515,9 @@ export function total(notebook: Notebook): NotebookTotal {
   const take = (factor: NotebookFactor, step: NotebookStepId): number | null =>
     isAuto ? (notebook.factorsOn[factor] ? factors[factor].mil : 0) : playerStepMil(notebook, step);
   const dopeMil = isAuto ? (notebook.factorsOn.dope ? factors.dope.mil : null) : playerStepMil(notebook, 'dope');
-  const upMil = (dopeMil ?? 0) + (take('conditions', 'atmosphere') ?? 0);
-  const rightMil = take('wind', 'wind') ?? 0;
+  const angleMil = isAuto ? take('angle', 'angle') : playerAngleShiftMil(notebook);
+  const upMil = (dopeMil ?? 0) + (take('conditions', 'atmosphere') ?? 0) + (angleMil ?? 0) + (take('eotvos', 'eotvos') ?? 0);
+  const rightMil = (take('wind', 'wind') ?? 0) + (take('spin', 'spin') ?? 0) + (take('coriolis', 'coriolis') ?? 0);
   const leadValue = take('lead', 'lead') ?? 0;
   const elevation = turretTarget(Turret.elevation(scope), upMil, card.clickMil);
   const windageLeft = turretTarget(Turret.windage(scope), -rightMil, card.clickMil);
@@ -453,7 +547,7 @@ export function formulaCorrectionMil(notebook: Notebook, inputs: FormulaInputs):
     ...notebook,
     mode: 'auto',
     distanceM: inputs.distanceM,
-    factorsOn: { dope: true, conditions: true, wind: true, lead: true },
+    factorsOn: { dope: true, conditions: true, wind: true, lead: true, angle: true, spin: true, coriolis: true, eotvos: true },
     readings: { ...notebook.readings, station, wind: inputs.wind, flagCrosswindsMps: inputs.flagCrosswindsMps },
   };
   const formula = total(probe);
@@ -539,7 +633,21 @@ function expectedStepMil(notebook: Notebook, step: NotebookStepId): number | nul
       return crosswindWindMil(notebook, playerCrosswindMps(notebook));
     case 'lead':
       return autoLeadMil(notebook);
+    case 'angle':
+      return inclinedElevationMil(notebook);
+    case 'spin':
+      return autoSpinMil(notebook);
+    case 'coriolis':
+      return autoCoriolisMil(notebook);
+    case 'eotvos':
+      return autoEotvosMil(notebook);
   }
+}
+
+function playerAngleShiftMil(notebook: Notebook): number | null {
+  const inclined = playerStepMil(notebook, 'angle');
+  const dope = playerStepMil(notebook, 'dope');
+  return inclined === null || dope === null ? null : inclined - dope;
 }
 
 function playerStepMil(notebook: Notebook, step: NotebookStepId): number | null {
@@ -587,6 +695,57 @@ function autoLeadMil(notebook: Notebook): number | null {
   }
   const row = dopeRowAt(notebook.context.card, notebook.distanceM);
   return leadMil(movement.speedMps, movement.clock, row.timeOfFlightS, notebook.distanceM);
+}
+
+function inclinedElevationMil(notebook: Notebook): number | null {
+  const lookAngleDeg = geometryOf(notebook.context).lookAngleDeg;
+  if (lookAngleDeg === 0 || notebook.distanceM === null) {
+    return null;
+  }
+  const { card } = notebook.context;
+  const elevationMil = dopeRowAt(card, notebook.distanceM).elevationMil;
+  return (elevationMil + card.zeroAngleMil) * trigValue(Math.cos(lookAngleDeg * RADIANS_PER_DEGREE)) - card.zeroAngleMil;
+}
+
+function autoAngleMil(notebook: Notebook): number | null {
+  const inclined = inclinedElevationMil(notebook);
+  return inclined === null ? null : inclined - autoDopeMil(notebook)!;
+}
+
+function autoSpinMil(notebook: Notebook): number | null {
+  if (!geometryOf(notebook.context).isSpinDriftOn || notebook.distanceM === null) {
+    return null;
+  }
+  return withoutNegativeZero(-dopeRowAt(notebook.context.card, notebook.distanceM).spinDriftMil);
+}
+
+function autoCoriolisMil(notebook: Notebook): number | null {
+  const coriolis = geometryOf(notebook.context).coriolis;
+  if (!coriolis || notebook.distanceM === null) {
+    return null;
+  }
+  const sinLatitude = Math.sin(coriolis.latitudeDeg * RADIANS_PER_DEGREE);
+  const timeS = dopeRowAt(notebook.context.card, notebook.distanceM).timeOfFlightS;
+  return withoutNegativeZero(-Math.sign(sinLatitude) * EARTH_ROTATION_MIL_PER_S * timeS * trigValue(Math.abs(sinLatitude)));
+}
+
+function autoEotvosMil(notebook: Notebook): number | null {
+  const coriolis = geometryOf(notebook.context).coriolis;
+  if (!coriolis || notebook.distanceM === null) {
+    return null;
+  }
+  const cosLatitude = Math.cos(coriolis.latitudeDeg * RADIANS_PER_DEGREE);
+  const sinAzimuth = Math.sin(coriolis.azimuthDeg * RADIANS_PER_DEGREE);
+  const timeS = dopeRowAt(notebook.context.card, notebook.distanceM).timeOfFlightS;
+  return withoutNegativeZero(-Math.sign(sinAzimuth) * EARTH_ROTATION_MIL_PER_S * timeS * trigValue(cosLatitude) * trigValue(Math.abs(sinAzimuth)));
+}
+
+function trigValue(value: number): number {
+  return Math.round(value * TRIG_DECIMALS) / TRIG_DECIMALS;
+}
+
+function withoutNegativeZero(value: number): number {
+  return value === 0 ? 0 : value;
 }
 
 function zoneCrosswindsMps(notebook: Notebook): number[] {
@@ -663,8 +822,44 @@ function chipValues(notebook: Notebook): Partial<Record<ChipKind, number>> {
     'target-speed': target.movement?.speedMps,
     'time-of-flight': row?.timeOfFlightS,
     'neighbor-time': neighborDistanceM === null ? undefined : dopeRowAt(card, Math.min(neighborDistanceM, lastRowM(card))).timeOfFlightS,
+    ...geometryChipValues(notebook, row?.elevationMil, row?.spinDriftMil),
   };
   return Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined)) as Partial<Record<ChipKind, number>>;
+}
+
+function geometryChipValues(notebook: Notebook, elevationMil: number | undefined, spinDriftMil: number | undefined): Partial<Record<ChipKind, number>> {
+  const geometry = geometryOf(notebook.context);
+  const values: Partial<Record<ChipKind, number>> = {};
+  if (geometry.lookAngleDeg !== 0) {
+    values['dope-elevation'] = elevationMil;
+    values['zero-angle'] = notebook.context.card.zeroAngleMil;
+    values['cos-angle'] = trigValue(Math.cos(geometry.lookAngleDeg * RADIANS_PER_DEGREE));
+  }
+  if (geometry.isSpinDriftOn && spinDriftMil !== undefined) {
+    values['spin-drift'] = trigValue(Math.abs(spinDriftMil));
+  }
+  if (geometry.coriolis) {
+    values['earth-rotation'] = EARTH_ROTATION_MIL_PER_S;
+    values['sin-latitude'] = trigValue(Math.abs(Math.sin(geometry.coriolis.latitudeDeg * RADIANS_PER_DEGREE)));
+    values['cos-latitude'] = trigValue(Math.cos(geometry.coriolis.latitudeDeg * RADIANS_PER_DEGREE));
+    values['sin-azimuth'] = trigValue(Math.abs(Math.sin(geometry.coriolis.azimuthDeg * RADIANS_PER_DEGREE)));
+  }
+  return values;
+}
+
+function geometryChipDegrees(context: NotebookContext, kind: ChipKind): number | null {
+  const geometry = geometryOf(context);
+  switch (kind) {
+    case 'cos-angle':
+      return geometry.lookAngleDeg;
+    case 'sin-latitude':
+    case 'cos-latitude':
+      return geometry.coriolis?.latitudeDeg ?? null;
+    case 'sin-azimuth':
+      return geometry.coriolis?.azimuthDeg ?? null;
+    default:
+      return null;
+  }
 }
 
 function flagChipValues(readings: NotebookReadings): Partial<Record<ChipKind, number>> {

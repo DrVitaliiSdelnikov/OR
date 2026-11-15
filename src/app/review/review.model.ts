@@ -7,7 +7,7 @@ import { ScreenDirection, text } from '../../i18n';
 import { rangeByMilling, roundToClicks } from '../../core/game-formulas';
 import { CartridgeId, Correction } from '../../core/types';
 import { ExerciseShotRecord, PositionTask } from '../../sim/course';
-import { factorContributions, Notebook, NotebookFactor, stepSheet, total } from '../../sim/notebook';
+import { factorContributions, Notebook, NOTEBOOK_FACTORS, NotebookFactor, stepSheet, total } from '../../sim/notebook';
 import { CauseKind, MissBreakdown, MissCause } from '../../sim/miss-breakdown';
 import { analyseGroup, MIN_GROUP_SHOTS, ShotDiagnosis, TurretCorrection } from '../../sim/shot-review';
 import { SLOT_LABELS, STEP_TITLES } from '../notebook/calc-sheet.model';
@@ -55,8 +55,8 @@ export interface CausesView {
   rows: CauseRowView[];
 }
 
-const VERTICAL_STEPS: ReadonlySet<string> = new Set(['dope', 'atmosphere']);
-const FACTOR_ORDER: readonly NotebookFactor[] = ['dope', 'conditions', 'wind', 'lead'];
+const VERTICAL_STEPS: ReadonlySet<string> = new Set(['dope', 'atmosphere', 'angle', 'eotvos']);
+const FACTOR_ORDER: readonly NotebookFactor[] = NOTEBOOK_FACTORS;
 const ARROWS_FROM_RIGHT = ['→', '↗', '↑', '↖', '←', '↙', '↓', '↘'];
 const ARROW_SECTOR_RAD = Math.PI / 4;
 const T = text.review;

@@ -83,7 +83,42 @@ describe('free play — what is open', () => {
     expect(knownFreePlay({ distanceM: 1234, wind: 'storm' } as unknown as Partial<FreePlaySettings>)).toEqual(DEFAULT_FREE_PLAY);
   });
 
-  it('the defaults: 300 m, light wind, course scope, B, AUTO, instructor off', () => {
-    expect(DEFAULT_FREE_PLAY).toEqual({ distanceM: 300, isDistanceUnknown: false, wind: 'light', scopeId: 'course-tree', cartridgeId: 'B', notebookMode: 'auto', isInstructorNear: false });
+  it('the defaults: 300 m, light wind, plain, course scope, B, AUTO, instructor off', () => {
+    expect(DEFAULT_FREE_PLAY).toEqual({
+      distanceM: 300,
+      isDistanceUnknown: false,
+      wind: 'light',
+      terrain: 'plain',
+      scopeId: 'course-tree',
+      cartridgeId: 'B',
+      notebookMode: 'auto',
+      isInstructorNear: false,
+    });
+  });
+});
+
+describe('местность (T1.4b)', () => {
+  it('по умолчанию — равнина: условия ветра без геометрии, как до T1.4b', () => {
+    expect(DEFAULT_FREE_PLAY.terrain).toBe('plain');
+    expect(freePlayTask(settings()).conditions).toEqual(WIND_PRESETS[DEFAULT_FREE_PLAY.wind]);
+  });
+
+  it('горы: угол 10–25° в любую сторону, высота 1000–1500 м, дальность не дальше 700', () => {
+    const task = freePlayTask(settings({ terrain: 'mountains', distanceM: 900 }));
+    expect(task.conditions).toMatchObject({ lookAngleRangeDeg: [10, 25], isLookAngleEitherWay: true, altitudeRangeM: [1000, 1500] });
+    expect(task.targets!.distance).toEqual({ kind: 'fixed', distanceM: 700 });
+    expect(freePlayTask(settings({ terrain: 'mountains', isDistanceUnknown: true })).targets!.distance).toEqual({ kind: 'unknown', fromM: 100, toM: 700 });
+  });
+
+  it('дальний рубеж: деривация, Кориолис на 40–60° широты, дальность 600–1000', () => {
+    const task = freePlayTask(settings({ terrain: 'long-range', distanceM: 300 }));
+    expect(task.conditions).toMatchObject({ isSpinDriftOn: true, coriolisLatitudeRangeDeg: [40, 60] });
+    expect(task.targets!.distance).toEqual({ kind: 'fixed', distanceM: 600 });
+    expect(freePlayTask(settings({ terrain: 'long-range', isDistanceUnknown: true })).targets!.distance).toEqual({ kind: 'unknown', fromM: 600, toM: 1000 });
+  });
+
+  it('местность сохраняется; мусор — равнина', () => {
+    expect(knownFreePlay({ terrain: 'mountains' }).terrain).toBe('mountains');
+    expect(knownFreePlay({ terrain: 'moon' as never }).terrain).toBe('plain');
   });
 });
