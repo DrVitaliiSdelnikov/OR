@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 import { text } from '../../i18n';
 import { ZoneTable } from './notebook.model';
 import { SpeedWheelComponent } from './speed-wheel.component';
@@ -16,8 +16,8 @@ export interface WindInput {
     <div class="wind">
       <div class="caption mono" data-test="wind-caption">{{ caption() }}</div>
       <div class="instruments">
-        <or-wind-clock [clock]="wind()?.clock ?? null" [showShares]="showShares()" (clockChange)="windChange.emit({ speedMps: wind()?.speedMps ?? 0, clock: $event })" />
-        <or-speed-wheel [speed]="wind()?.speedMps ?? null" (speedChange)="windChange.emit({ speedMps: $event, clock: wind()?.clock ?? 12 })" />
+        <or-wind-clock [clock]="wind()?.clock ?? null" [showShares]="showShares()" (clockChange)="chooseClock($event)" />
+        <or-speed-wheel [speed]="wind()?.speedMps ?? speedBeforeClock()" (speedChange)="chooseSpeed($event)" />
       </div>
       <div class="station mono" data-test="wind-station">{{ stationText() }}</div>
       @if (zones(); as table) {
@@ -70,4 +70,18 @@ export class WindTabComponent {
   readonly toStep = output<void>();
 
   protected readonly texts = text.notebook.windTab;
+  protected readonly speedBeforeClock = signal<number | null>(null);
+
+  protected chooseClock(clock: number): void {
+    this.windChange.emit({ speedMps: this.wind()?.speedMps ?? this.speedBeforeClock() ?? 0, clock });
+  }
+
+  protected chooseSpeed(speedMps: number): void {
+    const wind = this.wind();
+    if (wind) {
+      this.windChange.emit({ speedMps, clock: wind.clock });
+    } else {
+      this.speedBeforeClock.set(speedMps);
+    }
+  }
 }

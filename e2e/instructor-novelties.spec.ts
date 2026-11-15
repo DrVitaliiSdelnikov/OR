@@ -74,6 +74,27 @@ test.describe('подсказки для новинок (A6.5)', () => {
     await expectHint(page, 'Тапни слот формулы и положи чип: V⊥, потом D', 'подсказка 4 из 5');
   });
 
+  test('06: скорость раньше часов — циферблат не закрыт, «Ветер записан» только после часов, шаг открывается', async ({ page }) => {
+    await seed(page, { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3 });
+    await positionFromBriefing(page, '06', true);
+    await page.getByTestId('tile-notebook').click();
+    await expectHint(page, 'Сначала ветер — как в 04: станция и часы', 'подсказка 2 из 5');
+    await page.getByTestId('teaching-ok').click();
+    await page.getByTestId('tab-conditions').click();
+    await holdMeasure(page);
+    await page.getByTestId('tab-wind').click();
+    await setWindSpeed(page, 3.5);
+    await expect(page.getByTestId('teaching-card')).toHaveCount(0);
+    await expect(page.getByTestId('wind-caption')).toHaveText('тяни стрелку к часу, откуда дует');
+    const dial = (await page.getByTestId('wind-clock').boundingBox())!;
+    await page.mouse.click(dial.x + dial.width * 0.75, dial.y + dial.height * 0.55);
+    await expect(page.getByTestId('wind-caption')).toContainText('3,5 м/с');
+    await expect(page.getByTestId('speed-wheel')).toHaveAttribute('aria-valuenow', '3.5');
+    await expectHint(page, 'Ветер записан. Теперь посчитай его сам', 'подсказка 3 из 5');
+    await page.getByTestId('wind-step-link').click();
+    await expectHint(page, 'Тапни слот формулы и положи чип: V⊥, потом D', 'подсказка 4 из 5');
+  });
+
   test('брифинг: «с инструктором» есть у 06 и включён до допуска; у 07 его нет', async ({ page }) => {
     await seed(page, { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3 });
     await page.goto('/course/06');
