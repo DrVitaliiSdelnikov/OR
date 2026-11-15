@@ -4,7 +4,8 @@ import { text } from '../../i18n';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId, Correction } from '../../core/types';
 import { FreePlayUnlocks } from '../../sim/course';
-import { FreePlaySettings, Terrain, WindPreset } from '../../sim/free-play';
+import { FreePlayRifle, FreePlaySettings, Terrain, WindPreset } from '../../sim/free-play';
+import { RifleProfile } from '../../sim/rifle-profile';
 import { ScopeId, SCOPES } from '../../sim/scope-model';
 import { MODE_LABELS } from '../course/course-trail.model';
 
@@ -26,9 +27,12 @@ export interface FreePlayView {
   scopes: ChoiceView<ScopeId>[];
   cartridgeTile: string;
   scopeTile: string;
+  rifles: ChoiceView<FreePlayRifle>[];
+  isOwnRifle: boolean;
 }
 
 const T = text.screens.freePlay;
+const RIFLE_TEXTS = text.rifle.freePlay;
 const WIND_LABELS: Record<WindPreset, string> = T.winds;
 const TERRAIN_LABELS: Record<Terrain, string> = T.terrains;
 const TERRAIN_LINES: Record<Terrain, string> = T.terrainLines;
@@ -58,7 +62,8 @@ function lockOf(key: keyof FreePlayUnlocks | null, unlocks: FreePlayUnlocks): st
 }
 
 
-export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlocks): FreePlayView {
+export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlocks, activeProfile: RifleProfile | null = null): FreePlayView {
+  const isOwnRifle = settings.rifle === 'own' && activeProfile !== null;
   const chosenCartridge = CARTRIDGES.find(cartridge => cartridge.id === settings.cartridgeId)!;
   const chosenScope = SCOPES.find(scope => scope.id === settings.scopeId)!;
   return {
@@ -101,6 +106,17 @@ export function freePlayView(settings: FreePlaySettings, unlocks: FreePlayUnlock
     })),
     cartridgeTile: chosenCartridge.name,
     scopeTile: chosenScope.name,
+    rifles: [
+      { id: 'course', label: RIFLE_TEXTS.course, line: '', lock: null, isChosen: !isOwnRifle },
+      {
+        id: 'own',
+        label: activeProfile ? RIFLE_TEXTS.own({ name: activeProfile.name }) : RIFLE_TEXTS.ownShort,
+        line: '',
+        lock: activeProfile ? null : RIFLE_TEXTS.ownMissing,
+        isChosen: isOwnRifle,
+      },
+    ],
+    isOwnRifle,
   };
 }
 

@@ -4,9 +4,11 @@ import { CartridgeId } from '../core/types';
 import { FreePlayTask, FreePlayUnlocks } from './course';
 import { NotebookMode } from '../core/exercise-scoring';
 import { freePlayScopes, ScopeId, SCOPES } from './scope-model';
+import { loadoutOf, RifleProfile, scopeOf } from './rifle-profile';
 
 export type WindPreset = 'calm' | 'light' | 'moderate' | 'strong' | 'gusty';
 export type Terrain = 'plain' | 'mountains' | 'long-range';
+export type FreePlayRifle = 'course' | 'own';
 
 export interface FreePlaySettings {
   distanceM: number;
@@ -17,6 +19,7 @@ export interface FreePlaySettings {
   cartridgeId: CartridgeId;
   notebookMode: NotebookMode;
   isInstructorNear: boolean;
+  rifle: FreePlayRifle;
 }
 
 export const DEFAULT_FREE_PLAY: FreePlaySettings = {
@@ -28,6 +31,7 @@ export const DEFAULT_FREE_PLAY: FreePlaySettings = {
   cartridgeId: 'B',
   notebookMode: 'auto',
   isInstructorNear: false,
+  rifle: 'course',
 };
 
 const MIN_DISTANCE_M = 100;
@@ -51,7 +55,7 @@ export const TERRAIN_PRESETS: Record<Terrain, { conditions: ScenarioOptions; fro
 
 const DEFAULT_SHOTS_PER_TARGET = 5;
 
-export function freePlayTask(settings: FreePlaySettings): FreePlayTask {
+export function freePlayTask(settings: FreePlaySettings, ownProfile: RifleProfile | null = null): FreePlayTask {
   const terrain = TERRAIN_PRESETS[settings.terrain];
   const fixedDistanceM = Math.min(terrain.toM, Math.max(terrain.fromM, settings.distanceM));
   return {
@@ -69,6 +73,7 @@ export function freePlayTask(settings: FreePlaySettings): FreePlayTask {
     notebookMode: settings.notebookMode,
     scopeId: settings.scopeId,
     conditions: { ...WIND_PRESETS[settings.wind], ...terrain.conditions },
+    ...(settings.rifle === 'own' && ownProfile ? { rifle: { loadout: loadoutOf(ownProfile), scope: scopeOf(ownProfile) } } : {}),
   };
 }
 
@@ -85,6 +90,9 @@ export function knownFreePlay(stored: Partial<FreePlaySettings> | undefined): Fr
   }
   if (stored.wind && stored.wind in WIND_PRESETS) {
     known.wind = stored.wind;
+  }
+  if (stored.rifle === 'course' || stored.rifle === 'own') {
+    known.rifle = stored.rifle;
   }
   if (stored.terrain && stored.terrain in TERRAIN_PRESETS) {
     known.terrain = stored.terrain;

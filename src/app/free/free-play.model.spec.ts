@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FreePlayUnlocks } from '../../sim/course';
 import { DEFAULT_FREE_PLAY } from '../../sim/free-play';
+import { profileFromPreset } from '../../sim/rifle-profile';
 import { freePlayView, instructorLineText } from './free-play.model';
 
 const ALL_OPEN: FreePlayUnlocks = {
@@ -66,5 +67,30 @@ describe('the instructor line', () => {
     expect(instructorLineText({ upMrad: 2.43, rightMrad: -0.61 })).toBe('Расчётные данные: ↑ 2,4 ← 0,6 MIL');
     expect(instructorLineText({ upMrad: 0.8, rightMrad: 0.34 })).toBe('Расчётные данные: ↑ 0,8 → 0,3 MIL');
     expect(instructorLineText({ upMrad: 1.2, rightMrad: 0.01 })).toBe('Расчётные данные: ↑ 1,2 MIL');
+  });
+});
+
+describe('выбор винтовки (T1.7, В49)', () => {
+  const own = profileFromPreset('65-140', 'profile-1', 'Шестёрка');
+
+  it('учебная выбрана, своей нет — «своя» закрыта с подсказкой; прицел и патрон выбираются', () => {
+    const view = freePlayView(DEFAULT_FREE_PLAY, ALL_OPEN, null);
+    expect(view.rifles).toEqual([
+      { id: 'course', label: 'учебная', line: '', lock: null, isChosen: true },
+      { id: 'own', label: 'своя', line: '', lock: 'заведи на экране «Винтовка»', isChosen: false },
+    ]);
+    expect(view.isOwnRifle).toBe(false);
+  });
+
+  it('своя выбрана и есть — подпись с именем; прицел и патрон — из профиля', () => {
+    const view = freePlayView({ ...DEFAULT_FREE_PLAY, rifle: 'own' }, ALL_OPEN, own);
+    expect(view.rifles[1]).toEqual({ id: 'own', label: 'своя · Шестёрка', line: '', lock: null, isChosen: true });
+    expect(view.isOwnRifle).toBe(true);
+  });
+
+  it('своя выбрана, но профиль удалили — выбрана учебная', () => {
+    const view = freePlayView({ ...DEFAULT_FREE_PLAY, rifle: 'own' }, ALL_OPEN, null);
+    expect(view.rifles.map(rifle => rifle.isChosen)).toEqual([true, false]);
+    expect(view.isOwnRifle).toBe(false);
   });
 });

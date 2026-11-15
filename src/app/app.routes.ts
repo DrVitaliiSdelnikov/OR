@@ -1,4 +1,5 @@
 import type { PositionPage } from './position/position.page';
+import type { RifleEditPage } from './rifle/rifle-edit.page';
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
@@ -10,6 +11,18 @@ export const routes: Routes = [
   { path: 'settings', loadComponent: () => import('./settings/settings.page').then(module => module.SettingsPage) },
   { path: 'journal', loadComponent: () => import('./journal/journal.page').then(module => module.JournalPage) },
   { path: 'intro', loadComponent: () => import('./intro/intro.page').then(module => module.IntroPage) },
+  { path: 'rifle', loadComponent: () => import('./rifle/rifle.page').then(module => module.RiflePage) },
+  {
+    path: 'rifle/new/:presetCode',
+    loadComponent: () => import('./rifle/rifle-edit.page').then(module => module.RifleEditPage),
+    canDeactivate: [(page: RifleEditPage) => page.canLeave()],
+  },
+  { path: 'rifle/:profileId/dope', loadComponent: () => import('./rifle/rifle-dope.page').then(module => module.RifleDopePage) },
+  {
+    path: 'rifle/:profileId',
+    loadComponent: () => import('./rifle/rifle-edit.page').then(module => module.RifleEditPage),
+    canDeactivate: [(page: RifleEditPage) => page.canLeave()],
+  },
   { path: 'textbook', loadComponent: () => import('./textbook/textbook.page').then(module => module.TextbookPage) },
   { path: '**', redirectTo: '' },
 ];

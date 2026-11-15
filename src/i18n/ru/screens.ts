@@ -25,6 +25,7 @@ export const screens = {
       free: 'Свободная игра',
       textbook: 'Учебник курсанта',
       journal: 'Журнал стрелка',
+      rifle: 'Винтовка',
     },
     start: 'Начать',
     continue: 'Продолжить',

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FreePlayUnlocks, setupTask } from './course';
+import { loadoutOf, profileFromPreset, scopeOf } from './rifle-profile';
 import { allowedFreePlay, DEFAULT_FREE_PLAY, FREE_PLAY_DISTANCES_M, freePlayTask, FreePlaySettings, knownFreePlay, WIND_PRESETS } from './free-play';
 
 const ALL_OPEN: FreePlayUnlocks = {
@@ -93,6 +94,7 @@ describe('free play — what is open', () => {
       cartridgeId: 'B',
       notebookMode: 'auto',
       isInstructorNear: false,
+      rifle: 'course',
     });
   });
 });
@@ -120,5 +122,28 @@ describe('местность (T1.4b)', () => {
   it('местность сохраняется; мусор — равнина', () => {
     expect(knownFreePlay({ terrain: 'mountains' }).terrain).toBe('mountains');
     expect(knownFreePlay({ terrain: 'moon' as never }).terrain).toBe('plain');
+  });
+});
+
+describe('своя винтовка (T1.7, В49)', () => {
+  const own = profileFromPreset('65-140', 'profile-1', 'Шестёрка');
+
+  it('«своя» и активный профиль: задача несёт снаряжение и прицел профиля', () => {
+    const task = freePlayTask(settings({ rifle: 'own' }), own);
+    expect(task.rifle).toEqual({ loadout: loadoutOf(own), scope: scopeOf(own) });
+  });
+
+  it('учебная — как раньше, даже если профиль есть', () => {
+    expect(freePlayTask(settings(), own).rifle).toBeUndefined();
+    expect(freePlayTask(settings({ rifle: 'course' }), own).rifle).toBeUndefined();
+  });
+
+  it('«своя», но активного профиля нет (удалили) — учебная', () => {
+    expect(freePlayTask(settings({ rifle: 'own' }), null).rifle).toBeUndefined();
+  });
+
+  it('выбор винтовки сохраняется; мусор — учебная', () => {
+    expect(knownFreePlay({ rifle: 'own' }).rifle).toBe('own');
+    expect(knownFreePlay({ rifle: 'boom' as never }).rifle).toBe('course');
   });
 });

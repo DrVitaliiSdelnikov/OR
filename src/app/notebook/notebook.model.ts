@@ -38,8 +38,8 @@ export const LOCKED_TABS: readonly string[] = T.lockedTabs;
 export const FACTOR_NAMES: Record<NotebookFactor, string> = T.factorNames;
 export const CARTRIDGE_LETTERS: Record<CartridgeId, string> = T.cartridgeLetters;
 
-export function cartridgeLetter(cartridgeId: string): string {
-  return isCourseCartridgeId(cartridgeId) ? CARTRIDGE_LETTERS[cartridgeId] : cartridgeId;
+export function cartridgeLetter(card: Pick<DopeCard, 'cartridgeId' | 'cartridgeName'>): string {
+  return isCourseCartridgeId(card.cartridgeId) ? CARTRIDGE_LETTERS[card.cartridgeId] : card.cartridgeName;
 }
 export const MILLING_PT_PER_MIL = 45;
 export const MILLING_GRID_MIL = 4;

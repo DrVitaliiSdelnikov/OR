@@ -111,7 +111,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       return { ...freePlayTask(sandboxSettings(sandbox)), title: T.sandboxTitle };
     }
     return this.isFreePlay()
-      ? freePlayTask(allowedFreePlay(this.progress.freePlay(), courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks))
+      ? freePlayTask(allowedFreePlay(this.progress.freePlay(), courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks), this.progress.activeProfile())
       : this.chosenModeDef(exerciseById(this.exerciseId() as ExerciseId) ?? null);
   });
   protected readonly session = signal<PositionSession | null>(null);

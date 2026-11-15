@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { COURSE_RIFLE } from '../../core/content';
-import { dopeRowAt } from '../../core/dope-card';
+import { buildDopeCard, dopeRowAt } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { gaugeWindAt, lateralWindMps, windAt } from '../../core/scenario';
 import { exerciseById } from '../../sim/course';
+import { DEFAULT_FREE_PLAY, freePlayTask } from '../../sim/free-play';
+import { loadoutOf, profileFromPreset } from '../../sim/rifle-profile';
 import { CauseKind, groupPoint, MissBreakdown } from '../../sim/miss-breakdown';
 import { movementClockAt, targetOffsetMil } from '../../sim/patrol';
 import { flagReading } from '../scene/scene.model';
@@ -850,5 +852,27 @@ describe('PositionSession — lead without a side (В43)', () => {
     expect(shot.record.diagnosis).toBe('execution');
     expect(shot.record.isLeadBackward).toBe(true);
     expect(shot.review.isLeadBackward).toBe(true);
+  });
+});
+
+describe('PositionSession — своя винтовка в свободной игре (T1.7)', () => {
+  it('прицел, карточка, ноль и записи «в ДОПЕ» — профиля', async () => {
+    const own = { ...profileFromPreset('65-140', 'profile-1', 'Шестёрка'), rifle: { ...profileFromPreset('65-140', 'x', 'x').rifle, zeroM: 200 } };
+    const def = freePlayTask({ ...DEFAULT_FREE_PLAY, rifle: 'own', distanceM: 600 }, own);
+    const session = await PositionSession.start({ def, seed: 3, engine, accessibility: ACCESSIBILITY });
+    expect(session.scope.scope.id).toBe('profile-1');
+    const card = session.notebook.context.card;
+    const ownCard = await buildDopeCard(engine, loadoutOf(own), card.clickMil);
+    expect(dopeRowAt(card, 600)).toEqual(dopeRowAt(ownCard, 600));
+    expect([card.cartridgeId, card.zeroM, card.cartridgeName]).toEqual(['profile-1', 200, 'Шестёрка']);
+    dialToTarget(session);
+    const fired = await shoot(session, ON_TARGET);
+    expect(fired!.review.cartridgeId).toBe('profile-1');
+  });
+
+  it('учебная винтовка: карточка патрона Б, ноль учебной', async () => {
+    const session = await PositionSession.start({ def: freePlayTask({ ...DEFAULT_FREE_PLAY, distanceM: 600 }, null), seed: 3, engine, accessibility: ACCESSIBILITY });
+    expect([session.notebook.context.card.cartridgeId, session.notebook.context.card.zeroM]).toEqual(['B', COURSE_RIFLE.zeroM]);
+    expect(session.scope.scope.id).toBe('course-tree');
   });
 });

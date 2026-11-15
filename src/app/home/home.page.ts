@@ -27,6 +27,7 @@ import { continueCard, rankHeader } from './home.model';
           <a class="tile" routerLink="/free" data-test="tile-free"><span class="number">02</span>{{ texts.tiles.free }}</a>
           <a class="tile" routerLink="/textbook" data-test="tile-textbook"><span class="number">03</span>{{ texts.tiles.textbook }}</a>
           <a class="tile" routerLink="/journal" data-test="tile-journal"><span class="number">04</span>{{ texts.tiles.journal }}</a>
+          <a class="tile" routerLink="/rifle" data-test="tile-rifle"><span class="number">05</span>{{ texts.tiles.rifle }}</a>
         </nav>
 
         <button class="continue" type="button" (click)="openContinue()" data-test="continue-card">

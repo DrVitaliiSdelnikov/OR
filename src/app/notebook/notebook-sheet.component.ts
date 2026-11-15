@@ -1,5 +1,5 @@
 import { afterNextRender, Component, computed, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
-import { COURSE_RIFLE, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
+import { STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
 import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { backLayer } from '../services/back-stack.service';
@@ -214,8 +214,8 @@ export class NotebookSheetComponent {
       stationWind: station ? texts.stationWind({ speedMps: station.windSpeedMps, time: stationTime }) : texts.stationWindEmpty,
       windCorrection: correctionLine('wind', factors.wind),
       dopeHeading: texts.dopeHeading({
-        cartridge: cartridgeLetter(notebook.context.card.cartridgeId),
-        zeroM: COURSE_RIFLE.zeroM,
+        cartridge: cartridgeLetter(notebook.context.card),
+        zeroM: notebook.context.card.zeroM,
         temperatureC: STANDARD_TEMPERATURE_C,
         pressureHpa: STANDARD_PRESSURE_HPA,
       }),

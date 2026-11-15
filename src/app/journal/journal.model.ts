@@ -244,7 +244,7 @@ function elevationText(mil: number): string {
 
 export function cardsView(cards: readonly DopeCard[], notes: DopeNotes): CardView[] {
   return cards.map(card => ({
-    title: T.cardTitle({ letter: cartridgeLetter(card.cartridgeId) }),
+    title: T.cardTitle({ letter: cartridgeLetter(card) }),
     rows: card.rows.map(row => {
       const note = (notes[card.cartridgeId] ?? []).find(item => item.distanceM === row.distanceM);
       return { distance: String(row.distanceM), factory: elevationText(row.elevationMil), player: note ? elevationText(note.elevationMil) : null };

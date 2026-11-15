@@ -17,6 +17,8 @@ export interface DopeRow {
 
 export interface DopeCard {
   cartridgeId: string;
+  cartridgeName: string;
+  zeroM: number;
   clickMil: number;
   zeroAngleMil: number;
   rows: readonly DopeRow[];
@@ -89,7 +91,7 @@ export async function buildDopeCard(engine: BallisticsEngine, loadout: Loadout, 
         ),
       };
     });
-  return { cartridgeId: loadout.cartridge.id, clickMil, zeroAngleMil: roundTo(zeroAngleMil, ZERO_ANGLE_DECIMALS), rows };
+  return { cartridgeId: loadout.cartridge.id, cartridgeName: loadout.cartridge.name, zeroM: loadout.rifle.zeroM, clickMil, zeroAngleMil: roundTo(zeroAngleMil, ZERO_ANGLE_DECIMALS), rows };
 }
 
 export function dopeRowAt(card: DopeCard, distanceM: number): DopeRow {

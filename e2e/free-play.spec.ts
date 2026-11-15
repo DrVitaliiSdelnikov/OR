@@ -1,5 +1,6 @@
 import { expect, Page, test } from '@playwright/test';
 import { seedProgress } from './helpers';
+import { profileFromPreset } from '../src/sim/rifle-profile';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 
@@ -128,5 +129,28 @@ test.describe('местность: угол, деривация, Кориоли�
     await page.getByTestId('tile-notebook').click();
     await expect(page.getByTestId('factor-dope')).toBeVisible();
     await expect(page.getByTestId('factor-spin')).toHaveCount(0);
+  });
+});
+
+test.describe('своя винтовка в свободной игре (T1.7, В49)', () => {
+  test('нет своей — «своя» закрыта с подсказкой; есть активная — выбор «своя», в блокноте её карточка', async ({ page }) => {
+    const own = profileFromPreset('65-140', 'profile-e2e', 'Шестёрка');
+    await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: {} }, shots: [], settings: QUIET_SETTINGS, profiles: [own], activeProfileId: own.id });
+    await page.goto('/free');
+    await page.getByTestId('free-rifle-own').click();
+    await expect(page.getByTestId('free-rifle-own')).toHaveClass(/chosen/);
+    await expect(page.getByTestId('free-scope')).toHaveCount(0);
+    await page.getByTestId('free-start').click();
+    await page.waitForURL('**/position/free');
+    await page.getByTestId('tile-notebook').click();
+    await page.getByTestId('tab-dope').click();
+    await expect(page.getByTestId('dope-heading')).toContainText('Шестёрка');
+  });
+
+  test('без своей винтовки «своя» недоступна', async ({ page }) => {
+    await seed(page);
+    await page.goto('/free');
+    await expect(page.getByTestId('free-rifle-own')).toBeDisabled();
+    await expect(page.getByTestId('free-rifle-own')).toContainText('заведи на экране «Винтовка»');
   });
 });

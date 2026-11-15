@@ -5,7 +5,7 @@ import { NotebookMode } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { CartridgeId } from '../../core/types';
 import { courseProgress } from '../../sim/course';
-import { allowedFreePlay, FREE_PLAY_DISTANCES_M, Terrain, WindPreset } from '../../sim/free-play';
+import { allowedFreePlay, FREE_PLAY_DISTANCES_M, FreePlayRifle, Terrain, WindPreset } from '../../sim/free-play';
 import { ScopeId } from '../../sim/scope-model';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
@@ -87,14 +87,30 @@ type PickerKind = 'scope' | 'cartridge';
           }
         </section>
 
-        <section class="block pair">
-          <button class="pick" type="button" (click)="picker.set('scope')" data-test="free-scope">
-            <span class="label mono">{{ texts.scope }}</span>{{ view.scopeTile }}
-          </button>
-          <button class="pick" type="button" (click)="picker.set('cartridge')" data-test="free-cartridge">
-            <span class="label mono">{{ texts.cartridge }}</span>{{ view.cartridgeTile }}
-          </button>
+        <section class="block">
+          <div class="label mono">{{ rifleTexts.label }}</div>
+          <div class="choices">
+            @for (rifle of view.rifles; track rifle.id) {
+              <button class="choice" type="button" [class.chosen]="rifle.isChosen" [disabled]="rifle.lock !== null" (click)="update({ rifle: rifle.id })" [attr.data-test]="'free-rifle-' + rifle.id">
+                {{ rifle.label }}
+                @if (rifle.lock; as lock) {
+                  <span class="lock mono">{{ lock }}</span>
+                }
+              </button>
+            }
+          </div>
         </section>
+
+        @if (!view.isOwnRifle) {
+          <section class="block pair">
+            <button class="pick" type="button" (click)="picker.set('scope')" data-test="free-scope">
+              <span class="label mono">{{ texts.scope }}</span>{{ view.scopeTile }}
+            </button>
+            <button class="pick" type="button" (click)="picker.set('cartridge')" data-test="free-cartridge">
+              <span class="label mono">{{ texts.cartridge }}</span>{{ view.cartridgeTile }}
+            </button>
+          </section>
+        }
 
         <section class="block">
           <div class="label mono">{{ texts.notebookMode }}</div>
@@ -168,15 +184,16 @@ export class FreePlayPage {
   private readonly feedback = inject(FeedbackService);
 
   protected readonly texts = text.screens.freePlay;
+  protected readonly rifleTexts = text.rifle.freePlay;
   protected readonly distances = FREE_PLAY_DISTANCES_M;
   protected readonly distanceStep = FREE_PLAY_DISTANCES_M[1] - FREE_PLAY_DISTANCES_M[0];
   protected readonly picker = signal<PickerKind | null>(null);
   private readonly unlocks = computed(() => courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks);
   protected readonly settings = computed(() => allowedFreePlay(this.progress.freePlay(), this.unlocks()));
-  protected readonly state = computed(() => freePlayView(this.settings(), this.unlocks()));
+  protected readonly state = computed(() => freePlayView(this.settings(), this.unlocks(), this.progress.activeProfile()));
   protected readonly pickerItems = computed<ChoiceView<ScopeId | CartridgeId>[]>(() => (this.picker() === 'scope' ? this.state().scopes : this.state().cartridges));
 
-  protected update(patch: Partial<{ distanceM: number; isDistanceUnknown: boolean; wind: WindPreset; terrain: Terrain; notebookMode: NotebookMode; isInstructorNear: boolean; scopeId: ScopeId; cartridgeId: CartridgeId }>): void {
+  protected update(patch: Partial<{ distanceM: number; isDistanceUnknown: boolean; wind: WindPreset; terrain: Terrain; notebookMode: NotebookMode; isInstructorNear: boolean; scopeId: ScopeId; cartridgeId: CartridgeId; rifle: FreePlayRifle }>): void {
     this.progress.updateFreePlay(patch);
   }
 

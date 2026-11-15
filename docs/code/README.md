@@ -110,3 +110,4 @@
 | sim/course · упражнения 13 «Горный склон» и 14 «Дальний рубеж» | [specs/sim-course-geometry.md](specs/sim-course-geometry.md) | реализовано, слито в `master` 15.11 |
 | sim/rifle-profile · профиль винтовки (T1.5) | [specs/sim-rifle-profile.md](specs/sim-rifle-profile.md) | реализовано, слито в `master` 15.11 |
 | sim/profile-dope · карточка ДОПЕ профиля (T1.6a) | [specs/core-profile-dope.md](specs/core-profile-dope.md) | реализовано, слито в `master` 16.11 |
+| app/rifle · экран «Винтовка», печать и экспорт ДОПЕ (T1.7, T1.6b) | [specs/app-rifle.md](specs/app-rifle.md) | реализовано, слито в `master` 16.11 |

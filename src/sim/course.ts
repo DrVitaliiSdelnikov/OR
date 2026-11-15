@@ -15,10 +15,10 @@ import {
 import { isRangeWithinTolerance } from '../core/game-formulas';
 import { mulberry32, RandomSource } from '../core/rng';
 import { ScenarioOptions } from '../core/scenario';
-import { CartridgeId, Correction, Target } from '../core/types';
+import { CartridgeId, Correction, Loadout, Target } from '../core/types';
 import { FiringPlan } from './firing-line';
 import { PatrolTarget, patrolPlan } from './patrol';
-import { FreePlayScopeUnlocks, ScopeId } from './scope-model';
+import { FreePlayScopeUnlocks, ScopeId, ScopeModel } from './scope-model';
 import { MainCause } from './miss-breakdown';
 import { CALL_TOLERANCE_MIL, ShotDiagnosis } from './shot-review';
 import { text } from '../i18n';
@@ -56,6 +56,12 @@ export interface PositionTask {
   modeChoices?: readonly NotebookMode[];
   scopeId: ScopeId;
   conditions: ScenarioOptions;
+  rifle?: OwnRifle;
+}
+
+export interface OwnRifle {
+  loadout: Loadout;
+  scope: ScopeModel;
 }
 
 export interface ExerciseDef extends PositionTask {

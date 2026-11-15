@@ -87,7 +87,7 @@ export interface ShotReview {
   isLeadBackward: boolean;
   targetRadiusMil: number;
   distanceM: number;
-  cartridgeId: CartridgeId;
+  cartridgeId: string;
   breakdown: MissBreakdown;
   flight: FlightPaths;
   group: Correction[];
@@ -143,7 +143,7 @@ export class PositionSession {
     recalcNotebook: Notebook | undefined,
   ) {
     this.firingLine = new FiringLine(setup.plan);
-    this.scope = new ScopeSession(scopeById(def.scopeId), POSITION_RESTING_BPM, scenario.seed, accessibility, this.firingLine.magazineLoaded);
+    this.scope = new ScopeSession(def.rifle?.scope ?? scopeById(def.scopeId), POSITION_RESTING_BPM, scenario.seed, accessibility, this.firingLine.magazineLoaded);
     this.isRepeatAfterRecalc = recalcNotebook !== undefined;
     this.currentNotebook = this.withFlagsBehindBerm(
       recalcNotebook
@@ -157,7 +157,7 @@ export class PositionSession {
     const cartridgeIds = [...new Set(options.def.stages.map(stage => stage.cartridgeId))];
     const cards = new Map<CartridgeId, DopeCard>();
     for (const cartridgeId of cartridgeIds) {
-      cards.set(cartridgeId, await buildDopeCard(options.engine, courseLoadout(cartridgeId), CARD_CLICK_MIL));
+      cards.set(cartridgeId, await buildDopeCard(options.engine, options.def.rifle?.loadout ?? courseLoadout(cartridgeId), CARD_CLICK_MIL));
     }
     const scenario = createScenario(options.seed, setup.scenarioOptions);
     return new PositionSession(options.def, setup, scenario, cards, options.engine, options.accessibility, options.recalcNotebook);
@@ -427,7 +427,7 @@ export class PositionSession {
       isLeadBackward: isLeadBehind,
       targetRadiusMil: targetRadiusMrad(target),
       distanceM: target.distanceM,
-      cartridgeId: this.firingLine.cartridgeId,
+      cartridgeId: this.loadout.cartridge.id,
       breakdown,
       flight,
       group: [...this.groupPoints],
@@ -500,7 +500,7 @@ export class PositionSession {
   }
 
   private get loadout(): Loadout {
-    return courseLoadout(this.firingLine.cartridgeId);
+    return this.def.rifle?.loadout ?? courseLoadout(this.firingLine.cartridgeId);
   }
 
   private async flightOf(target: Target, timeS: number, result: ShotResult): Promise<FlightPaths> {
