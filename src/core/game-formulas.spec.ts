@@ -82,7 +82,7 @@ describe('clicksDifference', () => {
 });
 
 describe('atmosphereCorrectionMil', () => {
-  const row = { colderBy10CMil: 0.2, pressureUp10HpaMil: 0.06 };
+  const row = { colderStepMil: 0.2, pressureStepMil: 0.06 };
 
   it('standard air (+15 C, 1013 hPa) needs no correction', () => {
     expect(atmosphereCorrectionMil(row, 15, 1013)).toBe(0);

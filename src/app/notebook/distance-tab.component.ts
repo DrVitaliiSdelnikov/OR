@@ -1,6 +1,5 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { text } from '../../i18n';
-import { STEP_FORMULAS } from './calc-sheet.model';
 import { MILLING_GRID_MIL, MILLING_PT_PER_MIL, millingSize, snapMilling } from './notebook.model';
 
 const GRID_WIDTH_PT = 140;
@@ -33,7 +32,7 @@ const HASH_STEP_MIL = 0.5;
           }
         </svg>
         <div class="side mono">
-          <div class="formula">{{ formula }}</div>
+          <div class="formula">{{ formula() }}</div>
           <div data-test="milling-size">{{ sizeText() }}</div>
           <button class="count" type="button" [disabled]="sizeMil() === null" (click)="count()" data-test="milling-count">{{ isManual() ? texts.toStep : texts.count }}</button>
           @if (!isManual() && resultText(); as result) {
@@ -66,7 +65,7 @@ export class DistanceTabComponent {
   readonly measure = output<number>();
 
   protected readonly texts = text.notebook.distanceTab;
-  protected readonly formula = STEP_FORMULAS.distance;
+  readonly formula = input.required<string>();
   protected readonly gridWidth = GRID_WIDTH_PT;
   protected readonly gridHeight = GRID_HEIGHT_PT;
   protected readonly centerY = GRID_CENTER_Y;

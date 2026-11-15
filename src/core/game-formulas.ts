@@ -14,6 +14,10 @@ const YARDS_PER_MOA_PER_INCH = 95.5;
 const MPS_PER_MPH = 0.44704;
 const METERS_PER_YARD = 0.9144;
 const IMPERIAL_WIND_CONSTANT_ROUNDING = 10;
+export const STANDARD_TEMPERATURE_F = 59;
+export const STANDARD_PRESSURE_INHG = 29.92;
+export const IMPERIAL_COLDER_STEP_F = 10;
+export const IMPERIAL_PRESSURE_STEP_INHG = 0.3;
 const IMPERIAL_LEAD_SCALE = (MPS_PER_MPH / METERS_PER_YARD) * MIL_PER_RADIAN_SCALE;
 
 export function crosswindMps(speedMps: number, clockHours: number): number {
@@ -47,13 +51,24 @@ export function clicksDifference(playerMil: number, referenceMil: number, clickM
 }
 
 export function atmosphereCorrectionMil(
-  row: Pick<DopeRow, 'colderBy10CMil' | 'pressureUp10HpaMil'>,
+  row: Pick<DopeRow, 'colderStepMil' | 'pressureStepMil'>,
   temperatureC: number,
   pressureHpa: number,
 ): number {
   const tensOfDegreesColder = (STANDARD_TEMPERATURE_C - temperatureC) / ATMOSPHERE_COLUMN_STEP;
   const tensOfHpaHigher = (pressureHpa - STANDARD_PRESSURE_HPA) / ATMOSPHERE_COLUMN_STEP;
-  return tensOfDegreesColder * row.colderBy10CMil + tensOfHpaHigher * row.pressureUp10HpaMil;
+  return tensOfDegreesColder * row.colderStepMil + tensOfHpaHigher * row.pressureStepMil;
+}
+
+export function atmosphereCorrectionMilImperial(
+  row: Pick<DopeRow, 'colderStepMil' | 'pressureStepMil'>,
+  temperatureF: number,
+  pressureInHg: number,
+): number {
+  const stepsColder = (STANDARD_TEMPERATURE_F - temperatureF) / IMPERIAL_COLDER_STEP_F;
+  const stepsHigher = (pressureInHg - STANDARD_PRESSURE_INHG) / IMPERIAL_PRESSURE_STEP_INHG;
+  const correctionMil = stepsColder * row.colderStepMil + stepsHigher * row.pressureStepMil;
+  return correctionMil === 0 ? 0 : correctionMil;
 }
 
 export function rangeByMilling(targetSizeM: number, sizeOnReticleMil: number): number {

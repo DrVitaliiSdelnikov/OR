@@ -1,8 +1,19 @@
 import { CalcStepInput, CalcStepKind, CheckErrorType, checkManualSteps, PreparationRowInput } from '../core/calc-check';
-import { DopeCard, dopeRowAt } from '../core/dope-card';
+import { DopeCard, DopeRow, dopeRowAt } from '../core/dope-card';
 import { NotebookMode } from '../core/exercise-scoring';
 import { FLAT_GEOMETRY } from '../core/content';
-import { atmosphereCorrectionMil, averageCrosswindMps, crosswindMps, leadMil, rangeByMilling, roundToClicks, windCorrectionMil } from '../core/game-formulas';
+import {
+  atmosphereCorrectionMil,
+  atmosphereCorrectionMilImperial,
+  averageCrosswindMps,
+  crosswindMps,
+  imperialWindConstant,
+  leadMil,
+  rangeByMilling,
+  roundToClicks,
+  windCorrectionMil,
+} from '../core/game-formulas';
+import { fromInput, inSystem, Quantity, UnitSystem } from '../core/units';
 import { mulberry32 } from '../core/rng';
 import { GaugeReading } from '../core/scenario';
 import { Correction, ShotGeometry } from '../core/types';
@@ -184,7 +195,7 @@ const STALE_ORDER: readonly StaleReason[] = ['cartridge', 'distance', 'condition
 export const FULL_MEASUREMENT_S = 3;
 const TRAPS_IN_HARD = 2;
 const GROUPED_FROM_CHIPS = 6;
-const NEIGHBOR_ROW_M = 100;
+const NEIGHBOR_ROW_STEP = 100;
 const CLOCK_HALF_TURN = 6;
 const RADIANS_PER_DEGREE = Math.PI / 180;
 const EARTH_ROTATION_MIL_PER_S = 0.0729;
@@ -476,7 +487,7 @@ export function recordStep(notebook: Notebook, step: NotebookStepId): Notebook {
     throw new RangeError(`step ${step} has no side`);
   }
   const recorded = withStep(notebook, step, { ...state, isRecorded: true, snapshot: snapshotOf(notebook), staleReason: null });
-  return step === 'distance' ? refreshStale({ ...recorded, distanceM: finalValue }) : recorded;
+  return step === 'distance' ? refreshStale({ ...recorded, distanceM: toBase(notebook, 'distance', finalValue) }) : recorded;
 }
 
 export function stepHasSide(step: NotebookStepId): boolean {
@@ -657,10 +668,10 @@ function playerStepMil(notebook: Notebook, step: NotebookStepId): number | null 
     return null;
   }
   if (step === 'distance') {
-    return dopeRowAt(notebook.context.card, finalValue).elevationMil;
+    return dopeRowAt(notebook.context.card, toBase(notebook, 'distance', finalValue)).elevationMil;
   }
   if (step === 'zones') {
-    return zoneWindMil(notebook, [(state.sign ?? 1) * finalValue]);
+    return zoneWindMil(notebook, [toBase(notebook, 'windSpeed', (state.sign ?? 1) * finalValue)]);
   }
   return stepHasSide(step) ? (state.sign ?? 1) * finalValue : finalValue;
 }
@@ -674,7 +685,10 @@ function autoConditionsMil(notebook: Notebook): number | null {
   if (!station || notebook.distanceM === null) {
     return null;
   }
-  return atmosphereCorrectionMil(dopeRowAt(notebook.context.card, notebook.distanceM), station.temperatureC, station.pressureHpa);
+  const row = dopeRowAt(notebook.context.card, notebook.distanceM);
+  return systemOf(notebook) === 'imperial'
+    ? atmosphereCorrectionMilImperial(row, inSystem('temperature', station.temperatureC, 'imperial'), inSystem('pressure', station.pressureHpa, 'imperial'))
+    : atmosphereCorrectionMil(row, station.temperatureC, station.pressureHpa);
 }
 
 function autoWindMil(notebook: Notebook, wind: { speedMps: number; clock: number } | null): number | null {
@@ -685,7 +699,12 @@ function autoWindMil(notebook: Notebook, wind: { speedMps: number; clock: number
   if (flagCrosswinds) {
     return zoneWindMil(notebook, [signedCrosswindMps(wind), ...flagCrosswinds]);
   }
-  return windCorrectionMil(wind.speedMps, wind.clock, notebook.distanceM, dopeRowAt(notebook.context.card, notebook.distanceM).windConstant);
+  return windCorrectionMil(
+    inPlayerUnits(notebook, 'windSpeed', wind.speedMps),
+    wind.clock,
+    inPlayerUnits(notebook, 'distance', notebook.distanceM),
+    windConstantOf(notebook, dopeRowAt(notebook.context.card, notebook.distanceM)),
+  );
 }
 
 function autoLeadMil(notebook: Notebook): number | null {
@@ -761,7 +780,7 @@ function zoneWindMil(notebook: Notebook, crosswindsMps: readonly number[]): numb
   }
   const row = dopeRowAt(notebook.context.card, notebook.distanceM);
   const averageMps = crosswindsMps.length === 1 ? crosswindsMps[0] : averageCrosswindMps(crosswindsMps, row.zoneWeights);
-  const mil = (-averageMps * notebook.distanceM) / row.windConstant;
+  const mil = (-inPlayerUnits(notebook, 'windSpeed', averageMps) * inPlayerUnits(notebook, 'distance', notebook.distanceM)) / windConstantOf(notebook, row);
   return mil === 0 ? 0 : mil;
 }
 
@@ -769,7 +788,8 @@ function crosswindWindMil(notebook: Notebook, signedMps: number | null): number 
   if (signedMps === null || notebook.distanceM === null) {
     return null;
   }
-  const mil = (-signedMps * notebook.distanceM) / dopeRowAt(notebook.context.card, notebook.distanceM).windConstant;
+  const row = dopeRowAt(notebook.context.card, notebook.distanceM);
+  const mil = (-inPlayerUnits(notebook, 'windSpeed', signedMps) * inPlayerUnits(notebook, 'distance', notebook.distanceM)) / windConstantOf(notebook, row);
   return mil === 0 ? 0 : mil;
 }
 
@@ -777,7 +797,7 @@ function playerCrosswindMps(notebook: Notebook): number | null {
   if (notebook.context.hasZones) {
     const zones = notebook.steps.zones;
     const finalValue = zones.tape[STEPS.zones.tapeLength - 1];
-    return zones.isRecorded && finalValue != null ? (zones.sign ?? 1) * finalValue : null;
+    return zones.isRecorded && finalValue != null ? toBase(notebook, 'windSpeed', (zones.sign ?? 1) * finalValue) : null;
   }
   const wind = notebook.readings.wind;
   return wind ? signedCrosswindMps(wind) : null;
@@ -802,7 +822,7 @@ function chipValues(notebook: Notebook): Partial<Record<ChipKind, number>> {
   const { station, wind, reticleMil } = notebook.readings;
   const distanceM = notebook.distanceM;
   const row = distanceM === null ? null : dopeRowAt(card, distanceM);
-  const neighborDistanceM = target.neighborDistanceM ?? (distanceM === null ? null : distanceM + NEIGHBOR_ROW_M);
+  const neighborDistanceM = target.neighborDistanceM ?? (distanceM === null ? null : distanceM + fromInput('distance', NEIGHBOR_ROW_STEP, card.system));
   const values: Partial<Record<ChipKind, number>> = {
     'target-size': target.sizeM,
     'reticle-mil': reticleMil ?? undefined,
@@ -813,8 +833,8 @@ function chipValues(notebook: Notebook): Partial<Record<ChipKind, number>> {
     humidity: station?.relativeHumidity,
     speed: wind?.speedMps,
     crosswind: notebook.context.hasZones ? absOrUndefined(playerCrosswindMps(notebook)) : wind ? crosswindMps(wind.speedMps, wind.clock) : undefined,
-    'colder-column': row?.colderBy10CMil,
-    'pressure-column': row?.pressureUp10HpaMil,
+    'colder-column': row?.colderStepMil,
+    'pressure-column': row?.pressureStepMil,
     'wind-constant': row?.windConstant,
     'zone-station': wind ? signedCrosswindMps(wind) : undefined,
     ...flagChipValues(notebook.readings),
@@ -824,7 +844,58 @@ function chipValues(notebook: Notebook): Partial<Record<ChipKind, number>> {
     'neighbor-time': neighborDistanceM === null ? undefined : dopeRowAt(card, Math.min(neighborDistanceM, lastRowM(card))).timeOfFlightS,
     ...geometryChipValues(notebook, row?.elevationMil, row?.spinDriftMil),
   };
-  return Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined)) as Partial<Record<ChipKind, number>>;
+  const known = Object.entries(values).filter(([, value]) => value !== undefined) as [ChipKind, number][];
+  return Object.fromEntries(known.map(([kind, value]) => [kind, chipInPlayerUnits(card, kind, value)])) as Partial<Record<ChipKind, number>>;
+}
+
+const CHIP_QUANTITIES: Partial<Record<ChipKind, Quantity>> = {
+  'target-size': 'targetSize',
+  distance: 'distance',
+  'neighbor-distance': 'distance',
+  temperature: 'temperature',
+  pressure: 'pressure',
+  speed: 'windSpeed',
+  crosswind: 'windSpeed',
+  'zone-station': 'windSpeed',
+  'zone-200': 'windSpeed',
+  'zone-400': 'windSpeed',
+  'zone-600': 'windSpeed',
+  'target-crosswind': 'windSpeed',
+  'target-speed': 'windSpeed',
+};
+
+function chipInPlayerUnits(card: DopeCard, kind: ChipKind, value: number): number {
+  if (card.system === 'metric') {
+    return value;
+  }
+  if (kind === 'wind-constant') {
+    return imperialWindConstant(value);
+  }
+  const quantity = CHIP_QUANTITIES[kind];
+  if (!quantity) {
+    return value;
+  }
+  const converted = inSystem(quantity, value, card.system);
+  const scale = IMPERIAL_CHIP_SCALE[quantity];
+  return scale === undefined ? converted : Math.round(converted * scale) / scale;
+}
+
+const IMPERIAL_CHIP_SCALE: Partial<Record<Quantity, number>> = { temperature: 10, pressure: 100, windSpeed: 10, targetSize: 10 };
+
+function systemOf(notebook: Notebook): UnitSystem {
+  return notebook.context.card.system;
+}
+
+function inPlayerUnits(notebook: Notebook, quantity: Quantity, baseValue: number): number {
+  return inSystem(quantity, baseValue, systemOf(notebook));
+}
+
+function toBase(notebook: Notebook, quantity: Quantity, playerValue: number): number {
+  return fromInput(quantity, playerValue, systemOf(notebook));
+}
+
+function windConstantOf(notebook: Notebook, row: DopeRow): number {
+  return systemOf(notebook) === 'imperial' ? imperialWindConstant(row.windConstant) : row.windConstant;
 }
 
 function geometryChipValues(notebook: Notebook, elevationMil: number | undefined, spinDriftMil: number | undefined): Partial<Record<ChipKind, number>> {

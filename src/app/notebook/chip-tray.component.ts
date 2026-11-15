@@ -1,4 +1,5 @@
 import { Component, computed, input, output } from '@angular/core';
+import { UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
 import { Chip, ChipGroup, ChipKind } from '../../sim/notebook';
 import { chipText } from './calc-sheet.model';
@@ -60,6 +61,7 @@ export class ChipTrayComponent {
   readonly awaitedKind = input<ChipKind | null>(null);
   readonly isGrouped = input(false);
   readonly distanceM = input<number | null>(null);
+  readonly system = input<UnitSystem>('metric');
   readonly pick = output<ChipKind>();
 
   protected readonly texts = text.notebook.chipTray;
@@ -68,7 +70,7 @@ export class ChipTrayComponent {
     const used = new Set(this.usedKinds());
     const views = this.chips().map(chip => ({
       group: chip.group,
-      view: { kind: chip.kind, ...chipText(chip, this.distanceM()), isUsed: used.has(chip.kind), isAwaited: chip.kind === this.awaitedKind() } as ChipView,
+      view: { kind: chip.kind, ...chipText(chip, this.distanceM(), this.system()), isUsed: used.has(chip.kind), isAwaited: chip.kind === this.awaitedKind() } as ChipView,
     }));
     if (!this.isGrouped()) {
       return [{ name: '', chips: views.map(item => item.view) }];

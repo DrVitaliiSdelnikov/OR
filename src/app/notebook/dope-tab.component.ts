@@ -1,6 +1,7 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
+import { UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
-import { DopeTableRow } from './notebook.model';
+import { dopeColumnHeaders, DopeTableRow } from './notebook.model';
 
 @Component({
   selector: 'or-dope-tab',
@@ -15,8 +16,8 @@ import { DopeTableRow } from './notebook.model';
             <th>{{ texts.clicks }}</th>
             <th>t</th>
             <th [title]="texts.windConstantTitle">K</th>
-            <th [title]="texts.colderTitle">−10 °C</th>
-            <th [title]="texts.pressureTitle">{{ texts.pressure }}</th>
+            <th [title]="headers().colderTitle">{{ headers().colder }}</th>
+            <th [title]="headers().pressureTitle">{{ headers().pressure }}</th>
             <th [title]="texts.notesTitle">{{ texts.notes }}</th>
           </tr>
         </thead>
@@ -28,8 +29,8 @@ import { DopeTableRow } from './notebook.model';
               <td>{{ row.clicks }}</td>
               <td>{{ row.timeOfFlight }}</td>
               <td>{{ row.windConstant }}</td>
-              <td>{{ row.colderBy10C }}</td>
-              <td>{{ row.pressureUp10Hpa }}</td>
+              <td>{{ row.colderStep }}</td>
+              <td>{{ row.pressureStep }}</td>
               <td class="notes" [attr.data-test]="'dope-note-' + row.distanceM">{{ row.note }}</td>
             </tr>
           }
@@ -54,4 +55,6 @@ export class DopeTabComponent {
   protected readonly texts = text.notebook.dopeTab;
   readonly heading = input.required<string>();
   readonly rows = input.required<DopeTableRow[]>();
+  readonly system = input<UnitSystem>('metric');
+  protected readonly headers = computed(() => dopeColumnHeaders(this.system()));
 }

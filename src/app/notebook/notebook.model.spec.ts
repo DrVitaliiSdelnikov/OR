@@ -5,6 +5,8 @@ import { BallisticsEngine } from '../../core/engine';
 import { ExerciseShotRecord } from '../../sim/course';
 import { createNotebook, enterWind, factorContributions, hideFlagsBehindBerm, Notebook, readFlag, recordStation, total } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
+import { imperialWindConstant } from '../../core/game-formulas';
+import { dopeColumnHeaders, millingResultText } from './notebook.model';
 import { conditionsReferenceText, dopeHeadingText, knownDistanceText, speedWheelRows, stationTexts, stationWindText, windCaptionText, windFlagText } from './notebook.model';
 import { clockFromDialAngle, clockShareLines, clockText, contributionText, correctionLine, dopeTable, factorDetail, millingSize, moaPerMilText, rangeClockText, referencePriceText, shotStrip, snapMilling, stepSpeed, totalLine, zoneTable } from './notebook.model';
 
@@ -289,5 +291,44 @@ describe('блокнот в имперских единицах (T1.8a)', () => 
     expect(table.flags[0].text).toBe('4,9 миль/ч справа');
     expect(windFlagText(200, '4,9 миль/ч справа', 'imperial')).toBe('219 ярдов · 4,9 миль/ч справа');
     expect(windFlagText(200, '2,2 м/с справа', 'metric')).toBe('200 м · 2,2 м/с справа');
+  });
+});
+
+describe('вкладки блокнота: расчёт в имперских (T1.8b)', () => {
+  let imperialCard: DopeCard;
+  const station = { temperatureC: -5, pressureHpa: 1030, relativeHumidity: 0.5, windSpeedMps: 3.2, windClock: 9 };
+
+  beforeAll(async () => {
+    imperialCard = await buildDopeCard(new BallisticsEngine(), courseLoadout('B'), 0.1, 'imperial');
+  });
+
+  const imperialAt = (distanceM: number) =>
+    createNotebook({ card: imperialCard, scope, target: { sizeM: 0.5, distanceM }, hasZones: false, canTakeWindFromStation: false, seed: 1 }, 'auto');
+
+  it('расшифровки: строка в ярдах, условия от 59 °F и 29,92, ветер в миль/ч × ярды / K_imp', () => {
+    const notebook = enterWind(recordStation(imperialAt(548.64), station, 3, 0), 3.2, 9);
+    expect(factorDetail(notebook, 'dope')).toMatch(/^строка 600 ярдов карточки: ↑ \d+,\d$/);
+    expect(factorDetail(notebook, 'conditions')).toMatch(/^\(59 − 23\) \/ 10 × \d,\d\d \+ \(30,42 − 29,92\) \/ 0,3 × \d,\d\d = ↑ \d,\d\d$/);
+    expect(factorDetail(notebook, 'wind')).toMatch(/^7,2 миль\/ч с 9 ч · V⊥ 7,2 · W = V⊥ × 600 \/ \d+ = ← \d,\d\d$/);
+  });
+
+  it('метрические расшифровки — прежние', () => {
+    const notebook = enterWind(recordStation(notebookAt(600), station, 3, 0), 3.2, 9);
+    expect(factorDetail(notebook, 'conditions')).toMatch(/^\(15 − −5\) \/ 10 × /);
+    expect(factorDetail(notebook, 'wind')).toMatch(/^3,2 м\/с с 9 ч · V⊥ 3,2 · W = V⊥ × 600 \/ \d+ = ← /);
+  });
+
+  it('таблица ДОПЕ: строки 100…1000 ярдов, K — в ярдах и mph, заголовки колонок условий', () => {
+    const rows = dopeTable(imperialCard, 548.64, new Map(), 'imperial');
+    expect(rows.map(row => row.distance)).toEqual(['100', '200', '300', '400', '500', '600', '700', '800', '900', '1000']);
+    expect(rows[5].windConstant).toBe(String(imperialWindConstant(imperialCard.rows[5].windConstant)));
+    expect(dopeTable(card, 600)[5].windConstant).toBe(String(card.rows[5].windConstant));
+    expect(dopeColumnHeaders('imperial')).toEqual({ colder: '−10 °F', colderTitle: 'холоднее на 10 °F', pressure: '+0,3″', pressureTitle: 'давление +0,3 дюйма рт. ст.' });
+    expect(dopeColumnHeaders('metric')).toEqual({ colder: '−10 °C', colderTitle: 'холоднее на 10 °C', pressure: '+10 гПа', pressureTitle: 'давление +10 гПа' });
+  });
+
+  it('результат миллинга: дюймы × 27,78 / MIL = ярды; метрика — как раньше', () => {
+    expect(millingResultText(0.5, 1.25, 400 * 0.9144, 'imperial')).toBe('Д = 19,7 × 27,78 / 1,25 = 400 ярдов');
+    expect(millingResultText(0.5, 1.25, 400, 'metric')).toBe('Д = 0,5 × 1000 / 1,25 = 400 м');
   });
 });

@@ -907,3 +907,15 @@ describe('PositionSession — прицел MOA: клики барабана по
     expect(session.notebook.context.card.clickMil).toBe(0.1);
   });
 });
+
+describe('PositionSession — карточка в единицах игрока (T1.8b)', () => {
+  it('имперские: строки через 100 ярдов; итог на барабаны как в метрике до клика', async () => {
+    const def = freePlayTask({ ...DEFAULT_FREE_PLAY, distanceM: 600 }, null);
+    const imperial = await PositionSession.start({ def, seed: 3, engine, accessibility: ACCESSIBILITY, unitSystem: 'imperial' });
+    const metric = await PositionSession.start({ def, seed: 3, engine, accessibility: ACCESSIBILITY });
+    expect(imperial.notebook.context.card.system).toBe('imperial');
+    expect(imperial.notebook.context.card.rows[0].distanceM).toBeCloseTo(91.44, 2);
+    expect(metric.notebook.context.card.system).toBe('metric');
+    expect(Math.abs(imperial.total.elevation.targetClicks - metric.total.elevation.targetClicks)).toBeLessThanOrEqual(1);
+  });
+});

@@ -6,7 +6,7 @@ import { FeedbackService } from '../services/feedback.service';
 import { factorContributions, NotebookFactor, NotebookStepId, tabs, visibleFactors } from '../../sim/notebook';
 import { PositionSession } from '../position/position-session';
 import { CalcSheetComponent } from './calc-sheet.component';
-import { hubRows, hubSteps, modeBadge, STEP_FORMULAS, STEP_TITLES } from './calc-sheet.model';
+import { hubRows, hubSteps, modeBadge, stepFormula, STEP_TITLES } from './calc-sheet.model';
 import { ConditionsTabComponent, StationView } from './conditions-tab.component';
 import { DistanceTabComponent } from './distance-tab.component';
 import { DopeTabComponent } from './dope-tab.component';
@@ -17,6 +17,7 @@ import {
   contributionText,
   correctionLine,
   dopeHeadingText,
+  millingResultText,
   dopeTable,
   FACTOR_NAMES,
   factorDetail,
@@ -83,7 +84,7 @@ const MODEL_TEXTS = text.notebook.model;
             }
           }
           @case ('distance') {
-            <or-distance-tab [knownText]="state.knownDistance" [gongMil]="state.gongMil" [resultText]="state.millingResult" [isManual]="state.isManual" (measure)="measureRange($event)" />
+            <or-distance-tab [formula]="state.distanceFormula" [knownText]="state.knownDistance" [gongMil]="state.gongMil" [resultText]="state.millingResult" [isManual]="state.isManual" (measure)="measureRange($event)" />
           }
           @case ('conditions') {
             <or-conditions-tab [system]="unitSystem()" [reading]="state.station" [correctionText]="state.conditionsCorrection" [stepLinkText]="state.isManual ? texts.toAtmosphere : null" (measure)="measure.emit($event)" (toStep)="openStep('atmosphere')" />
@@ -92,7 +93,7 @@ const MODEL_TEXTS = text.notebook.model;
             <or-wind-tab [system]="unitSystem()" [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? (state.hasZones ? texts.toZones : texts.toWind) : null" [showShares]="state.isEasy" [zones]="state.zones" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
           }
           @case ('dope') {
-            <or-dope-tab [heading]="state.dopeHeading" [rows]="state.dopeRows" />
+            <or-dope-tab [heading]="state.dopeHeading" [rows]="state.dopeRows" [system]="unitSystem()" />
           }
         }
       </div>
@@ -192,7 +193,7 @@ export class NotebookSheetComponent {
     }));
     const reticleMil = notebook.readings.reticleMil;
     const isManual = notebook.mode !== 'auto';
-    const formulaLines: FormulaLine[] = hubSteps(notebook).map(step => ({ title: STEP_TITLES[step], formula: STEP_FORMULAS[step] }));
+    const formulaLines: FormulaLine[] = hubSteps(notebook).map(step => ({ title: STEP_TITLES[step], formula: stepFormula(step, system) }));
     return {
       isManual,
       isEasy: notebook.mode === 'manual-easy',
@@ -205,12 +206,13 @@ export class NotebookSheetComponent {
       needsReferenceConfirm: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference,
       filled: { total: filled.total, distance: filled.distance, conditions: filled.conditions, wind: filled.wind, dope: filled.dope } as Record<NotebookTab, boolean>,
       factorRows,
+      distanceFormula: stepFormula('distance', system),
       knownDistance: notebook.context.target.distanceM === null ? null : knownDistanceText(notebook.context.target.distanceM, system),
       gongMil: (target.diameterM * 1000) / target.distanceM,
       millingResult:
         reticleMil === null || notebook.distanceM === null
           ? null
-          : texts.millingResult({ sizeM: notebook.context.target.sizeM, reticleMil, distanceM: Math.round(notebook.distanceM) }),
+          : millingResultText(notebook.context.target.sizeM, reticleMil, notebook.distanceM, system),
       station: stationView,
       conditionsCorrection: correctionLine('conditions', factors.conditions),
       wind: wind as WindInput | null,

@@ -15,6 +15,7 @@ beforeAll(async () => {
   cards = new Map([
     ['B', await buildDopeCard(engine, courseLoadout('B'), 0.1)],
     ['C', await buildDopeCard(engine, courseLoadout('C'), 0.1)],
+    ['B-imperial', await buildDopeCard(engine, courseLoadout('B'), 0.1, 'imperial')],
   ]);
 });
 
@@ -65,8 +66,8 @@ describe('chips and tape', () => {
     expect(chipText({ kind: 'crosswind', value: 3.2, group: 'instruments' }, 300)).toEqual({ value: '3,2', source: 'V⊥ после часов' });
     expect(chipText({ kind: 'wind-constant', value: 1610, group: 'cartridge' }, 300)).toEqual({ value: '1610', source: 'K строка 300 м' });
     expect(chipText({ kind: 'distance', value: 300, group: 'instruments' }, 300)).toEqual({ value: '300 м', source: 'D' });
-    expect(chipText({ kind: 'temperature', value: -5, group: 'instruments' }, 600)).toEqual({ value: '−5 C', source: 'T станция' });
-    expect(chipText({ kind: 'temperature', value: 17.7, group: 'instruments' }, 600).value).toBe('17,7 C');
+    expect(chipText({ kind: 'temperature', value: -5, group: 'instruments' }, 600)).toEqual({ value: '−5 °C', source: 'T станция' });
+    expect(chipText({ kind: 'temperature', value: 17.7, group: 'instruments' }, 600).value).toBe('17,7 °C');
   });
 
   it('T0.4c: a fractional target size reads with a comma; the wind constant between rows reads whole', () => {
@@ -206,5 +207,42 @@ describe('шаги угла, деривации и Кориолиса в лис�
 
   it('лента угла — три строки', () => {
     expect(tapeLabels(withGeometry({ lookAngleDeg: 15, coriolis: null, isSpinDriftOn: false }), 'angle')).toEqual(['ВЕРТ + Z =', '× cos =', '− Z =']);
+  });
+});
+
+describe('лист расчёта в имперских (T1.8b)', () => {
+  const imperialAt = (distanceM: number | null, mode: NotebookMode = 'manual-easy'): Notebook =>
+    createNotebook({ card: cards.get('B-imperial')!, scope, target: { sizeM: 0.5, distanceM }, hasZones: false, canTakeWindFromStation: false, seed: 3 }, mode);
+
+  it('фишки: ярды, дюймы, °F, дюймы рт. ст.; источник K — строка в ярдах', () => {
+    expect(chipText({ kind: 'distance', value: 600, group: 'instruments' }, 548.64, 'imperial')).toEqual({ value: '600 ярдов', source: 'D' });
+    expect(chipText({ kind: 'target-size', value: 19.685, group: 'instruments' }, null, 'imperial').value).toBe('19,7 дюйма');
+    expect(chipText({ kind: 'temperature', value: 23, group: 'instruments' }, 548.64, 'imperial').value).toBe('23 °F');
+    expect(chipText({ kind: 'pressure', value: 30.416, group: 'instruments' }, 548.64, 'imperial').value).toBe('30,42 дюйма рт. ст.');
+    expect(chipText({ kind: 'wind-constant', value: 3940, group: 'cartridge' }, 548.64, 'imperial')).toEqual({ value: '3940', source: 'K строка 600 ярдов' });
+    expect(chipText({ kind: 'colder-column', value: 0.03, group: 'cartridge' }, 548.64, 'imperial').source).toBe('холоднее на 10 °F строка 600 ярдов');
+    expect(chipText({ kind: 'pressure-column', value: 0.02, group: 'cartridge' }, 548.64, 'imperial').source).toBe('давление +0,3 дюйма рт. ст. строка 600 ярдов');
+  });
+
+  it('шаблоны: миллинг × 27,78, условия от 59 °F и 29,92, упреждение 488,9', () => {
+    expect(tokenText(imperialAt(null), 'distance')).toBe('Д = [размер] × 27,78 / [MIL]');
+    const atmosphere = tokenText(recordStation(imperialAt(548.64), { temperatureC: -5, pressureHpa: 1030, relativeHumidity: 0.5, windSpeedMps: 3, windClock: 9 }, 3, 0), 'atmosphere');
+    expect(atmosphere).toMatch(/^ΔВЕРТ = \(59 − \[T\]\) \/ 10 × \d,\d\d \+ \(\[P\] − 29,92\) \/ 0,3 × \d,\d\d$/);
+  });
+
+  it('ленты и формулы шагов в имперских; метрика — прежние', () => {
+    expect(tapeLabels(imperialAt(548.64), 'lead')).toEqual(['V⊥ × t =', '× 488,9 ÷ D =', 'до клика 0,1 =']);
+    expect(tapeLabels(notebookAt(600), 'lead')).toEqual(['V⊥ × t =', '÷ D × 1000 =', 'до клика 0,1 =']);
+    const rows = hubRows(imperialAt(null));
+    expect(rows.find(row => row.step === 'distance')!.formula).toBe('Д = размер″ × 27,78 / MIL');
+    expect(rows.find(row => row.step === 'wind')!.formula).toBe('W = V⊥ (mph) × D (ярды) / K');
+    expect(hubRows(notebookAt(null)).find(row => row.step === 'distance')!.formula).toBe('Д = размер × 1000 / MIL');
+  });
+
+  it('записанная дистанция и недостающий флажок — в ярдах', () => {
+    let notebook = placeChip(placeChip(imperialAt(null), 'distance', 'target-size'), 'distance', 'reticle-mil');
+    expect(missingInput(notebook, 'distance')).not.toBeNull();
+    notebook = recordStep(typeTape(placeChip(placeChip(imperialAt(null), 'distance', 'target-size'), 'distance', 'reticle-mil'), 'distance', 0, 438), 'distance');
+    expect(hubRows(notebook).find(row => row.step === 'distance')!.valueText).toBe('438 ярдов');
   });
 });

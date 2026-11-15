@@ -79,8 +79,8 @@ describe('dopeRowAt', () => {
     expect(at350.elevationMil).toBeCloseTo((at300.elevationMil + at400.elevationMil) / 2, 6);
     expect(at350.timeOfFlightS).toBeCloseTo((at300.timeOfFlightS + at400.timeOfFlightS) / 2, 6);
     expect(at350.windConstant).toBeCloseTo((at300.windConstant + at400.windConstant) / 2, 6);
-    expect(at350.colderBy10CMil).toBeCloseTo((at300.colderBy10CMil + at400.colderBy10CMil) / 2, 6);
-    expect(at350.pressureUp10HpaMil).toBeCloseTo((at300.pressureUp10HpaMil + at400.pressureUp10HpaMil) / 2, 6);
+    expect(at350.colderStepMil).toBeCloseTo((at300.colderStepMil + at400.colderStepMil) / 2, 6);
+    expect(at350.pressureStepMil).toBeCloseTo((at300.pressureStepMil + at400.pressureStepMil) / 2, 6);
   });
 
   it('returns exact rows at 100 and 1000 m', () => {
@@ -139,8 +139,8 @@ describe('game formulas against the engine', () => {
 
   it('colder air and higher pressure mean more elevation, standard air means none', () => {
     const row = dopeRowAt(card('B'), 600);
-    expect(row.colderBy10CMil).toBeGreaterThan(0);
-    expect(row.pressureUp10HpaMil).toBeGreaterThan(0);
+    expect(row.colderStepMil).toBeGreaterThan(0);
+    expect(row.pressureStepMil).toBeGreaterThan(0);
     expect(atmosphereCorrectionMil(row, STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA)).toBe(0);
   });
 });

@@ -174,7 +174,7 @@ describe('journal — statistics', () => {
 
 describe('journal — cards and achievements', () => {
   it('the factory row in ink and the player note beside it', () => {
-    const card: DopeCard = { cartridgeId: 'B', clickMil: 0.1, zeroAngleMil: 0, rows: [300, 400].map(distanceM => ({ distanceM, elevationMil: distanceM / 200, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0 })) as unknown as DopeCard['rows'] };
+    const card: DopeCard = { cartridgeId: 'B', clickMil: 0.1, zeroAngleMil: 0, rows: [300, 400].map(distanceM => ({ distanceM, elevationMil: distanceM / 200, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderStepMil: 0 })) as unknown as DopeCard['rows'] };
     const [view] = cardsView([card], { B: [{ distanceM: 400, elevationMil: 2.2 }] });
     expect(view.title).toBe('Патрон Б');
     expect(view.rows).toEqual([
@@ -208,7 +208,7 @@ describe('журнал в имперских единицах (T1.8a)', () => {
   it('статистика: подписи дистанций в ярдах; карточки: колонка дистанции в ярдах', () => {
     const shots = Array.from({ length: 10 }, () => shot({ distanceM: 310 }));
     expect(statsView([series({ shots })], 'imperial').byDistance.filter(bar => bar.count > 0).map(bar => bar.label)).toEqual(['328']);
-    const card = { cartridgeId: 'B', cartridgeName: 'Патрон Б', zeroM: 100, clickMil: 0.1, zeroAngleMil: 0, rows: [300].map(distanceM => ({ distanceM, elevationMil: 1.5, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0 })) } as unknown as DopeCard;
+    const card = { cartridgeId: 'B', cartridgeName: 'Патрон Б', zeroM: 100, clickMil: 0.1, zeroAngleMil: 0, rows: [300].map(distanceM => ({ distanceM, elevationMil: 1.5, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderStepMil: 0 })) } as unknown as DopeCard;
     expect(cardsView([card], {}, 'imperial')[0].rows[0].distance).toBe('328');
   });
 });

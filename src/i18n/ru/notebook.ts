@@ -8,7 +8,6 @@ const POINT_FORMS: PluralForms = ['очко', 'очка', 'очков'];
 const FORMULAS = 'Формулы';
 const CLICK_TEXT_SCALE = 10_000;
 
-const meters = (p: { distanceM: number }) => `${decimal(p.distanceM)} м`;
 const lookAngleText = (lookAngleDeg: number) => `∠ ${lookAngleDeg > 0 ? '+' : '−'}${Math.abs(lookAngleDeg)}°`;
 const latitudeText = (latitudeDeg: number) => `${Math.abs(latitudeDeg)}° ${latitudeDeg >= 0 ? 'с. ш.' : 'ю. ш.'}`;
 const azimuthText = (azimuthDeg: number) => `аз. ${azimuthDeg}°`;
@@ -39,7 +38,7 @@ export const notebook = {
     correction: (p: { arrow: string; mil: number; clicks: number }) => `поправка ${p.arrow}${decimal(p.mil, 2)} MIL · ${p.clicks} кл.`,
     clock: (p: { hours: number; isHalfHour: boolean }) => (p.isHalfHour ? `${p.hours}:30` : `${p.hours} ч`),
     distanceNotMeasured: 'дистанция не измерена',
-    dopeDetail: (p: { distanceM: number; elevationMil: number }) => `строка ${p.distanceM} м карточки: ↑ ${decimal(p.elevationMil, 1)}`,
+    dopeDetail: (p: { distance: string; elevationMil: number }) => `строка ${p.distance} карточки: ↑ ${decimal(p.elevationMil, 1)}`,
     noStationReading: 'нет замера',
     windNotEntered: 'ветер не введён',
     windReading,
@@ -71,7 +70,6 @@ export const notebook = {
       coriolis: 'Кориолис',
       eotvos: 'Этвёш',
     } satisfies Record<NotebookStepId, string>,
-    tapeUnits: { distance: 'м', zones: 'м/с' } satisfies Partial<Record<NotebookStepId, string>>,
     stepFormulas: {
       distance: 'Д = размер × 1000 / MIL',
       dope: 'ВЕРТ по строке карточки',
@@ -84,6 +82,12 @@ export const notebook = {
       coriolis: 'К = 0,0729 × t × sin широты',
       eotvos: 'Э = 0,0729 × t × cos широты × sin азимута',
     } satisfies Record<NotebookStepId, string>,
+    stepFormulasImperial: {
+      distance: 'Д = размер″ × 27,78 / MIL',
+      atmosphere: 'ΔВЕРТ = (59 − T) / 10 × холоднее + (P − 29,92) / 0,3 × давление',
+      wind: 'W = V⊥ (mph) × D (ярды) / K',
+      lead: 'L = 488,9 × V⊥ цели × t / D',
+    } satisfies Partial<Record<NotebookStepId, string>>,
     slotLabels: {
       'target-size': 'размер',
       'reticle-mil': 'MIL',
@@ -139,7 +143,7 @@ export const notebook = {
       crosswind: 'сначала введи ветер на вкладке «Ветер»',
       'zone-station': 'сначала введи ветер на вкладке «Ветер»',
     } satisfies Partial<Record<ChipKind, string>>,
-    missingFlag: (p: { distanceM: number }) => `сначала тапни флажок ${p.distanceM} м в стекле`,
+    missingFlag: (p: { distance: string }) => `сначала тапни флажок ${p.distance} в стекле`,
     missingData: 'нет данных для шага',
     modeNames: { auto: 'АВТО', 'manual-easy': 'САМ · ЛЁГКИЙ', 'manual-hard': 'САМ · СЛОЖНЫЙ' } satisfies Record<NotebookMode, string>,
     notRecorded: 'не записано',
@@ -147,10 +151,8 @@ export const notebook = {
     recordedWithHint: (p: { hint: string }) => `записано · ${p.hint}`,
     windFromLeft: 'слева',
     windFromRight: 'справа',
-    chipRow: (p: { distanceM: number }) => ` строка ${p.distanceM} м`,
-    meters,
+    chipRow: (p: { distance: string }) => ` строка ${p.distance}`,
     seconds: (p: { seconds: number }) => `${decimal(p.seconds, 2)} с`,
-    pressure: (p: { pressureHpa: number }) => `${p.pressureHpa} гПа`,
     chipSources: {
       neighborDistance: 'D соседней цели',
       targetSize: 'размер цели',
@@ -165,8 +167,8 @@ export const notebook = {
       targetSpeed: 'V цели',
       neighborTime: 't соседней строки',
     },
-    colderColumnSource: (p: { row: string }) => `холоднее на 10 °C${p.row}`,
-    pressureColumnSource: (p: { row: string }) => `давление +10 гПа${p.row}`,
+    colderColumnSource: (p: { step: string; row: string }) => `холоднее на ${p.step}${p.row}`,
+    pressureColumnSource: (p: { step: string; row: string }) => `давление +${p.step}${p.row}`,
     flagBehindBermSource: (p: { distanceText: string }) => `флажок ${p.distanceText} м за валом`,
     flagSource: (p: { distanceText: string }) => `V⊥ флажок ${p.distanceText} м`,
     roundToClick: (p: { clickMil: number }) => `до клика ${decimal(Math.round(p.clickMil * CLICK_TEXT_SCALE) / CLICK_TEXT_SCALE)} =`,
@@ -199,7 +201,7 @@ export const notebook = {
     },
     templateDistance: 'Д = ',
     templateDope: 'ВЕРТ = строка карточки на ',
-    templateAtmosphere: 'ΔВЕРТ = (15 − ',
+    templateAtmosphere: (p: { standardTemperature: string }) => `ΔВЕРТ = (${p.standardTemperature} − `,
     templateZones: 'V⊥ср = ',
   },
   formulas: {
@@ -236,9 +238,10 @@ export const notebook = {
     elevation: 'Верт',
     clicks: 'Кл.',
     windConstantTitle: 'константа ветра',
-    colderTitle: 'холоднее на 10 °C',
-    pressureTitle: 'давление +10 гПа',
-    pressure: '+10 гПа',
+    columns: {
+      metric: { colder: '−10 °C', colderTitle: 'холоднее на 10 °C', pressure: '+10 гПа', pressureTitle: 'давление +10 гПа' },
+      imperial: { colder: '−10 °F', colderTitle: 'холоднее на 10 °F', pressure: '+0,3″', pressureTitle: 'давление +0,3 дюйма рт. ст.' },
+    },
     notesTitle: 'мои заметки',
     notes: 'Заметки',
   },
@@ -282,7 +285,7 @@ export const notebook = {
     toZones: 'к расчёту: шаг Ветер по зонам →',
     toWind: 'к расчёту: шаг Ветер →',
     knownDistance: (p: { distance: string }) => `Дистанция ${p.distance} · задана упражнением`,
-    millingResult: (p: { sizeM: number; reticleMil: number; distanceM: number }) => `Д = ${decimal(p.sizeM)} × 1000 / ${decimal(p.reticleMil, 2)} = ${p.distanceM} м`,
+    millingResult: (p: { size: string; factor: string; reticleMil: number; distance: string }) => `Д = ${p.size} × ${p.factor} / ${decimal(p.reticleMil, 2)} = ${p.distance}`,
     windCaption: (p: { reading: string }) => `ветер ${p.reading}`,
     windCaptionEmpty: 'тяни стрелку к часу, откуда дует',
     stationWind: (p: { speed: string; time: string }) => `станция: ${p.speed} · ${p.time}`,

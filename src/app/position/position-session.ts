@@ -52,6 +52,7 @@ import {
   typeTape,
 } from '../../sim/notebook';
 import { scopeById, TurretMove } from '../../sim/scope-model';
+import { UnitSystem } from '../../core/units';
 import { FireOutcome, ScopeSession } from '../../sim/scope-session';
 import { callFromHeldLead, diagnoseShot, dopeNoteElevationMil, isCallAccurate, isLeadBackward, secondShotCorrection, ShotDiagnosis, TurretCorrection, warmImpact } from '../../sim/shot-review';
 import { TriggerAccessibility } from '../../sim/trigger';
@@ -66,6 +67,7 @@ export interface PositionStart {
   engine: BallisticsEngine;
   accessibility: TriggerAccessibility;
   recalcNotebook?: Notebook;
+  unitSystem?: UnitSystem;
 }
 
 export interface ShotCheck {
@@ -157,7 +159,7 @@ export class PositionSession {
     const cards = new Map<CartridgeId, DopeCard>();
     const turretClickMil = (options.def.rifle?.scope ?? scopeById(options.def.scopeId)).clickMrad;
     for (const cartridgeId of cartridgeIds) {
-      cards.set(cartridgeId, await buildDopeCard(options.engine, options.def.rifle?.loadout ?? courseLoadout(cartridgeId), turretClickMil));
+      cards.set(cartridgeId, await buildDopeCard(options.engine, options.def.rifle?.loadout ?? courseLoadout(cartridgeId), turretClickMil, options.unitSystem));
     }
     const scenario = createScenario(options.seed, setup.scenarioOptions);
     return new PositionSession(options.def, setup, scenario, cards, options.engine, options.accessibility, options.recalcNotebook);

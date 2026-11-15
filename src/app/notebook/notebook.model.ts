@@ -3,8 +3,16 @@ import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { windClockShare } from '../../core/field';
 import { text } from '../../i18n';
 import { decimal } from '../../i18n/format';
-import { atmosphereCorrectionMil, crosswindMps, windCorrectionMil } from '../../core/game-formulas';
-import { DopeCard, dopeRowAt } from '../../core/dope-card';
+import {
+  atmosphereCorrectionMil,
+  atmosphereCorrectionMilImperial,
+  crosswindMps,
+  imperialWindConstant,
+  STANDARD_PRESSURE_INHG,
+  STANDARD_TEMPERATURE_F,
+  windCorrectionMil,
+} from '../../core/game-formulas';
+import { DopeCard, DopeRow, dopeRowAt } from '../../core/dope-card';
 import { CartridgeId } from '../../core/types';
 import { fromInput, inSystem, UnitSystem } from '../../core/units';
 import { ExerciseShotRecord } from '../../sim/course';
@@ -20,8 +28,8 @@ export interface DopeTableRow {
   clicks: string;
   timeOfFlight: string;
   windConstant: string;
-  colderBy10C: string;
-  pressureUp10Hpa: string;
+  colderStep: string;
+  pressureStep: string;
   note: string;
   isCurrent: boolean;
 }
@@ -33,6 +41,10 @@ export interface ZoneTable {
 
 const T = text.notebook.model;
 const SPEED_DIGITS = 1;
+const PRESSURE_HUNDREDTHS = 100;
+const TARGET_SIZE_TENTHS = 10;
+const IMPERIAL_MILLING_FACTOR_TEXT = '27,78';
+const METRIC_MILLING_FACTOR_TEXT = '1000';
 const DISTANCE_DIGITS = 0;
 const STATION_TEMPERATURE_DIGITS = 0;
 const STATION_PRESSURE_DIGITS: Record<UnitSystem, number> = { metric: 0, imperial: 2 };
@@ -130,6 +142,31 @@ export function clockText(clock: number): string {
   return T.clock({ hours, isHalfHour: !Number.isInteger(clock) });
 }
 
+function conditionsDetail(row: DopeRow, temperatureC: number, pressureHpa: number, system: UnitSystem): string {
+  if (system === 'imperial') {
+    const temperatureF = Math.round(inSystem('temperature', temperatureC, system));
+    const pressureInHg = Math.round(inSystem('pressure', pressureHpa, system) * PRESSURE_HUNDREDTHS) / PRESSURE_HUNDREDTHS;
+    const mil = atmosphereCorrectionMilImperial(row, temperatureF, pressureInHg);
+    return `(${STANDARD_TEMPERATURE_F} − ${decimal(temperatureF)}) / 10 × ${decimal(row.colderStepMil, 2)} + (${decimal(pressureInHg, 2)} − ${decimal(STANDARD_PRESSURE_INHG, 2)}) / 0,3 × ${decimal(row.pressureStepMil, 2)} = ${mil < 0 ? '↓' : '↑'} ${decimal(Math.abs(mil), 2)}`;
+  }
+  const mil = atmosphereCorrectionMil(row, temperatureC, pressureHpa);
+  return `(15 − ${decimal(temperatureC)}) / 10 × ${decimal(row.colderStepMil, 2)} + (${pressureHpa} − 1013) / 10 × ${decimal(row.pressureStepMil, 2)} = ${mil < 0 ? '↓' : '↑'} ${decimal(Math.abs(mil), 2)}`;
+}
+
+export function dopeColumnHeaders(system: UnitSystem): { colder: string; colderTitle: string; pressure: string; pressureTitle: string } {
+  return text.notebook.dopeTab.columns[system];
+}
+
+export function millingResultText(sizeM: number, reticleMil: number, distanceM: number, system: UnitSystem): string {
+  const isImperial = system === 'imperial';
+  return SHEET_TEXTS.millingResult({
+    size: isImperial ? decimal(Math.round(inSystem('targetSize', sizeM, system) * TARGET_SIZE_TENTHS) / TARGET_SIZE_TENTHS) : decimal(sizeM),
+    factor: isImperial ? IMPERIAL_MILLING_FACTOR_TEXT : METRIC_MILLING_FACTOR_TEXT,
+    reticleMil,
+    distance: UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS),
+  });
+}
+
 export function stepSpeed(speedMps: number, steps: number, system: UnitSystem = 'metric'): number {
   const shown = Math.round(inSystem('windSpeed', speedMps, system) * SPEED_DECIMALS) / SPEED_DECIMALS;
   const next = Math.round((shown + steps * SPEED_STEP_MPS) * SPEED_DECIMALS) / SPEED_DECIMALS;
@@ -205,9 +242,9 @@ export function dopeTable(card: DopeCard, distanceM: number | null, noteTexts: R
     elevation: decimal(row.elevationMil, 1),
     clicks: String(row.clicks),
     timeOfFlight: decimal(row.timeOfFlightS, 2),
-    windConstant: String(row.windConstant),
-    colderBy10C: decimal(row.colderBy10CMil, 2),
-    pressureUp10Hpa: decimal(row.pressureUp10HpaMil, 2),
+    windConstant: String(card.system === 'imperial' ? imperialWindConstant(row.windConstant) : row.windConstant),
+    colderStep: decimal(row.colderStepMil, 2),
+    pressureStep: decimal(row.pressureStepMil, 2),
     note: noteTexts.get(row.distanceM) ?? '—',
     isCurrent: row.distanceM === nearest,
   }));
@@ -238,27 +275,26 @@ export function factorDetail(notebook: Notebook, factor: NotebookFactor): string
     return T.distanceNotMeasured;
   }
   const row = dopeRowAt(card, distanceM);
-  const distanceText = String(Math.round(distanceM));
+  const system = card.system;
+  const distanceText = UNITS.numberText('distance', distanceM, system, DISTANCE_DIGITS);
   switch (factor) {
     case 'dope':
-      return T.dopeDetail({ distanceM: Math.round(distanceM), elevationMil: row.elevationMil });
+      return T.dopeDetail({ distance: UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS), elevationMil: row.elevationMil });
     case 'conditions': {
       const station = notebook.readings.station;
-      if (!station) {
-        return T.noStationReading;
-      }
-      const mil = atmosphereCorrectionMil(row, station.temperatureC, station.pressureHpa);
-      return `(15 − ${decimal(station.temperatureC)}) / 10 × ${decimal(row.colderBy10CMil, 2)} + (${station.pressureHpa} − 1013) / 10 × ${decimal(row.pressureUp10HpaMil, 2)} = ${mil < 0 ? '↓' : '↑'} ${decimal(Math.abs(mil), 2)}`;
+      return station ? conditionsDetail(row, station.temperatureC, station.pressureHpa, system) : T.noStationReading;
     }
     case 'wind': {
       const wind = notebook.readings.wind;
       if (!wind) {
         return T.windNotEntered;
       }
-      const crosswind = crosswindMps(wind.speedMps, wind.clock);
-      const mil = windCorrectionMil(wind.speedMps, wind.clock, distanceM, row.windConstant);
+      const speed = inSystem('windSpeed', wind.speedMps, system);
+      const windConstant = system === 'imperial' ? imperialWindConstant(row.windConstant) : row.windConstant;
+      const crosswind = crosswindMps(speed, wind.clock);
+      const mil = windCorrectionMil(speed, wind.clock, inSystem('distance', distanceM, system), windConstant);
       const side = mil === 0 ? '' : mil < 0 ? '← ' : '→ ';
-      return `${windReadingText(wind, 'metric')} · V⊥ ${decimal(crosswind, 1)} · W = V⊥ × ${distanceText} / ${row.windConstant} = ${side}${decimal(Math.abs(mil), 2)}`;
+      return `${windReadingText(wind, system)} · V⊥ ${decimal(crosswind, 1)} · W = V⊥ × ${distanceText} / ${windConstant} = ${side}${decimal(Math.abs(mil), 2)}`;
     }
     case 'lead':
       return T.leadDetail;

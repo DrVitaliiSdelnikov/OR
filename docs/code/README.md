@@ -112,3 +112,4 @@
 | sim/profile-dope · карточка ДОПЕ профиля (T1.6a) | [specs/core-profile-dope.md](specs/core-profile-dope.md) | реализовано, слито в `master` 16.11 |
 | app/rifle · экран «Винтовка», печать и экспорт ДОПЕ (T1.7, T1.6b) | [specs/app-rifle.md](specs/app-rifle.md) | реализовано, слито в `master` 16.11 |
 | app · единицы на экранах (T1.8a — показ) | [specs/app-units.md](specs/app-units.md) | T1.8a слита в `master` 16.11; T1.8b, T1.8c — впереди |
+| sim · расчёт САМ в имперских (T1.8b) | [specs/sim-units-calc.md](specs/sim-units-calc.md) | реализовано, слито в `master` 16.11 |

@@ -656,6 +656,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       seed,
       engine: this.engine,
       accessibility: { isZoneLarger: settings.isTriggerZoneLarger, isMarkerDriftOff: settings.isMarkerDriftOff },
+      unitSystem: settings.unitSystem,
     });
     this.startedAtMs = performance.now();
     this.seriesStartedAtIso = new Date().toISOString();

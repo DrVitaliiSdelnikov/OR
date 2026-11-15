@@ -233,9 +233,9 @@ const EXAMPLES: Partial<Record<TermId, TermExample>> = {
       cartridgeName: exampleCartridgeName(),
       ...ATMOSPHERE_EXAMPLE,
       colderTens: (STANDARD_TEMPERATURE_C - temperatureC) / ATMOSPHERE_COLUMN_STEP,
-      colderMil: row.colderBy10CMil,
+      colderMil: row.colderStepMil,
       pressureTens: (pressureHpa - STANDARD_PRESSURE_HPA) / ATMOSPHERE_COLUMN_STEP,
-      pressureMil: row.pressureUp10HpaMil,
+      pressureMil: row.pressureStepMil,
       correctionMil,
       clicks: clickCount(correctionMil),
     });

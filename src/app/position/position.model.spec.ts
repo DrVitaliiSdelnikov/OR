@@ -161,7 +161,7 @@ describe('the patrol on the position (A9.3b)', () => {
 
 describe('DOPE tile rounds like the calculation check (T0.4a)', () => {
   const row = (distanceM: number, elevationMil: number): DopeRow =>
-    ({ distanceM, elevationMil, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0, pressureUp10HpaMil: 0, zoneWeights: [1, 0, 0, 0], spinDriftMil: 0 });
+    ({ distanceM, elevationMil, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderStepMil: 0, pressureStepMil: 0, zoneWeights: [1, 0, 0, 0], spinDriftMil: 0 });
   const card: DopeCard = { cartridgeId: 'B', cartridgeName: 'Патрон Б', zeroM: 100, clickMil: 0.1, zeroAngleMil: 0, rows: [row(400, 2.8), row(500, 4.1)] };
 
   it('an interpolated 3,45 reads as the nearest click 3,5, not 3,4', () => {
@@ -190,7 +190,7 @@ describe('строка условий (T1.4b)', () => {
 describe('позиция в имперских единицах (T1.8a)', () => {
   const crosswise = { speedMps: 1.1, movementClock: 3, startOffsetM: -8.8, halfWidthM: 8.8 };
   const row = (distanceM: number, elevationMil: number): DopeRow =>
-    ({ distanceM, elevationMil, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0, pressureUp10HpaMil: 0, zoneWeights: [1, 0, 0, 0], spinDriftMil: 0 });
+    ({ distanceM, elevationMil, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderStepMil: 0, pressureStepMil: 0, zoneWeights: [1, 0, 0, 0], spinDriftMil: 0 });
   const card: DopeCard = { cartridgeId: 'B', cartridgeName: 'Патрон Б', zeroM: 100, clickMil: 0.1, zeroAngleMil: 0, rows: [row(400, 2.8), row(500, 4.1)] };
 
   it('ДИСТ — ярды; MIL на барабанах не меняются', () => {

@@ -49,6 +49,11 @@ export const units = {
     const number = quantity === 'temperature' ? signed(value, Math.max(digits, 0)) : decimal(value, Math.max(digits, 0));
     return `${number} ${unitNameFor(UNIT_NAMES[quantity][system], value)}`;
   },
+  unitName: (quantity: Quantity, system: UnitSystem, displayValue: number): string => unitNameFor(UNIT_NAMES[quantity][system], displayValue),
+  displayText: (quantity: Quantity, displayValue: number, system: UnitSystem, digits: number): string => {
+    const value = roundedTo(displayValue, digits);
+    return `${decimal(value, Math.max(digits, 0))} ${unitNameFor(UNIT_NAMES[quantity][system], value)}`;
+  },
   numberText: (quantity: Quantity, baseValue: number, system: UnitSystem, digits: number): string =>
     decimal(roundedTo(inSystem(quantity, baseValue, system), digits), Math.max(digits, 0)),
   rangeText: (quantity: Quantity, [lowBase, highBase]: readonly [number, number], system: UnitSystem): string => {

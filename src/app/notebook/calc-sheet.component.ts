@@ -4,7 +4,7 @@ import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { ChipKind, NotebookStepId, stepHasSide } from '../../sim/notebook';
 import { PositionSession } from '../position/position-session';
-import { DraftKey, editDraft, formulaTokens, hubSteps, missingInput, modeBadge, sideOptions, STEP_TITLES, TAPE_UNITS, tapeLabels } from './calc-sheet.model';
+import { DraftKey, editDraft, formulaTokens, hubSteps, missingInput, modeBadge, sideOptions, STEP_TITLES, tapeUnit, tapeLabels } from './calc-sheet.model';
 import { ChipTrayComponent } from './chip-tray.component';
 import { KeypadComponent } from './keypad.component';
 
@@ -80,7 +80,7 @@ const FORMULAS_TEXTS = text.notebook.formulas;
 
       <div class="device">
         @if (activeSlot() !== null) {
-          <or-chip-tray [chips]="state.chips" [usedKinds]="state.usedKinds" [awaitedKind]="state.awaitedKind" [isGrouped]="state.isGrouped" [distanceM]="state.distanceM" (pick)="pickChip($event)" />
+          <or-chip-tray [chips]="state.chips" [usedKinds]="state.usedKinds" [awaitedKind]="state.awaitedKind" [isGrouped]="state.isGrouped" [distanceM]="state.distanceM" [system]="state.system" (pick)="pickChip($event)" />
         } @else if (activeTape() !== null) {
           <or-keypad (press)="pressKey($event)" />
         } @else {
@@ -158,16 +158,17 @@ export class CalcSheetComponent {
       tokens: formulaTokens(notebook, step),
       tapeLabels: tapeLabels(notebook, step),
       tape,
-      unit: TAPE_UNITS[step] ?? (state.units === 'mil' ? 'MIL' : 'MOA'),
+      unit: tapeUnit(step, notebook.context.card.system) ?? (state.units === 'mil' ? 'MIL' : 'MOA'),
       sides: sideOptions(step),
       sign: state.sign,
-      hasUnits: TAPE_UNITS[step] === undefined,
+      hasUnits: tapeUnit(step, notebook.context.card.system) === undefined,
       units: state.units,
       chips: sheet.chips,
       usedKinds: sheet.slots.flatMap(slot => (slot.placed ? [slot.placed] : [])),
       awaitedKind: activeSlot === null ? null : (sheet.slots[activeSlot]?.waitsFor ?? null),
       isGrouped: sheet.isGrouped,
       distanceM: notebook.distanceM,
+      system: notebook.context.card.system,
       formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? FORMULAS_TEXTS.withPenalty({ penalty: REFERENCE_PENALTY }) : FORMULAS_TEXTS.title,
       canRecord: sheet.slots.every(slot => slot.placed !== null) && lastValue !== null && lastValue !== undefined && !isSideMissing,
     };
