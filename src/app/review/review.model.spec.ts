@@ -10,6 +10,7 @@ import { scopeById } from '../../sim/scope-model';
 import { ShotCheck } from '../position/position-session';
 import { CauseKind, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
 import { Correction } from '../../core/types';
+import { flightAxisTexts } from './review.model';
 import { causesView, checkSheet, correctionText, diagnosisText, directionArrow, dopeNoteTexts, groupText, shotPointsText, targetPlaques, withDopeNote } from './review.model';
 
 const scope = scopeById('course-dot');
@@ -267,5 +268,25 @@ describe('groupText', () => {
     expect(groupText([at(-0.3, 0.3), at(-0.32, 0.28), at(-0.28, 0.31)], COURSE_RIFLE.groupSigmaMrad)).toBe('Низко-вправо — кисть, спуск');
     expect(groupText([at(0.4, 0), at(0.42, 0.02), at(0.38, -0.02)], COURSE_RIFLE.groupSigmaMrad)).toBe('Плотная, но не в центре — ноль прицела');
     expect(groupText([at(0.05, 0), at(-0.03, 0.02), at(0, -0.04)], COURSE_RIFLE.groupSigmaMrad)).toBe('Плотная группа — основы в порядке');
+  });
+});
+
+describe('разбор в имперских единицах (T1.8a)', () => {
+  it('проверка АВТО: скорость станции и игрока в миль/ч; фраза без единицы у игрока', () => {
+    let notebook = recordStation(notebookAt(600, 'auto'), { temperatureC: -5, pressureHpa: 1030, relativeHumidity: 0.5, windSpeedMps: 3.2, windClock: 9 }, 3, 0);
+    notebook = enterWind(notebook, 2.4, 9);
+    const sheet = checkSheet(snapshot(notebook, { trueWindClock: 9, dialedElevationClicks: 57, dialedWindageLeftClicks: 10 }), 'auto', 'imperial');
+    expect(sheet.rows[0]).toMatchObject({ player: '5,4 миль/ч', reference: '7,2 миль/ч' });
+    expect(sheet.mainError!.phrase).toBe('Станция показала 7,2 миль/ч, ты ввёл 5,4');
+  });
+
+  it('заметка «в ДОПЕ» между строками — с дистанцией в ярдах', () => {
+    const texts = dopeNoteTexts([{ distanceM: 450, elevationMil: 3.46 }], card, 'imperial');
+    expect(texts.get(500)).toBe('↑ 3,5 · 492 ярда');
+  });
+
+  it('траектория: ось в ярдах, масштаб в дюймах; метрика — метры и см', () => {
+    expect(flightAxisTexts(600, 30, true, 'imperial')).toEqual({ start: '0 ярдов', end: '656 ярдов', scale: '↑ выше · 11,8 дюйма' });
+    expect(flightAxisTexts(600, 30, false, 'metric')).toEqual({ start: '0 м', end: '600 м', scale: '↑ левее · 30 см' });
   });
 });

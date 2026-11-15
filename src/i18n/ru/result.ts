@@ -51,9 +51,7 @@ export const briefing = {
   best: (p: { stamp: string; total: number }) => `лучший: ${p.stamp} · ${p.total} очк.`,
   bestNotAdmitted: 'не зачтено',
   terms: (p: { terms: readonly string[] }) => `узнаешь: ${p.terms.join(' · ')}`,
-  fixedDistance: (p: { distanceM: number }) => `${p.distanceM} м`,
-  knownDistance: (p: { fromM: number; toM: number }) => `${p.fromM}–${p.toM} м`,
-  unknownDistance: (p: { fromM: number; toM: number }) => `${p.fromM}–${p.toM} м · неизвестно`,
+  unknownDistance: (p: { range: string }) => `${p.range} · неизвестно`,
   mode: (p: { label: string; multiplier: number }) => `${p.label} × ${decimal(p.multiplier, 1)}`,
   noMode: '—',
 };

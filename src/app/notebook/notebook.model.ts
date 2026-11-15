@@ -1,4 +1,4 @@
-import { FLAG_DISTANCES_M, isCourseCartridgeId } from '../../core/content';
+import { FLAG_DISTANCES_M, isCourseCartridgeId, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
 import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { windClockShare } from '../../core/field';
 import { text } from '../../i18n';
@@ -6,6 +6,7 @@ import { decimal } from '../../i18n/format';
 import { atmosphereCorrectionMil, crosswindMps, windCorrectionMil } from '../../core/game-formulas';
 import { DopeCard, dopeRowAt } from '../../core/dope-card';
 import { CartridgeId } from '../../core/types';
+import { fromInput, inSystem, UnitSystem } from '../../core/units';
 import { ExerciseShotRecord } from '../../sim/course';
 import { FactorContribution, factorContributions, geometryOf, Notebook, NotebookFactor, NotebookTotal } from '../../sim/notebook';
 import { formatScopeValue, isHoldoverSettled, MRAD_PER_MOA, ScopeModel } from '../../sim/scope-model';
@@ -14,6 +15,7 @@ export type NotebookTab = 'total' | 'distance' | 'conditions' | 'wind' | 'dope';
 
 export interface DopeTableRow {
   distanceM: number;
+  distance: string;
   elevation: string;
   clicks: string;
   timeOfFlight: string;
@@ -30,7 +32,16 @@ export interface ZoneTable {
 }
 
 const T = text.notebook.model;
-const ZONE_LABELS = [T.zoneStation, ...FLAG_DISTANCES_M.map(distanceM => T.meters({ distanceM }))];
+const SPEED_DIGITS = 1;
+const DISTANCE_DIGITS = 0;
+const STATION_TEMPERATURE_DIGITS = 0;
+const STATION_PRESSURE_DIGITS: Record<UnitSystem, number> = { metric: 0, imperial: 2 };
+const UNITS = text.units;
+const SHEET_TEXTS = text.notebook.notebookSheet;
+const MAX_WIND_SPEED_DISPLAY: Record<UnitSystem, number> = { metric: 15, imperial: 33.5 };
+const WHEEL_NEIGHBORS = 2;
+const WHEEL_FADE_PER_ROW = 0.3;
+const WHEEL_EDGE_EPSILON = 1e-9;
 const TAB_ORDER: readonly NotebookTab[] = ['total', 'distance', 'conditions', 'wind', 'dope'];
 
 export const NOTEBOOK_TABS: readonly { id: NotebookTab; label: string }[] = TAB_ORDER.map(id => ({ id, label: T.tabs[id] }));
@@ -119,16 +130,78 @@ export function clockText(clock: number): string {
   return T.clock({ hours, isHalfHour: !Number.isInteger(clock) });
 }
 
-export function stepSpeed(speedMps: number, steps: number): number {
-  const next = Math.round((speedMps + steps * SPEED_STEP_MPS) * SPEED_DECIMALS) / SPEED_DECIMALS;
-  return Math.min(MAX_WIND_SPEED_MPS, Math.max(0, next));
+export function stepSpeed(speedMps: number, steps: number, system: UnitSystem = 'metric'): number {
+  const shown = Math.round(inSystem('windSpeed', speedMps, system) * SPEED_DECIMALS) / SPEED_DECIMALS;
+  const next = Math.round((shown + steps * SPEED_STEP_MPS) * SPEED_DECIMALS) / SPEED_DECIMALS;
+  const clamped = Math.min(MAX_WIND_SPEED_DISPLAY[system], Math.max(0, next));
+  return system === 'metric' ? clamped : fromInput('windSpeed', clamped, system);
 }
 
-export function dopeTable(card: DopeCard, distanceM: number | null, noteTexts: ReadonlyMap<number, string> = new Map()): DopeTableRow[] {
+export function speedWheelRows(speedMps: number | null, system: UnitSystem): { offset: number; text: string; opacity: number }[] {
+  return Array.from({ length: WHEEL_NEIGHBORS * 2 + 1 }, (_, index) => {
+    const offset = index - WHEEL_NEIGHBORS;
+    if (speedMps === null) {
+      return { offset, text: offset === 0 ? '—' : '', opacity: 1 };
+    }
+    const value = Math.round(inSystem('windSpeed', speedMps, system) * SPEED_DECIMALS) / SPEED_DECIMALS + offset * SPEED_STEP_MPS;
+    const isOutside = value < -WHEEL_EDGE_EPSILON || value > MAX_WIND_SPEED_DISPLAY[system] + WHEEL_EDGE_EPSILON;
+    return { offset, text: isOutside ? '' : decimal(value, SPEED_DIGITS), opacity: 1 - Math.abs(offset) * WHEEL_FADE_PER_ROW };
+  });
+}
+
+export function maxWheelSpeed(system: UnitSystem): number {
+  return MAX_WIND_SPEED_DISPLAY[system];
+}
+
+export function stationTexts(station: { temperatureC: number; pressureHpa: number; windSpeedMps: number }, system: UnitSystem): { temperature: string; pressure: string; wind: string } {
+  return {
+    temperature: UNITS.valueText('temperature', station.temperatureC, system, STATION_TEMPERATURE_DIGITS),
+    pressure: UNITS.valueText('pressure', station.pressureHpa, system, STATION_PRESSURE_DIGITS[system]),
+    wind: UNITS.valueText('windSpeed', station.windSpeedMps, system, SPEED_DIGITS),
+  };
+}
+
+export function stationWindText(speedMps: number, time: string, system: UnitSystem): string {
+  return SHEET_TEXTS.stationWind({ speed: UNITS.valueText('windSpeed', speedMps, system, SPEED_DIGITS), time });
+}
+
+export function knownDistanceText(distanceM: number, system: UnitSystem): string {
+  return SHEET_TEXTS.knownDistance({ distance: UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS) });
+}
+
+export function windReadingText(wind: { speedMps: number; clock: number }, system: UnitSystem): string {
+  return T.windReading({ speed: UNITS.valueText('windSpeed', wind.speedMps, system, SPEED_DIGITS), clock: clockText(wind.clock) });
+}
+
+export function windCaptionText(wind: { speedMps: number; clock: number } | null, system: UnitSystem): string {
+  return wind ? SHEET_TEXTS.windCaption({ reading: windReadingText(wind, system) }) : SHEET_TEXTS.windCaptionEmpty;
+}
+
+export function dopeHeadingText(card: DopeCard, system: UnitSystem): string {
+  return SHEET_TEXTS.dopeHeading({ cartridge: cartridgeLetter(card), zero: UNITS.valueText('distance', card.zeroM, system, DISTANCE_DIGITS), ...standardAtmosphereTexts(system) });
+}
+
+export function conditionsReferenceText(system: UnitSystem): string {
+  return text.notebook.conditionsTab.reference(standardAtmosphereTexts(system));
+}
+
+export function windFlagText(distanceM: number, readingText: string, system: UnitSystem): string {
+  return text.notebook.windTab.flag({ distance: UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS), text: readingText });
+}
+
+function standardAtmosphereTexts(system: UnitSystem): { temperature: string; pressure: string } {
+  return {
+    temperature: UNITS.valueText('temperature', STANDARD_TEMPERATURE_C, system, STATION_TEMPERATURE_DIGITS),
+    pressure: UNITS.valueText('pressure', STANDARD_PRESSURE_HPA, system, STATION_PRESSURE_DIGITS[system]),
+  };
+}
+
+export function dopeTable(card: DopeCard, distanceM: number | null, noteTexts: ReadonlyMap<number, string> = new Map(), system: UnitSystem = 'metric'): DopeTableRow[] {
   const nearest =
     distanceM === null ? null : card.rows.reduce((best, row) => (Math.abs(row.distanceM - distanceM) < Math.abs(best.distanceM - distanceM) ? row : best)).distanceM;
   return card.rows.map(row => ({
     distanceM: row.distanceM,
+    distance: UNITS.numberText('distance', row.distanceM, system, DISTANCE_DIGITS),
     elevation: decimal(row.elevationMil, 1),
     clicks: String(row.clicks),
     timeOfFlight: decimal(row.timeOfFlightS, 2),
@@ -185,7 +258,7 @@ export function factorDetail(notebook: Notebook, factor: NotebookFactor): string
       const crosswind = crosswindMps(wind.speedMps, wind.clock);
       const mil = windCorrectionMil(wind.speedMps, wind.clock, distanceM, row.windConstant);
       const side = mil === 0 ? '' : mil < 0 ? '← ' : '→ ';
-      return `${T.windReading({ speedMps: wind.speedMps, clock: clockText(wind.clock) })} · V⊥ ${decimal(crosswind, 1)} · W = V⊥ × ${distanceText} / ${row.windConstant} = ${side}${decimal(Math.abs(mil), 2)}`;
+      return `${windReadingText(wind, 'metric')} · V⊥ ${decimal(crosswind, 1)} · W = V⊥ × ${distanceText} / ${row.windConstant} = ${side}${decimal(Math.abs(mil), 2)}`;
     }
     case 'lead':
       return T.leadDetail;
@@ -220,29 +293,29 @@ function geometryFactorDetail(notebook: Notebook, factor: 'angle' | 'spin' | 'co
   }
 }
 
-export function zoneTable(notebook: Notebook): ZoneTable | null {
+export function zoneTable(notebook: Notebook, system: UnitSystem = 'metric'): ZoneTable | null {
   if (!notebook.context.hasZones) {
     return null;
   }
   const weights = notebook.distanceM === null ? null : dopeRowAt(notebook.context.card, notebook.distanceM).zoneWeights;
   const { flagCrosswindsMps, flagsBehindBerm } = notebook.readings;
   return {
-    weights: ZONE_LABELS.map((label, index) => ({ label, value: weights ? decimal(weights[index], 2) : '—' })),
+    weights: [T.zoneStation, ...FLAG_DISTANCES_M.map(flagDistanceM => UNITS.valueText('distance', flagDistanceM, system, DISTANCE_DIGITS))].map((label, index) => ({ label, value: weights ? decimal(weights[index], 2) : '—' })),
     flags: FLAG_DISTANCES_M.map((distanceM, index) => {
       if (flagsBehindBerm.includes(index)) {
         return { distanceM, text: T.flagBehindBerm, isRead: true };
       }
       const crosswindMps = flagCrosswindsMps?.[index] ?? null;
-      return crosswindMps === null ? { distanceM, text: T.flagUnread, isRead: false } : { distanceM, text: flagCrosswindText(crosswindMps), isRead: true };
+      return crosswindMps === null ? { distanceM, text: T.flagUnread, isRead: false } : { distanceM, text: flagCrosswindText(crosswindMps, system), isRead: true };
     }),
   };
 }
 
-export function flagCrosswindText(crosswindMps: number): string {
+export function flagCrosswindText(crosswindMps: number, system: UnitSystem = 'metric'): string {
   if (crosswindMps === 0) {
     return T.calm;
   }
-  return T.flagCrosswind({ crosswindMps });
+  return T.flagCrosswind({ speed: text.units.valueText('windSpeed', Math.abs(crosswindMps), system, SPEED_DIGITS), isFromLeft: crosswindMps > 0 });
 }
 
 const CLOCK_HOURS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];

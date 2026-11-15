@@ -1,5 +1,4 @@
 import { afterNextRender, Component, computed, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
-import { STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
 import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { backLayer } from '../services/back-stack.service';
@@ -15,21 +14,25 @@ import { FormulaLine, FormulasSheetComponent } from './formulas-sheet.component'
 import { DopeNote, dopeNoteTexts } from '../review/review.model';
 import { ManualHubComponent } from './manual-hub.component';
 import {
-  cartridgeLetter,
-  clockText,
   contributionText,
   correctionLine,
+  dopeHeadingText,
   dopeTable,
   FACTOR_NAMES,
   factorDetail,
+  knownDistanceText,
   LOCKED_TABS,
   NOTEBOOK_TABS,
   NotebookTab,
   rangeClockText,
   shotStrip,
+  stationTexts,
+  stationWindText,
   totalLine,
+  windCaptionText,
   zoneTable,
 } from './notebook.model';
+import { ProgressStore } from '../services/progress.store';
 import { FactorRow, TotalTabComponent } from './total-tab.component';
 import { WindInput, WindTabComponent } from './wind-tab.component';
 
@@ -83,10 +86,10 @@ const MODEL_TEXTS = text.notebook.model;
             <or-distance-tab [knownText]="state.knownDistance" [gongMil]="state.gongMil" [resultText]="state.millingResult" [isManual]="state.isManual" (measure)="measureRange($event)" />
           }
           @case ('conditions') {
-            <or-conditions-tab [reading]="state.station" [correctionText]="state.conditionsCorrection" [stepLinkText]="state.isManual ? texts.toAtmosphere : null" (measure)="measure.emit($event)" (toStep)="openStep('atmosphere')" />
+            <or-conditions-tab [system]="unitSystem()" [reading]="state.station" [correctionText]="state.conditionsCorrection" [stepLinkText]="state.isManual ? texts.toAtmosphere : null" (measure)="measure.emit($event)" (toStep)="openStep('atmosphere')" />
           }
           @case ('wind') {
-            <or-wind-tab [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? (state.hasZones ? texts.toZones : texts.toWind) : null" [showShares]="state.isEasy" [zones]="state.zones" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
+            <or-wind-tab [system]="unitSystem()" [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? (state.hasZones ? texts.toZones : texts.toWind) : null" [showShares]="state.isEasy" [zones]="state.zones" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
           }
           @case ('dope') {
             <or-dope-tab [heading]="state.dopeHeading" [rows]="state.dopeRows" />
@@ -135,6 +138,8 @@ const MODEL_TEXTS = text.notebook.model;
 })
 export class NotebookSheetComponent {
   private readonly feedback = inject(FeedbackService);
+  private readonly progress = inject(ProgressStore);
+  protected readonly unitSystem = computed(() => this.progress.settings().unitSystem);
   private readonly openingClick = afterNextRender(() => this.feedback.emit('sheet'));
   readonly session = input.required<PositionSession>();
   readonly revision = input(0);
@@ -171,11 +176,10 @@ export class NotebookSheetComponent {
     const stationTime = station ? rangeClockText(station.timeS - session.scenario.startTimeS) : '';
     const target = session.target;
     const texts = this.texts;
+    const system = this.unitSystem();
     const stationView: StationView | null = station && {
-      temperature: texts.temperature({ temperatureC: station.temperatureC }),
-      pressure: texts.pressure({ pressureHpa: station.pressureHpa }),
+      ...stationTexts(station, system),
       humidity: `${Math.round(station.relativeHumidity * 100)} %`,
-      wind: texts.windSpeed({ speedMps: station.windSpeedMps }),
       time: stationTime,
       isShort: station.isShort,
     };
@@ -193,7 +197,7 @@ export class NotebookSheetComponent {
       isManual,
       isEasy: notebook.mode === 'manual-easy',
       hasZones: notebook.context.hasZones,
-      zones: zoneTable(notebook),
+      zones: zoneTable(notebook, system),
       hubRows: isManual ? hubRows(notebook) : [],
       badge: modeBadge(notebook.mode),
       formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? FORMULAS_TEXTS.withPenalty({ penalty: REFERENCE_PENALTY }) : FORMULAS_TEXTS.title,
@@ -201,7 +205,7 @@ export class NotebookSheetComponent {
       needsReferenceConfirm: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference,
       filled: { total: filled.total, distance: filled.distance, conditions: filled.conditions, wind: filled.wind, dope: filled.dope } as Record<NotebookTab, boolean>,
       factorRows,
-      knownDistance: notebook.context.target.distanceM === null ? null : texts.knownDistance({ distanceM: notebook.context.target.distanceM }),
+      knownDistance: notebook.context.target.distanceM === null ? null : knownDistanceText(notebook.context.target.distanceM, system),
       gongMil: (target.diameterM * 1000) / target.distanceM,
       millingResult:
         reticleMil === null || notebook.distanceM === null
@@ -210,16 +214,11 @@ export class NotebookSheetComponent {
       station: stationView,
       conditionsCorrection: correctionLine('conditions', factors.conditions),
       wind: wind as WindInput | null,
-      windCaption: wind ? texts.windCaption({ reading: MODEL_TEXTS.windReading({ speedMps: wind.speedMps, clock: clockText(wind.clock) }) }) : texts.windCaptionEmpty,
-      stationWind: station ? texts.stationWind({ speedMps: station.windSpeedMps, time: stationTime }) : texts.stationWindEmpty,
+      windCaption: windCaptionText(wind, system),
+      stationWind: station ? stationWindText(station.windSpeedMps, stationTime, system) : texts.stationWindEmpty,
       windCorrection: correctionLine('wind', factors.wind),
-      dopeHeading: texts.dopeHeading({
-        cartridge: cartridgeLetter(notebook.context.card),
-        zeroM: notebook.context.card.zeroM,
-        temperatureC: STANDARD_TEMPERATURE_C,
-        pressureHpa: STANDARD_PRESSURE_HPA,
-      }),
-      dopeRows: dopeTable(notebook.context.card, notebook.distanceM, dopeNoteTexts(this.dopeNotes(), notebook.context.card)),
+      dopeHeading: dopeHeadingText(notebook.context.card, system),
+      dopeRows: dopeTable(notebook.context.card, notebook.distanceM, dopeNoteTexts(this.dopeNotes(), notebook.context.card, system), system),
       strip: shotStrip(session.records),
       totalLine: totalLine(scope, total),
       isTotalEmpty: total.isEmpty,

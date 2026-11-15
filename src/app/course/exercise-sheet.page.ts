@@ -167,7 +167,7 @@ export class ExerciseSheetPage {
   private readonly def = computed(() => exerciseById(this.exerciseId() as ExerciseId) ?? null);
   protected readonly card = computed(() => {
     const def = this.def();
-    return def ? briefingCard(def, this.progress.course()) : null;
+    return def ? briefingCard(def, this.progress.course(), this.progress.settings().unitSystem) : null;
   });
   protected readonly chosenMode = linkedSignal<NotebookMode | null>(() => this.def()?.notebookMode ?? null);
   protected readonly isInstructorOn = linkedSignal(() => this.card()?.instructor?.isDefaultOn ?? false);

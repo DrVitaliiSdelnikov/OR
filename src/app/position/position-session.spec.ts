@@ -865,6 +865,8 @@ describe('PositionSession — своя винтовка в свободной и
     const ownCard = await buildDopeCard(engine, loadoutOf(own), card.clickMil);
     expect(dopeRowAt(card, 600)).toEqual(dopeRowAt(ownCard, 600));
     expect([card.cartridgeId, card.zeroM, card.cartridgeName]).toEqual(['profile-1', 200, 'Шестёрка']);
+    expect(session.groupSigmaMil).toBeCloseTo(loadoutOf(own).rifle.groupSigmaMrad, 12);
+    expect(session.groupSigmaMil).not.toBe(COURSE_RIFLE.groupSigmaMrad);
     dialToTarget(session);
     const fired = await shoot(session, ON_TARGET);
     expect(fired!.review.cartridgeId).toBe('profile-1');

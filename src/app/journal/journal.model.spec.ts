@@ -197,3 +197,18 @@ describe('journal — cards and achievements', () => {
     expect(view.records).toEqual(['01 · 30 очк.', '02 · 40 очк.']);
   });
 });
+
+describe('журнал в имперских единицах (T1.8a)', () => {
+  it('лента: свободная игра и строки выстрелов — в ярдах', () => {
+    const [free] = feedView([series({ kind: 'free', exerciseId: null, title: 'Свободная игра', exerciseClass: null, total: null, shots: [shot({ distanceM: 800 }), shot({ distanceM: 300, isHit: false, mainCause: 'hold' })] })], 'imperial');
+    expect(free.title).toBe('Свободная · 328–875 ярдов');
+    expect(free.shots).toEqual(['1 · 875 ярдов · ✓', '2 · 328 ярдов · ✕ · удержание сетки']);
+  });
+
+  it('статистика: подписи дистанций в ярдах; карточки: колонка дистанции в ярдах', () => {
+    const shots = Array.from({ length: 10 }, () => shot({ distanceM: 310 }));
+    expect(statsView([series({ shots })], 'imperial').byDistance.filter(bar => bar.count > 0).map(bar => bar.label)).toEqual(['328']);
+    const card = { cartridgeId: 'B', cartridgeName: 'Патрон Б', zeroM: 100, clickMil: 0.1, zeroAngleMil: 0, rows: [300].map(distanceM => ({ distanceM, elevationMil: 1.5, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0 })) } as unknown as DopeCard;
+    expect(cardsView([card], {}, 'imperial')[0].rows[0].distance).toBe('328');
+  });
+});

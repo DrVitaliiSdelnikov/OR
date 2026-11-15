@@ -65,7 +65,7 @@ describe('exercise sheet', () => {
       targets: '3 × гонг 0,5 м · 300 м',
       shots: 'до 2 выстрелов на цель · патрон Б',
       wind: 'штиль',
-      atmosphere: '+15 C · 1013 гПа',
+      atmosphere: '+15 °C · 1013 гПа',
       mode: 'АВТО',
       terms: ['клик', 'MIL', 'MOA', 'барабан', 'ДОПЕ', 'ZERO STOP'],
     });
@@ -85,7 +85,7 @@ describe('exercise sheet', () => {
   });
 
   it('07: a cold morning; 08: three cartridges; 10: SAM hard', () => {
-    expect(exerciseSheet(exerciseById('07')!).atmosphere).toBe('−5…0 C · 1025–1035 гПа');
+    expect(exerciseSheet(exerciseById('07')!).atmosphere).toBe('−5…0 °C · 1025–1035 гПа');
     expect(exerciseSheet(exerciseById('08')!).shots).toBe('до 2 выстрелов на цель · патроны А, Б, В');
     expect(exerciseSheet(exerciseById('10')!).mode).toBe('САМ · сложный');
   });
@@ -109,5 +109,30 @@ describe('exercise sheet', () => {
 
   it('00 has no targets', () => {
     expect(exerciseSheet(exerciseById('00')!).targets).toBe('без стрельбы');
+  });
+});
+
+describe('лист упражнения в имперских единицах (T1.8a)', () => {
+  it('01: гонги в дюймах, 328 ярдов, штиль, +59 °F и 29,91 дюйма рт. ст.', () => {
+    const sheet = exerciseSheet(exerciseById('01')!, 'imperial');
+    expect(sheet.targets).toBe('3 × гонг 20 дюймов · 328 ярдов');
+    expect(sheet.atmosphere).toBe('+59 °F · 29,91 дюйма рт. ст.');
+  });
+
+  it('07: холодное утро в °F и дюймах рт. ст.; ветер в миль/ч', () => {
+    const sheet = exerciseSheet(exerciseById('07')!, 'imperial');
+    expect(sheet.atmosphere).toBe('+23…32 °F · 30,27–30,56 дюйма рт. ст.');
+    expect(sheet.wind).toBe('4,5–5,6 миль/ч');
+    expect(sheet.targets).toBe('4 × гонг 20 дюймов · 547–656 ярдов');
+  });
+
+  it('12 и 13: неизвестные дистанции и высота в футах', () => {
+    expect(exerciseSheet(exerciseById('12')!, 'imperial').targets).toBe('10 × гонг 20–28 дюймов · неизвестная, 219–766 ярдов, туда и обратно');
+    expect(exerciseSheet(exerciseById('13')!, 'imperial').atmosphere).toBe('по погоде · ∠ 10–25° вверх или вниз · высота 3280–4920 футов');
+  });
+
+  it('метрика без изменений, кроме знака градуса', () => {
+    expect(exerciseSheet(exerciseById('07')!).atmosphere).toBe('−5…0 °C · 1025–1035 гПа');
+    expect(exerciseSheet(exerciseById('01')!, 'metric').targets).toBe('3 × гонг 0,5 м · 300 м');
   });
 });

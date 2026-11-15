@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { displayDigits, displayStep, fromInput, QUANTITIES, toDisplay, UNIT_SYSTEMS } from './units';
+import { displayDigits, displayStep, fromInput, inSystem, QUANTITIES, toDisplay, UNIT_SYSTEMS } from './units';
 
 describe('единицы: эталоны перевода (T1.1)', () => {
   it('имперский ввод → базовые единицы игры по точным коэффициентам', () => {
@@ -56,5 +56,24 @@ describe('единицы: показ и ввод', () => {
     expect(displayDigits('bulletLength', 'imperial')).toBe(3);
     expect(displayDigits('distance', 'imperial')).toBe(0);
     expect(displayDigits('windSpeed', 'metric')).toBe(1);
+  });
+});
+
+describe('единицы на экранах (T1.8a)', () => {
+  it('inSystem переводит без округления; в метрике — тождество', () => {
+    expect(inSystem('temperature', -2.5, 'metric')).toBe(-2.5);
+    expect(inSystem('temperature', -2.5, 'imperial')).toBeCloseTo(27.5, 9);
+    expect(inSystem('distance', 600, 'imperial')).toBeCloseTo(656.168, 3);
+    expect(inSystem('windSpeed', 2.5, 'imperial')).toBeCloseTo(5.5923, 4);
+    expect(inSystem('pressure', 1030, 'imperial')).toBeCloseTo(30.416, 3);
+  });
+
+  it('высота: футы; смещение на цели: дюймы', () => {
+    expect(QUANTITIES).toContain('altitude');
+    expect(QUANTITIES).toContain('impactOffset');
+    expect(toDisplay('altitude', 1500, 'imperial')).toBe(4920);
+    expect(toDisplay('altitude', 1500, 'metric')).toBe(1500);
+    expect(toDisplay('impactOffset', 30, 'imperial')).toBe(11.8);
+    expect(toDisplay('impactOffset', 30, 'metric')).toBe(30);
   });
 });

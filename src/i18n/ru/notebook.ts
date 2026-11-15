@@ -6,12 +6,13 @@ import { decimal, plural, PluralForms } from '../format';
 
 const POINT_FORMS: PluralForms = ['очко', 'очка', 'очков'];
 const FORMULAS = 'Формулы';
+const CLICK_TEXT_SCALE = 10_000;
 
 const meters = (p: { distanceM: number }) => `${decimal(p.distanceM)} м`;
 const lookAngleText = (lookAngleDeg: number) => `∠ ${lookAngleDeg > 0 ? '+' : '−'}${Math.abs(lookAngleDeg)}°`;
 const latitudeText = (latitudeDeg: number) => `${Math.abs(latitudeDeg)}° ${latitudeDeg >= 0 ? 'с. ш.' : 'ю. ш.'}`;
 const azimuthText = (azimuthDeg: number) => `аз. ${azimuthDeg}°`;
-const windReading = (p: { speedMps: number; clock: string }) => `${decimal(p.speedMps, 1)} м/с с ${p.clock}`;
+const windReading = (p: { speed: string; clock: string }) => `${p.speed} с ${p.clock}`;
 
 export const notebook = {
   model: {
@@ -30,7 +31,6 @@ export const notebook = {
     cartridgeLetters: { A: 'А', B: 'Б', C: 'В' } satisfies Record<CartridgeId, string>,
     geometryParts: { lookAngleText, latitudeText, azimuthText },
     zoneStation: 'станция',
-    meters,
     clicks: (p: { clicks: number }) => `${p.clicks} кл.`,
     clicksUp: (p: { clicks: number }) => `${p.clicks} кл. вверх`,
     clicksSideways: (p: { clicks: number; isLeft: boolean }) => `${p.clicks} кл. ${p.isLeft ? 'влево' : 'вправо'}`,
@@ -54,7 +54,7 @@ export const notebook = {
     flagBehindBerm: 'за валом',
     flagUnread: 'тапни флажок в стекле',
     calm: 'штиль',
-    flagCrosswind: (p: { crosswindMps: number }) => `${decimal(Math.abs(p.crosswindMps), 1)} м/с ${p.crosswindMps > 0 ? 'слева' : 'справа'}`,
+    flagCrosswind: (p: { speed: string; isFromLeft: boolean }) => `${p.speed} ${p.isFromLeft ? 'слева' : 'справа'}`,
     clockShare: (p: { clocks: readonly number[]; share: number }) => `${p.clocks.join(', ')} ч → ${decimal(p.share)}`,
     referencePrice: (p: { penalty: number }) => `Справочник стоит ${p.penalty} ${plural(p.penalty, POINT_FORMS)}`,
   },
@@ -169,7 +169,7 @@ export const notebook = {
     pressureColumnSource: (p: { row: string }) => `давление +10 гПа${p.row}`,
     flagBehindBermSource: (p: { distanceText: string }) => `флажок ${p.distanceText} м за валом`,
     flagSource: (p: { distanceText: string }) => `V⊥ флажок ${p.distanceText} м`,
-    roundToClick: (p: { clickMil: number }) => `до клика ${decimal(Number(p.clickMil.toFixed(4)))} =`,
+    roundToClick: (p: { clickMil: number }) => `до клика ${decimal(Math.round(p.clickMil * CLICK_TEXT_SCALE) / CLICK_TEXT_SCALE)} =`,
     tapeDistance: 'Д =',
     tapeDope: 'ВЕРТ =',
     tapeAtmosphere: 'ΔВЕРТ =',
@@ -222,7 +222,7 @@ export const notebook = {
     stationWind: (p: { wind: string }) => `ветер ${p.wind} — справочно, вводится на вкладке «Ветер»`,
     shortMeasurement: 'короткий замер',
     measureHold: (p: { seconds: number }) => `Держи «Замер» ${p.seconds} с`,
-    reference: (p: { temperatureC: number; pressureHpa: number }) => `Эталон ДОПЕ: +${p.temperatureC} C · ${p.pressureHpa} гПа`,
+    reference: (p: { temperature: string; pressure: string }) => `Эталон ДОПЕ: ${p.temperature} · ${p.pressure}`,
   },
   distanceTab: {
     gridLabel: 'Мини-сетка: коснись верха и низа гонга',
@@ -254,8 +254,7 @@ export const notebook = {
     erase: 'Стереть',
   },
   speedWheel: {
-    label: 'Скорость ветра, м/с',
-    unit: 'м/с',
+    label: (p: { unit: string }) => `Скорость ветра, ${p.unit}`,
     slower: (p: { stepMps: number }) => `Медленнее на ${decimal(p.stepMps)}`,
     faster: (p: { stepMps: number }) => `Быстрее на ${decimal(p.stepMps)}`,
   },
@@ -270,7 +269,7 @@ export const notebook = {
   },
   windTab: {
     zoneWeights: 'веса зон',
-    flag: (p: { distanceM: number; text: string }) => `${p.distanceM} м · ${p.text}`,
+    flag: (p: { distance: string; text: string }) => `${p.distance} · ${p.text}`,
   },
   notebookSheet: {
     label: 'Блокнот',
@@ -282,16 +281,13 @@ export const notebook = {
     toAtmosphere: 'к расчёту: шаг Атмосфера →',
     toZones: 'к расчёту: шаг Ветер по зонам →',
     toWind: 'к расчёту: шаг Ветер →',
-    temperature: (p: { temperatureC: number }) => `${p.temperatureC.toFixed(0)} C`,
-    pressure: (p: { pressureHpa: number }) => `${p.pressureHpa.toFixed(0)} гПа`,
-    windSpeed: (p: { speedMps: number }) => `${decimal(p.speedMps, 1)} м/с`,
-    knownDistance: (p: { distanceM: number }) => `Дистанция ${p.distanceM} м · задана упражнением`,
+    knownDistance: (p: { distance: string }) => `Дистанция ${p.distance} · задана упражнением`,
     millingResult: (p: { sizeM: number; reticleMil: number; distanceM: number }) => `Д = ${decimal(p.sizeM)} × 1000 / ${decimal(p.reticleMil, 2)} = ${p.distanceM} м`,
     windCaption: (p: { reading: string }) => `ветер ${p.reading}`,
     windCaptionEmpty: 'тяни стрелку к часу, откуда дует',
-    stationWind: (p: { speedMps: number; time: string }) => `станция: ${decimal(p.speedMps, 1)} м/с · ${p.time}`,
+    stationWind: (p: { speed: string; time: string }) => `станция: ${p.speed} · ${p.time}`,
     stationWindEmpty: 'станция: нет замера',
-    dopeHeading: (p: { cartridge: string; zeroM: number; temperatureC: number; pressureHpa: number }) =>
-      `Карточка патрона ${p.cartridge} · ноль ${p.zeroM} м · эталон +${p.temperatureC} C / ${p.pressureHpa} гПа`,
+    dopeHeading: (p: { cartridge: string; zero: string; temperature: string; pressure: string }) =>
+      `Карточка патрона ${p.cartridge} · ноль ${p.zero} · эталон ${p.temperature} / ${p.pressure}`,
   },
 };

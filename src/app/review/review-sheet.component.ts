@@ -1,4 +1,5 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { ProgressStore } from '../services/progress.store';
 import { Correction } from '../../core/types';
 import { text } from '../../i18n';
 import { PositionSession, PositionShot } from '../position/position-session';
@@ -58,7 +59,7 @@ import { TargetSchemeComponent } from './target-scheme.component';
             <div class="no-check mono" data-test="review-no-check">{{ state.noCheckText }}</div>
           }
           <or-causes [breakdown]="shot().review.breakdown" />
-          <or-flight-view [flight]="shot().review.flight" [group]="shot().review.group" [radiusMil]="shot().review.targetRadiusMil" [distanceM]="shot().review.distanceM" />
+          <or-flight-view [flight]="shot().review.flight" [group]="shot().review.group" [radiusMil]="shot().review.targetRadiusMil" [distanceM]="shot().review.distanceM" [system]="unitSystem()" [rifleSpreadMil]="session().groupSigmaMil" />
         }
       </div>
 
@@ -108,6 +109,8 @@ import { TargetSchemeComponent } from './target-scheme.component';
 })
 export class ReviewSheetComponent {
   readonly session = input.required<PositionSession>();
+  private readonly progress = inject(ProgressStore);
+  protected readonly unitSystem = computed(() => this.progress.settings().unitSystem);
   readonly shot = input.required<PositionShot>();
   readonly next = output<void>();
   readonly recalc = output<void>();
@@ -129,7 +132,7 @@ export class ReviewSheetComponent {
       points: shotPointsText(shot.record.isHit, review.isFirstShotAtTarget, isPaper),
       diagnosis: diagnosisText(review.diagnosis, review.call, review.isLeadBackward),
       correction: correctionText(review.correction, review.diagnosis),
-      check: review.check ? checkSheet(review.check, session.def.notebookMode ?? 'auto') : null,
+      check: review.check ? checkSheet(review.check, session.def.notebookMode ?? 'auto', this.unitSystem()) : null,
       noCheckText: review.isFirstShotAtTarget ? this.texts.noCalcRecorded : this.texts.checkFirstShotOnly,
       plaques: targetPlaques(session.def, session.records, { stageIndex: session.firingLine.stageIndex, targetIndex: session.firingLine.targetIndex }, session.isFinished),
       canSaveDope: review.dopeNoteMil !== null,

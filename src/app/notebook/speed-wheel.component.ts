@@ -1,11 +1,10 @@
 import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
-import { decimal } from '../../i18n/format';
 import { FeedbackService } from '../services/feedback.service';
 import { text } from '../../i18n';
-import { MAX_WIND_SPEED_MPS, SPEED_STEP_MPS, stepSpeed } from './notebook.model';
+import { UnitSystem } from '../../core/units';
+import { maxWheelSpeed, SPEED_STEP_MPS, speedWheelRows, stepSpeed } from './notebook.model';
 
 const ROW_PT = 32;
-const VISIBLE_NEIGHBORS = 2;
 const KEY_STEPS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1, PageUp: 10, PageDown: -10 };
 
 @Component({
@@ -16,9 +15,9 @@ const KEY_STEPS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1,
         class="wheel mono"
         role="spinbutton"
         tabindex="0"
-        [attr.aria-label]="texts.label"
+        [attr.aria-label]="label()"
         aria-valuemin="0"
-        [attr.aria-valuemax]="maxSpeed"
+        [attr.aria-valuemax]="maxSpeed()"
         [attr.aria-valuenow]="shownSpeed() ?? 0"
         (pointerdown)="down($event)"
         (pointermove)="move($event)"
@@ -30,7 +29,7 @@ const KEY_STEPS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1,
         @for (row of rows(); track row.offset) {
           <div class="row" [class.current]="row.offset === 0" [style.opacity]="row.opacity">{{ row.text }}</div>
         }
-        <span class="unit">{{ texts.unit }}</span>
+        <span class="unit">{{ unit() }}</span>
       </div>
       <div class="steps">
         <button data-own-feedback class="step" type="button" (click)="nudge(-1)" [attr.aria-label]="slowerLabel" data-test="speed-minus">−</button>
@@ -52,6 +51,7 @@ const KEY_STEPS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1,
 export class SpeedWheelComponent {
   private readonly feedback = inject(FeedbackService);
   readonly speed = input<number | null>(null);
+  readonly system = input<UnitSystem>('metric');
   readonly speedChange = output<number>();
 
   protected readonly texts = text.notebook.speedWheel;
@@ -60,25 +60,16 @@ export class SpeedWheelComponent {
 
   // Быстрые шаги подряд приходят раньше, чем родитель вернёт новое значение во вход: считаем от своего.
   protected readonly shownSpeed = linkedSignal(() => this.speed());
-  protected readonly maxSpeed = MAX_WIND_SPEED_MPS;
-  protected readonly rows = computed(() => {
-    const current = this.shownSpeed();
-    return Array.from({ length: VISIBLE_NEIGHBORS * 2 + 1 }, (_, index) => {
-      const offset = index - VISIBLE_NEIGHBORS;
-      if (current === null) {
-        return { offset, text: offset === 0 ? '—' : '', opacity: 1 };
-      }
-      const value = current + offset * 0.1;
-      const isOutside = value < -1e-9 || value > MAX_WIND_SPEED_MPS + 1e-9;
-      return { offset, text: isOutside ? '' : decimal(value, 1), opacity: 1 - Math.abs(offset) * 0.3 };
-    });
-  });
+  protected readonly maxSpeed = computed(() => maxWheelSpeed(this.system()));
+  protected readonly unit = computed(() => text.units.unitLabel('windSpeed', this.system()));
+  protected readonly label = computed(() => this.texts.label({ unit: this.unit() }));
+  protected readonly rows = computed(() => speedWheelRows(this.shownSpeed(), this.system()));
 
   private dragStartY: number | null = null;
   private dragStepsApplied = 0;
 
   protected nudge(steps: number): void {
-    const next = stepSpeed(this.shownSpeed() ?? 0, steps);
+    const next = stepSpeed(this.shownSpeed() ?? 0, steps, this.system());
     if (next !== this.shownSpeed()) {
       this.feedback.emit('detent');
     }

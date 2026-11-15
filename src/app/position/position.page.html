@@ -194,6 +194,7 @@
           [group]="current.group"
           [calls]="current.calls"
           [radiusMil]="seriesRadiusMil(current)"
+          [rifleSpreadMil]="current.groupSigmaMil"
           (next)="toTrail()"
           (repeat)="toBriefing()"
           (journal)="toJournal()"

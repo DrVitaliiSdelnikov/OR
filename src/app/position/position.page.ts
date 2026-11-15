@@ -37,7 +37,7 @@ import { resultSheet, ResultSheetView } from '../result/result.model';
 import { PositionSession, PositionShot } from './position-session';
 import { BoltTrackComponent } from './bolt-track.component';
 import { FireControlComponent } from './fire-control.component';
-import { breathRing, correctionCells, dopeTileText, drumCounterText, flagReadingText, geometryLineText, isGlassTap, markerTarget, patrolLineText, notebookSheetTopPt, pressureText, TurretAxis } from './position.model';
+import { breathRing, correctionCells, dopeTileText, drumCounterText, flagReadingText, geometryLineText, isGlassTap, markerTarget, patrolLineText, notebookSheetTopPt, pressureText, subtitleText, TurretAxis, windTileText } from './position.model';
 import { TurretDrumComponent } from './turret-drum.component';
 import { text } from '../../i18n';
 
@@ -94,6 +94,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   private readonly router = inject(Router);
   private readonly feedback = inject(FeedbackService);
   private readonly progress = inject(ProgressStore);
+  protected readonly unitSystem = computed(() => this.progress.settings().unitSystem);
   private readonly termSheet = inject(TermSheetService);
   private readonly backStack = inject(BackStackService);
   private readonly engine = new BallisticsEngine();
@@ -183,13 +184,13 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     return {
       title: isExerciseTask(session.def) ? T.exerciseTitle({ exerciseId: session.def.id, title: session.def.title }) : session.def.title,
       instructorLine: this.isFreePlay() && !this.sandbox() && this.progress.freePlay().isInstructorNear ? instructorLineText(session.trueCorrection(this.scenarioTimeS(session))) : null,
-      subtitle: T.subtitle({ distanceM: notebook.context.target.distanceM, targetNumber: session.firingLine.targetIndex + 1, targetCount: session.setup.targets.length }),
-      patrolLine: session.patrol ? patrolLineText(session.patrol, session.patrolWalkedS(this.scenarioTimeS(session))) : null,
+      subtitle: subtitleText(notebook.context.target.distanceM, session.firingLine.targetIndex + 1, session.setup.targets.length, this.unitSystem()),
+      patrolLine: session.patrol ? patrolLineText(session.patrol, session.patrolWalkedS(this.scenarioTimeS(session)), this.unitSystem()) : null,
       geometryLine: geometryLineText(session.scenario.geometry),
-      wind: wind ? [T.windSpeed({ speedMps: wind.speedMps }), clockText(wind.clock)] : [session.def.conditions.windScale === 0 ? T.calm : '—'],
+      wind: wind ? [windTileText(wind.speedMps, this.unitSystem()), clockText(wind.clock)] : [session.def.conditions.windScale === 0 ? T.calm : '—'],
       isWindUnfilled: !tabs(notebook).wind && session.def.conditions.windScale !== 0,
       isNotEntered: entered === null,
-      cells: correctionCells(scope, dial, entered, playerDistanceM, session.leadDirection),
+      cells: correctionCells(scope, dial, entered, playerDistanceM, session.leadDirection, this.unitSystem()),
       elevation: {
         clicks: dial.elevation,
         target: entered?.elevation.targetClicks ?? null,
@@ -205,7 +206,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
         counter: drumCounterText('windage', session.progress('windage')),
       },
       magnification: session.scope.magnification,
-      dope: playerDistanceM === null ? T.dopeEmpty : dopeTileText(notebook.context.card, notebook.distanceM!),
+      dope: playerDistanceM === null ? T.dopeEmpty : dopeTileText(notebook.context.card, notebook.distanceM!, this.unitSystem()),
       rounds: `${session.firingLine.magazineLeft} / ${session.firingLine.magazineLoaded}`,
       isMagazineChangeDue: session.isMagazineChangeDue,
       isBoltCycleDue: !session.isBoltAutomatic && session.isBoltCycleDue && this.end() === null,
@@ -607,7 +608,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       return;
     }
     const reading = session.readFlag(flagIndex, this.scenarioTimeS(session));
-    this.flagReadingShown.set(flagReadingText(session.scenario.flags[flagIndex].distanceM, reading));
+    this.flagReadingShown.set(flagReadingText(session.scenario.flags[flagIndex].distanceM, reading, this.unitSystem()));
     if (this.flagReadingTimer) {
       clearTimeout(this.flagReadingTimer);
     }

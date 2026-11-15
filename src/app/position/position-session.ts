@@ -499,6 +499,10 @@ export class PositionSession {
     });
   }
 
+  get groupSigmaMil(): number {
+    return this.loadout.rifle.groupSigmaMrad;
+  }
+
   private get loadout(): Loadout {
     return this.def.rifle?.loadout ?? courseLoadout(this.firingLine.cartridgeId);
   }

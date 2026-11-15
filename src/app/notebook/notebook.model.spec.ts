@@ -5,6 +5,7 @@ import { BallisticsEngine } from '../../core/engine';
 import { ExerciseShotRecord } from '../../sim/course';
 import { createNotebook, enterWind, factorContributions, hideFlagsBehindBerm, Notebook, readFlag, recordStation, total } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
+import { conditionsReferenceText, dopeHeadingText, knownDistanceText, speedWheelRows, stationTexts, stationWindText, windCaptionText, windFlagText } from './notebook.model';
 import { clockFromDialAngle, clockShareLines, clockText, contributionText, correctionLine, dopeTable, factorDetail, millingSize, moaPerMilText, rangeClockText, referencePriceText, shotStrip, snapMilling, stepSpeed, totalLine, zoneTable } from './notebook.model';
 
 const scope = scopeById('course-tree');
@@ -238,5 +239,55 @@ describe('расшифровка новых факторов в итоге (T1.4
     expect(factorDetail(notebook, 'spin')).toMatch(/^колонка ДЕР: пуля уходит вправо на 0,\d\d → поправка ← 0,\d\d$/);
     expect(factorDetail(notebook, 'coriolis')).toMatch(/^0,0729 × \d,\d\d × 0,82 = ← 0,0\d$/);
     expect(factorDetail(notebook, 'eotvos')).toMatch(/^0,0729 × \d,\d\d × 0,57 × 1,00 = ↑ 0,0\d$/);
+  });
+});
+
+describe('блокнот в имперских единицах (T1.8a)', () => {
+  const zoned = (distanceM: number | null) =>
+    createNotebook({ card, scope, target: { sizeM: 0.5, distanceM }, hasZones: true, canTakeWindFromStation: false, seed: 1 }, 'auto');
+
+  it('колесо скорости: шаг 0,1 миль/ч, предел 33,5 миль/ч; хранится в м/с', () => {
+    const oneStep = stepSpeed(0, 1, 'imperial');
+    expect(oneStep).toBeCloseTo(0.1 * 0.44704, 9);
+    expect(stepSpeed(2.5, 0, 'imperial')).toBeCloseTo(5.6 * 0.44704, 9);
+    expect(stepSpeed(15, 10, 'imperial')).toBeCloseTo(33.5 * 0.44704, 9);
+    expect(stepSpeed(3.2, 1)).toBe(3.3);
+  });
+
+  it('строки колеса — в единицах игрока', () => {
+    expect(speedWheelRows(2.5, 'imperial').map(row => row.text)).toEqual(['5,4', '5,5', '5,6', '5,7', '5,8']);
+    expect(speedWheelRows(2.5, 'metric').map(row => row.text)).toEqual(['2,3', '2,4', '2,5', '2,6', '2,7']);
+    expect(speedWheelRows(null, 'imperial').map(row => row.text)).toEqual(['', '', '—', '', '']);
+  });
+
+  it('станция: °F, дюймы рт. ст., миль/ч; метрика — °C, гПа, м/с', () => {
+    const station = { temperatureC: -2.4, pressureHpa: 1030, windSpeedMps: 2.5 };
+    expect(stationTexts(station, 'imperial')).toEqual({ temperature: '+28 °F', pressure: '30,42 дюйма рт. ст.', wind: '5,6 миль/ч' });
+    expect(stationTexts(station, 'metric')).toEqual({ temperature: '−2 °C', pressure: '1030 гПа', wind: '2,5 м/с' });
+    expect(stationWindText(2.5, '14:05', 'imperial')).toBe('станция: 5,6 миль/ч · 14:05');
+  });
+
+  it('дистанция, подпись ветра, шапка ДОПЕ, эталон — в единицах игрока', () => {
+    expect(knownDistanceText(500, 'imperial')).toBe('Дистанция 547 ярдов · задана упражнением');
+    expect(knownDistanceText(500, 'metric')).toBe('Дистанция 500 м · задана упражнением');
+    expect(windCaptionText({ speedMps: 2.5, clock: 9 }, 'imperial')).toBe('ветер 5,6 миль/ч с 9 ч');
+    expect(dopeHeadingText(card, 'imperial')).toBe('Карточка патрона Б · ноль 109 ярдов · эталон +59 °F / 29,91 дюйма рт. ст.');
+    expect(dopeHeadingText(card, 'metric')).toBe('Карточка патрона Б · ноль 100 м · эталон +15 °C / 1013 гПа');
+    expect(conditionsReferenceText('imperial')).toBe('Эталон ДОПЕ: +59 °F · 29,91 дюйма рт. ст.');
+    expect(conditionsReferenceText('metric')).toBe('Эталон ДОПЕ: +15 °C · 1013 гПа');
+  });
+
+  it('таблица ДОПЕ: колонка дистанции в ярдах, строки и метки — прежние', () => {
+    const rows = dopeTable(card, 300, new Map(), 'imperial');
+    expect(rows.slice(0, 3).map(row => [row.distanceM, row.distance])).toEqual([[100, '109'], [200, '219'], [300, '328']]);
+    expect(dopeTable(card, 300)[2].distance).toBe('300');
+  });
+
+  it('зоны и флажки: подписи в ярдах, ветер на флажке в миль/ч', () => {
+    const table = zoneTable(readFlag(zoned(600), 0, -2.2), 'imperial')!;
+    expect(table.weights.map(weight => weight.label)).toEqual(['станция', '219 ярдов', '437 ярдов', '656 ярдов']);
+    expect(table.flags[0].text).toBe('4,9 миль/ч справа');
+    expect(windFlagText(200, '4,9 миль/ч справа', 'imperial')).toBe('219 ярдов · 4,9 миль/ч справа');
+    expect(windFlagText(200, '2,2 м/с справа', 'metric')).toBe('200 м · 2,2 м/с справа');
   });
 });

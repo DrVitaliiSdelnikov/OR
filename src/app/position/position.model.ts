@@ -1,6 +1,7 @@
 import { DopeCard, dopeRowAt } from '../../core/dope-card';
 import { roundToClicks } from '../../core/game-formulas';
 import { ShotGeometry } from '../../core/types';
+import { UnitSystem } from '../../core/units';
 import { BOLT_STEP_TRAVEL_PT, BOLT_STEPS, BoltStep } from '../../sim/bolt';
 import { text } from '../../i18n';
 import { Vector2 } from '../../sim/noise';
@@ -35,6 +36,9 @@ const TAP_MAX_DURATION_MS = 300;
 const FINGER_TO_MARKER = 1.5;
 const BOLT_TRACK_HOME: Vector2 = { x: 300, y: 110 };
 const T = text.position;
+const UNITS = text.units;
+const DISTANCE_DIGITS = 0;
+const SPEED_DIGITS = 1;
 
 export interface BreathRing {
   share: number;
@@ -48,14 +52,14 @@ export interface BoltStepView {
   isDone: boolean;
 }
 
-export function correctionCells(scope: ScopeModel, dial: DialClicks, total: NotebookTotal | null, distanceM: number | null, leadDirection: -1 | 0 | 1 = 0): CorrectionCell[] {
+export function correctionCells(scope: ScopeModel, dial: DialClicks, total: NotebookTotal | null, distanceM: number | null, leadDirection: -1 | 0 | 1 = 0, system: UnitSystem = 'metric'): CorrectionCell[] {
   const hasTotal = total !== null && !total.isEmpty;
   const elevationMil = dial.elevation * scope.clickMrad;
   const rightMil = -dial.windageLeft * scope.clickMrad;
   const cells: CorrectionCell[] = [
     axisCell('elevation', verticalText(scope, elevationMil), hasTotal ? total.elevation.targetClicks : null, dial.elevation, clicks => verticalText(scope, clicks * scope.clickMrad)),
     axisCell('windage', horizontalText(scope, rightMil), hasTotal ? total.windageLeft.targetClicks : null, dial.windageLeft, clicks => horizontalText(scope, -clicks * scope.clickMrad)),
-    { label: T.cells.labels.distance, value: distanceM === null ? '—' : T.cells.distance({ distanceM }), target: null, isOnTarget: true },
+    { label: T.cells.labels.distance, value: distanceM === null ? '—' : T.cells.distance({ distance: UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS) }), target: null, isOnTarget: true },
   ];
   const holdRightMil = hasTotal ? total.holdRightMil + leadDirection * total.leadMil : 0;
   if (hasTotal && (!isHoldoverSettled(scope, total.holdUpMil) || !isHoldoverSettled(scope, holdRightMil))) {
@@ -64,9 +68,17 @@ export function correctionCells(scope: ScopeModel, dial: DialClicks, total: Note
   return cells;
 }
 
-export function dopeTileText(card: DopeCard, distanceM: number): string {
+export function dopeTileText(card: DopeCard, distanceM: number, system: UnitSystem = 'metric'): string {
   const elevationMil = roundToClicks(dopeRowAt(card, distanceM).elevationMil, card.clickMil) * card.clickMil;
-  return T.page.dope({ distanceM: Math.round(distanceM), elevationMil });
+  return T.page.dope({ distance: UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS), elevationMil });
+}
+
+export function subtitleText(distanceM: number | null, targetNumber: number, targetCount: number, system: UnitSystem): string {
+  return T.page.subtitle({ distance: distanceM === null ? null : UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS), targetNumber, targetCount });
+}
+
+export function windTileText(speedMps: number, system: UnitSystem): string {
+  return T.page.windSpeed({ speed: UNITS.valueText('windSpeed', speedMps, system, SPEED_DIGITS) });
 }
 
 export function drumCounter(axis: TurretAxis, progress: TurretProgress): string {
@@ -160,8 +172,13 @@ export function isGlassTap(start: Vector2, end: Vector2, durationMs: number): bo
   return Math.hypot(end.x - start.x, end.y - start.y) <= TAP_MAX_TRAVEL_PT && durationMs <= TAP_MAX_DURATION_MS;
 }
 
-export function flagReadingText(flagDistanceM: number, reading: FlagReading): string {
-  return T.flagReading({ flagDistanceM, angleDeg: reading.angleDeg, isAtLimit: reading.isAtLimit, crosswindText: flagCrosswindText(reading.crosswindMps) });
+export function flagReadingText(flagDistanceM: number, reading: FlagReading, system: UnitSystem = 'metric'): string {
+  return T.flagReading({
+    flagDistance: UNITS.valueText('distance', flagDistanceM, system, DISTANCE_DIGITS),
+    angleDeg: reading.angleDeg,
+    isAtLimit: reading.isAtLimit,
+    crosswindText: flagCrosswindText(reading.crosswindMps, system),
+  });
 }
 
 const GEOMETRY_PARTS = text.notebook.model.geometryParts;
@@ -174,10 +191,10 @@ export function geometryLineText(geometry: ShotGeometry): string | null {
   return parts.length === 0 ? null : parts.join(' · ');
 }
 
-export function patrolLineText(patrol: PatrolTarget, walkedS: number): string {
+export function patrolLineText(patrol: PatrolTarget, walkedS: number, system: UnitSystem = 'metric'): string {
   const clock = movementClockAt(patrol.path, walkedS);
   const isCrosswise = clock % CROSSWISE_CLOCK === 0;
-  return T.patrolLine({ speedMps: patrol.path.speedMps, isCrosswise, headingArrow: headingArrow(clock), isAmbush: patrol.isAmbush });
+  return T.patrolLine({ speed: UNITS.valueText('windSpeed', patrol.path.speedMps, system, SPEED_DIGITS), isCrosswise, headingArrow: headingArrow(clock), isAmbush: patrol.isAmbush });
 }
 
 function headingArrow(clock: number): string {

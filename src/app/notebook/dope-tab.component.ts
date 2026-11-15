@@ -23,7 +23,7 @@ import { DopeTableRow } from './notebook.model';
         <tbody>
           @for (row of rows(); track row.distanceM) {
             <tr [class.current]="row.isCurrent" [attr.data-test]="row.isCurrent ? 'dope-current' : null">
-              <td class="pinned">{{ row.distanceM }}</td>
+              <td class="pinned">{{ row.distance }}</td>
               <td>{{ row.elevation }}</td>
               <td>{{ row.clicks }}</td>
               <td>{{ row.timeOfFlight }}</td>

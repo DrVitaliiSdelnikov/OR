@@ -6,6 +6,7 @@ import { text } from '../../i18n';
 import { backLayer } from '../services/back-stack.service';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
+import { UNIT_SYSTEMS } from '../../core/units';
 import { DRUM_SENSITIVITIES, Settings, SettingsFlag, steppedVolume, VOLUME_STEPS } from './settings.model';
 import { BackLinkDirective } from '../services/back-link.directive';
 
@@ -83,6 +84,27 @@ type HandButton = keyof typeof T.hands;
           </div>
         </section>
 
+        <section class="group" data-test="settings-group-units">
+          <h2 class="label mono">{{ texts.units }}</h2>
+          <div class="setting">
+            <div class="choices">
+              @for (system of unitSystems; track system) {
+                <button
+                  class="choice"
+                  type="button"
+                  [class.chosen]="settings.unitSystem === system"
+                  [attr.aria-pressed]="settings.unitSystem === system"
+                  (click)="progress.updateSettings({ unitSystem: system })"
+                  [attr.data-test]="'units-' + system"
+                >
+                  {{ texts.unitSystems[system].label }}
+                  <span class="choice-note mono">{{ texts.unitSystems[system].note }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        </section>
+
         <section class="group" data-test="settings-group-access">
           <h2 class="label mono">{{ texts.accessibility }}</h2>
           @for (toggle of accessibilityToggles; track toggle.key) {
@@ -138,6 +160,7 @@ type HandButton = keyof typeof T.hands;
     .hand { display: grid; place-items: center; min-width: 72px; min-height: 32px; border: var(--border-width) solid var(--device-line-strong); border-radius: 16px; font: 700 var(--type-label) / 1 var(--font-mono); letter-spacing: var(--tracking-label); }
     .hand.fire { border-color: var(--device-error); color: var(--device-error); }
     .choices { display: flex; gap: var(--space-2); }
+    .choice-note { display: block; font: 500 var(--type-label) / 1.3 var(--font-mono); color: var(--device-text-muted); }
     .choice { flex: 1; min-height: var(--touch-min); border: var(--border-width) solid var(--device-line); border-radius: var(--radius-device); background: var(--device-sunken); color: var(--device-text); font: 500 var(--type-body) / 1.2 var(--font-text); }
     .choice.chosen { border-color: var(--device-accent); color: var(--device-accent); }
     .reset { min-height: var(--touch-min); border: var(--border-width) solid var(--device-error); border-radius: var(--radius-device); background: transparent; color: var(--device-error); font: 700 var(--type-label) / 1.2 var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; }
@@ -157,6 +180,7 @@ export class SettingsPage {
   protected readonly accessibilityToggles = ACCESSIBILITY_TOGGLES;
   protected readonly dataToggles = DATA_TOGGLES;
   protected readonly sensitivities = DRUM_SENSITIVITIES;
+  protected readonly unitSystems = UNIT_SYSTEMS;
   protected readonly volumeSteps = VOLUME_STEPS;
   protected readonly version = packageJson.version;
   protected readonly isResetAsked = signal(false);

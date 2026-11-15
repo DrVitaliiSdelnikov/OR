@@ -60,11 +60,11 @@ async function dragElevationSlowly(page: Page, distancePx: number): Promise<void
 }
 
 test.describe('настройки (A7.4)', () => {
-  test('шестерёнка → четыре группы и версия; выбор сохраняется после перезагрузки', async ({ page }) => {
+  test('шестерёнка → пять групп и версия; выбор сохраняется после перезагрузки', async ({ page }) => {
     await seed(page);
     await page.goto('/');
     await page.getByTestId('open-settings').click();
-    for (const group of ['sound', 'control', 'access', 'data']) {
+    for (const group of ['sound', 'control', 'units', 'access', 'data']) {
       await expect(page.getByTestId(`settings-group-${group}`)).toBeVisible();
     }
     await expect(page.getByTestId('settings-version')).toHaveText('версия 0.1.0');

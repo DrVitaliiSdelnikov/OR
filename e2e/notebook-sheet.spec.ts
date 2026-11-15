@@ -132,7 +132,7 @@ test.describe('шторка блокнота (A5.1)', () => {
   test('ДОПЕ: таблица уходит вбок, колонка ДИСТ на месте', async ({ page }) => {
     await toPosition(page, '04');
     await page.getByTestId('tile-dope').click();
-    await expect(page.getByTestId('dope-heading')).toHaveText('Карточка патрона Б · ноль 100 м · эталон +15 C / 1013 гПа');
+    await expect(page.getByTestId('dope-heading')).toHaveText('Карточка патрона Б · ноль 100 м · эталон +15 °C / 1013 гПа');
     await expect(page.getByTestId('dope-current').locator('td').first()).toHaveText('300');
     const pinned = page.getByTestId('dope-current').locator('td').first();
     const before = (await pinned.boundingBox())!;

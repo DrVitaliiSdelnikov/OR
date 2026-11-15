@@ -1,9 +1,10 @@
 import { Component, computed, input, signal } from '@angular/core';
 import { COURSE_RIFLE } from '../../core/content';
 import { Correction } from '../../core/types';
+import { UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
 import { FlightPaths, FlightPoint } from '../../sim/flight-path';
-import { groupText } from './review.model';
+import { flightAxisTexts, groupText } from './review.model';
 import { TargetSchemeComponent } from './target-scheme.component';
 
 type FlightViewKind = 'front' | 'side' | 'top';
@@ -41,9 +42,9 @@ const VIEW_TABS: readonly { kind: FlightViewKind; label: string }[] = (Object.ke
           <line class="gong" [attr.x1]="right" [attr.y1]="middle - plot.gongHalf" [attr.x2]="right" [attr.y2]="middle + plot.gongHalf" />
           <polyline class="centre" [attr.points]="plot.centre" data-test="flight-centre" />
           <polyline class="bullet" [attr.points]="plot.bullet" data-test="flight-bullet" />
-          <text class="axis-caption" [attr.x]="left" [attr.y]="height - 4">{{ texts.axisStart }}</text>
-          <text class="axis-caption end" [attr.x]="right" [attr.y]="height - 4">{{ texts.axisEnd({ distanceM: distanceM() }) }}</text>
-          <text class="axis-caption" [attr.x]="left" y="12">{{ texts.scale({ isSide: kind() === 'side', scaleCm: plot.scaleCm }) }}</text>
+          <text class="axis-caption" [attr.x]="left" [attr.y]="height - 4">{{ plot.axis.start }}</text>
+          <text class="axis-caption end" [attr.x]="right" [attr.y]="height - 4">{{ plot.axis.end }}</text>
+          <text class="axis-caption" [attr.x]="left" y="12">{{ plot.axis.scale }}</text>
         </svg>
         <div class="legend mono">{{ texts.legend }}</div>
       }
@@ -72,6 +73,8 @@ export class FlightViewComponent {
   readonly group = input.required<readonly Correction[]>();
   readonly radiusMil = input.required<number>();
   readonly distanceM = input.required<number>();
+  readonly system = input<UnitSystem>('metric');
+  readonly rifleSpreadMil = input<number>(COURSE_RIFLE.groupSigmaMrad);
 
   protected readonly tabs = VIEW_TABS;
   protected readonly width = VIEW_WIDTH;
@@ -81,7 +84,7 @@ export class FlightViewComponent {
   protected readonly right = PLOT_RIGHT;
   protected readonly middle = VIEW_HEIGHT / 2;
   protected readonly kind = signal<FlightViewKind>('side');
-  protected readonly groupLine = computed(() => groupText(this.group(), COURSE_RIFLE.groupSigmaMrad));
+  protected readonly groupLine = computed(() => groupText(this.group(), this.rifleSpreadMil()));
   protected readonly scene = computed(() => {
     const valueOf = (point: FlightPoint): number => (this.kind() === 'side' ? point.heightCm : -point.sideCm);
     const { bullet, centre } = this.flight();
@@ -91,6 +94,6 @@ export class FlightViewComponent {
     const ptPerM = (PLOT_RIGHT - PLOT_LEFT) / this.distanceM();
     const polyline = (points: readonly FlightPoint[]): string =>
       points.map(point => `${(PLOT_LEFT + point.distanceM * ptPerM).toFixed(1)},${(VIEW_HEIGHT / 2 - valueOf(point) * ptPerCm).toFixed(1)}`).join(' ');
-    return { bullet: polyline(bullet), centre: polyline(centre), gongHalf: radiusCm * ptPerCm, scaleCm };
+    return { bullet: polyline(bullet), centre: polyline(centre), gongHalf: radiusCm * ptPerCm, axis: flightAxisTexts(this.distanceM(), scaleCm, this.kind() === 'side', this.system()) };
   });
 }

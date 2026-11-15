@@ -8,7 +8,7 @@ import { decimal } from '../format';
 export const position = {
   cells: {
     labels: { elevation: 'ВЕРТ', windage: 'ГОР', distance: 'ДИСТ', holdover: 'УДЕРЖ.' } satisfies Record<CorrectionCellKey, string>,
-    distance: (p: { distanceM: number }) => `${p.distanceM} м`,
+    distance: (p: { distance: string }) => p.distance,
   },
   drum: {
     overshoot: (p: { clicks: number }) => `лишние ${p.clicks} кл.`,
@@ -26,10 +26,10 @@ export const position = {
     trackLabel: 'Затвор: вверх, назад, вперёд, вниз',
     fireWaiting: 'Огонь · ждёт затвор',
   },
-  flagReading: (p: { flagDistanceM: number; angleDeg: number; isAtLimit: boolean; crosswindText: string }) =>
-    `${p.flagDistanceM} м · ${p.angleDeg}° · ${p.isAtLimit ? '≥ ' : ''}${p.crosswindText}`,
-  patrolLine: (p: { speedMps: number; isCrosswise: boolean; headingArrow: string; isAmbush: boolean }) =>
-    `${decimal(p.speedMps, 1)} м/с · ${p.isCrosswise ? 'поперёк' : 'наискось'} ${p.headingArrow}${p.isAmbush ? ' · засада' : ''}`,
+  flagReading: (p: { flagDistance: string; angleDeg: number; isAtLimit: boolean; crosswindText: string }) =>
+    `${p.flagDistance} · ${p.angleDeg}° · ${p.isAtLimit ? '≥ ' : ''}${p.crosswindText}`,
+  patrolLine: (p: { speed: string; isCrosswise: boolean; headingArrow: string; isAmbush: boolean }) =>
+    `${p.speed} · ${p.isCrosswise ? 'поперёк' : 'наискось'} ${p.headingArrow}${p.isAmbush ? ' · засада' : ''}`,
   fireControl: {
     fire: 'Огонь',
   },
@@ -37,12 +37,12 @@ export const position = {
     sandboxTitle: 'Попробовать на прицеле',
     holdLabels: { free: 'Держать', holding: 'Держу', cooldown: 'Выдох' } satisfies Record<BreathState, string>,
     exerciseTitle: (p: { exerciseId: ExerciseId; title: string }) => `Упр. ${p.exerciseId} · ${p.title}`,
-    subtitle: (p: { distanceM: number | null; targetNumber: number; targetCount: number }) =>
-      `рубеж · ${p.distanceM === null ? 'дистанция неизвестна' : `${p.distanceM} м`} · цель ${p.targetNumber} / ${p.targetCount}`,
-    windSpeed: (p: { speedMps: number }) => `${decimal(p.speedMps, 1)} м/с`,
+    subtitle: (p: { distance: string | null; targetNumber: number; targetCount: number }) =>
+      `рубеж · ${p.distance === null ? 'дистанция неизвестна' : p.distance} · цель ${p.targetNumber} / ${p.targetCount}`,
+    windSpeed: (p: { speed: string }) => p.speed,
     calm: 'штиль',
     dopeEmpty: 'ДОПЕ · —',
-    dope: (p: { distanceM: number; elevationMil: number }) => `ДОПЕ · ${p.distanceM} м ↑ ${decimal(p.elevationMil, 1)}`,
+    dope: (p: { distance: string; elevationMil: number }) => `ДОПЕ · ${p.distance} ↑ ${decimal(p.elevationMil, 1)}`,
     stopBadges: { zero: 'ZERO STOP', top: 'УПОР ВВЕРХ', side: 'УПОР' } satisfies Record<NonNullable<TurretStop>, string>,
     back: 'Назад',
     notFilled: 'не заполнено',

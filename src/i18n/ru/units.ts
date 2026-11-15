@@ -1,10 +1,11 @@
-import { Quantity, toDisplay, UnitSystem } from '../../core/units';
-import { decimal, plural, PluralForms } from '../format';
+import { inSystem, Quantity, toDisplay, UnitSystem } from '../../core/units';
+import { decimal, plural, PluralForms, signed } from '../format';
 
 const YARD_FORMS: PluralForms = ['ярд', 'ярда', 'ярдов'];
 const INCH_FORMS: PluralForms = ['дюйм', 'дюйма', 'дюймов'];
 const GRAIN_FORMS: PluralForms = ['гран', 'грана', 'гранов'];
 const INCH_OF_MERCURY_FORMS: PluralForms = ['дюйм рт. ст.', 'дюйма рт. ст.', 'дюймов рт. ст.'];
+const FOOT_FORMS: PluralForms = ['фут', 'фута', 'футов'];
 
 type UnitName = string | PluralForms;
 
@@ -18,9 +19,18 @@ const UNIT_NAMES: Record<Quantity, Record<UnitSystem, UnitName>> = {
   sightHeight: { metric: 'мм', imperial: INCH_FORMS },
   temperature: { metric: '°C', imperial: '°F' },
   pressure: { metric: 'гПа', imperial: INCH_OF_MERCURY_FORMS },
+  altitude: { metric: 'м', imperial: FOOT_FORMS },
+  impactOffset: { metric: 'см', imperial: INCH_FORMS },
 };
 
 const FRACTION_FORM = 1;
+const DECIMAL_BASE = 10;
+
+function roundedTo(value: number, digits: number): number {
+  const scale = DECIMAL_BASE ** digits;
+  const rounded = Math.round(value * scale) / scale;
+  return rounded === 0 ? 0 : rounded;
+}
 
 function unitNameFor(name: UnitName, displayValue: number): string {
   if (typeof name === 'string') {
@@ -33,6 +43,22 @@ export const units = {
   unitLabel: (quantity: Quantity, system: UnitSystem): string => {
     const name = UNIT_NAMES[quantity][system];
     return typeof name === 'string' ? name : name[0];
+  },
+  valueText: (quantity: Quantity, baseValue: number, system: UnitSystem, digits: number): string => {
+    const value = roundedTo(inSystem(quantity, baseValue, system), digits);
+    const number = quantity === 'temperature' ? signed(value, Math.max(digits, 0)) : decimal(value, Math.max(digits, 0));
+    return `${number} ${unitNameFor(UNIT_NAMES[quantity][system], value)}`;
+  },
+  numberText: (quantity: Quantity, baseValue: number, system: UnitSystem, digits: number): string =>
+    decimal(roundedTo(inSystem(quantity, baseValue, system), digits), Math.max(digits, 0)),
+  rangeText: (quantity: Quantity, [lowBase, highBase]: readonly [number, number], system: UnitSystem): string => {
+    const low = toDisplay(quantity, lowBase, system);
+    const high = toDisplay(quantity, highBase, system);
+    const unit = unitNameFor(UNIT_NAMES[quantity][system], high);
+    if (quantity === 'temperature') {
+      return low === high ? `${signed(low)} ${unit}` : `${signed(low)}…${decimal(high)} ${unit}`;
+    }
+    return low === high ? `${decimal(low)} ${unit}` : `${decimal(low)}–${decimal(high)} ${unit}`;
   },
   quantityText: (quantity: Quantity, baseValue: number, system: UnitSystem): string => {
     const displayValue = toDisplay(quantity, baseValue, system);

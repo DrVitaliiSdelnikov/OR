@@ -6,6 +6,7 @@ import { calcPoints, FIRST_SHOT_POINTS, modeMultiplier, NotebookMode, SECOND_SHO
 import { ScreenDirection, text } from '../../i18n';
 import { rangeByMilling, roundToClicks } from '../../core/game-formulas';
 import { Correction } from '../../core/types';
+import { UnitSystem } from '../../core/units';
 import { ExerciseShotRecord, PositionTask } from '../../sim/course';
 import { factorContributions, Notebook, NOTEBOOK_FACTORS, NotebookFactor, stepSheet, total } from '../../sim/notebook';
 import { CauseKind, MissBreakdown, MissCause } from '../../sim/miss-breakdown';
@@ -60,6 +61,9 @@ const FACTOR_ORDER: readonly NotebookFactor[] = NOTEBOOK_FACTORS;
 const ARROWS_FROM_RIGHT = ['→', '↗', '↑', '↖', '←', '↙', '↓', '↘'];
 const ARROW_SECTOR_RAD = Math.PI / 4;
 const T = text.review;
+const UNITS = text.units;
+const DISTANCE_DIGITS = 0;
+const SPEED_DIGITS = 1;
 const MOA_PER_MIL = 3.44;
 const DECIMALS = 100;
 
@@ -107,10 +111,10 @@ export function correctionText(correction: TurretCorrection | null, diagnosis: S
   return parts.length === 0 ? T.noCorrection : parts.join(' · ');
 }
 
-export function checkSheet(check: ShotCheck, mode: NotebookMode): CheckSheetView {
+export function checkSheet(check: ShotCheck, mode: NotebookMode, system: UnitSystem = 'metric'): CheckSheetView {
   const { notebook, result } = check;
   const isAuto = notebook.mode === 'auto';
-  const rows = isAuto ? preparationRows(check) : manualRows(check);
+  const rows = isAuto ? preparationRows(check, system) : manualRows(check, system);
   const main = result.mainError;
   const otherLabels = rows.filter((row, index) => row.status !== 'exact' && index !== main?.rowIndex).map(row => row.label);
   const multiplier = modeMultiplier(mode, false);
@@ -120,7 +124,7 @@ export function checkSheet(check: ShotCheck, mode: NotebookMode): CheckSheetView
     subtitle: isAuto ? autoSubtitle(rows) : manualSubtitle(result.counts, rows.length),
     isAuto,
     rows,
-    mainError: main ? { label: errorLabel(isAuto, rows[main.rowIndex].label, main.rowIndex, main.type), phrase: errorPhrase(check, main.rowIndex, main.type), term: CHECK_ERROR_TERMS[main.type] } : null,
+    mainError: main ? { label: errorLabel(isAuto, rows[main.rowIndex].label, main.rowIndex, main.type), phrase: errorPhrase(check, main.rowIndex, main.type, system), term: CHECK_ERROR_TERMS[main.type] } : null,
     others: result.otherErrorsCount > 0 && otherLabels.length > 0 ? T.others({ count: result.otherErrorsCount, labels: otherLabels }) : null,
     pointsText: T.points({ points: Math.round(calcPoints(result.verdict) * multiplier), multiplier }),
     dialed: dialedText(notebook, check.truth.dialedElevationClicks, check.truth.dialedWindageLeftClicks),
@@ -156,17 +160,17 @@ export function withDopeNote(notes: DopeNotes, cartridgeId: string, distanceM: n
   return { ...notes, [cartridgeId]: [...others, { distanceM, elevationMil }] };
 }
 
-export function dopeNoteTexts(notes: readonly DopeNote[], card: DopeCard): Map<number, string> {
+export function dopeNoteTexts(notes: readonly DopeNote[], card: DopeCard, system: UnitSystem = 'metric'): Map<number, string> {
   const texts = new Map<number, string>();
   for (const note of notes) {
     const row = card.rows.reduce((best, candidate) => (Math.abs(candidate.distanceM - note.distanceM) <= Math.abs(best.distanceM - note.distanceM) ? candidate : best));
     const value = `${note.elevationMil < 0 ? '↓' : '↑'} ${decimal(Math.abs(note.elevationMil), 1)}`;
-    texts.set(row.distanceM, row.distanceM === note.distanceM ? value : T.dopeNoteAt({ value, distanceM: note.distanceM }));
+    texts.set(row.distanceM, row.distanceM === note.distanceM ? value : T.dopeNoteAt({ value, distance: UNITS.valueText('distance', note.distanceM, system, DISTANCE_DIGITS) }));
   }
   return texts;
 }
 
-function manualRows(check: ShotCheck): CheckRowView[] {
+function manualRows(check: ShotCheck, system: UnitSystem): CheckRowView[] {
   const clickMil = check.notebook.context.card.clickMil;
   return check.inputs.steps.map((input, index) => {
     const checked = check.result.rows[index];
@@ -174,8 +178,8 @@ function manualRows(check: ShotCheck): CheckRowView[] {
       const reticleMil = check.notebook.readings.reticleMil ?? 0;
       return {
         label: STEP_TITLES.distance,
-        player: T.metres({ distanceM: check.notebook.distanceM ?? 0 }),
-        reference: T.metres({ distanceM: rangeByMilling(check.notebook.context.target.sizeM, reticleMil) }),
+        player: UNITS.valueText('distance', check.notebook.distanceM ?? 0, system, DISTANCE_DIGITS),
+        reference: UNITS.valueText('distance', rangeByMilling(check.notebook.context.target.sizeM, reticleMil), system, DISTANCE_DIGITS),
         diff: diffText(checked),
         status: checked.status,
       };
@@ -191,7 +195,7 @@ function manualRows(check: ShotCheck): CheckRowView[] {
   });
 }
 
-function preparationRows(check: ShotCheck): CheckRowView[] {
+function preparationRows(check: ShotCheck, system: UnitSystem): CheckRowView[] {
   const { notebook, truth } = check;
   const station = notebook.readings.station;
   const wind = notebook.readings.wind;
@@ -201,7 +205,10 @@ function preparationRows(check: ShotCheck): CheckRowView[] {
   const clickMil = notebook.context.card.clickMil;
   const planned = total(notebook);
   const values: Record<PreparationRowInput['row'], { player: string; reference: string }> = {
-    'reading-speed': { player: wind ? T.speed({ speedMps: wind.speedMps }) : T.none, reference: station ? T.speed({ speedMps: station.windSpeedMps }) : T.none },
+    'reading-speed': {
+      player: wind ? UNITS.valueText('windSpeed', wind.speedMps, system, SPEED_DIGITS) : T.none,
+      reference: station ? UNITS.valueText('windSpeed', station.windSpeedMps, system, SPEED_DIGITS) : T.none,
+    },
     'reading-direction': { player: wind ? clockText(wind.clock) : '—', reference: clockText(truth.trueWindClock) },
     factors: { player: onNames.join(', ') || T.none, reference: neededNames.join(', ') || T.none },
     'turret-elevation': { player: verticalClicks(truth.dialedElevationClicks, clickMil), reference: T.planned({ value: verticalClicks(planned.elevation.targetClicks, clickMil) }) },
@@ -223,9 +230,9 @@ function errorLabel(isAuto: boolean, rowLabel: string, rowIndex: number, type: C
   return label.includes(T.errorLabels[type]) ? label : `${label} · ${T.errorLabels[type]}`;
 }
 
-function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType): string {
+function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType, system: UnitSystem): string {
   if (check.notebook.mode === 'auto') {
-    return preparationPhrase(check, check.inputs.preparation[rowIndex], type);
+    return preparationPhrase(check, check.inputs.preparation[rowIndex], type, system);
   }
   const input = check.inputs.steps[rowIndex];
   const clickMil = check.notebook.context.card.clickMil;
@@ -255,11 +262,11 @@ function substitutionPhrase(notebook: Notebook, input: CalcStepInput): string {
   return T.substitutionPhrase({ slot: label, player: trimmed(input.playerInputs[slotIndex]), expected: trimmed(input.expectedInputs[slotIndex]) });
 }
 
-function preparationPhrase(check: ShotCheck, input: PreparationRowInput, type: CheckErrorType): string {
-  const row = preparationRows(check)[check.inputs.preparation.indexOf(input)];
+function preparationPhrase(check: ShotCheck, input: PreparationRowInput, type: CheckErrorType, system: UnitSystem): string {
+  const row = preparationRows(check, system)[check.inputs.preparation.indexOf(input)];
   switch (input.row) {
     case 'reading-speed':
-      return T.readingSpeedPhrase({ reference: row.reference, player: row.player.replace(T.speedUnit, '') });
+      return T.readingSpeedPhrase({ reference: row.reference, player: row.player.replace(` ${UNITS.unitLabel('windSpeed', system)}`, '') });
     case 'reading-direction':
       return type === 'side' ? T.readingSidePhrase(row) : T.readingDirectionPhrase(row);
     case 'factors':
@@ -365,6 +372,14 @@ export function causesView(breakdown: MissBreakdown): CausesView {
       isMain: cause.kind === breakdown.main,
       share: cause.clicks / largestClicks,
     })),
+  };
+}
+
+export function flightAxisTexts(distanceM: number, scaleCm: number, isSide: boolean, system: UnitSystem): { start: string; end: string; scale: string } {
+  return {
+    start: UNITS.valueText('distance', 0, system, DISTANCE_DIGITS),
+    end: UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS),
+    scale: text.screens.flightView.scale({ isSide, offset: UNITS.valueText('impactOffset', scaleCm, system, system === 'metric' ? 0 : 1) }),
   };
 }
 

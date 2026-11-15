@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DopeCard, DopeRow } from '../../core/dope-card';
 import { NotebookTotal } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
+import { subtitleText, windTileText } from './position.model';
 import { boltHandlePosition, boltHeader, boltSteps, breathRing, correctionCells, dopeTileText, drumCounter, flagReadingText, geometryLineText, isGlassTap, patrolLineText, markerTarget, NOTEBOOK_SHEET_MIN_HEIGHT_PT, notebookSheetTopPt, pressureText } from './position.model';
 
 const scope = scopeById('course-tree');
@@ -161,7 +162,7 @@ describe('the patrol on the position (A9.3b)', () => {
 describe('DOPE tile rounds like the calculation check (T0.4a)', () => {
   const row = (distanceM: number, elevationMil: number): DopeRow =>
     ({ distanceM, elevationMil, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0, pressureUp10HpaMil: 0, zoneWeights: [1, 0, 0, 0], spinDriftMil: 0 });
-  const card: DopeCard = { cartridgeId: 'B', clickMil: 0.1, zeroAngleMil: 0, rows: [row(400, 2.8), row(500, 4.1)] };
+  const card: DopeCard = { cartridgeId: 'B', cartridgeName: 'Патрон Б', zeroM: 100, clickMil: 0.1, zeroAngleMil: 0, rows: [row(400, 2.8), row(500, 4.1)] };
 
   it('an interpolated 3,45 reads as the nearest click 3,5, not 3,4', () => {
     expect(dopeTileText(card, 450)).toBe('ДОПЕ · 450 м ↑ 3,5');
@@ -183,5 +184,40 @@ describe('строка условий (T1.4b)', () => {
 
   it('одна деривация строки не даёт: её видно в блокноте', () => {
     expect(geometryLineText({ lookAngleDeg: 0, coriolis: null, isSpinDriftOn: true })).toBeNull();
+  });
+});
+
+describe('позиция в имперских единицах (T1.8a)', () => {
+  const crosswise = { speedMps: 1.1, movementClock: 3, startOffsetM: -8.8, halfWidthM: 8.8 };
+  const row = (distanceM: number, elevationMil: number): DopeRow =>
+    ({ distanceM, elevationMil, clicks: 0, timeOfFlightS: 0, windConstant: 0, colderBy10CMil: 0, pressureUp10HpaMil: 0, zoneWeights: [1, 0, 0, 0], spinDriftMil: 0 });
+  const card: DopeCard = { cartridgeId: 'B', cartridgeName: 'Патрон Б', zeroM: 100, clickMil: 0.1, zeroAngleMil: 0, rows: [row(400, 2.8), row(500, 4.1)] };
+
+  it('ДИСТ — ярды; MIL на барабанах не меняются', () => {
+    const cells = correctionCells(scope, { elevation: 8, windageLeft: 2 }, total(16, 6), 300, 0, 'imperial');
+    expect(cells.map(cell => cell.value)).toEqual(['↑ 0,8', '← 0,2 L', '328 ярдов']);
+  });
+
+  it('ДОПЕ-плитка — ярды', () => {
+    expect(dopeTileText(card, 400, 'imperial')).toBe('ДОПЕ · 437 ярдов ↑ 2,8');
+  });
+
+  it('флажок — ярды и миль/ч', () => {
+    expect(flagReadingText(400, { angleDeg: 35, crosswindMps: 3.9, isAtLimit: false }, 'imperial')).toBe('437 ярдов · 35° · 8,7 миль/ч слева');
+    expect(flagReadingText(200, { angleDeg: 0, crosswindMps: 0, isAtLimit: false }, 'imperial')).toBe('219 ярдов · 0° · штиль');
+  });
+
+  it('дозор — миль/ч', () => {
+    expect(patrolLineText({ path: crosswise, isAmbush: false }, 0, 'imperial')).toBe('2,5 миль/ч · поперёк →');
+  });
+});
+
+describe('подзаголовок и ветер на плитке (T1.8a)', () => {
+  it('метрика — как раньше; имперские — ярды и миль/ч', () => {
+    expect(subtitleText(300, 1, 3, 'metric')).toBe('рубеж · 300 м · цель 1 / 3');
+    expect(subtitleText(300, 1, 3, 'imperial')).toBe('рубеж · 328 ярдов · цель 1 / 3');
+    expect(subtitleText(null, 2, 3, 'imperial')).toBe('рубеж · дистанция неизвестна · цель 2 / 3');
+    expect(windTileText(2.5, 'metric')).toBe('2,5 м/с');
+    expect(windTileText(2.5, 'imperial')).toBe('5,6 миль/ч');
   });
 });

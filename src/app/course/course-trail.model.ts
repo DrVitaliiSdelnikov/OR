@@ -2,6 +2,7 @@ import { ExerciseClass, NotebookMode } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { decimal } from '../../i18n/format';
 import { ScenarioOptions, ValueRange } from '../../core/scenario';
+import { UnitSystem } from '../../core/units';
 import { CartridgeId } from '../../core/types';
 import { ATTESTATION_ID, COURSE, courseProgress, CourseResults, ExerciseDef, ExerciseId, ExerciseTargets, TargetDistance } from '../../sim/course';
 
@@ -35,6 +36,7 @@ const LARGE_GONG_FROM_M = 600;
 const PAPER_TARGET_DISTANCE_M = 100;
 const OBLIQUE_CLOCK_COUNT = 8;
 const T = text.screens.exerciseSheet;
+const UNITS = text.units;
 const CARTRIDGE_LETTERS: Record<CartridgeId, string> = T.cartridgeLetters;
 export const MODE_LABELS: Record<NotebookMode, string> = text.screens.courseTrail.modes;
 const STAMPS: Record<Exclude<ExerciseClass, 0>, ClassStamp> = { 1: 'gold', 2: 'silver', 3: 'bronze' };
@@ -67,27 +69,27 @@ function nodeState(id: ExerciseId, isPassed: boolean, nextId: ExerciseId | null,
   return unlockedIds.includes(id) ? 'open' : 'locked';
 }
 
-export function exerciseSheet(def: ExerciseDef): ExerciseSheet {
+export function exerciseSheet(def: ExerciseDef, system: UnitSystem = 'metric'): ExerciseSheet {
   const { conditions } = def;
   return {
     id: def.id,
     title: def.title,
-    targets: def.targets ? targetsText(def.targets) : T.noShooting,
+    targets: def.targets ? targetsText(def.targets, system) : T.noShooting,
     shots: shotsText(def),
-    wind: windText(conditions.windScale, conditions.windSpeedRangeMps, conditions.windClocks, conditions.isWindUniform),
-    atmosphere: [atmosphereText(conditions.temperatureRangeC, conditions.pressureRangeHpa), ...terrainTexts(conditions)].join(T.conditionsSeparator),
+    wind: windText(conditions.windScale, conditions.windSpeedRangeMps, conditions.windClocks, conditions.isWindUniform, system),
+    atmosphere: [atmosphereText(conditions.temperatureRangeC, conditions.pressureRangeHpa, system), ...terrainTexts(conditions, system)].join(T.conditionsSeparator),
     mode: def.notebookMode ? MODE_LABELS[def.notebookMode] : T.none,
     terms: def.terms,
   };
 }
 
-function targetsText(targets: ExerciseTargets): string {
+function targetsText(targets: ExerciseTargets, system: UnitSystem): string {
   const [nearM, farM] = distanceBounds(targets.distance);
   const isPaper = nearM === PAPER_TARGET_DISTANCE_M && farM === PAPER_TARGET_DISTANCE_M;
   const diameters = targets.diameterM !== undefined ? [targets.diameterM] : [gongDiameterM(nearM), gongDiameterM(farM)];
   const lastDiameterM = diameters[diameters.length - 1];
-  const sizeText = diameters[0] === lastDiameterM ? T.metres({ valueM: diameters[0] }) : T.metresRange({ fromM: diameters[0], toM: lastDiameterM });
-  return T.targets({ count: targets.count, isPaper, size: sizeText, distance: distanceText(targets.distance), isOutAndBack: targets.isOutAndBack === true });
+  const sizeText = UNITS.rangeText('targetSize', [diameters[0], lastDiameterM], system);
+  return T.targets({ count: targets.count, isPaper, size: sizeText, distance: distanceText(targets.distance, system), isOutAndBack: targets.isOutAndBack === true });
 }
 
 function shotsText(def: ExerciseDef): string {
@@ -100,46 +102,44 @@ function shotsText(def: ExerciseDef): string {
   return T.shotsWithCartridges({ shots, letters });
 }
 
-function windText(windScale: number | undefined, speedRange: ValueRange | undefined, clocks: readonly number[] | undefined, isUniform: boolean | undefined): string {
+function windText(windScale: number | undefined, speedRange: ValueRange | undefined, clocks: readonly number[] | undefined, isUniform: boolean | undefined, system: UnitSystem): string {
   if (windScale === 0) {
     return T.calm;
   }
   if (isUniform === false) {
     return T.windByZones;
   }
-  const speed = speedRange ? T.windSpeed({ range: rangeText(speedRange) }) : T.byWeather;
+  const speed = speedRange ? UNITS.rangeText('windSpeed', speedRange, system) : T.byWeather;
   if (!clocks) {
     return speed;
   }
   return clocks.length === OBLIQUE_CLOCK_COUNT ? T.windOblique({ speed }) : T.windFromClocks({ speed, clocks });
 }
 
-function atmosphereText(temperatureRange: ValueRange | undefined, pressureRange: ValueRange | undefined): string {
+function atmosphereText(temperatureRange: ValueRange | undefined, pressureRange: ValueRange | undefined, system: UnitSystem): string {
   if (!temperatureRange || !pressureRange) {
     return T.byWeather;
   }
-  const [coldest, warmest] = temperatureRange;
-  const temperature = coldest === warmest ? T.temperature({ celsius: coldest }) : T.temperatureRange({ coldestC: coldest, warmestC: warmest });
-  return T.atmosphere({ temperature, pressureRange: rangeText(pressureRange) });
+  return T.atmosphere({ temperature: UNITS.rangeText('temperature', temperatureRange, system), pressure: UNITS.rangeText('pressure', pressureRange, system) });
 }
 
-function terrainTexts(conditions: ScenarioOptions): string[] {
+function terrainTexts(conditions: ScenarioOptions, system: UnitSystem): string[] {
   return [
     ...(conditions.lookAngleRangeDeg ? [T.slope({ range: rangeText(conditions.lookAngleRangeDeg), isEitherWay: conditions.isLookAngleEitherWay === true })] : []),
-    ...(conditions.altitudeRangeM ? [T.altitude({ range: rangeText(conditions.altitudeRangeM) })] : []),
+    ...(conditions.altitudeRangeM ? [T.altitude({ range: UNITS.rangeText('altitude', conditions.altitudeRangeM, system) })] : []),
     ...(conditions.isSpinDriftOn ? [T.spinDrift] : []),
     ...(conditions.coriolisLatitudeRangeDeg ? [T.latitude({ range: rangeText(conditions.coriolisLatitudeRangeDeg) })] : []),
   ];
 }
 
-function distanceText(distance: TargetDistance): string {
+function distanceText(distance: TargetDistance, system: UnitSystem): string {
   switch (distance.kind) {
     case 'fixed':
-      return T.fixedDistance({ distanceM: distance.distanceM });
+      return UNITS.rangeText('distance', [distance.distanceM, distance.distanceM], system);
     case 'known':
-      return T.knownDistance({ fromM: distance.fromM, toM: distance.toM });
+      return UNITS.rangeText('distance', [distance.fromM, distance.toM], system);
     case 'unknown':
-      return T.unknownDistance({ fromM: distance.fromM, toM: distance.toM });
+      return T.unknownDistance({ range: UNITS.rangeText('distance', [distance.fromM, distance.toM], system) });
   }
 }
 

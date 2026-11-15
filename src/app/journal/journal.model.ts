@@ -1,5 +1,6 @@
 import { CheckErrorType } from '../../core/calc-check';
 import { decimal } from '../../i18n/format';
+import { UnitSystem } from '../../core/units';
 import { DopeCard } from '../../core/dope-card';
 import { ExerciseClass, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId } from '../../core/types';
@@ -157,15 +158,13 @@ function timeText(iso: string): string {
   return `${dayText(iso)}, ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-function distancesText(shots: readonly JournalShot[]): string {
+function distancesText(shots: readonly JournalShot[], system: UnitSystem): string {
   const distances = shots.map(shot => shot.distanceM);
-  const low = Math.min(...distances);
-  const high = Math.max(...distances);
-  return low === high ? T.distance({ distanceM: low }) : T.distanceRange({ fromM: low, toM: high });
+  return text.units.rangeText('distance', [Math.min(...distances), Math.max(...distances)], system);
 }
 
-function seriesTitle(series: JournalSeries): string {
-  return series.kind === 'free' ? T.freeTitle({ distances: distancesText(series.shots) }) : `${series.exerciseId} · ${series.title}`;
+function seriesTitle(series: JournalSeries, system: UnitSystem): string {
+  return series.kind === 'free' ? T.freeTitle({ distances: distancesText(series.shots, system) }) : `${series.exerciseId} · ${series.title}`;
 }
 
 function seriesStamp(series: JournalSeries): string | null {
@@ -175,10 +174,10 @@ function seriesStamp(series: JournalSeries): string | null {
   return series.exerciseClass === null ? null : classStamp(series.exerciseClass);
 }
 
-export function feedView(journal: readonly JournalSeries[]): FeedItemView[] {
+export function feedView(journal: readonly JournalSeries[], system: UnitSystem = 'metric'): FeedItemView[] {
   return journal.map(series => ({
     id: series.id,
-    title: seriesTitle(series),
+    title: seriesTitle(series, system),
     meta: T.meta({
       cartridges: series.cartridgeIds.map(id => CARTRIDGE_LETTERS[id]),
       mode: MODE_LABELS[series.mode],
@@ -188,7 +187,7 @@ export function feedView(journal: readonly JournalSeries[]): FeedItemView[] {
     stamp: seriesStamp(series),
     stampTone: series.isInterrupted || series.exerciseClass === null ? 'graphite' : STAMP_TONES[series.exerciseClass],
     shots: series.shots.map((shot, index) =>
-      T.shotLine({ number: index + 1, distanceM: shot.distanceM, isHit: shot.isHit, cause: !shot.isHit && shot.mainCause ? MAIN_CAUSE_PHRASES[shot.mainCause] : null }),
+      T.shotLine({ number: index + 1, distance: text.units.valueText('distance', shot.distanceM, system, 0), isHit: shot.isHit, cause: !shot.isHit && shot.mainCause ? MAIN_CAUSE_PHRASES[shot.mainCause] : null }),
     ),
   }));
 }
@@ -227,12 +226,12 @@ function distanceBucket(distanceM: number): number {
   return Math.min(DISTANCE_BUCKETS_M[DISTANCE_BUCKETS_M.length - 1], Math.max(DISTANCE_BUCKET_M, Math.round(distanceM / DISTANCE_BUCKET_M) * DISTANCE_BUCKET_M));
 }
 
-export function statsView(journal: readonly JournalSeries[]): StatsView {
+export function statsView(journal: readonly JournalSeries[], system: UnitSystem = 'metric'): StatsView {
   const firstShots = journal.flatMap(series => series.shots.filter(shot => shot.isFirstAtTarget));
   const windLabel = (speedMps: number) => WIND_BUCKETS.find(bucket => speedMps < bucket.belowMps)!.label;
   return {
     isEnough: firstShots.length >= STATS_MIN_SHOTS,
-    byDistance: DISTANCE_BUCKETS_M.map(bucket => bar(String(bucket), firstShots.filter(shot => distanceBucket(shot.distanceM) === bucket))),
+    byDistance: DISTANCE_BUCKETS_M.map(bucket => bar(text.units.numberText('distance', bucket, system, 0), firstShots.filter(shot => distanceBucket(shot.distanceM) === bucket))),
     byWind: WIND_BUCKETS.map(bucket => bar(bucket.label, firstShots.filter(shot => windLabel(shot.windSpeedMps) === bucket.label))),
     byMode: (Object.keys(MODE_LABELS) as NotebookMode[]).map(mode => bar(MODE_LABELS[mode], firstShots.filter(shot => shot.mode === mode))),
   };
@@ -242,12 +241,12 @@ function elevationText(mil: number): string {
   return `${mil < 0 ? '↓' : '↑'} ${decimal(Math.abs(mil), 1)}`;
 }
 
-export function cardsView(cards: readonly DopeCard[], notes: DopeNotes): CardView[] {
+export function cardsView(cards: readonly DopeCard[], notes: DopeNotes, system: UnitSystem = 'metric'): CardView[] {
   return cards.map(card => ({
     title: T.cardTitle({ letter: cartridgeLetter(card) }),
     rows: card.rows.map(row => {
       const note = (notes[card.cartridgeId] ?? []).find(item => item.distanceM === row.distanceM);
-      return { distance: String(row.distanceM), factory: elevationText(row.elevationMil), player: note ? elevationText(note.elevationMil) : null };
+      return { distance: text.units.numberText('distance', row.distanceM, system, 0), factory: elevationText(row.elevationMil), player: note ? elevationText(note.elevationMil) : null };
     }),
   }));
 }

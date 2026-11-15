@@ -1,7 +1,8 @@
 import { Component, computed, DestroyRef, inject, input, output, signal } from '@angular/core';
-import { STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
+import { UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
 import { FULL_MEASUREMENT_S } from '../../sim/notebook';
+import { conditionsReferenceText } from './notebook.model';
 
 export interface StationView {
   temperature: string;
@@ -69,7 +70,7 @@ const RING_RADIUS = 30;
       } @else {
         <div class="hint mono" data-test="measure-hint">{{ measureHint }}</div>
       }
-      <div class="reference mono">{{ referenceText }}</div>
+      <div class="reference mono">{{ referenceText() }}</div>
       @if (stepLinkText(); as link) {
         <button class="step-link mono" type="button" (click)="toStep.emit()" data-test="conditions-step-link">{{ link }}</button>
       } @else {
@@ -102,7 +103,8 @@ const RING_RADIUS = 30;
 export class ConditionsTabComponent {
   protected readonly texts = text.notebook.conditionsTab;
   protected readonly measureHint = this.texts.measureHold({ seconds: FULL_MEASUREMENT_S });
-  protected readonly referenceText = this.texts.reference({ temperatureC: STANDARD_TEMPERATURE_C, pressureHpa: STANDARD_PRESSURE_HPA });
+  readonly system = input<UnitSystem>('metric');
+  protected readonly referenceText = computed(() => conditionsReferenceText(this.system()));
   readonly reading = input<StationView | null>(null);
   readonly correctionText = input.required<string>();
   readonly stepLinkText = input<string | null>(null);

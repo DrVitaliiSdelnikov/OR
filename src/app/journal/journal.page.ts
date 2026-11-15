@@ -168,15 +168,15 @@ export class JournalPage {
   protected readonly tab = signal<JournalTab>('feed');
   protected readonly openSeries = signal<string | null>(null);
   protected readonly isEmpty = computed(() => this.progress.journal().length === 0);
-  protected readonly feed = computed(() => feedView(this.progress.journal()));
+  protected readonly feed = computed(() => feedView(this.progress.journal(), this.progress.settings().unitSystem));
   protected readonly errors = computed(() => errorsView(this.progress.journal()));
-  protected readonly stats = computed(() => statsView(this.progress.journal()));
+  protected readonly stats = computed(() => statsView(this.progress.journal(), this.progress.settings().unitSystem));
   protected readonly statGroups = computed(() => [
     { title: T.statGroups.distance, bars: this.stats().byDistance },
     { title: T.statGroups.wind, bars: this.stats().byWind },
     { title: T.statGroups.mode, bars: this.stats().byMode },
   ]);
-  protected readonly cards = computed(() => cardsView(this.dopeCards(), this.progress.dopeNotes()));
+  protected readonly cards = computed(() => cardsView(this.dopeCards(), this.progress.dopeNotes(), this.progress.settings().unitSystem));
   protected readonly achievements = computed(() => achievementsView(this.progress.course()));
 
   constructor() {

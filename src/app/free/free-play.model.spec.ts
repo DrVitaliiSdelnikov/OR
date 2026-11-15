@@ -94,3 +94,23 @@ describe('выбор винтовки (T1.7, В49)', () => {
     expect(view.isOwnRifle).toBe(false);
   });
 });
+
+describe('свободная игра в имперских единицах (T1.8a)', () => {
+  it('дистанция, патроны, местность и подпись ползунка — ярды, граны, фут/с', () => {
+    const view = freePlayView({ ...DEFAULT_FREE_PLAY, distanceM: 300, terrain: 'mountains' }, ALL_OPEN, null, 'imperial');
+    expect(view.distanceText).toBe('328 ярдов');
+    expect(view.distanceSliderLabel).toBe('Дистанция, ярд');
+    expect(view.cartridges[1].line).toBe('168 гранов · 2625 фут/с · BC 0,218');
+    expect(view.terrains.find(terrain => terrain.id === 'mountains')!.line).toBe('угол 10–25°, высота 3280–4920 футов, до 766 ярдов');
+    expect(view.terrains.find(terrain => terrain.id === 'long-range')!.line).toBe('деривация и Кориолис, 656–1094 ярда');
+  });
+
+  it('метрика — как раньше', () => {
+    const view = freePlayView({ ...DEFAULT_FREE_PLAY, distanceM: 300, terrain: 'mountains' }, ALL_OPEN, null, 'metric');
+    expect(view.distanceText).toBe('300 м');
+    expect(view.distanceSliderLabel).toBe('Дистанция, м');
+    expect(view.cartridges[1].line).toBe('10,9 г · 800 м/с · BC 0,218');
+    expect(view.terrains.find(terrain => terrain.id === 'mountains')!.line).toBe('угол 10–25°, высота 1000–1500 м, до 700 м');
+    expect(view.terrains.find(terrain => terrain.id === 'long-range')!.line).toBe('деривация и Кориолис, 600–1000 м');
+  });
+});

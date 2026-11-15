@@ -1,4 +1,5 @@
 import { modeMultiplier, NotebookMode, SECOND_CLASS_SHARE, THIRD_CLASS_SHARE } from '../../core/exercise-scoring';
+import { UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
 import { ATTESTATION_ID, CourseResults, ExerciseDef, TargetDistance } from '../../sim/course';
 import { teachingScript } from '../instructor/teaching.model';
@@ -30,7 +31,7 @@ export interface BriefingCard {
 const INTRO_ID = '00';
 const T = text.briefing;
 
-export function briefingCard(def: ExerciseDef, course: CourseResults): BriefingCard {
+export function briefingCard(def: ExerciseDef, course: CourseResults, system: UnitSystem = 'metric'): BriefingCard {
   const bestClass = course.bestClasses[def.id];
   const bestTotal = course.bestTotals?.[def.id];
   const isAdmittedBefore = bestClass !== undefined && bestClass !== 0;
@@ -39,12 +40,12 @@ export function briefingCard(def: ExerciseDef, course: CourseResults): BriefingC
     header: T.header({ exerciseId: def.id, kind: isIntro ? 'intro' : def.id === ATTESTATION_ID ? 'attestation' : 'training' }),
     title: def.title,
     scheme: {
-      distanceText: def.targets ? distanceText(def.targets.distance) : '',
+      distanceText: def.targets ? distanceText(def.targets.distance, system) : '',
       isPaper: isPaperExercise(def),
       hasFlag: def.conditions.windScale !== 0,
       targetCount: def.targets?.count ?? 0,
     },
-    facts: exerciseSheet(def),
+    facts: exerciseSheet(def, system),
     classRows: isIntro
       ? []
       : [
@@ -62,14 +63,14 @@ export function briefingCard(def: ExerciseDef, course: CourseResults): BriefingC
   };
 }
 
-function distanceText(distance: TargetDistance): string {
+function distanceText(distance: TargetDistance, system: UnitSystem): string {
   switch (distance.kind) {
     case 'fixed':
-      return T.fixedDistance({ distanceM: distance.distanceM });
+      return text.units.rangeText('distance', [distance.distanceM, distance.distanceM], system);
     case 'known':
-      return T.knownDistance(distance);
+      return text.units.rangeText('distance', [distance.fromM, distance.toM], system);
     case 'unknown':
-      return T.unknownDistance(distance);
+      return T.unknownDistance({ range: text.units.rangeText('distance', [distance.fromM, distance.toM], system) });
   }
 }
 

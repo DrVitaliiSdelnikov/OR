@@ -11,7 +11,9 @@ export type Quantity =
   | 'bulletLength'
   | 'sightHeight'
   | 'temperature'
-  | 'pressure';
+  | 'pressure'
+  | 'altitude'
+  | 'impactOffset';
 
 export const QUANTITIES: readonly Quantity[] = [
   'distance',
@@ -23,6 +25,8 @@ export const QUANTITIES: readonly Quantity[] = [
   'sightHeight',
   'temperature',
   'pressure',
+  'altitude',
+  'impactOffset',
 ];
 
 const METERS_PER_YARD = 0.9144;
@@ -34,6 +38,7 @@ const GRAMS_PER_GRAIN = 0.06479891;
 const HECTOPASCALS_PER_INCH_OF_MERCURY = 33.8639;
 const FAHRENHEIT_PER_CELSIUS = 9 / 5;
 const FAHRENHEIT_AT_ZERO_CELSIUS = 32;
+const CENTIMETERS_PER_INCH = 2.54;
 
 interface DisplayUnit {
   baseUnitsPerDisplayUnit: number;
@@ -56,6 +61,8 @@ const DISPLAY_UNITS: Record<Quantity, Record<UnitSystem, DisplayUnit>> = {
     imperial: { baseUnitsPerDisplayUnit: 1 / FAHRENHEIT_PER_CELSIUS, displayAtBaseZero: FAHRENHEIT_AT_ZERO_CELSIUS, step: 1 },
   },
   pressure: { metric: metricUnit(1), imperial: { baseUnitsPerDisplayUnit: HECTOPASCALS_PER_INCH_OF_MERCURY, displayAtBaseZero: 0, step: 0.01 } },
+  altitude: { metric: metricUnit(1), imperial: { baseUnitsPerDisplayUnit: METERS_PER_FOOT, displayAtBaseZero: 0, step: 10 } },
+  impactOffset: { metric: metricUnit(1), imperial: { baseUnitsPerDisplayUnit: CENTIMETERS_PER_INCH, displayAtBaseZero: 0, step: 0.1 } },
 };
 
 export function toDisplay(quantity: Quantity, baseValue: number, system: UnitSystem): number {
@@ -63,6 +70,11 @@ export function toDisplay(quantity: Quantity, baseValue: number, system: UnitSys
   const exact = baseValue / unit.baseUnitsPerDisplayUnit + unit.displayAtBaseZero;
   const rounded = Number((Math.round(exact / unit.step) * unit.step).toFixed(displayDigits(quantity, system)));
   return rounded === 0 ? 0 : rounded;
+}
+
+export function inSystem(quantity: Quantity, baseValue: number, system: UnitSystem): number {
+  const unit = DISPLAY_UNITS[quantity][system];
+  return baseValue / unit.baseUnitsPerDisplayUnit + unit.displayAtBaseZero;
 }
 
 export function fromInput(quantity: Quantity, value: number, system: UnitSystem): number {

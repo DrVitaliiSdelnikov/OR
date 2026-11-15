@@ -41,7 +41,7 @@ type PickerKind = 'scope' | 'cartridge';
             [value]="settings().distanceM"
             [disabled]="settings().isDistanceUnknown"
             (input)="setDistance($event)"
-            [attr.aria-label]="texts.distanceSlider"
+            [attr.aria-label]="view.distanceSliderLabel"
             data-test="free-distance-slider"
           />
           <ion-toggle
@@ -190,7 +190,7 @@ export class FreePlayPage {
   protected readonly picker = signal<PickerKind | null>(null);
   private readonly unlocks = computed(() => courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks);
   protected readonly settings = computed(() => allowedFreePlay(this.progress.freePlay(), this.unlocks()));
-  protected readonly state = computed(() => freePlayView(this.settings(), this.unlocks(), this.progress.activeProfile()));
+  protected readonly state = computed(() => freePlayView(this.settings(), this.unlocks(), this.progress.activeProfile(), this.progress.settings().unitSystem));
   protected readonly pickerItems = computed<ChoiceView<ScopeId | CartridgeId>[]>(() => (this.picker() === 'scope' ? this.state().scopes : this.state().cartridges));
 
   protected update(patch: Partial<{ distanceM: number; isDistanceUnknown: boolean; wind: WindPreset; terrain: Terrain; notebookMode: NotebookMode; isInstructorNear: boolean; scopeId: ScopeId; cartridgeId: CartridgeId; rifle: FreePlayRifle }>): void {

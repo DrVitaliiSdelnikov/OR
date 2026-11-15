@@ -1,6 +1,7 @@
 import { Component, input, output, signal } from '@angular/core';
+import { UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
-import { ZoneTable } from './notebook.model';
+import { windFlagText, ZoneTable } from './notebook.model';
 import { SpeedWheelComponent } from './speed-wheel.component';
 import { WindClockComponent } from './wind-clock.component';
 
@@ -17,7 +18,7 @@ export interface WindInput {
       <div class="caption mono" data-test="wind-caption">{{ caption() }}</div>
       <div class="instruments">
         <or-wind-clock [clock]="wind()?.clock ?? null" [showShares]="showShares()" (clockChange)="chooseClock($event)" />
-        <or-speed-wheel [speed]="wind()?.speedMps ?? speedBeforeClock()" (speedChange)="chooseSpeed($event)" />
+        <or-speed-wheel [system]="system()" [speed]="wind()?.speedMps ?? speedBeforeClock()" (speedChange)="chooseSpeed($event)" />
       </div>
       <div class="station mono" data-test="wind-station">{{ stationText() }}</div>
       @if (zones(); as table) {
@@ -29,7 +30,7 @@ export interface WindInput {
         </div>
         <div class="flags" data-test="flag-readings">
           @for (flag of table.flags; track flag.distanceM) {
-            <div class="flag mono" [class.unread]="!flag.isRead" [attr.data-test]="'flag-' + flag.distanceM">{{ texts.flag({ distanceM: flag.distanceM, text: flag.text }) }}</div>
+            <div class="flag mono" [class.unread]="!flag.isRead" [attr.data-test]="'flag-' + flag.distanceM">{{ flagText(flag.distanceM, flag.text) }}</div>
           }
         </div>
       }
@@ -59,6 +60,7 @@ export interface WindInput {
   `,
 })
 export class WindTabComponent {
+  readonly system = input<UnitSystem>('metric');
   readonly wind = input<WindInput | null>(null);
   readonly caption = input.required<string>();
   readonly stationText = input.required<string>();
@@ -71,6 +73,10 @@ export class WindTabComponent {
 
   protected readonly texts = text.notebook.windTab;
   protected readonly speedBeforeClock = signal<number | null>(null);
+
+  protected flagText(distanceM: number, readingText: string): string {
+    return windFlagText(distanceM, readingText, this.system());
+  }
 
   protected chooseClock(clock: number): void {
     this.windChange.emit({ speedMps: this.wind()?.speedMps ?? this.speedBeforeClock() ?? 0, clock });

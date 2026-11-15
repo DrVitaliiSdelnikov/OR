@@ -125,6 +125,7 @@ export class ResultSheetComponent implements OnInit {
   readonly group = input.required<readonly Correction[]>();
   readonly calls = input.required<readonly Correction[]>();
   readonly radiusMil = input.required<number>();
+  readonly rifleSpreadMil = input<number>(COURSE_RIFLE.groupSigmaMrad);
   readonly next = output<void>();
   readonly repeat = output<void>();
   readonly journal = output<void>();
@@ -133,7 +134,7 @@ export class ResultSheetComponent implements OnInit {
   protected readonly noErrors = text.result.noErrors;
   private readonly feedback = inject(FeedbackService);
   protected readonly termSheet = inject(TermSheetService);
-  protected readonly groupLine = computed(() => groupText(this.group(), COURSE_RIFLE.groupSigmaMrad));
+  protected readonly groupLine = computed(() => groupText(this.group(), this.rifleSpreadMil()));
 
   ngOnInit(): void {
     this.feedback.emit('stamp');

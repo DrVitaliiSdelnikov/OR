@@ -101,3 +101,12 @@ describe('briefingCard', () => {
     expect(card('04').facts.wind).toContain('м/с');
   });
 });
+
+describe('брифинг в имперских единицах (T1.8a)', () => {
+  it('схема и факты — в ярдах', () => {
+    const briefing = briefingCard(exerciseById('06')!, { isIntroCompleted: true, bestClasses: {} }, 'imperial');
+    expect(briefing.scheme.distanceText).toBe('437–547 ярдов');
+    expect(briefing.facts.targets).toBe('4 × гонг 20 дюймов · 437–547 ярдов');
+    expect(briefingCard(exerciseById('05')!, { isIntroCompleted: true, bestClasses: {} }, 'imperial').scheme.distanceText).toBe('328–656 ярдов · неизвестно');
+  });
+});
