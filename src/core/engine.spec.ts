@@ -19,6 +19,13 @@ describe('BallisticsEngine.trajectory', () => {
     expect(at900(fine)).toBeCloseTo(at900(coarse), 6);
   });
 
+  it('a range beyond 1000 m (1100 yd = 1005.84 m) samples every 50 yd to the end', async () => {
+    const stepM = 50 * 0.9144;
+    const points = await engine.trajectory(courseLoadout(cartridgeB.id), null, null, cartridgeB.muzzleVelocityMps, stepM, undefined, 22 * stepM);
+    expect(points).toHaveLength(23);
+    expect(points.at(-1)!.distanceM).toBe(1006);
+  });
+
   it('is zeroed at 100 m', async () => {
     const points = await engine.trajectory(courseLoadout(cartridgeB.id), null, null);
     expect(Math.abs(BallisticsEngine.required(points, COURSE_RIFLE.zeroM).upMrad)).toBeLessThan(0.02);

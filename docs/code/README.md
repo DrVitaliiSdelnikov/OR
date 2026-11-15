@@ -109,3 +109,4 @@
 | sim/notebook · шаги угла, деривации и Кориолиса, местность (T1.4b) | [specs/sim-notebook-geometry.md](specs/sim-notebook-geometry.md) | реализовано, слито в `master` 15.11 |
 | sim/course · упражнения 13 «Горный склон» и 14 «Дальний рубеж» | [specs/sim-course-geometry.md](specs/sim-course-geometry.md) | реализовано, слито в `master` 15.11 |
 | sim/rifle-profile · профиль винтовки (T1.5) | [specs/sim-rifle-profile.md](specs/sim-rifle-profile.md) | реализовано, слито в `master` 15.11 |
+| sim/profile-dope · карточка ДОПЕ профиля (T1.6a) | [specs/core-profile-dope.md](specs/core-profile-dope.md) | реализовано, слито в `master` 16.11 |

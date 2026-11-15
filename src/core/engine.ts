@@ -16,6 +16,7 @@ export class BallisticsEngine {
     muzzleVelocityMps = loadout.cartridge.muzzleVelocityMps,
     stepM = TRAJECTORY_STEP_M,
     geometry: ShotGeometry = FLAT_GEOMETRY,
+    rangeM = MAX_TRAJECTORY_M,
   ): Promise<TrajectoryPoint[]> {
     const zeroed = await this.zeroedWeapon(loadout);
     const horizontalPerSlant = Math.cos(geometry.lookAngleDeg * RADIANS_PER_DEGREE);
@@ -29,7 +30,7 @@ export class BallisticsEngine {
     });
     const result = await this.calculator.fire({
       shot,
-      trajectoryRange: UNew.Meter(MAX_TRAJECTORY_M * horizontalPerSlant),
+      trajectoryRange: UNew.Meter(rangeM * horizontalPerSlant),
       trajectoryStep: UNew.Meter(stepM * horizontalPerSlant),
     });
     return result.samples.map(sample => ({
