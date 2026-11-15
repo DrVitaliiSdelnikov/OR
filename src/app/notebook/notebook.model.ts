@@ -169,7 +169,7 @@ export function factorDetail(notebook: Notebook, factor: NotebookFactor): string
         return T.noStationReading;
       }
       const mil = atmosphereCorrectionMil(row, station.temperatureC, station.pressureHpa);
-      return `(15 − ${station.temperatureC}) / 10 × ${decimal(row.colderBy10CMil, 2)} + (${station.pressureHpa} − 1013) / 10 × ${decimal(row.pressureUp10HpaMil, 2)} = ${mil < 0 ? '↓' : '↑'} ${decimal(Math.abs(mil), 2)}`;
+      return `(15 − ${decimal(station.temperatureC)}) / 10 × ${decimal(row.colderBy10CMil, 2)} + (${station.pressureHpa} − 1013) / 10 × ${decimal(row.pressureUp10HpaMil, 2)} = ${mil < 0 ? '↓' : '↑'} ${decimal(Math.abs(mil), 2)}`;
     }
     case 'wind': {
       const wind = notebook.readings.wind;

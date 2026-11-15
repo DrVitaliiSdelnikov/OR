@@ -83,7 +83,12 @@ describe('factor detail with the numbers put in by the game', () => {
 
   it('set Г: the conditions', () => {
     const measured = recordStation(notebookAt(600), { temperatureC: -5, pressureHpa: 1030, relativeHumidity: 0.5, windSpeedMps: 3.2, windClock: 9 }, 3, 0);
-    expect(factorDetail(measured, 'conditions')).toMatch(/^\(15 − -5\) \/ 10 × 0,1\d \+ \(1030 − 1013\) \/ 10 × 0,0\d = ↑ 0,2\d$/);
+    expect(factorDetail(measured, 'conditions')).toMatch(/^\(15 − −5\) \/ 10 × 0,1\d \+ \(1030 − 1013\) \/ 10 × 0,0\d = ↑ 0,2\d$/);
+  });
+
+  it('a fractional station temperature is written with a decimal comma', () => {
+    const measured = recordStation(notebookAt(600), { temperatureC: 17.7, pressureHpa: 1013, relativeHumidity: 0.5, windSpeedMps: 3.2, windClock: 9 }, 3, 0);
+    expect(factorDetail(measured, 'conditions')).toMatch(/^\(15 − 17,7\) \/ 10 × /);
   });
 
   it('says what is missing', () => {

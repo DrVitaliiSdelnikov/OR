@@ -116,7 +116,7 @@ export function chipText(chip: Chip, distanceM: number | null): { value: string;
     case 'reticle-mil':
       return { value: decimal(chip.value, 2), source: sources.reticleMil };
     case 'temperature':
-      return { value: `${chip.value} C`, source: sources.temperature };
+      return { value: `${decimal(chip.value)} C`, source: sources.temperature };
     case 'pressure':
       return { value: T.pressure({ pressureHpa: chip.value }), source: sources.pressure };
     case 'humidity':

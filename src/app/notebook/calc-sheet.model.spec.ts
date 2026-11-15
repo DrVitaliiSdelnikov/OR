@@ -65,7 +65,8 @@ describe('chips and tape', () => {
     expect(chipText({ kind: 'crosswind', value: 3.2, group: 'instruments' }, 300)).toEqual({ value: '3,2', source: 'V⊥ после часов' });
     expect(chipText({ kind: 'wind-constant', value: 1610, group: 'cartridge' }, 300)).toEqual({ value: '1610', source: 'K строка 300 м' });
     expect(chipText({ kind: 'distance', value: 300, group: 'instruments' }, 300)).toEqual({ value: '300 м', source: 'D' });
-    expect(chipText({ kind: 'temperature', value: -5, group: 'instruments' }, 600)).toEqual({ value: '-5 C', source: 'T станция' });
+    expect(chipText({ kind: 'temperature', value: -5, group: 'instruments' }, 600)).toEqual({ value: '−5 C', source: 'T станция' });
+    expect(chipText({ kind: 'temperature', value: 17.7, group: 'instruments' }, 600).value).toBe('17,7 C');
   });
 
   it('the wind tape has three lines with the printed constant; DOPE has one', () => {
