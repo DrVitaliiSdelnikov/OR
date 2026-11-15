@@ -1,3 +1,4 @@
+import { UNIT_SYSTEMS, UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
 
 const DRUM_LABELS = text.screens.settings.drumSensitivities;
@@ -13,6 +14,7 @@ export interface Settings {
   isTriggerZoneLarger: boolean;
   isMarkerDriftOff: boolean;
   isEverythingUnlocked: boolean;
+  unitSystem: UnitSystem;
 }
 
 export type SettingsFlag = { [Key in keyof Settings]: Settings[Key] extends boolean ? Key : never }[keyof Settings];
@@ -34,6 +36,7 @@ export const DEFAULT_SETTINGS: Settings = {
   isTriggerZoneLarger: false,
   isMarkerDriftOff: false,
   isEverythingUnlocked: false,
+  unitSystem: 'metric',
 };
 
 export const VOLUME_STEPS = 10;
@@ -65,6 +68,9 @@ export function knownSettings(stored: Record<string, unknown> | undefined): Sett
   }
   if (DRUM_SENSITIVITIES.some(item => item.ptPerClick === stored['drumPtPerClick'])) {
     known.drumPtPerClick = stored['drumPtPerClick'] as number;
+  }
+  if (UNIT_SYSTEMS.includes(stored['unitSystem'] as UnitSystem)) {
+    known.unitSystem = stored['unitSystem'] as UnitSystem;
   }
   return known;
 }

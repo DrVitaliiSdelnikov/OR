@@ -9,5 +9,6 @@ import { review } from './review';
 import { screens } from './screens';
 import { shell } from './shell';
 import { textbook } from './textbook';
+import { units } from './units';
 
-export const ru = { content, instructor, result, briefing, review, notebook, position, radio, shell, screens, textbook, intro };
+export const ru = { content, instructor, result, briefing, review, notebook, position, radio, shell, screens, textbook, intro, units };

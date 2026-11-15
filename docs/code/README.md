@@ -101,3 +101,5 @@
 | app · журнал стрелка (A7.2) | [specs/app-journal.md](specs/app-journal.md) | реализовано, слито в `master` 9.11 |
 | app · свободная игра (A7.1) | [specs/app-free-play.md](specs/app-free-play.md) | реализовано, слито в `master` 9.11 |
 | app · обучающие подсказки для новинок 04–10 (A6.5) | [specs/app-instructor-novelties.md](specs/app-instructor-novelties.md) | реализовано, слито в `master` 9.11; 09 и 11 — вместе с их механиками |
+| sim · упреждение без стороны (В43, T0.4) | [specs/sim-lead-unsigned.md](specs/sim-lead-unsigned.md) | реализовано, слито в `master` 15.11 |
+| core/units · метрика и имперская система (T1.1) | [specs/core-units.md](specs/core-units.md) | реализовано, слито в `master` 15.11 |

@@ -27,6 +27,14 @@ describe('настройки при загрузке (U1)', () => {
     expect(knownSettings({ drumPtPerClick: 10 }).drumPtPerClick).toBe(12);
   });
 
+  it('система единиц: по умолчанию метрика; имперская переживает сохранение и загрузку; мусор → метрика (T1.1)', () => {
+    expect(DEFAULT_SETTINGS.unitSystem).toBe('metric');
+    const saved = JSON.parse(JSON.stringify({ ...DEFAULT_SETTINGS, unitSystem: 'imperial' })) as Record<string, unknown>;
+    expect(knownSettings(saved).unitSystem).toBe('imperial');
+    expect(knownSettings({ unitSystem: 'yards' }).unitSystem).toBe('metric');
+    expect(knownSettings({ unitSystem: 1 }).unitSystem).toBe('metric');
+  });
+
   it('флаги берутся, только если это булевы; чужие поля отброшены', () => {
     const settings = knownSettings({ isLeftHanded: true, isTapTrigger: 'да', isTextLarge: true, isSoundOn: true, theme: 'day' });
     expect(settings.isLeftHanded).toBe(true);
