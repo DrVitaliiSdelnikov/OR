@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { clockFromDeg, createScenario, degFromClock, gaugeWindAt, lateralWindMps, windAt } from './scenario';
+import { FLAT_GEOMETRY } from './content';
+import { clockFromDeg, createScenario, degFromClock, gaugeWindAt, lateralWindMps, standardPressureHpaAt, windAt } from './scenario';
 
 describe('createScenario', () => {
   it('is deterministic for a seed', () => {
@@ -131,5 +132,43 @@ describe('createScenario — exercise conditions', () => {
       clocks.add(scenario.gauge.windClock);
     }
     expect(clocks).toEqual(new Set([3, 9]));
+  });
+});
+
+describe('createScenario — местность и геометрия (T1.3)', () => {
+  it('без новых полей сценарий тот же, что до T1.3 (снимок сида 20261115), геометрия ровная', () => {
+    const scenario = createScenario(20261115, { windScale: 1 });
+    expect(scenario.atmosphere).toEqual({ temperatureC: 11.6, pressureHpa: 1017, relativeHumidity: 0.34 });
+    expect(scenario.zones.map(zone => [zone.speedMps, zone.fromDeg])).toEqual([[2.8, 87], [2.4, 51], [2.8, 79], [2, 85]]);
+    expect(scenario.startTimeS).toBe(127);
+    expect(scenario.gauge).toEqual({ temperatureC: 11.1, pressureHpa: 1017, relativeHumidity: 0.35, windSpeedMps: 2.8, windClock: 9 });
+    expect(scenario.geometry).toEqual(FLAT_GEOMETRY);
+  });
+
+  it('стандартное давление: 1013 гПа на уровне моря, около 846 на 1500 м', () => {
+    expect(standardPressureHpaAt(0)).toBeCloseTo(1013.25, 2);
+    expect(standardPressureHpaAt(1500)).toBeCloseTo(845.6, 0);
+  });
+
+  it('высота 1500 м: давление на станции 800–890 гПа, станция показывает его же; ветер и время — как без высоты', () => {
+    const plain = createScenario(20261115, { windScale: 1 });
+    for (let seed = 1; seed <= 30; seed++) {
+      const scenario = createScenario(seed, { windScale: 1, altitudeRangeM: [1500, 1500] });
+      expect(scenario.atmosphere.altitudeM).toBe(1500);
+      expect(scenario.atmosphere.pressureHpa).toBeGreaterThanOrEqual(800);
+      expect(scenario.atmosphere.pressureHpa).toBeLessThanOrEqual(890);
+      expect(Math.abs(scenario.gauge.pressureHpa - scenario.atmosphere.pressureHpa)).toBeLessThanOrEqual(2);
+    }
+    const mountain = createScenario(20261115, { windScale: 1, altitudeRangeM: [1500, 1500] });
+    expect(mountain.zones).toEqual(plain.zones);
+    expect(mountain.startTimeS).toBe(plain.startTimeS);
+  });
+
+  it('угол, Кориолис и деривация берутся из условий; угол — в диапазоне', () => {
+    const scenario = createScenario(7, { lookAngleRangeDeg: [-20, -10], coriolis: { latitudeDeg: 55, azimuthDeg: 90 }, isSpinDriftOn: true });
+    expect(scenario.geometry.lookAngleDeg).toBeGreaterThanOrEqual(-20);
+    expect(scenario.geometry.lookAngleDeg).toBeLessThanOrEqual(-10);
+    expect(scenario.geometry.coriolis).toEqual({ latitudeDeg: 55, azimuthDeg: 90 });
+    expect(scenario.geometry.isSpinDriftOn).toBe(true);
   });
 });

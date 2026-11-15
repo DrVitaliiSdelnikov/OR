@@ -128,6 +128,13 @@ describe('resolveShot', () => {
     expect(result.decision.rightMrad).toBeCloseTo(0, 2);
   });
 
+  it('the shot follows the scenario geometry: right twist with spin drift on lands right of the flat shot (T1.3)', async () => {
+    const spinning = { ...scenario, geometry: { ...scenario.geometry, isSpinDriftOn: true } };
+    const flat = await resolveShot(engine, scenario, loadout, target500, perfectDial, 9);
+    const drifting = await resolveShot(engine, spinning, loadout, target500, perfectDial, 9);
+    expect(drifting.impact.rightMrad - flat.impact.rightMrad).toBeGreaterThan(0.05);
+  });
+
   it('plate radius is 0.5 mrad at 500 m', async () => {
     const result = await resolveShot(engine, scenario, loadout, target500, perfectDial, 0);
     expect(result.radiusMrad).toBe(0.5);

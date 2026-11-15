@@ -1,0 +1,334 @@
+{
+  "source": {
+    "library": "@joelbenway/lob",
+    "version": "0.14.0",
+    "generatedAt": "2026-11-15",
+    "generator": "scripts/reference/generate.mjs",
+    "notes": [
+      "BC отнесён к ICAO (bcAtmosphere), как в js-ballistics; по умолчанию lob берёт Army Standard Metro",
+      "решатель ELR (solveInverseELRYds): плотность меняется с высотой по пути; на ровной линии совпадает с обычным",
+      "ноль — ровный, в стандартной атмосфере ICAO (15 °C, 1013,25 гПа, 0 %), угол нуля найден прямым решением lob (zeroAngleMoa); сама lob пристреливает под углом и в атмосфере выстрела",
+      "каждый набор — в отдельном процессе: lob 0.14.0 сохраняет шаг нарезов между запусками",
+      "скорость в lob — целые fps; muzzleVelocityMps — точный перевод этих fps",
+      "ветер с 3 ч (у нас fromDeg 270) — lob windHeading(9): lob 0.14.0 читает часы как «куда дует» (на 12 падение меньше, чем на 6), вопреки своей документации",
+      "upMil — поправка вверх относительно нуля; impactRightMil — уход пули вправо относительно линии прицела",
+      "lob добавляет аэродинамический прыжок: вертикальный сдвиг от бокового ветра, антисимметричный по ветру (с 3 ч −0,13, с 9 ч +0,13 MIL для .308 на 4 м/с). Наш движок его не моделирует: upMil — среднее прогонов с ветром и с зеркальным ветром, сам прыжок — aerodynamicJumpUpMil"
+    ]
+  },
+  "cartridge": {
+    "name": "6,5 Creedmoor 140 гр",
+    "massG": 9.071847,
+    "bulletDiameterIn": 0.264,
+    "bulletLengthMm": 34.6964,
+    "dragModel": "G7",
+    "ballisticCoefficient": 0.326,
+    "muzzleVelocityMps": 826.008
+  },
+  "rifle": {
+    "sightHeightCm": 5,
+    "zeroM": 100,
+    "twistDirection": "right",
+    "twistInchesPerTurn": 8
+  },
+  "sets": [
+    {
+      "id": "sea-level-calm",
+      "atmosphere": {
+        "temperatureC": 15,
+        "pressureHpa": 1013,
+        "relativeHumidity": 0.5,
+        "altitudeM": 0
+      },
+      "windZones": [],
+      "geometry": {
+        "lookAngleDeg": 0,
+        "coriolis": null,
+        "isSpinDriftOn": true
+      },
+      "rows": [
+        {
+          "distanceM": 100,
+          "upMil": -0.00008468630416152846,
+          "impactRightMil": 0.02049389921113796,
+          "timeS": 0.1245952127629535,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.02049389921113796
+        },
+        {
+          "distanceM": 200,
+          "upMil": 0.5578322901704248,
+          "impactRightMil": 0.0384759141750743,
+          "timeS": 0.2567363354629825,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.0384759141750743
+        },
+        {
+          "distanceM": 300,
+          "upMil": 1.3506877705890845,
+          "impactRightMil": 0.05698178601371565,
+          "timeS": 0.3971066975417239,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.05698178601371565
+        },
+        {
+          "distanceM": 400,
+          "upMil": 2.261593170848286,
+          "impactRightMil": 0.07665284688381754,
+          "timeS": 0.5464595425461108,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.07665284688381754
+        },
+        {
+          "distanceM": 500,
+          "upMil": 3.2748669060183673,
+          "impactRightMil": 0.09790084436272656,
+          "timeS": 0.7056329745881348,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.09790084436272656
+        },
+        {
+          "distanceM": 600,
+          "upMil": 4.3965629739877965,
+          "impactRightMil": 0.12116640992218954,
+          "timeS": 0.8761261956658832,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.12116640992218954
+        },
+        {
+          "distanceM": 700,
+          "upMil": 5.629069565198325,
+          "impactRightMil": 0.14669342069936997,
+          "timeS": 1.0580424681540366,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.14669342069936997
+        },
+        {
+          "distanceM": 800,
+          "upMil": 6.989096027419443,
+          "impactRightMil": 0.17498383213911775,
+          "timeS": 1.2532299067385797,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.17498383213911775
+        },
+        {
+          "distanceM": 900,
+          "upMil": 8.494016902115357,
+          "impactRightMil": 0.20654584188922376,
+          "timeS": 1.4632795137527224,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.20654584188922376
+        },
+        {
+          "distanceM": 1000,
+          "upMil": 10.165495456383265,
+          "impactRightMil": 0.24198375709923978,
+          "timeS": 1.6900612809773936,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.24198375709923978
+        }
+      ]
+    },
+    {
+      "id": "altitude-1500-wind-3",
+      "atmosphere": {
+        "temperatureC": 5,
+        "pressureHpa": 845.6,
+        "relativeHumidity": 0.5,
+        "altitudeM": 1500
+      },
+      "windZones": [
+        {
+          "speedMps": 4,
+          "fromDeg": 270
+        }
+      ],
+      "geometry": {
+        "lookAngleDeg": 0,
+        "coriolis": null,
+        "isSpinDriftOn": true
+      },
+      "rows": [
+        {
+          "distanceM": 100,
+          "upMil": -0.004229229500046727,
+          "impactRightMil": -0.09968780316180283,
+          "timeS": 0.12407889685090585,
+          "aerodynamicJumpUpMil": -0.10256281248110102,
+          "spinDriftRightMil": 0.02218942037172228
+        },
+        {
+          "distanceM": 200,
+          "upMil": 0.5400904331621446,
+          "impactRightMil": -0.20861697368288493,
+          "timeS": 0.25455831156793796,
+          "aerodynamicJumpUpMil": -0.10256281247869489,
+          "spinDriftRightMil": 0.04132753389712654
+        },
+        {
+          "distanceM": 300,
+          "upMil": 1.3078885771041933,
+          "impactRightMil": -0.3239233136131174,
+          "timeS": 0.39193333408315445,
+          "aerodynamicJumpUpMil": -0.10256281247012211,
+          "spinDriftRightMil": 0.060692617351591316
+        },
+        {
+          "distanceM": 400,
+          "upMil": 2.1798770805369196,
+          "impactRightMil": -0.44541720390950645,
+          "timeS": 0.5367443018597361,
+          "aerodynamicJumpUpMil": -0.1025628124488569,
+          "spinDriftRightMil": 0.08092696769319929
+        },
+        {
+          "distanceM": 500,
+          "upMil": 3.1374976710151308,
+          "impactRightMil": -0.5731883151273756,
+          "timeS": 0.68957809130981,
+          "aerodynamicJumpUpMil": -0.10256281240574028,
+          "spinDriftRightMil": 0.10240392847094626
+        },
+        {
+          "distanceM": 600,
+          "upMil": 4.182979256299131,
+          "impactRightMil": -0.7079028222690628,
+          "timeS": 0.8515864873302483,
+          "aerodynamicJumpUpMil": -0.10256281232895725,
+          "spinDriftRightMil": 0.12549479975246602
+        },
+        {
+          "distanceM": 700,
+          "upMil": 5.3146530696510546,
+          "impactRightMil": -0.8491671200837969,
+          "timeS": 1.0225151626477034,
+          "aerodynamicJumpUpMil": -0.10256281220617547,
+          "spinDriftRightMil": 0.15034450073419692
+        },
+        {
+          "distanceM": 800,
+          "upMil": 6.543272312898843,
+          "impactRightMil": -0.9979901638190756,
+          "timeS": 1.203682876260301,
+          "aerodynamicJumpUpMil": -0.10256281194160932,
+          "spinDriftRightMil": 0.1773212437596836
+        },
+        {
+          "distanceM": 900,
+          "upMil": 7.878888946848914,
+          "impactRightMil": -1.1551389615714431,
+          "timeS": 1.3960636152808812,
+          "aerodynamicJumpUpMil": -0.1025628117835482,
+          "spinDriftRightMil": 0.20675981392323672
+        },
+        {
+          "distanceM": 1000,
+          "upMil": 9.333848188811682,
+          "impactRightMil": -1.3214968466014152,
+          "timeS": 1.6007824358282021,
+          "aerodynamicJumpUpMil": -0.10256281149348556,
+          "spinDriftRightMil": 0.23904245087297737
+        }
+      ]
+    },
+    {
+      "id": "uphill-15-coriolis-55n-east",
+      "atmosphere": {
+        "temperatureC": 15,
+        "pressureHpa": 1013,
+        "relativeHumidity": 0.5,
+        "altitudeM": 0
+      },
+      "windZones": [],
+      "geometry": {
+        "lookAngleDeg": 15,
+        "coriolis": {
+          "latitudeDeg": 55,
+          "azimuthDeg": 90
+        },
+        "isSpinDriftOn": true
+      },
+      "rows": [
+        {
+          "distanceM": 100,
+          "upMil": -0.030667252149532278,
+          "impactRightMil": 0.02787519981312606,
+          "timeS": 0.12461976829375104,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.020501291163763046
+        },
+        {
+          "distanceM": 200,
+          "upMil": 0.4946979455160205,
+          "impactRightMil": 0.05355172135285201,
+          "timeS": 0.2568437703523254,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.038505383721547166
+        },
+        {
+          "distanceM": 300,
+          "upMil": 1.2526351990964835,
+          "impactRightMil": 0.08008952204936019,
+          "timeS": 0.3973718043931724,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.05705141998887718
+        },
+        {
+          "distanceM": 400,
+          "upMil": 2.125897442310154,
+          "impactRightMil": 0.10815779363130419,
+          "timeS": 0.5469777835650979,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.07678593032795882
+        },
+        {
+          "distanceM": 500,
+          "upMil": 3.0983720278449223,
+          "impactRightMil": 0.13820020325684063,
+          "timeS": 0.706526587995273,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.09812784992852346
+        },
+        {
+          "distanceM": 600,
+          "upMil": 4.175455958479993,
+          "impactRightMil": 0.1707236568519228,
+          "timeS": 0.8775549728245639,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.12152825690623441
+        },
+        {
+          "distanceM": 700,
+          "upMil": 5.359174371775163,
+          "impactRightMil": 0.2059608300390101,
+          "timeS": 1.060210722119676,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.14724402287913801
+        },
+        {
+          "distanceM": 800,
+          "upMil": 6.665322127787286,
+          "impactRightMil": 0.24449585986873937,
+          "timeS": 1.2564061214087003,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.17579625959007167
+        },
+        {
+          "distanceM": 900,
+          "upMil": 8.110295756485886,
+          "impactRightMil": 0.28690442600511423,
+          "timeS": 1.4678157314653448,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.2077190968868471
+        },
+        {
+          "distanceM": 1000,
+          "upMil": 9.714538972177854,
+          "impactRightMil": 0.33387390528135913,
+          "timeS": 1.6964171735989473,
+          "aerodynamicJumpUpMil": 0,
+          "spinDriftRightMil": 0.24365172826858317
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { FLAG_DISTANCES_M, WIND_ZONE_LIMITS_M } from './content';
 import { mulberry32 } from './rng';
-import { Atmosphere, WindZone } from './types';
+import { Atmosphere, CoriolisInput, ShotGeometry, WindZone } from './types';
 
 export interface Gust {
   zoneIndex: number;
@@ -41,6 +41,7 @@ export interface Scenario {
   zones: WindZone[];
   gauge: GaugeReading;
   flags: FlagReading[];
+  geometry: ShotGeometry;
 }
 
 export type ValueRange = readonly [min: number, max: number];
@@ -52,9 +53,21 @@ export interface ScenarioOptions {
   pressureRangeHpa?: ValueRange;
   windSpeedRangeMps?: ValueRange;
   windClocks?: readonly number[];
+  altitudeRangeM?: ValueRange;
+  lookAngleRangeDeg?: ValueRange;
+  coriolis?: CoriolisInput;
+  isSpinDriftOn?: boolean;
 }
 
 const GUST_TIMELINE_S = 1500;
+const TERRAIN_SEED_SALT = 0x5eed7e44;
+const ISA_SEA_LEVEL_PRESSURE_HPA = 1013.25;
+const ISA_PRESSURE_ALTITUDE_FACTOR_PER_M = 2.25577e-5;
+const ISA_PRESSURE_EXPONENT = 5.25588;
+
+export function standardPressureHpaAt(altitudeM: number): number {
+  return ISA_SEA_LEVEL_PRESSURE_HPA * (1 - ISA_PRESSURE_ALTITUDE_FACTOR_PER_M * altitudeM) ** ISA_PRESSURE_EXPONENT;
+}
 
 export const normalizeDeg = (degrees: number): number => ((degrees % 360) + 360) % 360;
 
@@ -84,6 +97,19 @@ export function createScenario(seed: number, options: ScenarioOptions = {}): Sce
   if (options.pressureRangeHpa) {
     atmosphere.pressureHpa = Math.round(valueInRange(options.pressureRangeHpa, random()));
   }
+  const terrainRandom = mulberry32(seed ^ TERRAIN_SEED_SALT);
+  if (options.altitudeRangeM) {
+    const altitudeM = Math.round(valueInRange(options.altitudeRangeM, terrainRandom()));
+    atmosphere.altitudeM = altitudeM;
+    if (!options.pressureRangeHpa) {
+      atmosphere.pressureHpa = Math.round(atmosphere.pressureHpa + standardPressureHpaAt(altitudeM) - ISA_SEA_LEVEL_PRESSURE_HPA);
+    }
+  }
+  const geometry: ShotGeometry = {
+    lookAngleDeg: options.lookAngleRangeDeg ? Math.round(valueInRange(options.lookAngleRangeDeg, terrainRandom())) : 0,
+    coriolis: options.coriolis ?? null,
+    isSpinDriftOn: options.isSpinDriftOn ?? false,
+  };
   const baseSpeedMps = 1 + random() * 5;
   const baseFromDeg = (random() < 0.5 ? 90 : 270) + (random() - 0.5) * 80;
   let zones: WindZone[] = WIND_ZONE_LIMITS_M.map(untilM => ({
@@ -138,6 +164,7 @@ export function createScenario(seed: number, options: ScenarioOptions = {}): Sce
     seed,
     isWindUniform,
     startTimeS,
+    geometry,
     dynamics,
     gaugeSpeedBias,
     atmosphere,

@@ -41,6 +41,18 @@ export interface Atmosphere {
   temperatureC: number;
   pressureHpa: number;
   relativeHumidity: number;
+  altitudeM?: number;
+}
+
+export interface CoriolisInput {
+  latitudeDeg: number;
+  azimuthDeg: number;
+}
+
+export interface ShotGeometry {
+  lookAngleDeg: number;
+  coriolis: CoriolisInput | null;
+  isSpinDriftOn: boolean;
 }
 
 export interface WindZone {

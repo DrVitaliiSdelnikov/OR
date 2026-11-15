@@ -1,5 +1,5 @@
 import { text } from '../i18n';
-import { Cartridge, CartridgeId, Loadout, Rifle, Target } from './types';
+import { Cartridge, CartridgeId, Loadout, Rifle, ShotGeometry, Target } from './types';
 
 export const COURSE_RIFLE: Rifle = {
   name: text.content.rifleName,
@@ -21,6 +21,8 @@ export const CARTRIDGES: readonly Cartridge[] = [
   { id: 'B', ...text.content.cartridges.B, ...COURSE_BULLET, massG: 10.9, bulletLengthMm: 31.2, ballisticCoefficient: 0.218, muzzleVelocityMps: 800, muzzleVelocitySdMps: 7 },
   { id: 'C', ...text.content.cartridges.C, ...COURSE_BULLET, massG: 11.7, bulletLengthMm: 32.5, ballisticCoefficient: 0.255, muzzleVelocityMps: 775, muzzleVelocitySdMps: 6 },
 ];
+
+export const FLAT_GEOMETRY: ShotGeometry = { lookAngleDeg: 0, coriolis: null, isSpinDriftOn: false };
 
 export const MAX_TRAJECTORY_M = 1000;
 export const TRAJECTORY_STEP_M = 100;

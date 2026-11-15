@@ -510,6 +510,7 @@ export class PositionSession {
       windAt(this.scenario, timeS),
       result.actualMuzzleVelocityMps,
       target.distanceM / FLIGHT_SAMPLES,
+      this.scenario.geometry,
     );
     return flightPaths(flightSamples(points, target.distanceM), result.impact, this.loadout.rifle.sightHeightCm);
   }

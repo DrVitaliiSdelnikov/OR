@@ -76,12 +76,12 @@ export async function resolveShot(
 
   const sampleStepM = target.distanceM;
   const [nominal, actual, vacuumLike, atmosphereOnly, fasterBullet, meanWind] = await Promise.all([
-    engine.trajectory(loadout, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps, sampleStepM),
-    engine.trajectory(loadout, scenario.atmosphere, windAtShot, actualMuzzleVelocityMps, sampleStepM),
-    engine.trajectory(loadout, null, null, cartridge.muzzleVelocityMps, sampleStepM),
-    engine.trajectory(loadout, scenario.atmosphere, null, cartridge.muzzleVelocityMps, sampleStepM),
-    engine.trajectory(loadout, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps + cartridge.muzzleVelocitySdMps, sampleStepM),
-    engine.trajectory(loadout, scenario.atmosphere, scenario.zones, cartridge.muzzleVelocityMps, sampleStepM),
+    engine.trajectory(loadout, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps, sampleStepM, scenario.geometry),
+    engine.trajectory(loadout, scenario.atmosphere, windAtShot, actualMuzzleVelocityMps, sampleStepM, scenario.geometry),
+    engine.trajectory(loadout, null, null, cartridge.muzzleVelocityMps, sampleStepM, scenario.geometry),
+    engine.trajectory(loadout, scenario.atmosphere, null, cartridge.muzzleVelocityMps, sampleStepM, scenario.geometry),
+    engine.trajectory(loadout, scenario.atmosphere, windAtShot, cartridge.muzzleVelocityMps + cartridge.muzzleVelocitySdMps, sampleStepM, scenario.geometry),
+    engine.trajectory(loadout, scenario.atmosphere, scenario.zones, cartridge.muzzleVelocityMps, sampleStepM, scenario.geometry),
   ]);
   const distanceM = target.distanceM;
   const ideal = BallisticsEngine.required(nominal, distanceM);

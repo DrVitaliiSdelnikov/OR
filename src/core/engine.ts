@@ -1,9 +1,12 @@
-import { Ammo, Atmo, Calculator, DragModel, DragTables, Shot, UNew, Unit, Weapon, Wind } from 'js-ballistics';
-import { MAX_TRAJECTORY_M, TRAJECTORY_STEP_M } from './content';
-import { Atmosphere, Cartridge, Loadout, RequiredCorrection, TrajectoryPoint, WindZone } from './types';
+import { Ammo, Atmo, Calculator, DEFAULT_CONFIG, DragModel, DragTables, Shot, UNew, Unit, Weapon, Wind } from 'js-ballistics';
+import { FLAT_GEOMETRY, MAX_TRAJECTORY_M, TRAJECTORY_STEP_M } from './content';
+import { Atmosphere, Cartridge, Loadout, RequiredCorrection, ShotGeometry, TrajectoryPoint, WindZone } from './types';
+
+const RADIANS_PER_DEGREE = Math.PI / 180;
+const DOWNHILL_MINIMUM_ALTITUDE_FT = DEFAULT_CONFIG.maximumDrop;
 
 export class BallisticsEngine {
-  private readonly calculator = new Calculator();
+  private readonly calculator = new Calculator({ config: { ...DEFAULT_CONFIG, minimumAltitude: DOWNHILL_MINIMUM_ALTITUDE_FT } });
   private readonly zeroedWeapons = new Map<string, Promise<Weapon>>();
 
   async trajectory(
@@ -12,21 +15,25 @@ export class BallisticsEngine {
     windZones: readonly WindZone[] | null,
     muzzleVelocityMps = loadout.cartridge.muzzleVelocityMps,
     stepM = TRAJECTORY_STEP_M,
+    geometry: ShotGeometry = FLAT_GEOMETRY,
   ): Promise<TrajectoryPoint[]> {
-    const weapon = await this.zeroedWeapon(loadout);
+    const zeroed = await this.zeroedWeapon(loadout);
+    const horizontalPerSlant = Math.cos(geometry.lookAngleDeg * RADIANS_PER_DEGREE);
     const shot = new Shot({
-      weapon,
-      ammo: this.ammo(loadout.cartridge, muzzleVelocityMps),
+      weapon: geometry.isSpinDriftOn ? this.spinningWeapon(loadout, zeroed) : zeroed,
+      ammo: this.ammo(loadout.cartridge, muzzleVelocityMps, geometry.isSpinDriftOn),
       atmo: atmosphere ? this.atmo(atmosphere) : Atmo.standard(),
-      winds: this.winds(windZones ?? []),
+      winds: this.winds(windZones ?? [], horizontalPerSlant),
+      lookAngle: UNew.Degree(geometry.lookAngleDeg),
+      ...(geometry.coriolis ? { coriolis: { latitudeDeg: geometry.coriolis.latitudeDeg, azimuthDeg: geometry.coriolis.azimuthDeg } } : {}),
     });
     const result = await this.calculator.fire({
       shot,
-      trajectoryRange: UNew.Meter(MAX_TRAJECTORY_M),
-      trajectoryStep: UNew.Meter(stepM),
+      trajectoryRange: UNew.Meter(MAX_TRAJECTORY_M * horizontalPerSlant),
+      trajectoryStep: UNew.Meter(stepM * horizontalPerSlant),
     });
     return result.samples.map(sample => ({
-      distanceM: Math.round(sample.distance.In(Unit.Meter)),
+      distanceM: Math.round(sample.distance.In(Unit.Meter) / horizontalPerSlant),
       dropMrad: sample.dropAngle.In(Unit.MRad),
       windageMrad: sample.windageAngle.In(Unit.MRad),
       timeS: sample.time,
@@ -79,6 +86,11 @@ export class BallisticsEngine {
     return zeroing;
   }
 
+  private spinningWeapon({ rifle }: Loadout, zeroed: Weapon): Weapon {
+    const twistInches = rifle.twistDirection === 'left' ? -rifle.twistInchesPerTurn : rifle.twistInchesPerTurn;
+    return new Weapon({ sightHeight: zeroed.sightHeight, twist: UNew.Inch(twistInches), zeroElevation: zeroed.zeroElevation });
+  }
+
   private async zeroWeapon({ rifle, cartridge }: Loadout): Promise<Weapon> {
     const weapon = new Weapon({ sightHeight: UNew.Centimeter(rifle.sightHeightCm) });
     const zeroShot = new Shot({ weapon, ammo: this.ammo(cartridge, cartridge.muzzleVelocityMps), atmo: Atmo.standard() });
@@ -86,12 +98,13 @@ export class BallisticsEngine {
     return weapon;
   }
 
-  private ammo(cartridge: Cartridge, muzzleVelocityMps: number): Ammo {
+  private ammo(cartridge: Cartridge, muzzleVelocityMps: number, hasBulletLength = false): Ammo {
     const dragModel = new DragModel({
       bc: cartridge.ballisticCoefficient,
       dragTable: DragTables[cartridge.dragModel],
       weight: UNew.Gram(cartridge.massG),
       diameter: UNew.Inch(cartridge.bulletDiameterIn),
+      ...(hasBulletLength ? { length: UNew.Millimeter(cartridge.bulletLengthMm) } : {}),
     });
     return new Ammo({ dm: dragModel, mv: UNew.MPS(muzzleVelocityMps) });
   }
@@ -105,13 +118,13 @@ export class BallisticsEngine {
     });
   }
 
-  private winds(windZones: readonly WindZone[]): Wind[] {
+  private winds(windZones: readonly WindZone[], horizontalPerSlant: number): Wind[] {
     return windZones.map((zone, index) => {
       const isLastZone = index === windZones.length - 1 || !Number.isFinite(zone.untilM);
       return new Wind({
         velocity: UNew.MPS(zone.speedMps),
         directionFrom: UNew.Degree(zone.fromDeg),
-        ...(isLastZone ? {} : { untilDistance: UNew.Meter(zone.untilM) }),
+        ...(isLastZone ? {} : { untilDistance: UNew.Meter(zone.untilM * horizontalPerSlant) }),
       });
     });
   }

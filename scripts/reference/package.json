@@ -1,0 +1,12 @@
+{
+  "name": "ognevoy-reference",
+  "private": true,
+  "type": "module",
+  "description": "Эталонные траектории для src/core/reference: считает lob, в приложение не входит",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "@joelbenway/lob": "0.14.0"
+  }
+}
