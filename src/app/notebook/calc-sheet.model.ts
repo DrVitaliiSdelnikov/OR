@@ -103,6 +103,10 @@ export function formulaTokens(notebook: Notebook, step: NotebookStepId): Formula
   });
 }
 
+function windConstantText(windConstant: number): string {
+  return String(Math.round(windConstant));
+}
+
 export function chipText(chip: Chip, distanceM: number | null): { value: string; source: string } {
   const rowText = distanceM === null ? '' : T.chipRow({ distanceM: Math.round(distanceM) });
   const sources = T.chipSources;
@@ -130,7 +134,7 @@ export function chipText(chip: Chip, distanceM: number | null): { value: string;
     case 'pressure-column':
       return { value: decimal(chip.value, 2), source: T.pressureColumnSource({ row: rowText }) };
     case 'wind-constant':
-      return { value: String(chip.value), source: `K${rowText}` };
+      return { value: windConstantText(chip.value), source: `K${rowText}` };
     case 'zone-station':
       return { value: decimal(chip.value, 1), source: sources.zoneStation };
     case 'zone-200':
@@ -163,7 +167,7 @@ export function tapeLabels(notebook: Notebook, step: NotebookStepId): string[] {
       return [T.tapeZones];
     case 'wind': {
       const constant = stepSheet(notebook, step).printedConstants.find(chip => chip.kind === 'wind-constant');
-      return ['V⊥ × D =', `÷ ${constant ? constant.value : 'K'} =`, clickText];
+      return ['V⊥ × D =', `÷ ${constant ? windConstantText(constant.value) : 'K'} =`, clickText];
     }
     case 'lead':
       return ['V⊥ × t =', '÷ D × 1000 =', clickText];

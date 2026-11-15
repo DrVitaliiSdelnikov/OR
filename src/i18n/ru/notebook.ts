@@ -7,7 +7,7 @@ import { decimal, plural, PluralForms } from '../format';
 const POINT_FORMS: PluralForms = ['очко', 'очка', 'очков'];
 const FORMULAS = 'Формулы';
 
-const meters = (p: { distanceM: number }) => `${p.distanceM} м`;
+const meters = (p: { distanceM: number }) => `${decimal(p.distanceM)} м`;
 const windReading = (p: { speedMps: number; clock: string }) => `${decimal(p.speedMps, 1)} м/с с ${p.clock}`;
 
 export const notebook = {

@@ -69,6 +69,12 @@ describe('chips and tape', () => {
     expect(chipText({ kind: 'temperature', value: 17.7, group: 'instruments' }, 600).value).toBe('17,7 C');
   });
 
+  it('T0.4c: a fractional target size reads with a comma; the wind constant between rows reads whole', () => {
+    expect(chipText({ kind: 'target-size', value: 0.5, group: 'instruments' }, 256).value).toBe('0,5 м');
+    expect(chipText({ kind: 'wind-constant', value: 1645.2, group: 'cartridge' }, 256).value).toBe('1645');
+    expect(tapeLabels(enterWind(notebookAt(256), 3.2, 9), 'wind')[1]).toMatch(/^÷ \d+ =$/);
+  });
+
   it('the wind tape has three lines with the printed constant; DOPE has one', () => {
     expect(tapeLabels(enterWind(notebookAt(300), 3.2, 9), 'wind')).toEqual(['V⊥ × D =', '÷ 1610 =', 'до клика 0,1 =']);
     expect(tapeLabels(enterWind(notebookAt(300, 'manual-hard'), 3.2, 9), 'wind')).toEqual(['V⊥ × D =', '÷ K =', 'до клика 0,1 =']);
