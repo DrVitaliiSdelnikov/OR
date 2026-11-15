@@ -16,7 +16,7 @@ const windReading = (p: { speedMps: number; clock: string }) => `${decimal(p.spe
 export const notebook = {
   model: {
     tabs: { total: 'Итог', distance: 'Дистанция', conditions: 'Условия', wind: 'Ветер', dope: 'ДОПЕ' },
-    lockedTabs: ['Угол', 'Патрон', 'Ещё'],
+    lockedTabs: ['Патрон', 'Ещё'],
     factorNames: {
       dope: 'ДОПЕ',
       conditions: 'Условия',

@@ -143,10 +143,11 @@ test.describe('шторка блокнота (A5.1)', () => {
     expect((await pinned.boundingBox())!.x).toBeCloseTo(before.x, 0);
   });
 
-  test('закрытый таб «Угол» — «откроется в следующем этапе»', async ({ page }) => {
+  test('закрытого таба «Угол» нет — угол стал шагом листа; закрытый «Патрон» — «откроется в следующем этапе»', async ({ page }) => {
     await toPosition(page, '04');
     await page.getByTestId('tile-notebook').click();
-    await page.getByTestId('locked-Угол').click();
+    await expect(page.getByTestId('locked-Угол')).toHaveCount(0);
+    await page.getByTestId('locked-Патрон').click();
     await expect(page.getByTestId('locked-notice')).toHaveText('Откроется в следующем этапе');
   });
 
@@ -164,7 +165,7 @@ test.describe('шторка блокнота (A5.1)', () => {
   test('касание не меньше 44 в шторке', async ({ page }) => {
     await toPosition(page, '04');
     await page.getByTestId('tile-notebook').click();
-    const ids = ['tab-total', 'tab-distance', 'tab-conditions', 'tab-wind', 'tab-dope', 'locked-Угол', 'toggle-dope', 'toggle-wind', 'enter-turrets', 'sheet-handle'];
+    const ids = ['tab-total', 'tab-distance', 'tab-conditions', 'tab-wind', 'tab-dope', 'locked-Патрон', 'toggle-dope', 'toggle-wind', 'enter-turrets', 'sheet-handle'];
     for (const id of ids) {
       expect((await page.getByTestId(id).boundingBox())!.height, id).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
     }
