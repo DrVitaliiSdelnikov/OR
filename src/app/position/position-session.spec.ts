@@ -876,3 +876,32 @@ describe('PositionSession — своя винтовка в свободной и
     expect(session.scope.scope.id).toBe('course-tree');
   });
 });
+
+describe('PositionSession — прицел MOA: клики барабана по ¼ MOA (баг S11)', () => {
+  it('600 м, патрон Б, прицел MOA: итог в кликах ¼ MOA, накрученный угол равен ДОПЕ до полклика', async () => {
+    const def = freePlayTask({ ...DEFAULT_FREE_PLAY, scopeId: 'moa', distanceM: 600 }, null);
+    const session = await PositionSession.start({ def, seed: 3, engine, accessibility: ACCESSIBILITY });
+    const clickMrad = session.scope.scope.clickMrad;
+    expect(session.notebook.context.card.clickMil).toBeCloseTo(clickMrad, 12);
+    const elevationMil = dopeRowAt(session.notebook.context.card, 600).elevationMil;
+    expect(session.total.elevation.targetClicks).toBe(Math.round(elevationMil / clickMrad));
+    dialToTarget(session);
+    expect(Math.abs(session.scope.elevation.clicks * clickMrad - elevationMil)).toBeLessThanOrEqual(clickMrad / 2);
+  });
+
+  it('прицел MOA после накрутки попадает туда же, где MIL-прицел с тем же сидом (до полклика MOA)', async () => {
+    const impactWith = async (scopeId: 'moa' | 'course-tree') => {
+      const def = freePlayTask({ ...DEFAULT_FREE_PLAY, scopeId, distanceM: 600, wind: 'calm' }, null);
+      const session = await PositionSession.start({ def, seed: 3, engine, accessibility: ACCESSIBILITY });
+      dialToTarget(session);
+      return (await shoot(session, ON_TARGET))!.result.impact.upMrad;
+    };
+    const moaClickMrad = 0.25 * 0.29089;
+    expect(Math.abs((await impactWith('moa')) - (await impactWith('course-tree')))).toBeLessThanOrEqual(moaClickMrad / 2 + 0.05);
+  });
+
+  it('прицелы MIL — карточка по 0,1 MIL, как раньше', async () => {
+    const session = await start('06');
+    expect(session.notebook.context.card.clickMil).toBe(0.1);
+  });
+});

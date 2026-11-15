@@ -169,7 +169,7 @@ export const notebook = {
     pressureColumnSource: (p: { row: string }) => `давление +10 гПа${p.row}`,
     flagBehindBermSource: (p: { distanceText: string }) => `флажок ${p.distanceText} м за валом`,
     flagSource: (p: { distanceText: string }) => `V⊥ флажок ${p.distanceText} м`,
-    roundToClick: (p: { clickMil: number }) => `до клика ${decimal(p.clickMil)} =`,
+    roundToClick: (p: { clickMil: number }) => `до клика ${decimal(Number(p.clickMil.toFixed(4)))} =`,
     tapeDistance: 'Д =',
     tapeDope: 'ВЕРТ =',
     tapeAtmosphere: 'ΔВЕРТ =',

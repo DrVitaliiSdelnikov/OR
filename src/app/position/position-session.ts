@@ -109,7 +109,6 @@ interface DialTracking {
 export const POSITION_RESTING_BPM = 65;
 // На холсте «назад» — влево, в `sim/bolt` — по +x: экранный жест зеркалится по X.
 export const BOLT_SCREEN_X_MIRROR = -1;
-const CARD_CLICK_MIL = 0.1;
 const FULL_MEASUREMENT_NOISE_MPS = 0.1;
 const SHORT_MEASUREMENT_NOISE_MPS = 0.3;
 const STATION_SPEED_DECIMALS = 10;
@@ -156,8 +155,9 @@ export class PositionSession {
     const setup = setupTask(options.def, options.seed);
     const cartridgeIds = [...new Set(options.def.stages.map(stage => stage.cartridgeId))];
     const cards = new Map<CartridgeId, DopeCard>();
+    const turretClickMil = (options.def.rifle?.scope ?? scopeById(options.def.scopeId)).clickMrad;
     for (const cartridgeId of cartridgeIds) {
-      cards.set(cartridgeId, await buildDopeCard(options.engine, options.def.rifle?.loadout ?? courseLoadout(cartridgeId), CARD_CLICK_MIL));
+      cards.set(cartridgeId, await buildDopeCard(options.engine, options.def.rifle?.loadout ?? courseLoadout(cartridgeId), turretClickMil));
     }
     const scenario = createScenario(options.seed, setup.scenarioOptions);
     return new PositionSession(options.def, setup, scenario, cards, options.engine, options.accessibility, options.recalcNotebook);
