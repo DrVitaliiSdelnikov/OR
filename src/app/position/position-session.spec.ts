@@ -10,6 +10,7 @@ import { CauseKind, groupPoint, MissBreakdown } from '../../sim/miss-breakdown';
 import { movementClockAt, targetOffsetMil } from '../../sim/patrol';
 import { flagReading } from '../scene/scene.model';
 import { PositionSession } from './position-session';
+import { Correction } from '../../core/types';
 
 const engine = new BallisticsEngine();
 const ACCESSIBILITY = { isZoneLarger: false, isMarkerDriftOff: true };
@@ -949,5 +950,67 @@ describe('PositionSession — полигон в единицах игрока (T
     const shot = await shoot(session, ON_TARGET);
     expect(shot).not.toBeNull();
     expect(shot!.review).toBeDefined();
+  });
+});
+
+describe('PositionSession — цепочка подстановок в разборе (T2.1)', () => {
+  const IDS = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14'] as const;
+  const plusVector = (first: Correction, second: Correction): Correction => ({ upMrad: first.upMrad + second.upMrad, rightMrad: first.rightMrad + second.rightMrad });
+  const chainSum = (breakdown: MissBreakdown): Correction => breakdown.chain.filter(link => link.kind !== 'lead').reduce((sum, link) => plusVector(sum, link.vector), { upMrad: 0, rightMrad: 0 });
+  const autoStart = async (id: (typeof IDS)[number], seed: number) =>
+    PositionSession.start({ def: { ...exerciseById(id)!, notebookMode: 'auto' }, seed, engine, accessibility: ACCESSIBILITY });
+  const withConditions = (session: PositionSession): void => {
+    session.measureStation(3, session.scenario.startTimeS);
+    session.toggleFactor('conditions');
+  };
+  const playerLinks = (breakdown: MissBreakdown) => breakdown.chain.filter(link => link.kind !== 'rounding' && Math.hypot(link.vector.upMrad, link.vector.rightMrad) > 0.005).map(link => link.kind);
+
+  it('на всех упражнениях 01–14: сумма звеньев = прежние «расчёт» + «ветер» до 0,001 MIL', async () => {
+    for (const id of IDS) {
+      for (const seed of [1, 2]) {
+        const session = await PositionSession.start({ def: exerciseById(id)!, seed, engine, accessibility: ACCESSIBILITY });
+        session.enterWind(2, 9);
+        session.enterOnTurrets();
+        session.turn('elevation', 2);
+        const shot = (await shoot(session, { x: 0.1, y: -0.1 }))!;
+        const { breakdown } = shot.review;
+        const old = plusVector(breakdown.causes.find(cause => cause.kind === 'calc')!.vector, breakdown.causes.find(cause => cause.kind === 'wind')!.vector);
+        const sum = chainSum(breakdown);
+        expect(Math.abs(sum.upMrad - old.upMrad), `${id}/${seed}`).toBeLessThan(0.001);
+        expect(Math.abs(sum.rightMrad - old.rightMrad), `${id}/${seed}`).toBeLessThan(0.001);
+      }
+    }
+  });
+
+  it('06 в АВТО: скорость ветра 2 вместо истинной → звено «скорость ветра»; барабаны по плану — накрутка ноль', async () => {
+    const session = await autoStart('06', 11);
+    withConditions(session);
+    session.enterWind(2, session.scenario.gauge.windClock);
+    dialToTarget(session);
+    const shot = (await shoot(session, ON_TARGET))!;
+    expect(playerLinks(shot.review.breakdown).filter(kind => kind !== 'wind-clock')).toEqual(['wind-speed']);
+    expect(shot.review.breakdown.chain.find(link => link.kind === 'wind-speed')!.player).toBe(2);
+  });
+
+  it('05 в АВТО: миллинг на 10 % длиннее → звено «дальность»', async () => {
+    const session = await autoStart('05', 11);
+    withConditions(session);
+    session.enterWind(session.scenario.gauge.windSpeedMps, session.scenario.gauge.windClock);
+    session.measureRange(rangeMil(session) * 1.1);
+    dialToTarget(session);
+    const shot = (await shoot(session, ON_TARGET))!;
+    const links = playerLinks(shot.review.breakdown);
+    expect(links[0]).toBe('distance');
+    expect(links.filter(kind => kind !== 'wind-speed' && kind !== 'wind-clock')).toEqual(['distance']);
+  });
+
+  it('07 в АВТО: условия не включены → звено «условия» вверх', async () => {
+    const session = await autoStart('07', 11);
+    session.enterWind(session.scenario.gauge.windSpeedMps, session.scenario.gauge.windClock);
+    dialToTarget(session);
+    const shot = (await shoot(session, ON_TARGET))!;
+    const conditions = shot.review.breakdown.chain.find(link => link.kind === 'conditions')!;
+    expect(conditions.vector.upMrad).toBeLessThan(-0.05);
+    expect(playerLinks(shot.review.breakdown).filter(kind => kind !== 'wind-speed' && kind !== 'wind-clock')).toEqual(['conditions']);
   });
 });

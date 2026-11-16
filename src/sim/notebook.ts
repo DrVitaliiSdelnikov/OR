@@ -198,6 +198,15 @@ const GROUPED_FROM_CHIPS = 6;
 const NEIGHBOR_ROW_STEP = 100;
 const CLOCK_HALF_TURN = 6;
 const RADIANS_PER_DEGREE = Math.PI / 180;
+const FACTOR_STEPS: Record<Exclude<NotebookFactor, 'angle'>, NotebookStepId> = {
+  dope: 'dope',
+  conditions: 'atmosphere',
+  wind: 'wind',
+  lead: 'lead',
+  spin: 'spin',
+  coriolis: 'coriolis',
+  eotvos: 'eotvos',
+};
 const EARTH_ROTATION_MIL_PER_S = 0.0729;
 const TRIG_DECIMALS = 100;
 const STEPS_WITHOUT_SIDE: ReadonlySet<NotebookStepId> = new Set(['distance', 'lead', 'angle']);
@@ -545,6 +554,11 @@ export function total(notebook: Notebook): NotebookTotal {
 }
 
 export function formulaCorrectionMil(notebook: Notebook, inputs: FormulaInputs): Correction {
+  const formula = total(formulaProbe(notebook, inputs));
+  return { upMrad: formula.upMil, rightMrad: formula.rightMil };
+}
+
+export function formulaProbe(notebook: Notebook, inputs: FormulaInputs): Notebook {
   const station: StationRecord = {
     temperatureC: inputs.temperatureC,
     pressureHpa: inputs.pressureHpa,
@@ -554,15 +568,29 @@ export function formulaCorrectionMil(notebook: Notebook, inputs: FormulaInputs):
     timeS: 0,
     isShort: false,
   };
-  const probe: Notebook = {
+  return {
     ...notebook,
     mode: 'auto',
     distanceM: inputs.distanceM,
     factorsOn: { dope: true, conditions: true, wind: true, lead: true, angle: true, spin: true, coriolis: true, eotvos: true },
     readings: { ...notebook.readings, station, wind: inputs.wind, flagCrosswindsMps: inputs.flagCrosswindsMps },
   };
-  const formula = total(probe);
-  return { upMrad: formula.upMil, rightMrad: formula.rightMil };
+}
+
+export function playerFactorMil(notebook: Notebook, factor: NotebookFactor): number {
+  if (notebook.mode === 'auto') {
+    return notebook.factorsOn[factor] ? (factorContributions(notebook)[factor].mil ?? 0) : 0;
+  }
+  return (factor === 'angle' ? playerAngleShiftMil(notebook) : playerStepMil(notebook, FACTOR_STEPS[factor])) ?? 0;
+}
+
+export function angleShiftFromDopeMil(notebook: Notebook, dopeMil: number): number | null {
+  const lookAngleDeg = geometryOf(notebook.context).lookAngleDeg;
+  if (lookAngleDeg === 0 || notebook.distanceM === null) {
+    return null;
+  }
+  const { zeroAngleMil } = notebook.context.card;
+  return (dopeMil + zeroAngleMil) * trigValue(Math.cos(lookAngleDeg * RADIANS_PER_DEGREE)) - zeroAngleMil - dopeMil;
 }
 
 export function checkInputs(notebook: Notebook, truth: CheckTruth): NotebookCheckInputs {

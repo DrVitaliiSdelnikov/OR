@@ -1,5 +1,6 @@
 import { roundToClicks } from '../core/game-formulas';
 import { Correction } from '../core/types';
+import { ChainLink } from './miss-chain';
 
 export type CauseKind = 'calc' | 'wind' | 'hold' | 'lead' | 'trigger' | 'zero' | 'formula' | 'rifle' | 'cold-bore';
 export type WindVerdict = 'under' | 'over';
@@ -8,6 +9,7 @@ export type MainCause = Exclude<CauseKind, 'wind' | 'formula' | 'rifle' | 'cold-
 export interface MissBreakdownInput {
   ideal: Correction;
   formulaTruth: Correction;
+  /** @deprecated T2.1: «ветер» и «расчёт» раскладывает `chain`; удалить в T2.2 вместе с лепестками `calc` и `wind`. */
   formulaPlayerWind: Correction;
   dial: Correction;
   plannedHold: Correction;
@@ -20,6 +22,7 @@ export interface MissBreakdownInput {
   hasKnockedSight: boolean;
   clickMil: number;
   targetMotion?: Correction;
+  chain?: readonly ChainLink[];
 }
 
 export interface MissCause {
@@ -32,6 +35,7 @@ export interface MissCause {
 
 export interface MissBreakdown {
   causes: MissCause[];
+  chain: readonly ChainLink[];
   main: CauseKind | null;
   isTriggerClean: boolean;
   windVerdict: WindVerdict | null;
@@ -66,6 +70,7 @@ export function missBreakdown(input: MissBreakdownInput): MissBreakdown {
   const windCause = causes.find(cause => cause.kind === 'wind')!;
   return {
     causes,
+    chain: input.chain ?? [],
     main: main?.kind ?? null,
     isTriggerClean: trigger.clicks === 0,
     windVerdict: windCause.clicks === 0 ? null : Math.abs(input.formulaPlayerWind.rightMrad) < Math.abs(input.formulaTruth.rightMrad) ? 'under' : 'over',

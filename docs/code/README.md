@@ -114,3 +114,4 @@
 | app · единицы на экранах (T1.8a — показ) | [specs/app-units.md](specs/app-units.md) | T1.8a слита в `master` 16.11; T1.8b, T1.8c — свои спеки |
 | sim · расчёт САМ в имперских (T1.8b) | [specs/sim-units-calc.md](specs/sim-units-calc.md) | реализовано, слито в `master` 16.11 |
 | app · курс и тексты в имперских (T1.8c) | [specs/app-units-course.md](specs/app-units-course.md) | реализовано, слито в `master` 16.11 |
+| sim · цепочка подстановок в разборе (T2.1) | [specs/sim-miss-chain.md](specs/sim-miss-chain.md) | реализовано, слито в `master` 17.11 |

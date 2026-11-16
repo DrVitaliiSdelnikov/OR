@@ -60,6 +60,7 @@ import { TurretProgress, turretProgress } from '../../sim/turret-target';
 import { movementClockAt, movingShotOptions, PatrolTarget, targetOffsetMil } from '../../sim/patrol';
 import { FlagReading, flagReading, isFlagBeforeBerm } from '../scene/scene.model';
 import { TurretAxis } from './position.model';
+import { missChain } from '../../sim/miss-chain';
 
 export interface PositionStart {
   def: PositionTask;
@@ -507,6 +508,7 @@ export class PositionSession {
       hasKnockedSight: this.def.hasKnockedSight,
       clickMil,
       ...(this.patrol ? { targetMotion: result.targetMotion } : {}),
+      chain: missChain({ notebook, truth, dial: outcome.dial, hasKnockedSight: this.def.hasKnockedSight }),
     });
   }
 
