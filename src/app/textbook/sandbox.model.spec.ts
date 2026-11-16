@@ -73,3 +73,22 @@ describe('песочница «Попробовать на прицеле» (U7)
     expect(writers.every(path => path.startsWith('free/') || path.startsWith('services/'))).toBe(true);
   });
 });
+
+describe('песочницы в имперских (T1.8c)', () => {
+  const yardsOf = (distanceM: number) => Number((distanceM / 0.9144).toFixed(6));
+
+  it('дистанции — те же числа в ярдах: «клик» 300, «ZERO STOP» 100, «ДОПЕ» 450; метрика — прежняя', () => {
+    expect(yardsOf(sandboxSettings(sandboxOf('клик')!, 'imperial').distanceM)).toBe(300);
+    expect(yardsOf(sandboxSettings(sandboxOf('ZERO STOP')!, 'imperial').distanceM)).toBe(100);
+    expect(yardsOf(sandboxSettings(sandboxOf('ДОПЕ')!, 'imperial').distanceM)).toBe(450);
+    expect(sandboxSettings(sandboxOf('ДОПЕ')!, 'metric')).toEqual(sandboxSettings(sandboxOf('ДОПЕ')!));
+    expect(sandboxSettings(sandboxOf('ДОПЕ')!).distanceM).toBe(450);
+  });
+
+  it('подсказки флажков и ДОПЕ — в ярдах', () => {
+    expect(sandboxTeaching(sandboxOf('флажок')!, false, 'imperial')!.text).toBe('Флажки на 200, 400 и 600 ярдов. Чем сильнее ветер поперёк, тем круче полотнище');
+    expect(sandboxTeaching(sandboxOf('флажок')!, false)!.text).toBe('Флажки на 200, 400 и 600 м. Чем сильнее ветер поперёк, тем круче полотнище');
+    expect(sandboxTeaching(sandboxOf('ДОПЕ')!, false, 'imperial')!.text).toBe('Карточка ДОПЕ: для 450 ярдов строки нет — поправка берётся между 400 и 500');
+    expect(sandboxTeaching(sandboxOf('ДОПЕ')!, false)!.text).toBe('Карточка ДОПЕ: для 450 м строки нет — поправка берётся между 400 и 500');
+  });
+});

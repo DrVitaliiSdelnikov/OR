@@ -1,5 +1,6 @@
 import { text } from '../i18n';
 import { CartridgeId, CourseCartridge, Loadout, Rifle, ShotGeometry, Target } from './types';
+import { fromInput, UnitSystem } from './units';
 
 export const COURSE_RIFLE: Rifle = {
   name: text.content.rifleName,
@@ -26,7 +27,9 @@ export const FLAT_GEOMETRY: ShotGeometry = { lookAngleDeg: 0, coriolis: null, is
 
 export const MAX_TRAJECTORY_M = 1000;
 export const TRAJECTORY_STEP_M = 100;
+/** @deprecated T1.8c: флажки зависят от системы — `rangeLayout(system).flagDistancesM`. Удалить в T2.1. */
 export const FLAG_DISTANCES_M = [200, 400, 600] as const;
+/** @deprecated T1.8c: границы зон зависят от системы — `rangeLayout(system).windZoneLimitsM`. Удалить в T2.1. */
 export const WIND_ZONE_LIMITS_M = [150, 350, 550, Infinity] as const;
 export const FLAG_DEG_PER_MPS = 9;
 export const FLAG_MAX_DEG = 80;
@@ -42,8 +45,38 @@ export function isCourseCartridgeId(id: string): id is CartridgeId {
   return CARTRIDGES.some(cartridge => cartridge.id === id);
 }
 
-export function courseLoadout(id: CartridgeId): Loadout {
-  return { rifle: COURSE_RIFLE, cartridge: cartridgeById(id) };
+export interface RangeLayout {
+  flagDistancesM: readonly number[];
+  windZoneLimitsM: readonly number[];
+  courseZeroM: number;
+}
+
+const FLAG_DISTANCES_IN_SYSTEM = [200, 400, 600];
+const WIND_ZONE_LIMITS_IN_SYSTEM = [150, 350, 550];
+const COURSE_ZERO_IN_SYSTEM = 100;
+
+const inMetres = (system: UnitSystem) => (value: number): number => fromInput('distance', value, system);
+
+const RANGE_LAYOUTS: Record<UnitSystem, RangeLayout> = {
+  metric: rangeLayoutIn('metric'),
+  imperial: rangeLayoutIn('imperial'),
+};
+
+function rangeLayoutIn(system: UnitSystem): RangeLayout {
+  return {
+    flagDistancesM: FLAG_DISTANCES_IN_SYSTEM.map(inMetres(system)),
+    windZoneLimitsM: [...WIND_ZONE_LIMITS_IN_SYSTEM.map(inMetres(system)), Infinity],
+    courseZeroM: inMetres(system)(COURSE_ZERO_IN_SYSTEM),
+  };
+}
+
+export function rangeLayout(system: UnitSystem): RangeLayout {
+  return RANGE_LAYOUTS[system];
+}
+
+export function courseLoadout(id: CartridgeId, system: UnitSystem = 'metric'): Loadout {
+  const zeroM = rangeLayout(system).courseZeroM;
+  return { rifle: zeroM === COURSE_RIFLE.zeroM ? COURSE_RIFLE : { ...COURSE_RIFLE, zeroM }, cartridge: cartridgeById(id) };
 }
 
 export function targetRadiusMrad(target: Target): number {

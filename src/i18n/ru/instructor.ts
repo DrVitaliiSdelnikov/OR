@@ -4,13 +4,12 @@ export type DialDirection = 'up' | 'down' | 'right' | 'left';
 
 const DIAL_DIRECTIONS: Record<DialDirection, string> = { up: 'вверх', down: 'вниз', right: 'вправо', left: 'влево' };
 
-const listText = (values: readonly number[]): string => values.join(', ');
 
 export const instructor = {
   dial: (p: { direction: DialDirection; clicks: number }) => `Крути ${DIAL_DIRECTIONS[p.direction]}: ещё ${p.clicks} кл.`,
   enter: 'Внеси итог на барабаны',
   firstClicks: {
-    scope: (p: { distanceM: number }) => `Это прицел. Цель — гонг на ${p.distanceM} м`,
+    scope: (p: { distance: string }) => `Это прицел. Цель — гонг на ${p.distance}`,
     notebook: 'Открой блокнот: там поправка',
     dope: (p: { dopeMil: number }) => `ДОПЕ — падение пули: ↑ ${decimal(p.dopeMil, 1)} MIL`,
     sideDrum: (p: { windageClicks: number }) => `Боковой — ветер. Сегодня штиль, ${p.windageClicks}`,
@@ -19,7 +18,7 @@ export const instructor = {
     review: 'Разбор — после каждого выстрела. Прочитай и жми ДАЛЬШЕ',
   },
   zeroing: {
-    zero: (p: { distanceM: number }) => `Прицел сбит. Пристреляем на ${p.distanceM} м`,
+    zero: (p: { distance: string }) => `Прицел сбит. Пристреляем на ${p.distance}`,
     aim: 'Наведи перекрестие в центр мишени',
     cold: 'Первый — холодный. Огонь',
     group: 'Ещё три в одну точку — группа',
@@ -39,10 +38,10 @@ export const instructor = {
     stationTab: 'Станция — во вкладке «Условия»',
     measure: (p: { seconds: number }) => `Держи «Замер» ${p.seconds} с`,
     windTab: 'Скорость есть. Теперь «Ветер»',
-    clock: (p: { speedMps: number }) => `Стрелка — откуда дует, по флажку у бруствера. Скорость — ${decimal(p.speedMps, 1)}, со станции`,
+    clock: (p: { speed: string }) => `Стрелка — откуда дует, по флажку у бруствера. Скорость — ${p.speed}, со станции`,
   },
   zoneFlags: {
-    flags: (p: { distancesM: readonly number[] }) => `Ветер по трассе разный. Флажки на ${listText(p.distancesM)} м — левее цели, веди прицел к ним`,
+    flags: (p: { distances: string }) => `Ветер по трассе разный. Флажки на ${p.distances} — левее цели, веди прицел к ним`,
     flagTap: 'Тапни флажок — угол и скорость запишутся в блокнот',
     weights: 'Вес зоны — её доля в среднем ветре. Веса — из строки ДОПЕ на твоей дистанции',
     zonesStep: 'Средний ветер — сумма: вес × V⊥ зоны. Станция — с вкладки «Ветер», флажки — из стекла',
@@ -53,7 +52,7 @@ export const instructor = {
     angleFormula: '(E + Z) × cos − Z: E — строка ДОПЕ, Z — угол нуля из шапки карточки, cos — у фишки прибора',
   },
   longRange: {
-    earth: 'Широта и азимут — здесь. Дальше 800 м в расчёт входят деривация и вращение Земли',
+    earth: (p: { distance: string }) => `Широта и азимут — здесь. Дальше ${p.distance} в расчёт входят деривация и вращение Земли`,
     steps: 'Посчитай «Деривацию» и «Кориолис» в блокноте',
     spinFormula: 'Деривация — колонка ДЕР строки ДОПЕ. Поправка — против ухода пули',
     coriolisFormula: 'Кориолис: 0,0729 × t × sin φ. В северном полушарии пуля уходит вправо — поправка влево',
@@ -67,9 +66,7 @@ export const instructor = {
   milling: {
     notebook: 'Открой блокнот: дистанция неизвестна',
     distanceTab: 'Меряй гонг сеткой — вкладка «Дистанция»',
-    milling: (p: { sizeM: number }) => `Гонг ${decimal(p.sizeM)} м. Коснись верхнего и нижнего края, затем «Посчитать»`,
-    result: (p: { sizeM: number; reticleMil: number; distanceM: number }) =>
-      `Д = ${decimal(p.sizeM)} × 1000 / ${decimal(p.reticleMil, 2)} = ${Math.round(p.distanceM)} м`,
+    milling: (p: { size: string }) => `Гонг ${p.size}. Коснись верхнего и нижнего края, затем «Посчитать»`,
   },
   manualEasy: {
     notebook: 'Теперь считаешь сам. Открой блокнот',

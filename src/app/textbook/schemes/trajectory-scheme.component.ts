@@ -9,8 +9,6 @@ const LEFT = 24;
 const RIGHT = 306;
 const TOP = 22;
 const BOTTOM = 150;
-const MAX_DISTANCE_M = 1000;
-const DISTANCE_TICKS_M = [0, 500, 1000];
 const T = text.textbook.schemes.trajectory;
 
 @Component({
@@ -58,21 +56,21 @@ export class TrajectorySchemeComponent {
   protected readonly chartView = computed(() => {
     const view = trajectoryView(this.card());
     const maxMil = Math.max(...view.points.map(point => point.elevationMil));
-    const x = (distanceM: number): number => LEFT + (distanceM / MAX_DISTANCE_M) * (RIGHT - LEFT);
+    const x = (distanceM: number): number => LEFT + (distanceM / view.labels.maxDistanceM) * (RIGHT - LEFT);
     const y = (elevationMil: number): number => TOP + (elevationMil / maxMil) * (BOTTOM - TOP);
     return {
       curve: view.points.map(point => `${x(point.distanceM)},${y(point.elevationMil)}`).join(' '),
       zeroX: x(view.zeroM),
-      zeroText: T.zero({ zeroM: view.zeroM }),
+      zeroText: view.labels.zero,
       timeMarks: view.timeMarks.map(mark => ({
         distanceM: mark.distanceM,
         x: x(mark.distanceM),
         y: y(mark.elevationMil),
         text: T.timeMark({ timeOfFlightS: mark.timeOfFlightS }),
       })),
-      distanceTicks: DISTANCE_TICKS_M.map(distanceM => ({ x: x(distanceM), text: T.distanceTick({ distanceM }) })),
+      distanceTicks: view.labels.ticks.map(tick => ({ x: x(tick.distanceM), text: tick.text })),
       bottomY: BOTTOM,
-      maxText: T.maxElevation({ distanceM: MAX_DISTANCE_M, maxMil }),
+      maxText: view.labels.maxElevation,
     };
   });
 }

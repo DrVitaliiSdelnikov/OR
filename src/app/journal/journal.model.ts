@@ -4,7 +4,7 @@ import { UnitSystem } from '../../core/units';
 import { DopeCard } from '../../core/dope-card';
 import { ExerciseClass, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId } from '../../core/types';
-import { COURSE, courseProgress, CourseResults, ExerciseId, ExerciseResult, ExerciseShotRecord, isExerciseTask, PositionTask } from '../../sim/course';
+import { COURSE, courseProgress, CourseResults, exerciseById, ExerciseId, ExerciseResult, ExerciseShotRecord, exerciseTitle, isExerciseTask, PositionTask } from '../../sim/course';
 import { MainCause } from '../../sim/miss-breakdown';
 import { MODE_LABELS } from '../course/course-trail.model';
 import { RANK_LABELS } from '../home/home.model';
@@ -164,7 +164,7 @@ function distancesText(shots: readonly JournalShot[], system: UnitSystem): strin
 }
 
 function seriesTitle(series: JournalSeries, system: UnitSystem): string {
-  return series.kind === 'free' ? T.freeTitle({ distances: distancesText(series.shots, system) }) : `${series.exerciseId} · ${series.title}`;
+  return series.kind === 'free' ? T.freeTitle({ distances: distancesText(series.shots, system) }) : `${series.exerciseId} · ${seriesExerciseTitle(series, system)}`;
 }
 
 function seriesStamp(series: JournalSeries): string | null {
@@ -251,7 +251,7 @@ export function cardsView(cards: readonly DopeCard[], notes: DopeNotes, system: 
   }));
 }
 
-export function achievementsView(course: CourseResults): AchievementsView {
+export function achievementsView(course: CourseResults, system: UnitSystem = 'metric'): AchievementsView {
   const progress = courseProgress(course);
   const graded = COURSE.filter(def => def.targets !== null);
   return {
@@ -259,8 +259,13 @@ export function achievementsView(course: CourseResults): AchievementsView {
     admissions: T.admissions({ admissions: progress.admissions, admissionsTotal: ADMISSIONS_TOTAL }),
     classes: graded.map(def => {
       const best = course.bestClasses[def.id];
-      return { id: def.id, title: def.title, stamp: best === undefined ? null : classStamp(best) };
+      return { id: def.id, title: exerciseTitle(def, system), stamp: best === undefined ? null : classStamp(best) };
     }),
     records: graded.filter(def => course.bestTotals?.[def.id] !== undefined).map(def => T.record({ exerciseId: def.id, total: course.bestTotals![def.id]! })),
   };
+}
+
+function seriesExerciseTitle(series: JournalSeries, system: UnitSystem): string {
+  const def = series.exerciseId ? exerciseById(series.exerciseId) : undefined;
+  return def ? exerciseTitle(def, system) : series.title;
 }

@@ -9,8 +9,8 @@ import { lateralWindMps, windAt } from '../../core/scenario';
 import { NotebookMode } from '../../core/exercise-scoring';
 import { Correction } from '../../core/types';
 import { BoltEvent } from '../../sim/bolt';
-import { courseProgress, ExerciseDef, exerciseById, ExerciseId, isExerciseTask, PositionTask, withChosenMode } from '../../sim/course';
-import { allowedFreePlay, freePlayTask } from '../../sim/free-play';
+import { courseProgress, exerciseById, ExerciseDef, ExerciseId, exerciseTitle, isExerciseTask, PositionTask, withChosenMode } from '../../sim/course';
+import { allowedFreePlay, freePlayInSystem, freePlayTask } from '../../sim/free-play';
 import { instructorLineText } from '../free/free-play.model';
 import { factorContributions, forgottenFactor, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
 import { Vector2 } from '../../sim/noise';
@@ -109,10 +109,14 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   protected readonly def = computed<PositionTask | null>(() => {
     const sandbox = this.sandbox();
     if (sandbox) {
-      return { ...freePlayTask(sandboxSettings(sandbox)), title: T.sandboxTitle };
+      return { ...freePlayTask(sandboxSettings(sandbox, this.unitSystem()), null, this.unitSystem()), title: T.sandboxTitle };
     }
     return this.isFreePlay()
-      ? freePlayTask(allowedFreePlay(this.progress.freePlay(), courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks), this.progress.activeProfile())
+      ? freePlayTask(
+          freePlayInSystem(allowedFreePlay(this.progress.freePlay(), courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks), this.unitSystem()),
+          this.progress.activeProfile(),
+          this.unitSystem(),
+        )
       : this.chosenModeDef(exerciseById(this.exerciseId() as ExerciseId) ?? null);
   });
   protected readonly session = signal<PositionSession | null>(null);
@@ -154,7 +158,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     }
     const sandbox = this.sandbox();
     if (sandbox) {
-      return this.isTeachingSkipped() ? null : sandboxTeaching(sandbox, this.acknowledgedSteps().size > 0);
+      return this.isTeachingSkipped() ? null : sandboxTeaching(sandbox, this.acknowledgedSteps().size > 0, this.unitSystem());
     }
     const factor = this.guardedFactor();
     if (factor && !session.notebook.factorsOn[factor]) {
@@ -182,7 +186,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     const wind = notebook.readings.wind;
     const dial = { elevation: session.scope.elevation.clicks, windageLeft: session.scope.windage.clicks };
     return {
-      title: isExerciseTask(session.def) ? T.exerciseTitle({ exerciseId: session.def.id, title: session.def.title }) : session.def.title,
+      title: isExerciseTask(session.def) ? T.exerciseTitle({ exerciseId: session.def.id, title: exerciseTitle(session.def, this.unitSystem()) }) : session.def.title,
       instructorLine: this.isFreePlay() && !this.sandbox() && this.progress.freePlay().isInstructorNear ? instructorLineText(session.trueCorrection(this.scenarioTimeS(session))) : null,
       subtitle: subtitleText(notebook.context.target.distanceM, session.firingLine.targetIndex + 1, session.setup.targets.length, this.unitSystem()),
       patrolLine: session.patrol ? patrolLineText(session.patrol, session.patrolWalkedS(this.scenarioTimeS(session)), this.unitSystem()) : null,
@@ -384,7 +388,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       this.progress.recordExerciseResult(session.def.id, result.exerciseClass, result.total);
       this.saveSeries();
       this.reviewFrame.set(this.fullFrame());
-      this.end.set(resultSheet({ def: session.def, result, records: session.records, courseBefore, courseAfter: this.progress.course() }));
+      this.end.set(resultSheet({ def: session.def, result, records: session.records, courseBefore, courseAfter: this.progress.course(), system: this.unitSystem() }));
     }
     this.refresh();
   }
@@ -818,6 +822,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     const entered = session.enteredTotal;
     return {
       exerciseId: exercise.id,
+      unitSystem: this.unitSystem(),
       sheetTab: this.sheetTab(),
       hasOpenedNotebook: this.hasOpenedNotebook(),
       isEntered: entered !== null,

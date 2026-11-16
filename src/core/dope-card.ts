@@ -1,4 +1,4 @@
-import { FLAT_GEOMETRY, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C, WIND_ZONE_LIMITS_M } from './content';
+import { FLAT_GEOMETRY, rangeLayout, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C } from './content';
 import { BallisticsEngine } from './engine';
 import { roundToClicks } from './game-formulas';
 import { Atmosphere, Loadout, TrajectoryPoint } from './types';
@@ -66,11 +66,12 @@ export async function buildDopeCard(engine: BallisticsEngine, loadout: Loadout, 
     trajectory(STANDARD_ATMOSPHERE, null, SPINNING),
     engine.zeroAngleMil(loadout),
   ]);
+  const zoneLimitsM = rangeLayout(system).windZoneLimitsM;
   const singleZonePoints = await Promise.all(
-    WIND_ZONE_LIMITS_M.map((_, windyZone) =>
+    zoneLimitsM.map((_, windyZone) =>
       trajectory(
         STANDARD_ATMOSPHERE,
-        WIND_ZONE_LIMITS_M.map((untilM, zoneIndex) => ({
+        zoneLimitsM.map((untilM, zoneIndex) => ({
           untilM,
           speedMps: zoneIndex === windyZone ? CALIBRATION_CROSSWIND_MPS : 0,
           fromDeg: CROSSWIND_FROM_LEFT_DEG,

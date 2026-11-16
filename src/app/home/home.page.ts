@@ -72,7 +72,7 @@ export class HomePage {
 
   protected readonly texts = text.screens.home;
   protected readonly header = computed(() => rankHeader(this.progress.course()));
-  protected readonly card = computed(() => continueCard(this.progress.course()));
+  protected readonly card = computed(() => continueCard(this.progress.course(), this.progress.settings().unitSystem));
   protected readonly cardExercise = computed(() => {
     const card = this.card();
     return card.kind === 'free-play' ? '' : `${card.exerciseId} · ${card.title}`;

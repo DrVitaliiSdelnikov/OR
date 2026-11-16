@@ -1,8 +1,9 @@
 import { ExerciseClass, FIRST_CLASS_SHARE, FIRST_SHOT_POINTS, SECOND_CLASS_SHARE, THIRD_CLASS_SHARE } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
-import { courseProgress, CourseResults, ExerciseDef, exerciseById, ExerciseResult, ExerciseShotRecord, GoalCheck } from '../../sim/course';
+import { courseProgress, CourseResults, exerciseById, ExerciseDef, ExerciseResult, ExerciseShotRecord, exerciseTitle, GoalCheck } from '../../sim/course';
 import { MainCause } from '../../sim/miss-breakdown';
 import { RANK_LABELS } from '../home/home.model';
+import { UnitSystem } from '../../core/units';
 
 export type StampTone = 'gold' | 'silver' | 'bronze' | 'red';
 
@@ -32,6 +33,7 @@ export interface ResultInput {
   records: readonly ExerciseShotRecord[];
   courseBefore: CourseResults;
   courseAfter: CourseResults;
+  system?: UnitSystem;
 }
 
 const T = text.result;
@@ -73,7 +75,7 @@ export function resultSheet(input: ResultInput): ResultSheetView {
     recordLine: recordLine(result.total, courseBefore.bestTotals?.[def.id]),
     mainError: mainError(def, result, input.records),
     newTerms: isFirstAdmission ? def.terms : [],
-    openedLine: openedId ? T.opened({ exerciseId: openedId, title: exerciseById(openedId)!.title }) : null,
+    openedLine: openedId ? T.opened({ exerciseId: openedId, title: exerciseTitle(exerciseById(openedId)!, input.system ?? 'metric') }) : null,
     isAdmitted: result.isAdmitted,
   };
 }

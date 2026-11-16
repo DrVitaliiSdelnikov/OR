@@ -6,6 +6,7 @@ import { windClockShare } from '../../../core/field';
 import { analyseGroup } from '../../../sim/shot-review';
 import { CardsByCartridge, TERM_CARDS } from '../terms';
 import {
+  cartridgesLabels,
   cartridgesView,
   focalPlaneView,
   GROUP_EXAMPLE_IMPACTS,
@@ -17,16 +18,17 @@ import {
   trajectoryView,
   windClockView,
   zonesView,
-  ZONES_EXAMPLE_DISTANCE_M,
 } from './scheme.model';
 
 const CLICK_MIL = 0.1;
 const cards = new Map<string, DopeCard>() as Map<'A' | 'B' | 'C', DopeCard>;
+const imperialCards = new Map<string, DopeCard>() as Map<'A' | 'B' | 'C', DopeCard>;
 
 beforeAll(async () => {
   const engine = new BallisticsEngine();
   for (const cartridge of CARTRIDGES) {
     cards.set(cartridge.id, await buildDopeCard(engine, courseLoadout(cartridge.id), CLICK_MIL));
+    imperialCards.set(cartridge.id, await buildDopeCard(engine, courseLoadout(cartridge.id, 'imperial'), CLICK_MIL, 'imperial'));
   }
 }, 60000);
 
@@ -119,23 +121,25 @@ describe('патроны (U6)', () => {
     for (const item of view) {
       const card = cards.get(item.id)!;
       expect(item.drop).toEqual(card.rows.map(row => ({ distanceM: row.distanceM, mil: row.elevationMil })));
-      expect(item.driftPerMps).toEqual(card.rows.map(row => ({ distanceM: row.distanceM, mil: row.distanceM / row.windConstant })));
+      expect(item.driftPerWindUnit).toEqual(card.rows.map(row => ({ distanceM: row.distanceM, mil: row.distanceM / row.windConstant })));
     }
   });
 
   it('у патрона — масса, скорость, BC и энергия у дула', () => {
     const patronB = cartridgesView(cards as CardsByCartridge)[1];
     expect(patronB.facts).toEqual(['10,9 г', '800 м/с', 'BC 0,218', '3490 Дж']);
+    expect(cartridgesLabels('metric').maxDistanceM).toBe(1000);
   });
 });
 
 describe('зоны ветра', () => {
   it('зоны до 600 м с весами строки 600 карточки, флажки 200 / 400 / 600', () => {
     const view = zonesView(cards.get('B')!);
-    const weights = dopeRowAt(cards.get('B')!, ZONES_EXAMPLE_DISTANCE_M).zoneWeights;
+    const weights = dopeRowAt(cards.get('B')!, 600).zoneWeights;
+    expect(view.distanceM).toBe(600);
     expect(view.zones.map(zone => zone.weight)).toEqual(weights);
     expect(view.zones.map(zone => [zone.fromM, zone.toM])).toEqual([[0, 150], [150, 350], [350, 550], [550, 600]]);
-    expect(view.flagsM).toEqual(FLAG_DISTANCES_M);
+    expect(view.flags.map(flag => flag.distanceM)).toEqual(FLAG_DISTANCES_M);
   });
 });
 
@@ -145,5 +149,42 @@ describe('группа', () => {
     const center = analyseGroup(GROUP_EXAMPLE_IMPACTS, COURSE_RIFLE.groupSigmaMrad)!.center;
     expect(view.center).toEqual(center);
     expect(view.caption).toBe('СТП ↓ 0,8 → 0,5 MIL — перенеси ↑ 8 ← 5 кл.');
+  });
+});
+
+describe('схемы в имперских (T1.8c)', () => {
+  const yardsOf = (distanceM: number) => Number((distanceM / 0.9144).toFixed(6));
+
+  it('траектория: ноль 100 ярдов, метки 300 / 600 / 1000 ярдов, подписи в ярдах', () => {
+    const view = trajectoryView(imperialCards.get('B')!);
+    expect(yardsOf(view.zeroM)).toBe(100);
+    expect(view.timeMarks.map(mark => yardsOf(mark.distanceM))).toEqual([300, 600, 1000]);
+    expect(view.labels.zero).toBe('ноль 100 ярдов');
+    expect(view.labels.ticks.map(tick => [yardsOf(tick.distanceM), tick.text])).toEqual([[0, '0 ярдов'], [500, '500 ярдов'], [1000, '1000 ярдов']]);
+    expect(yardsOf(view.labels.maxDistanceM)).toBe(1000);
+    expect(view.labels.maxElevation).toMatch(/^на 1000 ярдов: ↑ [\d,]+ MIL$/);
+    expect(trajectoryView(cards.get('B')!).labels.ticks.map(tick => tick.text)).toEqual(['0 м', '500 м', '1000 м']);
+  });
+
+  it('зоны: до 600 ярдов, границы 150 / 350 / 550 ярдов, флажки 200 / 400 / 600; подпись — ярды', () => {
+    const view = zonesView(imperialCards.get('B')!);
+    expect(yardsOf(view.distanceM)).toBe(600);
+    expect(view.zones.map(zone => [yardsOf(zone.fromM), yardsOf(zone.toM)])).toEqual([[0, 150], [150, 350], [350, 550], [550, 600]]);
+    expect(view.flags.map(flag => [yardsOf(flag.distanceM), flag.text])).toEqual([[200, '200'], [400, '400'], [600, '600']]);
+    expect(view.zones.map(zone => zone.weight)).toEqual(dopeRowAt(imperialCards.get('B')!, view.distanceM).zoneWeights);
+    expect(view.caption).toContain('Строка 600 ярдов:');
+    expect(view.caption).toContain('последние ярды');
+    expect(zonesView(cards.get('B')!).caption).toContain('Строка 600 м:');
+  });
+
+  it('патроны: гран, фут/с, фут-фунт; снос на 1 миль/ч; ось — 1000 ярдов', () => {
+    const view = cartridgesView(imperialCards as CardsByCartridge);
+    expect(view[1].facts).toEqual(['168 гранов', '2625 фут/с', 'BC 0,218', '2570 фут-фунт']);
+    const card = imperialCards.get('B')!;
+    expect(view[1].driftPerWindUnit).toEqual(card.rows.map(row => ({ distanceM: row.distanceM, mil: (row.distanceM / row.windConstant) * 0.44704 })));
+    expect(cartridgesLabels('imperial').driftTitle).toBe('снос на 1 миль/ч, MIL');
+    expect(cartridgesLabels('imperial').axis(2.4)).toBe('1000 ярдов · 2,4 MIL');
+    expect(cartridgesLabels('metric').axis(2.4)).toBe('1000 м · 2,4 MIL');
+    expect(cartridgesLabels('metric').driftTitle).toBe('снос на 1 м/с, MIL');
   });
 });

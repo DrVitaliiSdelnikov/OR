@@ -168,6 +168,10 @@ describe('zones step: flags (A9.3a)', () => {
     const notebook = hideFlagsBehindBerm(readFlag(readFlag(zonedAt(500), 0, 2), 1, 4), [2]);
     const flag600 = stepSheet(notebook, 'zones').chips.find(chip => chip.kind === 'zone-600')!;
     expect(chipText(flag600, 500)).toEqual({ value: '0,0', source: 'флажок 600 м за валом' });
+    expect(chipText(flag600, 500, 'imperial').source).toBe('флажок 600 ярдов за валом');
+    const flag200 = stepSheet(notebook, 'zones').chips.find(chip => chip.kind === 'zone-200')!;
+    expect(chipText(flag200, 500, 'imperial').source).toBe('V⊥ флажок 200 ярдов');
+    expect(chipText(flag200, 500).source).toBe('V⊥ флажок 200 м');
     expect(missingInput(notebook, 'zones')).toBeNull();
   });
 });

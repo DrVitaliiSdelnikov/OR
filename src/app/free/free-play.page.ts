@@ -5,7 +5,8 @@ import { NotebookMode } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { CartridgeId } from '../../core/types';
 import { courseProgress } from '../../sim/course';
-import { allowedFreePlay, FREE_PLAY_DISTANCES_M, FreePlayRifle, Terrain, WindPreset } from '../../sim/free-play';
+import { allowedFreePlay, freePlayDistances, freePlayInSystem, FreePlayRifle, Terrain, WindPreset } from '../../sim/free-play';
+import { toDisplay } from '../../core/units';
 import { ScopeId } from '../../sim/scope-model';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
@@ -35,10 +36,10 @@ type PickerKind = 'scope' | 'cartridge';
           <input
             class="slider"
             type="range"
-            [min]="distances[0]"
-            [max]="distances[distances.length - 1]"
-            [step]="distanceStep"
-            [value]="settings().distanceM"
+            [min]="sliderValues()[0]"
+            [max]="sliderValues()[sliderValues().length - 1]"
+            [step]="sliderStep()"
+            [value]="sliderValue()"
             [disabled]="settings().isDistanceUnknown"
             (input)="setDistance($event)"
             [attr.aria-label]="view.distanceSliderLabel"
@@ -185,12 +186,15 @@ export class FreePlayPage {
 
   protected readonly texts = text.screens.freePlay;
   protected readonly rifleTexts = text.rifle.freePlay;
-  protected readonly distances = FREE_PLAY_DISTANCES_M;
-  protected readonly distanceStep = FREE_PLAY_DISTANCES_M[1] - FREE_PLAY_DISTANCES_M[0];
   protected readonly picker = signal<PickerKind | null>(null);
   private readonly unlocks = computed(() => courseProgress(this.progress.course(), this.progress.settings().isEverythingUnlocked).freePlayUnlocks);
-  protected readonly settings = computed(() => allowedFreePlay(this.progress.freePlay(), this.unlocks()));
-  protected readonly state = computed(() => freePlayView(this.settings(), this.unlocks(), this.progress.activeProfile(), this.progress.settings().unitSystem));
+  private readonly unitSystem = computed(() => this.progress.settings().unitSystem);
+  protected readonly settings = computed(() => freePlayInSystem(allowedFreePlay(this.progress.freePlay(), this.unlocks()), this.unitSystem()));
+  private readonly distances = computed(() => freePlayDistances(this.unitSystem()));
+  protected readonly sliderValues = computed(() => this.distances().map(distanceM => toDisplay('distance', distanceM, this.unitSystem())));
+  protected readonly sliderStep = computed(() => this.sliderValues()[1] - this.sliderValues()[0]);
+  protected readonly sliderValue = computed(() => this.sliderValues()[this.distances().indexOf(this.settings().distanceM)]);
+  protected readonly state = computed(() => freePlayView(this.settings(), this.unlocks(), this.progress.activeProfile(), this.unitSystem()));
   protected readonly pickerItems = computed<ChoiceView<ScopeId | CartridgeId>[]>(() => (this.picker() === 'scope' ? this.state().scopes : this.state().cartridges));
 
   protected update(patch: Partial<{ distanceM: number; isDistanceUnknown: boolean; wind: WindPreset; terrain: Terrain; notebookMode: NotebookMode; isInstructorNear: boolean; scopeId: ScopeId; cartridgeId: CartridgeId; rifle: FreePlayRifle }>): void {
@@ -198,8 +202,9 @@ export class FreePlayPage {
   }
 
   protected setDistance(event: Event): void {
-    const distanceM = Number((event.target as HTMLInputElement).value);
-    if (distanceM !== this.settings().distanceM) {
+    const sliderValue = Number((event.target as HTMLInputElement).value);
+    const distanceM = this.distances()[this.sliderValues().indexOf(sliderValue)];
+    if (distanceM !== undefined && distanceM !== this.settings().distanceM) {
       this.feedback.emit('detent');
       this.update({ distanceM });
     }

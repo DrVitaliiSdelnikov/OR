@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CARTRIDGES, courseLoadout, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C } from './content';
-import { buildDopeCard, DopeCard } from './dope-card';
+import { CARTRIDGES, courseLoadout, rangeLayout, STANDARD_PRESSURE_HPA, STANDARD_RELATIVE_HUMIDITY, STANDARD_TEMPERATURE_C } from './content';
+import { buildDopeCard, DopeCard, dopeRowAt } from './dope-card';
 import { BallisticsEngine } from './engine';
 import { atmosphereCorrectionMilImperial } from './game-formulas';
 import { Atmosphere, CartridgeId } from './types';
@@ -91,5 +91,41 @@ describe('формула условий в имперских (T1.8b)', () => {
     expect(atmosphereCorrectionMilImperial(row, 59, 29.92)).toBe(0);
     expect(atmosphereCorrectionMilImperial(row, 39, 29.92)).toBeCloseTo(2 * row.colderStepMil, 9);
     expect(atmosphereCorrectionMilImperial(row, 59, 30.52)).toBeCloseTo(2 * row.pressureStepMil, 9);
+  });
+});
+
+describe('полигон в ярдах на карточке (T1.8c)', () => {
+  const ZONE_WEIGHT_PARTS = 20;
+
+  it('веса зон — по границам 150 / 350 / 550 ярдов: прогоны ядра с ветром в одной зоне', async () => {
+    const loadout = courseLoadout('B', 'imperial');
+    const card = await buildDopeCard(engine, loadout, CLICK_MIL, 'imperial');
+    const step = 100 * YARD_M;
+    const limits = rangeLayout('imperial').windZoneLimitsM;
+    const driftAt = async (windyZone: number | null) =>
+      engine.trajectory(loadout, atmosphere(STANDARD_TEMPERATURE_C, STANDARD_PRESSURE_HPA), limits.map((untilM, zoneIndex) => ({ untilM, speedMps: windyZone === null || zoneIndex === windyZone ? 1 : 0, fromDeg: 90 })), undefined, step, undefined, step * 10);
+    const full = await driftAt(null);
+    for (const [zoneIndex] of limits.entries()) {
+      const single = await driftAt(zoneIndex);
+      for (const rowIndex of [3, 5, 9]) {
+        const share = single[rowIndex + 1].windageMrad / full[rowIndex + 1].windageMrad;
+        expect(Math.abs(card.rows[rowIndex].zoneWeights[zoneIndex] - share), `зона ${zoneIndex}, строка ${rowIndex}`).toBeLessThan(1 / ZONE_WEIGHT_PARTS);
+      }
+    }
+  });
+
+  it('ноль 100 ярдов: карточка помнит его, угол нуля — по ядру и не как у нуля 100 м', async () => {
+    const loadout = courseLoadout('B', 'imperial');
+    const card = await buildDopeCard(engine, loadout, CLICK_MIL, 'imperial');
+    expect(card.zeroM).toBeCloseTo(100 * YARD_M, 9);
+    expect(card.zeroAngleMil).toBeCloseTo(await engine.zeroAngleMil(loadout), 2);
+    expect(card.zeroAngleMil).not.toBe(imperialCards.get('B')!.zeroAngleMil);
+  });
+
+  it('цель на 100…1000 ярдов попадает ровно в свою строку', () => {
+    const card = imperialCards.get('B')!;
+    for (const [index, row] of card.rows.entries()) {
+      expect(dopeRowAt(card, fromInput('distance', (index + 1) * 100, 'imperial')), `${(index + 1) * 100} ярдов`).toBe(row);
+    }
   });
 });

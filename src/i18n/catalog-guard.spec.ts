@@ -12,6 +12,7 @@ const LINE_COMMENT = /(^|[^:'"`])\/\/.*$/gm;
 const MANUAL_DECIMAL_COMMA = /replace\(\s*'\.'\s*,\s*','\s*\)/;
 const DOT_FRACTION = /\.toFixed\(\s*[1-9]/;
 const CATALOG_FILE = /^src\/i18n\/ru\/(?!.*\.spec\.ts$).*\.ts$/;
+const UNIT_AFTER_PLACEHOLDER = /\$\{[^}]+\} ?(?:м|м\/с|°C|гПа|см)(?![а-яёa-z])/;
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
@@ -45,5 +46,17 @@ describe('каталог текстов', () => {
     const withDot = catalog.filter(path => DOT_FRACTION.test(readFileSync(path, 'utf-8')));
     expect(catalog.length).toBeGreaterThan(0);
     expect(withDot).toEqual([]);
+  });
+
+  it('единицы в каталоге — только через форматтеры: после подстановки нет «м», «м/с», «°C», «гПа», «см» (T1.8c)', () => {
+    const catalog = sourceFiles(CATALOG_ROOT).filter(path => CATALOG_FILE.test(path));
+    const withUnit = catalog.flatMap(path =>
+      readFileSync(path, 'utf-8')
+        .split('\n')
+        .map((line, index) => ({ line, at: `${path}:${index + 1}` }))
+        .filter(({ line }) => UNIT_AFTER_PLACEHOLDER.test(line))
+        .map(({ at }) => at),
+    );
+    expect(withUnit).toEqual([]);
   });
 });

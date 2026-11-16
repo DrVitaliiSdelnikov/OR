@@ -1,4 +1,4 @@
-import { FLAG_DISTANCES_M, WIND_ZONE_LIMITS_M } from './content';
+import { RangeLayout, rangeLayout } from './content';
 import { mulberry32 } from './rng';
 import { Atmosphere, CoriolisInput, ShotGeometry, WindZone } from './types';
 
@@ -88,7 +88,7 @@ export function degFromClock(hour: number): number {
   return normalizeDeg(360 - hour * 30);
 }
 
-export function createScenario(seed: number, options: ScenarioOptions = {}): Scenario {
+export function createScenario(seed: number, options: ScenarioOptions = {}, layout: RangeLayout = rangeLayout('metric')): Scenario {
   const random = mulberry32(seed);
   const atmosphere: Atmosphere = {
     temperatureC: Math.round((4 + random() * 28) * 10) / 10,
@@ -116,7 +116,7 @@ export function createScenario(seed: number, options: ScenarioOptions = {}): Sce
   };
   const baseSpeedMps = 1 + random() * 5;
   const baseFromDeg = (random() < 0.5 ? 90 : 270) + (random() - 0.5) * 80;
-  let zones: WindZone[] = WIND_ZONE_LIMITS_M.map(untilM => ({
+  let zones: WindZone[] = layout.windZoneLimitsM.map(untilM => ({
     untilM,
     speedMps: Math.round(baseSpeedMps * (0.6 + random() * 0.9) * 10) / 10,
     fromDeg: Math.round(normalizeDeg(baseFromDeg + (random() - 0.5) * 50)),
@@ -124,12 +124,12 @@ export function createScenario(seed: number, options: ScenarioOptions = {}): Sce
   const dynamics: WindDynamics = {
     periodS: 28 + random() * 22,
     amplitude: 0.12 + random() * 0.2,
-    phases: WIND_ZONE_LIMITS_M.map(() => random() * Math.PI * 2),
+    phases: layout.windZoneLimitsM.map(() => random() * Math.PI * 2),
     zoneLagS: 1 + random() * 2,
     directionAmplitudeDeg: 8 + random() * 14,
     gusts: [],
   };
-  for (let zoneIndex = 0; zoneIndex < WIND_ZONE_LIMITS_M.length; zoneIndex++) {
+  for (let zoneIndex = 0; zoneIndex < layout.windZoneLimitsM.length; zoneIndex++) {
     let startS = random() * 20;
     while (startS < GUST_TIMELINE_S) {
       dynamics.gusts.push({ zoneIndex, startS, durationS: 4 + random() * 5, amplitude: 0.2 + random() * 0.35 });
@@ -174,7 +174,7 @@ export function createScenario(seed: number, options: ScenarioOptions = {}): Sce
     atmosphere,
     zones,
     gauge,
-    flags: flagReadings(zones),
+    flags: flagReadings(zones, layout),
   };
 }
 
@@ -194,8 +194,8 @@ function valueInRange([min, max]: ValueRange, share: number): number {
   return min + (max - min) * share;
 }
 
-function flagReadings(zones: readonly WindZone[]): FlagReading[] {
-  return FLAG_DISTANCES_M.map((distanceM, index) => ({ distanceM, lateralWindMps: lateralWindMps(zones[index + 1]) }));
+function flagReadings(zones: readonly WindZone[], layout: RangeLayout): FlagReading[] {
+  return layout.flagDistancesM.map((distanceM, index) => ({ distanceM, lateralWindMps: lateralWindMps(zones[index + 1]) }));
 }
 
 function zoneSpeedFactor(scenario: Scenario, zoneIndex: number, timeS: number): number {

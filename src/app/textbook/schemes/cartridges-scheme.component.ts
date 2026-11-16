@@ -2,7 +2,7 @@ import { Component, computed, input } from '@angular/core';
 import { text } from '../../../i18n';
 import { CartridgeId } from '../../../core/types';
 import { CardsByCartridge } from '../terms';
-import { cartridgesView } from './scheme.model';
+import { cardsSystem, cartridgesLabels, CartridgesLabels, cartridgesView } from './scheme.model';
 
 const CHART_WIDTH = 150;
 const CHART_HEIGHT = 96;
@@ -10,7 +10,6 @@ const CHART_LEFT = 6;
 const CHART_RIGHT = 144;
 const CHART_TOP = 8;
 const CHART_BOTTOM = 84;
-const MAX_DISTANCE_M = 1000;
 const LINE_STYLES: Record<CartridgeId, string> = { A: '6 3', B: 'none', C: '1.5 2.5' };
 
 const T = text.textbook.schemes.cartridges;
@@ -73,21 +72,22 @@ export class CartridgesSchemeComponent {
   protected readonly cartridges = computed(() => cartridgesView(this.cards()));
   protected readonly charts = computed(() => {
     const items = this.cartridges();
+    const labels = cartridgesLabels(cardsSystem(this.cards()));
     return [
-      chart(T.dropTitle, 'cartridges-drop', items.map(item => ({ id: item.id, curve: item.drop }))),
-      chart(T.driftTitle, 'cartridges-drift', items.map(item => ({ id: item.id, curve: item.driftPerMps }))),
+      chart(T.dropTitle, 'cartridges-drop', items.map(item => ({ id: item.id, curve: item.drop })), labels),
+      chart(labels.driftTitle, 'cartridges-drift', items.map(item => ({ id: item.id, curve: item.driftPerWindUnit })), labels),
     ];
   });
 }
 
-function chart(title: string, test: string, curves: readonly { id: CartridgeId; curve: Curve }[]) {
+function chart(title: string, test: string, curves: readonly { id: CartridgeId; curve: Curve }[], labels: CartridgesLabels) {
   const maxMil = Math.max(...curves.flatMap(item => item.curve.map(point => point.mil)));
-  const x = (distanceM: number): number => CHART_LEFT + (distanceM / MAX_DISTANCE_M) * (CHART_RIGHT - CHART_LEFT);
+  const x = (distanceM: number): number => CHART_LEFT + (distanceM / labels.maxDistanceM) * (CHART_RIGHT - CHART_LEFT);
   const y = (mil: number): number => CHART_TOP + (mil / maxMil) * (CHART_BOTTOM - CHART_TOP);
   return {
     title,
     test,
-    axisText: T.axis({ distanceM: MAX_DISTANCE_M, maxMil }),
+    axisText: labels.axis(maxMil),
     lines: curves.map(item => ({ id: item.id, points: item.curve.map(point => `${x(point.distanceM)},${y(point.mil)}`).join(' ') })),
   };
 }

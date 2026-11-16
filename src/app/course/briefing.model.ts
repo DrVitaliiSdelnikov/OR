@@ -1,7 +1,7 @@
 import { modeMultiplier, NotebookMode, SECOND_CLASS_SHARE, THIRD_CLASS_SHARE } from '../../core/exercise-scoring';
 import { UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
-import { ATTESTATION_ID, CourseResults, ExerciseDef, TargetDistance } from '../../sim/course';
+import { ATTESTATION_ID, CourseResults, ExerciseDef, exerciseTitle, TargetDistance, targetDistanceIn } from '../../sim/course';
 import { teachingScript } from '../instructor/teaching.model';
 import { classStamp, firstClassGoalText, isPaperExercise } from '../result/result.model';
 import { exerciseSheet, ExerciseSheet, MODE_LABELS } from './course-trail.model';
@@ -38,7 +38,7 @@ export function briefingCard(def: ExerciseDef, course: CourseResults, system: Un
   const isIntro = def.id === INTRO_ID;
   return {
     header: T.header({ exerciseId: def.id, kind: isIntro ? 'intro' : def.id === ATTESTATION_ID ? 'attestation' : 'training' }),
-    title: def.title,
+    title: exerciseTitle(def, system),
     scheme: {
       distanceText: def.targets ? distanceText(def.targets.distance, system) : '',
       isPaper: isPaperExercise(def),
@@ -63,7 +63,8 @@ export function briefingCard(def: ExerciseDef, course: CourseResults, system: Un
   };
 }
 
-function distanceText(distance: TargetDistance, system: UnitSystem): string {
+function distanceText(courseDistance: TargetDistance, system: UnitSystem): string {
+  const distance = targetDistanceIn(courseDistance, system);
   switch (distance.kind) {
     case 'fixed':
       return text.units.rangeText('distance', [distance.distanceM, distance.distanceM], system);

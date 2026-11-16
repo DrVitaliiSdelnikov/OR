@@ -1,11 +1,12 @@
-import { ExerciseId, FIRST_FIRING_EXERCISE_ID } from '../../sim/course';
+import { exerciseById, ExerciseId, FIRST_FIRING_EXERCISE_ID, targetDistanceIn } from '../../sim/course';
 import { FactorContribution, NotebookFactor, NotebookStepId } from '../../sim/notebook';
 import { BREATH_HOLD_CALM_S } from '../../sim/sway';
-import { FLAG_DISTANCES_M } from '../../core/content';
+import { rangeLayout } from '../../core/content';
 import { FULL_MEASUREMENT_S } from '../../sim/notebook';
 import { DialDirection, text } from '../../i18n';
-import { contributionText, FACTOR_NAMES } from '../notebook/notebook.model';
+import { contributionText, FACTOR_NAMES, millingResultText } from '../notebook/notebook.model';
 import { InstructorSnapshot } from './instructor-snapshot';
+import { UnitSystem } from '../../core/units';
 
 export type TeachingKind = 'action' | 'explain';
 
@@ -32,6 +33,9 @@ const ZEROING_GROUP_LAST_SHOT = 4;
 const AIM_TOLERANCE_MIL = 0.3;
 const WIND_EXERCISE: ExerciseId = '04';
 const T = text.instructor;
+const UNITS = text.units;
+const STATION_SPEED_DIGITS = 1;
+const LONG_RANGE_EXERCISE: ExerciseId = '14';
 
 const hasFired = (state: InstructorSnapshot): boolean => state.shotsFired > 0;
 const isScreenFree = (state: InstructorSnapshot): boolean => state.sheetTab === null && !state.isReviewOpen;
@@ -114,7 +118,7 @@ const DRUM_STEP: TeachingStep = {
 };
 
 const FIRST_CLICKS: readonly TeachingStep[] = [
-  { id: 'scope', kind: 'explain', anchor: fixed('glass'), text: state => T.firstClicks.scope({ distanceM: state.targetDistanceM ?? 0 }), isDue: isScreenFree, isDone: hasFired },
+  { id: 'scope', kind: 'explain', anchor: fixed('glass'), text: state => T.firstClicks.scope({ distance: UNITS.quantityText('distance', state.targetDistanceM ?? 0, state.unitSystem) }), isDue: isScreenFree, isDone: hasFired },
   notebookStep(T.firstClicks.notebook),
   {
     id: 'dope',
@@ -147,7 +151,7 @@ const FIRST_CLICKS: readonly TeachingStep[] = [
 ];
 
 const ZEROING: readonly TeachingStep[] = [
-  { id: 'zero', kind: 'explain', anchor: fixed('glass'), text: state => T.zeroing.zero({ distanceM: state.targetDistanceM ?? 0 }), isDue: isScreenFree, isDone: hasFired },
+  { id: 'zero', kind: 'explain', anchor: fixed('glass'), text: state => T.zeroing.zero({ distance: UNITS.quantityText('distance', state.targetDistanceM ?? 0, state.unitSystem) }), isDue: isScreenFree, isDone: hasFired },
   aimStep(T.zeroing.aim),
   { id: 'cold', kind: 'action', anchor: fixed('fire-control'), text: fixed(T.zeroing.cold), isDue: isScreenFree, isDone: hasFired },
   {
@@ -253,7 +257,7 @@ const WIND_AND_STATION: readonly TeachingStep[] = [
     id: 'clock',
     kind: 'explain',
     anchor: fixed('wind-clock'),
-    text: state => T.windAndStation.clock({ speedMps: state.stationSpeedMps ?? 0 }),
+    text: state => T.windAndStation.clock({ speed: UNITS.numberText('windSpeed', state.stationSpeedMps ?? 0, state.unitSystem, STATION_SPEED_DIGITS) }),
     isDue: state => state.sheetTab === 'wind',
     isDone: state => isWindWritten(state) || hasFired(state),
   },
@@ -264,7 +268,7 @@ const ZONE_FLAGS: readonly TeachingStep[] = [
     id: 'flags',
     kind: 'explain',
     anchor: fixed('glass'),
-    text: fixed(T.zoneFlags.flags({ distancesM: FLAG_DISTANCES_M })),
+    text: state => T.zoneFlags.flags({ distances: UNITS.listText('distance', rangeLayout(state.unitSystem).flagDistancesM, state.unitSystem) }),
     isDue: always,
     isDone: state => isAnyFlagRead(state) || hasFired(state),
   },
@@ -361,7 +365,7 @@ const LONG_RANGE: readonly TeachingStep[] = [
     id: 'earth',
     kind: 'explain',
     anchor: fixed('position-geometry'),
-    text: fixed(T.longRange.earth),
+    text: state => T.longRange.earth({ distance: UNITS.quantityText('distance', nearestTargetM(LONG_RANGE_EXERCISE, state.unitSystem), state.unitSystem) }),
     isDue: always,
     isDone: hasFired,
   },
@@ -408,7 +412,7 @@ const MILLING: readonly TeachingStep[] = [
     id: 'milling',
     kind: 'action',
     anchor: fixed('milling'),
-    text: state => T.milling.milling({ sizeM: state.targetSizeM }),
+    text: state => T.milling.milling({ size: UNITS.quantityText('targetSize', state.targetSizeM, state.unitSystem) }),
     isDue: state => state.sheetTab === 'distance',
     isDone: state => isRangeMeasured(state) || hasFired(state),
   },
@@ -416,7 +420,7 @@ const MILLING: readonly TeachingStep[] = [
     id: 'result',
     kind: 'explain',
     anchor: fixed('milling-result'),
-    text: state => T.milling.result({ sizeM: state.targetSizeM, reticleMil: state.reticleMil ?? 0, distanceM: state.measuredDistanceM ?? 0 }),
+    text: state => millingResultText(state.targetSizeM, state.reticleMil ?? 0, state.measuredDistanceM ?? 0, state.unitSystem),
     isDue: state => state.sheetTab === 'distance',
     isDone: hasFired,
   },
@@ -531,4 +535,9 @@ export function forgottenFactorTeaching(factor: NotebookFactor, contribution: Fa
     number: null,
     count: null,
   };
+}
+
+function nearestTargetM(exerciseId: ExerciseId, system: UnitSystem): number {
+  const distance = targetDistanceIn(exerciseById(exerciseId)!.targets!.distance, system);
+  return distance.kind === 'fixed' ? distance.distanceM : distance.fromM;
 }

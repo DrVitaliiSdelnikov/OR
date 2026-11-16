@@ -212,3 +212,14 @@ describe('журнал в имперских единицах (T1.8a)', () => {
     expect(cardsView([card], {}, 'imperial')[0].rows[0].distance).toBe('328');
   });
 });
+
+describe('журнал: название 10 в единицах игрока (T1.8c)', () => {
+  it('лента и достижения — «Пристрелка на 425» в имперских', () => {
+    const ten = series({ exerciseId: '10', title: 'Пристрелка на 400' });
+    expect(feedView([ten], 'imperial')[0].title).toBe('10 · Пристрелка на 425');
+    expect(feedView([ten])[0].title).toBe('10 · Пристрелка на 400');
+    const course: CourseResults = { isIntroCompleted: true, bestClasses: { '10': 2 } };
+    expect(achievementsView(course, 'imperial').classes.find(row => row.id === '10')!.title).toBe('Пристрелка на 425');
+    expect(achievementsView(course).classes.find(row => row.id === '10')!.title).toBe('Пристрелка на 400');
+  });
+});

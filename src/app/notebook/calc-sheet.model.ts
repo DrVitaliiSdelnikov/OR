@@ -1,6 +1,6 @@
 import { CheckErrorType } from '../../core/calc-check';
 import { decimal } from '../../i18n/format';
-import { FLAG_DISTANCES_M, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
+import { rangeLayout, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
 import { dopeRowAt } from '../../core/dope-card';
 import { IMPERIAL_COLDER_STEP_F, IMPERIAL_PRESSURE_STEP_INHG, STANDARD_PRESSURE_INHG, STANDARD_TEMPERATURE_F } from '../../core/game-formulas';
 import { UnitSystem } from '../../core/units';
@@ -36,6 +36,7 @@ export const STEP_TITLES: Record<NotebookStepId, string> = T.stepTitles;
 export const STEP_FORMULAS: Record<NotebookStepId, string> = T.stepFormulas;
 const IMPERIAL_STEP_FORMULAS: Partial<Record<NotebookStepId, string>> = T.stepFormulasImperial;
 const UNITS = text.units;
+const FLAG_CHIP_PREFIX = 'zone-';
 const METRIC_COLUMN_STEP = 10;
 const IMPERIAL_MILLING_TEXT = ' × 27,78 / ';
 const METRIC_MILLING_TEXT = ' × 1000 / ';
@@ -63,7 +64,7 @@ export function tapeUnit(step: NotebookStepId, system: UnitSystem): string | und
 function missingTexts(system: UnitSystem): Partial<Record<ChipKind, string>> {
   return {
     ...T.missing,
-    ...Object.fromEntries(FLAG_ZONE_KINDS.map((kind, index) => [kind, T.missingFlag({ distance: UNITS.valueText('distance', FLAG_DISTANCES_M[index], system, 0) })])),
+    ...Object.fromEntries(FLAG_ZONE_KINDS.map((kind, index) => [kind, T.missingFlag({ distance: UNITS.valueText('distance', rangeLayout(system).flagDistancesM[index], system, 0) })])),
   };
 }
 const MODE_NAMES: Record<NotebookMode, string> = T.modeNames;
@@ -177,8 +178,8 @@ export function chipText(chip: Chip, distanceM: number | null, system: UnitSyste
     case 'zone-200':
     case 'zone-400':
     case 'zone-600': {
-      const distanceText = chip.kind.slice(5);
-      return { value: decimal(chip.value, 1), source: chip.isBehindBerm ? T.flagBehindBermSource({ distanceText }) : T.flagSource({ distanceText }) };
+      const distance = UNITS.displayText('distance', Number(chip.kind.slice(FLAG_CHIP_PREFIX.length)), system, 0);
+      return { value: decimal(chip.value, 1), source: chip.isBehindBerm ? T.flagBehindBermSource({ distance }) : T.flagSource({ distance }) };
     }
     case 'target-crosswind':
       return { value: decimal(chip.value, 1), source: sources.targetCrosswind };

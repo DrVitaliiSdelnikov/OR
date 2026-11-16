@@ -65,16 +65,16 @@ export class ZonesSchemeComponent {
     const view = zonesView(this.card());
     const x = (distanceM: number): number => LEFT + (distanceM / view.distanceM) * (RIGHT - LEFT);
     return {
-      caption: this.texts.caption({ distanceM: view.distanceM }),
+      caption: view.caption,
       zones: view.zones.map(zone => ({
         fromX: x(zone.fromM),
         width: x(zone.toM) - x(zone.fromM),
         weightText: decimal(zone.weight),
       })),
-      flags: view.flagsM.map(distanceM => {
-        const flagX = x(distanceM);
+      flags: view.flags.map(flag => {
+        const flagX = x(flag.distanceM);
         const poleTop = TRACK_Y - FLAG_HEIGHT;
-        return { x: flagX, text: `${distanceM}`, cloth: `${flagX},${poleTop} ${flagX + 12},${poleTop + 4} ${flagX},${poleTop + 8}` };
+        return { x: flagX, text: flag.text, cloth: `${flagX},${poleTop} ${flagX + 12},${poleTop + 4} ${flagX},${poleTop + 8}` };
       }),
     };
   });

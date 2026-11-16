@@ -113,9 +113,9 @@ describe('exercise sheet', () => {
 });
 
 describe('лист упражнения в имперских единицах (T1.8a)', () => {
-  it('01: гонги в дюймах, 328 ярдов, штиль, +59 °F и 29,91 дюйма рт. ст.', () => {
+  it('01: гонги в дюймах, 325 ярдов (T1.8c), штиль, +59 °F и 29,91 дюйма рт. ст.', () => {
     const sheet = exerciseSheet(exerciseById('01')!, 'imperial');
-    expect(sheet.targets).toBe('3 × гонг 20 дюймов · 328 ярдов');
+    expect(sheet.targets).toBe('3 × гонг 20 дюймов · 325 ярдов');
     expect(sheet.atmosphere).toBe('+59 °F · 29,91 дюйма рт. ст.');
   });
 
@@ -123,16 +123,33 @@ describe('лист упражнения в имперских единицах (
     const sheet = exerciseSheet(exerciseById('07')!, 'imperial');
     expect(sheet.atmosphere).toBe('+23…32 °F · 30,27–30,56 дюйма рт. ст.');
     expect(sheet.wind).toBe('4,5–5,6 миль/ч');
-    expect(sheet.targets).toBe('4 × гонг 20 дюймов · 547–656 ярдов');
+    expect(sheet.targets).toBe('4 × гонг 20 дюймов · 550–650 ярдов');
   });
 
   it('12 и 13: неизвестные дистанции и высота в футах', () => {
-    expect(exerciseSheet(exerciseById('12')!, 'imperial').targets).toBe('10 × гонг 20–28 дюймов · неизвестная, 219–766 ярдов, туда и обратно');
+    expect(exerciseSheet(exerciseById('12')!, 'imperial').targets).toBe('10 × гонг 20–28 дюймов · неизвестная, 200–750 ярдов, туда и обратно');
     expect(exerciseSheet(exerciseById('13')!, 'imperial').atmosphere).toBe('по погоде · ∠ 10–25° вверх или вниз · высота 3280–4920 футов');
   });
 
   it('метрика без изменений, кроме знака градуса', () => {
     expect(exerciseSheet(exerciseById('07')!).atmosphere).toBe('−5…0 °C · 1025–1035 гПа');
     expect(exerciseSheet(exerciseById('01')!, 'metric').targets).toBe('3 × гонг 0,5 м · 300 м');
+  });
+});
+
+describe('лист упражнения: полигон в ярдах (T1.8c)', () => {
+  it('дистанции и гонги — как стоят в имперских: 325 ярдов, 450–550, 20″ и 28″', () => {
+    expect(exerciseSheet(exerciseById('01')!, 'imperial').targets).toBe('3 × гонг 20 дюймов · 325 ярдов');
+    expect(exerciseSheet(exerciseById('06')!, 'imperial').targets).toBe('4 × гонг 20 дюймов · 450–550 ярдов');
+    expect(exerciseSheet(exerciseById('09')!, 'imperial').targets).toBe('4 × гонг 20–28 дюймов · 550–750 ярдов');
+    expect(exerciseSheet(exerciseById('14')!, 'imperial').targets).toBe('4 × гонг 28 дюймов · 850–1000 ярдов');
+    expect(exerciseSheet(exerciseById('05')!, 'imperial').targets).toContain('350–650 ярдов');
+    expect(exerciseSheet(exerciseById('10')!, 'imperial').title).toBe('Пристрелка на 425');
+    expect(exerciseSheet(exerciseById('06')!).targets).toBe('4 × гонг 0,5 м · 400–500 м');
+  });
+
+  it('тропа курса: название 10 — в единицах игрока', () => {
+    expect(trailNodes({ isIntroCompleted: true, bestClasses: {} }, false, 'imperial').find(node => node.id === '10')!.title).toBe('Пристрелка на 425');
+    expect(trailNodes({ isIntroCompleted: true, bestClasses: {} }).find(node => node.id === '10')!.title).toBe('Пристрелка на 400');
   });
 });

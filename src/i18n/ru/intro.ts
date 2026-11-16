@@ -34,19 +34,21 @@ export const intro = {
     zoom: { title: 'Кратность', instruction: 'Покрути кратность вверх и вниз — гонг и метки сетки растут вместе' },
     reticles: {
       title: 'Сетки',
-      instruction: (p: { gongSizeM: number; distanceM: number }) =>
-        `Тапни по меткам сеток. Потом ответь: гонг ${decimal(p.gongSizeM)} м на ${p.distanceM} м — сколько MIL он займёт?`,
+      instruction: (p: { gongSize: string; distance: string }) => `Тапни по меткам сеток. Потом ответь: гонг ${p.gongSize} на ${p.distance} — сколько MIL он займёт?`,
     },
     cartridges: { title: 'Патроны', instruction: 'Три патрона: тяжелее и обтекаемее — меньше падает и меньше сносится ветром' },
     bolt: { title: 'Затвор', instruction: 'Передёрни затвор: тяни рукоять вверх, назад, вперёд, вниз' },
   },
-  measureHint: 'Не так. Д = размер × 1000 / mil — отсюда mil = размер × 1000 / Д',
+  measureHint: {
+    metric: 'Не так. Д = размер × 1000 / mil — отсюда mil = размер × 1000 / Д',
+    imperial: 'Не так. Д = размер × 27,78 / MIL — отсюда MIL = размер × 27,78 / Д',
+  },
   page: {
     back: 'Назад',
     title: (p: { exerciseId: string; exerciseTitle: string }) => `${p.exerciseId} · ${p.exerciseTitle}`,
     stepCounter: (p: { number: number; count: number; title: string }) => `шаг ${p.number} из ${p.count} · ${p.title}`,
     callsign: 'Старший:',
-    question: (p: { gongSizeM: number; distanceM: number }) => `Гонг ${decimal(p.gongSizeM)} м на ${p.distanceM} м — сколько MIL?`,
+    question: (p: { gongSize: string; distance: string }) => `Гонг ${p.gongSize} на ${p.distance} — сколько MIL?`,
     answer: (p: { mil: number }) => `${decimal(p.mil)} MIL`,
     pendingCartridges: 'считаю карточки патронов…',
     boltDone: 'Патрон в стволе — затвор закрыт',

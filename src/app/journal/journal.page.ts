@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FIRST_FIRING_EXERCISE_ID } from '../../sim/course';
 import { RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
@@ -11,6 +11,7 @@ import { CHECK_ERROR_TERMS, MAIN_CAUSE_TERMS } from '../textbook/term-links';
 import { TermTextComponent } from '../textbook/term-text.component';
 import { achievementsView, cardsView, errorsView, feedView, STATS_MIN_SHOTS, statsView } from './journal.model';
 import { BackLinkDirective } from '../services/back-link.directive';
+import { UnitSystem } from '../../core/units';
 
 const T = text.screens.journal;
 
@@ -177,10 +178,10 @@ export class JournalPage {
     { title: T.statGroups.mode, bars: this.stats().byMode },
   ]);
   protected readonly cards = computed(() => cardsView(this.dopeCards(), this.progress.dopeNotes(), this.progress.settings().unitSystem));
-  protected readonly achievements = computed(() => achievementsView(this.progress.course()));
+  protected readonly achievements = computed(() => achievementsView(this.progress.course(), this.progress.settings().unitSystem));
 
   constructor() {
-    void this.buildCards();
+    effect(() => void this.buildCards(this.progress.settings().unitSystem));
   }
 
   protected toggle(seriesId: string): void {
@@ -195,12 +196,14 @@ export class JournalPage {
     return Math.round(value);
   }
 
-  private async buildCards(): Promise<void> {
+  private async buildCards(system: UnitSystem): Promise<void> {
     const engine = new BallisticsEngine();
     const cards: DopeCard[] = [];
     for (const cartridge of CARTRIDGES) {
-      cards.push(await buildDopeCard(engine, courseLoadout(cartridge.id), CARD_CLICK_MIL));
+      cards.push(await buildDopeCard(engine, courseLoadout(cartridge.id, system), CARD_CLICK_MIL, system));
     }
-    this.dopeCards.set(cards);
+    if (this.progress.settings().unitSystem === system) {
+      this.dopeCards.set(cards);
+    }
   }
 }

@@ -101,8 +101,8 @@ describe('свободная игра в имперских единицах (T1
     expect(view.distanceText).toBe('328 ярдов');
     expect(view.distanceSliderLabel).toBe('Дистанция, ярд');
     expect(view.cartridges[1].line).toBe('168 гранов · 2625 фут/с · BC 0,218');
-    expect(view.terrains.find(terrain => terrain.id === 'mountains')!.line).toBe('угол 10–25°, высота 3280–4920 футов, до 766 ярдов');
-    expect(view.terrains.find(terrain => terrain.id === 'long-range')!.line).toBe('деривация и Кориолис, 656–1094 ярда');
+    expect(view.terrains.find(terrain => terrain.id === 'mountains')!.line).toBe('угол 10–25°, высота 3280–4920 футов, до 750 ярдов');
+    expect(view.terrains.find(terrain => terrain.id === 'long-range')!.line).toBe('деривация и Кориолис, 650–1000 ярдов');
   });
 
   it('метрика — как раньше', () => {

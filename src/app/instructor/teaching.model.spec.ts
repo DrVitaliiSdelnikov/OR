@@ -39,6 +39,7 @@ function snapshot(exerciseId: ExerciseId, fields: Partial<InstructorSnapshot> = 
     openCalcStep: null,
     flagsRead: 0,
     isAmbushTarget: false,
+    unitSystem: 'metric',
     ...fields,
   };
 }
@@ -388,5 +389,35 @@ describe('teaching — numbers come from the exercise and the constants (В7, A1
 
   it('09: the flag distances are the flags of the range', () => {
     expect(next(snapshot('09'))!.text).toBe(`Ветер по трассе разный. Флажки на ${FLAG_DISTANCES_M.join(', ')} м — левее цели, веди прицел к ним`);
+  });
+});
+
+describe('teaching — реплики в имперских (T1.8c)', () => {
+  const imperial = (exerciseId: ExerciseId, fields: Partial<InstructorSnapshot> = {}) => snapshot(exerciseId, { unitSystem: 'imperial', ...fields });
+
+  it('01: гонг на 325 ярдов; 02: пристреляем на 100 ярдов', () => {
+    expect(next(imperial('01', { targetDistanceM: 297.18 }))!.text).toBe('Это прицел. Цель — гонг на 325 ярдов');
+    expect(next(imperial('02', { targetDistanceM: 91.44 }))!.text).toBe('Прицел сбит. Пристреляем на 100 ярдов');
+    expect(next(snapshot('01'))!.text).toBe('Это прицел. Цель — гонг на 300 м');
+  });
+
+  it('04: скорость со станции — в милях в час', () => {
+    const state = imperial('04', { hasOpenedNotebook: true, sheetTab: 'wind', isStationMeasured: true, stationSpeedMps: 2, windSpeedMps: 0 });
+    expect(next(state)!.text).toContain('Скорость — 4,5, со станции');
+  });
+
+  it('05: гонг 20 дюймов; Д = 20 × 27,78 / MIL = ярды', () => {
+    const onTab = imperial('05', { hasOpenedNotebook: true, sheetTab: 'distance', targetSizeM: 0.508 });
+    expect(next(onTab)!.text).toBe('Гонг 20 дюймов. Коснись верхнего и нижнего края, затем «Посчитать»');
+    expect(next({ ...onTab, reticleMil: 1.11, measuredDistanceM: 457.2 })!.text).toBe('Д = 20 × 27,78 / 1,11 = 500 ярдов');
+  });
+
+  it('09: флажки на 200, 400, 600 ярдов; 14: дальше 850 ярдов — ближняя цель упражнения', () => {
+    const flags = teachingScript('09')!.find(step => step.id === 'flags')!;
+    expect(flags.text(imperial('09'))).toBe('Ветер по трассе разный. Флажки на 200, 400, 600 ярдов — левее цели, веди прицел к ним');
+    expect(flags.text(snapshot('09'))).toBe('Ветер по трассе разный. Флажки на 200, 400, 600 м — левее цели, веди прицел к ним');
+    const earth = teachingScript('14')!.find(step => step.id === 'earth')!;
+    expect(earth.text(imperial('14'))).toContain('Дальше 850 ярдов в расчёт входят');
+    expect(earth.text(snapshot('14'))).toContain('Дальше 800 м в расчёт входят');
   });
 });

@@ -23,7 +23,7 @@ describe('BallisticsEngine.trajectory', () => {
     const stepM = 50 * 0.9144;
     const points = await engine.trajectory(courseLoadout(cartridgeB.id), null, null, cartridgeB.muzzleVelocityMps, stepM, undefined, 22 * stepM);
     expect(points).toHaveLength(23);
-    expect(points.at(-1)!.distanceM).toBe(1006);
+    expect(points.at(-1)!.distanceM).toBe(1005.84);
   });
 
   it('is zeroed at 100 m', async () => {
@@ -73,5 +73,11 @@ describe('BallisticsEngine.trajectory', () => {
 describe('BallisticsEngine.required', () => {
   it('throws for a distance without a sample', () => {
     expect(() => BallisticsEngine.required([], 350)).toThrow('no trajectory sample at 350 m');
+  });
+
+  it('дробная дистанция цели (325 ярдов = 297,18 м): точка шага на ней находится (T1.8c)', async () => {
+    const points = await engine.trajectory(courseLoadout(cartridgeB.id), null, null, undefined, 297.18);
+    expect(BallisticsEngine.required(points, 297.18).timeS).toBeCloseTo(points[1].timeS, 9);
+    expect(BallisticsEngine.interpolated(points, 297.18).timeS).toBeCloseTo(points[1].timeS, 9);
   });
 });

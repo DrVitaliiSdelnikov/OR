@@ -15,6 +15,8 @@
 
 | Что | Почему уходит | Чем заменяется | Удалить в | Помечено в коде |
 | --- | --- | --- | --- | --- |
+| `FLAG_DISTANCES_M`, `WIND_ZONE_LIMITS_M` в `core/content.ts` | флажки и зоны зависят от системы (T1.8c) | `rangeLayout(system)` | T2.1 | `core/content.ts` |
+| `FREE_PLAY_DISTANCES_M` в `sim/free-play.ts` | ползунок зависит от системы (T1.8c) | `freePlayDistances(system)` | T2.1 | `sim/free-play.ts` |
 | `RIFLE` в `core/content.ts` | одна винтовка на всё приложение; движок, выстрел и разбор берут винтовку из снаряжения задачи — T1.2, В34 | `COURSE_RIFLE`, `courseLoadout(cartridgeId)`, `Loadout` | T1.5 | `core/content.ts`; импортов нет (охранник в `core/loadout.spec.ts`) |
 | рисованная сцена в `scope-renderer`: `drawScene`, `drawTarget`, `FLAG_DROP_MIL`, `drawnScenePole` | заглушка до фото (В22) | фото-слои A9.1; пока — запасная, если картинки не загрузились | A9.2, когда фото станут обязательными | `@deprecated` на методах |
 

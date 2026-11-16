@@ -138,3 +138,16 @@ describe('resultSheet — what opens', () => {
     expect(sheetFor('03', hits(5, { isBreathHeld: false }), best).sheet.struckClass).toBeNull();
   });
 });
+
+describe('итог: открытое упражнение в единицах игрока (T1.8c)', () => {
+  it('после 09 открыто «10 · Пристрелка на 425» в имперских', () => {
+    const before: CourseResults = { isIntroCompleted: true, bestClasses: Object.fromEntries(['01', '02', '03', '04', '05', '06', '07', '08'].map(id => [id, 3])) };
+    const def = exerciseById('09')!;
+    const shots = hits(4);
+    const result = exerciseResult(def, run(shots));
+    const after = withExerciseResult(before, '09', result.exerciseClass, result.total);
+    expect(result.isAdmitted).toBe(true);
+    expect(resultSheet({ def, result, records: shots, courseBefore: before, courseAfter: after, system: 'imperial' }).openedLine).toBe('Открыто: 10 · Пристрелка на 425');
+    expect(resultSheet({ def, result, records: shots, courseBefore: before, courseAfter: after }).openedLine).toBe('Открыто: 10 · Пристрелка на 400');
+  });
+});

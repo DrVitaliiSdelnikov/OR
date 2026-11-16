@@ -71,7 +71,7 @@ test.describe('расчёт САМ в имперских (T1.8b)', () => {
     await page.mouse.click(gong.x + gong.width / 2, gong.y);
     await page.mouse.click(gong.x + gong.width / 2, gong.y + gong.height);
     await page.getByTestId('milling-count').click();
-    await expect(page.getByTestId('milling-result')).toHaveText(/^Д = 19,7 × 27,78 \/ \d,\d\d = \d{3} ярд(ов|а)?$/);
+    await expect(page.getByTestId('milling-result')).toHaveText(/^Д = 20 × 27,78 \/ \d,\d\d = \d{3} ярд(ов|а)?$/);
     await page.getByTestId('tab-total').click();
     expect(await page.getByTestId('notebook-sheet').innerText()).not.toMatch(METRIC_UNIT);
   });

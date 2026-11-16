@@ -1,5 +1,6 @@
 import { targetRadiusMrad } from '../../core/content';
 import { text } from '../../i18n';
+import { fromInput, UnitSystem } from '../../core/units';
 import { ptPerMil, ScopeId, scopeById } from '../../sim/scope-model';
 
 export type IntroStepId = 'rifle' | 'scope' | 'drum' | 'zoom' | 'reticles' | 'cartridges' | 'bolt';
@@ -40,13 +41,43 @@ const INTRO_SCOPE = scopeById(INTRO_SCENE.scopeId);
 const MEASURE_GONG_SIZE_M = 0.5;
 const MEASURE_DISTANCE_M = 500;
 const MIL_PER_METRE_AT_KM = 1000;
+const IMPERIAL_MEASURE_GONG_SIZE_IN = 20;
+const IMPERIAL_MEASURE_DISTANCE_YD = 550;
+const MEASURE_OPTIONS_MIL = [0.5, 1, 2];
 
-export const MEASURE = {
+export interface MeasureTask {
+  gongSizeM: number;
+  distanceM: number;
+  answerMil: number;
+  optionsMil: readonly number[];
+}
+
+export const MEASURE: MeasureTask = {
   gongSizeM: MEASURE_GONG_SIZE_M,
   distanceM: MEASURE_DISTANCE_M,
   answerMil: (MEASURE_GONG_SIZE_M * MIL_PER_METRE_AT_KM) / MEASURE_DISTANCE_M,
-  optionsMil: [0.5, 1, 2],
+  optionsMil: MEASURE_OPTIONS_MIL,
 };
+
+const IMPERIAL_MEASURE: MeasureTask = {
+  gongSizeM: fromInput('targetSize', IMPERIAL_MEASURE_GONG_SIZE_IN, 'imperial'),
+  distanceM: fromInput('distance', IMPERIAL_MEASURE_DISTANCE_YD, 'imperial'),
+  answerMil: MEASURE.answerMil,
+  optionsMil: MEASURE_OPTIONS_MIL,
+};
+
+export function measureTask(system: UnitSystem): MeasureTask {
+  return system === 'imperial' ? IMPERIAL_MEASURE : MEASURE;
+}
+
+function measureParams(system: UnitSystem): { gongSize: string; distance: string } {
+  const task = measureTask(system);
+  return { gongSize: text.units.quantityText('targetSize', task.gongSizeM, system), distance: text.units.quantityText('distance', task.distanceM, system) };
+}
+
+export function measureQuestion(system: UnitSystem): string {
+  return text.intro.page.question(measureParams(system));
+}
 
 export const START_PROGRESS: IntroProgress = {
   seenParts: new Set(),
@@ -60,6 +91,10 @@ export const START_PROGRESS: IntroProgress = {
 const STEPS = text.intro.steps;
 const RIFLE_PARTS = STEPS.rifle.parts;
 const SCOPE_PARTS = STEPS.scope.parts;
+
+export function introSteps(system: UnitSystem): readonly IntroStep[] {
+  return system === 'metric' ? INTRO_STEPS : INTRO_STEPS.map(step => (step.id === 'reticles' ? { ...step, instruction: STEPS.reticles.instruction(measureParams(system)) } : step));
+}
 
 export const INTRO_STEPS: readonly IntroStep[] = [
   {
@@ -95,7 +130,7 @@ export const INTRO_STEPS: readonly IntroStep[] = [
   {
     id: 'reticles',
     title: STEPS.reticles.title,
-    instruction: STEPS.reticles.instruction({ gongSizeM: MEASURE_GONG_SIZE_M, distanceM: MEASURE_DISTANCE_M }),
+    instruction: STEPS.reticles.instruction(measureParams('metric')),
   },
   { id: 'cartridges', title: STEPS.cartridges.title, instruction: STEPS.cartridges.instruction },
   { id: 'bolt', title: STEPS.bolt.title, instruction: STEPS.bolt.instruction },
@@ -123,11 +158,11 @@ export function partKey(stepId: IntroStepId, partId: string): string {
   return `${stepId}:${partId}`;
 }
 
-export function measureHint(answerMil: number | null): string | null {
-  if (answerMil === null || answerMil === MEASURE.answerMil) {
+export function measureHint(answerMil: number | null, system: UnitSystem = 'metric'): string | null {
+  if (answerMil === null || answerMil === measureTask(system).answerMil) {
     return null;
   }
-  return text.intro.measureHint;
+  return text.intro.measureHint[system];
 }
 
 export function impactShiftPt(dialledClicks: number, magnification: number): number {

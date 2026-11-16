@@ -919,3 +919,35 @@ describe('PositionSession — карточка в единицах игрока 
     expect(Math.abs(imperial.total.elevation.targetClicks - metric.total.elevation.targetClicks)).toBeLessThanOrEqual(1);
   });
 });
+
+describe('PositionSession — полигон в единицах игрока (T1.8c)', () => {
+  const yardsOf = (distanceM: number) => Number((distanceM / 0.9144).toFixed(6));
+
+  it('06 в имперских: цели 450–550 ярдов ровно на строке или половине строки; ноль 100 ярдов; флажки 200 / 400 / 600 ярдов', async () => {
+    const session = await PositionSession.start({ def: exerciseById('06')!, seed: 11, engine, accessibility: ACCESSIBILITY, unitSystem: 'imperial' });
+    expect(session.setup.targets.every(target => [450, 500, 550].includes(yardsOf(target.distanceM)))).toBe(true);
+    expect(yardsOf(session.notebook.context.card.zeroM)).toBe(100);
+    expect(session.scenario.flags.map(flag => yardsOf(flag.distanceM))).toEqual([200, 400, 600]);
+    const card = session.notebook.context.card;
+    const onRow = session.setup.targets.find(target => yardsOf(target.distanceM) === 500);
+    if (onRow) {
+      expect(dopeRowAt(card, onRow.distanceM)).toBe(card.rows[4]);
+    }
+  });
+
+  it('перерасчёт в имперских остаётся в имперских', async () => {
+    const session = await PositionSession.start({ def: exerciseById('06')!, seed: 11, engine, accessibility: ACCESSIBILITY, unitSystem: 'imperial' });
+    const restarted = await session.restartForRecalc(engine);
+    expect(restarted.notebook.context.card.system).toBe('imperial');
+    expect(restarted.setup.targets).toEqual(session.setup.targets);
+    expect(restarted.scenario.flags).toEqual(session.scenario.flags);
+  });
+
+  it('выстрел в имперских по цели на 325 ярдов (297,18 м) — есть попадание и разбор', async () => {
+    const session = await PositionSession.start({ def: exerciseById('01')!, seed: 11, engine, accessibility: ACCESSIBILITY, unitSystem: 'imperial' });
+    dialToTarget(session);
+    const shot = await shoot(session, ON_TARGET);
+    expect(shot).not.toBeNull();
+    expect(shot!.review).toBeDefined();
+  });
+});

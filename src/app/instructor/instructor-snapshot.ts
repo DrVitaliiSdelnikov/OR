@@ -3,6 +3,7 @@ import { NotebookStepId } from '../../sim/notebook';
 import { TurretCorrection } from '../../sim/shot-review';
 import { TurretProgress } from '../../sim/turret-target';
 import { NotebookTab } from '../notebook/notebook.model';
+import { UnitSystem } from '../../core/units';
 
 export interface InstructorSnapshot {
   exerciseId: ExerciseId;
@@ -36,4 +37,5 @@ export interface InstructorSnapshot {
   openCalcStep: NotebookStepId | null;
   flagsRead: number;
   isAmbushTarget: boolean;
+  unitSystem: UnitSystem;
 }

@@ -17,7 +17,7 @@ import { ProgressStore } from '../services/progress.store';
 import { CartridgesSchemeComponent } from '../textbook/schemes/cartridges-scheme.component';
 import { ReticleSchemeComponent } from '../textbook/schemes/reticle-scheme.component';
 import { TextbookCards } from '../textbook/textbook-cards.service';
-import { gongRadiusPt, impactShiftPt, INTRO_SCENE, INTRO_STEPS, IntroProgress, isStepDone, MEASURE, measureHint, partKey, START_PROGRESS } from './intro.model';
+import { gongRadiusPt, impactShiftPt, INTRO_SCENE, introSteps, IntroProgress, isStepDone, measureHint, measureQuestion, measureTask, partKey, START_PROGRESS } from './intro.model';
 import { PartSchemeComponent } from './part-scheme.component';
 import { BackLinkDirective } from '../services/back-link.directive';
 
@@ -37,7 +37,7 @@ const INTRO_EXERCISE_ID = '00';
           <a class="back" orBackLink="/course/00" [attr.aria-label]="texts.back" data-test="intro-back">←</a>
           <div>
             <h1 class="title">{{ title }}</h1>
-            <div class="subtitle mono" data-test="intro-step">{{ texts.stepCounter({ number: stepIndex() + 1, count: steps.length, title: current.title }) }}</div>
+            <div class="subtitle mono" data-test="intro-step">{{ texts.stepCounter({ number: stepIndex() + 1, count: steps().length, title: current.title }) }}</div>
           </div>
         </header>
 
@@ -53,9 +53,9 @@ const INTRO_EXERCISE_ID = '00';
             }
             @case ('reticles') {
               <div class="paper"><or-reticle-scheme /></div>
-              <div class="question mono">{{ question }}</div>
+              <div class="question mono">{{ question() }}</div>
               <div class="answers">
-                @for (option of measure.optionsMil; track option) {
+                @for (option of measure().optionsMil; track option) {
                   <button class="answer" type="button" [class.chosen]="progress().answerMil === option" (click)="answer(option)" [attr.data-test]="'measure-' + option">{{ texts.answer({ mil: option }) }}</button>
                 }
               </div>
@@ -147,33 +147,34 @@ export class IntroPage {
   private renderer: { canvas: HTMLCanvasElement; scope: ScopeRenderer } | null = null;
   private frameHandle = 0;
 
-  protected readonly steps = INTRO_STEPS;
-  protected readonly measure = MEASURE;
+  private readonly unitSystem = computed(() => this.progressStore.settings().unitSystem);
+  protected readonly steps = computed(() => introSteps(this.unitSystem()));
+  protected readonly measure = computed(() => measureTask(this.unitSystem()));
   protected readonly texts = text.intro.page;
   protected readonly title = this.texts.title({ exerciseId: INTRO_EXERCISE_ID, exerciseTitle: text.content.exerciseTitles[INTRO_EXERCISE_ID] });
-  protected readonly question = this.texts.question({ gongSizeM: MEASURE.gongSizeM, distanceM: MEASURE.distanceM });
+  protected readonly question = computed(() => measureQuestion(this.unitSystem()));
   protected readonly glassSize = GLASS_SIZE_PT;
   protected readonly glassCenter = GLASS_CENTER_PT;
   protected readonly stepIndex = signal(0);
-  protected readonly step = computed(() => INTRO_STEPS[this.stepIndex()]);
+  protected readonly step = computed(() => this.steps()[this.stepIndex()]);
   protected readonly progress = signal<IntroProgress>(START_PROGRESS);
   protected readonly chosenPart = signal<string | null>(null);
   protected readonly magnification = signal(INTRO_SCENE.startMagnification);
   protected readonly boltView = signal({ step: this.bolt.currentStep, progress: this.bolt.progress });
   protected readonly isCurrentDone = computed(() => isStepDone(this.step().id, this.progress()));
-  protected readonly isLastStep = computed(() => this.stepIndex() === INTRO_STEPS.length - 1);
-  protected readonly hint = computed(() => measureHint(this.progress().answerMil));
+  protected readonly isLastStep = computed(() => this.stepIndex() === this.steps().length - 1);
+  protected readonly hint = computed(() => measureHint(this.progress().answerMil, this.unitSystem()));
   protected readonly impactUpMil = computed(() => this.progress().dialledClicks * scopeById(INTRO_SCENE.scopeId).clickMrad);
   protected readonly impactY = computed(() => GLASS_CENTER_PT - impactShiftPt(this.progress().dialledClicks, INTRO_SCENE.startMagnification));
   protected readonly drumValueText = computed(() => `↑ ${decimal(this.impactUpMil(), 1)}`);
   protected readonly drumCounter = computed(() => this.texts.drumCounter({ clicks: this.progress().dialledClicks }));
   protected readonly allCards = computed(() => {
-    const cards = this.textbookCards.cards();
+    const cards = this.textbookCards.cardsIn(this.unitSystem())();
     return cards && cards.size === CARTRIDGES.length ? cards : null;
   });
 
   constructor() {
-    this.textbookCards.ensureBuilt();
+    effect(() => this.textbookCards.ensureBuilt(this.unitSystem()));
     effect(() => {
       const canvas = this.glassCanvas()?.nativeElement ?? null;
       if (canvas && this.renderer?.canvas !== canvas) {

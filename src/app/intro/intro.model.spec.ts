@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { targetRadiusMrad } from '../../core/content';
 import { rangeByMilling } from '../../core/game-formulas';
+import { inSystem } from '../../core/units';
 import { courseProgress, exerciseById } from '../../sim/course';
 import { ptPerMil, scopeById } from '../../sim/scope-model';
 import { withIntroCompleted } from '../home/home.model';
@@ -10,9 +11,12 @@ import {
   impactShiftPt,
   INTRO_SCENE,
   INTRO_STEPS,
+  introSteps,
   isStepDone,
   MEASURE,
   measureHint,
+  measureQuestion,
+  measureTask,
   MIN_DIALLED_CLICKS,
   partKey,
   START_PROGRESS,
@@ -87,5 +91,27 @@ describe('после вводного (U5)', () => {
     expect(courseProgress(before, false).unlockedIds).not.toContain('01');
     expect(courseProgress(after, false).unlockedIds).toContain('01');
     expect([...openedTerms(after, false)].sort()).toEqual([...exerciseById('00')!.terms].sort());
+  });
+});
+
+describe('замер гонга в имперских (T1.8c)', () => {
+  it('гонг 20 дюймов на 550 ярдов: по формуле 27,78 — ≈ 1 MIL, ответ 1 из вариантов 0,5 / 1 / 2', () => {
+    const task = measureTask('imperial');
+    expect(Math.round(inSystem('targetSize', task.gongSizeM, 'imperial'))).toBe(20);
+    expect(Math.round(inSystem('distance', task.distanceM, 'imperial'))).toBe(550);
+    expect(task.answerMil).toBe(1);
+    expect(Math.abs((20 * 27.78) / 550 - task.answerMil)).toBeLessThan(0.05);
+    expect(task.optionsMil).toEqual([0.5, 1, 2]);
+    expect(measureTask('metric')).toEqual(MEASURE);
+  });
+
+  it('задание, вопрос и подсказка — в дюймах, ярдах и с 27,78', () => {
+    expect(introSteps('imperial').find(step => step.id === 'reticles')!.instruction).toContain('гонг 20 дюймов на 550 ярдов');
+    expect(introSteps('metric').find(step => step.id === 'reticles')!.instruction).toContain('гонг 0,5 м на 500 м');
+    expect(measureQuestion('imperial')).toBe('Гонг 20 дюймов на 550 ярдов — сколько MIL?');
+    expect(measureQuestion('metric')).toBe('Гонг 0,5 м на 500 м — сколько MIL?');
+    expect(measureHint(2, 'imperial')).toContain('Д = размер × 27,78 / MIL');
+    expect(measureHint(2, 'metric')).toContain('Д = размер × 1000 / mil');
+    expect(introSteps('metric')).toEqual(INTRO_STEPS);
   });
 });

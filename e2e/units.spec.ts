@@ -31,7 +31,7 @@ test.describe('единицы на экранах (T1.8a)', () => {
     await page.reload();
     await expect(page.getByTestId('units-imperial')).toHaveAttribute('aria-pressed', 'true');
     await page.goto('/free');
-    await expect(page.getByTestId('free-distance')).toHaveText('328 ярдов');
+    await expect(page.getByTestId('free-distance')).toHaveText('300 ярдов');
     await page.goto('/settings');
     await page.getByTestId('units-metric').click();
     await page.goto('/free');
@@ -41,7 +41,7 @@ test.describe('единицы на экранах (T1.8a)', () => {
   test('брифинг 07 в имперских: цели в ярдах и дюймах, ветер в миль/ч, утро в °F и дюймах рт. ст.', async ({ page }) => {
     await seed(page, 'imperial', { ...PASSED_TO_05, '05': 3, '06': 3 });
     await page.goto('/course/07');
-    await expect(page.getByTestId('sheet-targets')).toHaveText('4 × гонг 20 дюймов · 547–656 ярдов');
+    await expect(page.getByTestId('sheet-targets')).toHaveText('4 × гонг 20 дюймов · 550–650 ярдов');
     await expect(page.getByTestId('sheet-wind')).toHaveText('4,5–5,6 миль/ч');
     await expect(page.getByTestId('sheet-atmosphere')).toHaveText('+23…32 °F · 30,27–30,56 дюйма рт. ст.');
     expect(await visibleText(page, 'briefing-card')).not.toMatch(METRIC_UNIT);
@@ -51,7 +51,7 @@ test.describe('единицы на экранах (T1.8a)', () => {
     await seed(page, 'imperial');
     await page.goto('/position/04');
     await expect(page.getByTestId('fire')).toBeVisible();
-    await expect(page.getByTestId('position-subtitle')).toContainText('328 ярдов');
+    await expect(page.getByTestId('position-subtitle')).toContainText('325 ярдов');
     await page.getByTestId('tile-notebook').click();
     await page.getByTestId('tab-conditions').click();
     await holdMeasure(page);
@@ -80,7 +80,7 @@ test.describe('единицы на экранах (T1.8a)', () => {
     await expect(page.getByTestId('review-sheet')).toBeVisible();
     await page.getByTestId('flight-tab-side').click();
     const plot = await page.getByTestId('flight-plot-side').textContent();
-    expect(plot).toContain('328 ярдов');
+    expect(plot).toContain('325 ярдов');
     expect(plot).toMatch(/дюйм/);
     expect(plot).not.toMatch(METRIC_UNIT);
   });

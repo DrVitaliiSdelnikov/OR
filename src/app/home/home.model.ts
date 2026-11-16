@@ -1,6 +1,7 @@
 import { ExerciseClass, Rank } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
-import { courseProgress, CourseResults, exerciseById, ExerciseId, mergeBestClass } from '../../sim/course';
+import { courseProgress, CourseResults, exerciseById, ExerciseId, exerciseTitle, mergeBestClass } from '../../sim/course';
+import { UnitSystem } from '../../core/units';
 
 export type ContinueCard =
   | { kind: 'start'; exerciseId: ExerciseId; title: string }
@@ -17,12 +18,12 @@ export const ADMISSIONS_TOTAL = 12;
 
 export const RANK_LABELS: Record<Rank, string> = text.screens.home.ranks;
 
-export function continueCard(results: CourseResults): ContinueCard {
+export function continueCard(results: CourseResults, system: UnitSystem = 'metric'): ContinueCard {
   const nextId = courseProgress(results).nextExerciseId;
   if (nextId === null) {
     return { kind: 'free-play' };
   }
-  const title = exerciseById(nextId)!.title;
+  const title = exerciseTitle(exerciseById(nextId)!, system);
   if (!results.isIntroCompleted) {
     return { kind: 'start', exerciseId: nextId, title };
   }

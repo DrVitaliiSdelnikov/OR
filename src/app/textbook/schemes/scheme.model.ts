@@ -1,4 +1,5 @@
-import { CARTRIDGES, COURSE_RIFLE, FLAG_DISTANCES_M, WIND_ZONE_LIMITS_M } from '../../../core/content';
+import { CARTRIDGES, COURSE_RIFLE, rangeLayout } from '../../../core/content';
+import { fromInput, toDisplay, UnitSystem } from '../../../core/units';
 import { text } from '../../../i18n';
 import { DopeCard, dopeRowAt } from '../../../core/dope-card';
 import { windClockShare } from '../../../core/field';
@@ -12,6 +13,7 @@ import { CardsByCartridge } from '../terms';
 export type TermScheme = 'reticle' | 'focal-plane' | 'trajectory' | 'wind-clock' | 'cartridges' | 'zones' | 'group';
 
 const T = text.textbook.schemes;
+const UNITS = text.units;
 
 export const SCHEME_TERMS: Record<TermScheme, readonly string[]> = text.textbook.schemeTerms;
 
@@ -71,22 +73,44 @@ export function focalPlaneView(magnification: number): FocalPlaneView {
   };
 }
 
-const TIME_MARK_DISTANCES_M = [300, 600, 1000];
+const TIME_MARK_DISTANCES = [300, 600, 1000];
+const TRAJECTORY_TICKS = [0, 500, 1000];
+const SCHEME_MAX_DISTANCE = 1000;
+
+export interface TrajectoryLabels {
+  zero: string;
+  ticks: readonly { distanceM: number; text: string }[];
+  maxDistanceM: number;
+  maxElevation: string;
+}
 
 export interface TrajectoryView {
   points: readonly { distanceM: number; elevationMil: number }[];
   zeroM: number;
   timeMarks: readonly { distanceM: number; elevationMil: number; timeOfFlightS: number }[];
+  labels: TrajectoryLabels;
 }
 
+const metresIn = (system: UnitSystem) => (distance: number): number => fromInput('distance', distance, system);
+const distanceTextIn = (system: UnitSystem) => (distance: number): string => UNITS.displayText('distance', distance, system, 0);
+
 export function trajectoryView(card: DopeCard): TrajectoryView {
+  const metres = metresIn(card.system);
+  const distanceText = distanceTextIn(card.system);
+  const maxMil = Math.max(...card.rows.map(row => row.elevationMil));
   return {
     points: card.rows.map(row => ({ distanceM: row.distanceM, elevationMil: row.elevationMil })),
-    zeroM: COURSE_RIFLE.zeroM,
-    timeMarks: TIME_MARK_DISTANCES_M.map(distanceM => {
-      const row = dopeRowAt(card, distanceM);
-      return { distanceM, elevationMil: row.elevationMil, timeOfFlightS: row.timeOfFlightS };
+    zeroM: card.zeroM,
+    timeMarks: TIME_MARK_DISTANCES.map(distance => {
+      const row = dopeRowAt(card, metres(distance));
+      return { distanceM: metres(distance), elevationMil: row.elevationMil, timeOfFlightS: row.timeOfFlightS };
     }),
+    labels: {
+      zero: T.trajectory.zero({ zero: UNITS.quantityText('distance', card.zeroM, card.system) }),
+      ticks: TRAJECTORY_TICKS.map(distance => ({ distanceM: metres(distance), text: distanceText(distance) })),
+      maxDistanceM: metres(SCHEME_MAX_DISTANCE),
+      maxElevation: T.trajectory.maxElevation({ distance: distanceText(SCHEME_MAX_DISTANCE), maxMil }),
+    },
   };
 }
 
@@ -110,53 +134,86 @@ export function windClockView(clockHours: number): WindClockView {
 }
 
 const GRAMS_PER_KG = 1000;
-const ENERGY_ROUNDING_J = 10;
+const ENERGY_ROUNDING = 10;
+const IMPERIAL_ENERGY_DIVISOR = 450240;
+const ONE_WIND_UNIT = 1;
 
 export interface CartridgeSchemeItem {
   id: CartridgeId;
   name: string;
   facts: readonly string[];
   drop: readonly { distanceM: number; mil: number }[];
-  driftPerMps: readonly { distanceM: number; mil: number }[];
+  driftPerWindUnit: readonly { distanceM: number; mil: number }[];
+}
+
+export interface CartridgesLabels {
+  driftTitle: string;
+  maxDistanceM: number;
+  axis: (maxMil: number) => string;
+}
+
+export function cardsSystem(cards: CardsByCartridge): UnitSystem {
+  return [...cards.values()][0]?.system ?? 'metric';
+}
+
+export function cartridgesLabels(system: UnitSystem): CartridgesLabels {
+  return {
+    driftTitle: T.cartridges.driftTitle({ speed: UNITS.displayText('windSpeed', ONE_WIND_UNIT, system, 0) }),
+    maxDistanceM: metresIn(system)(SCHEME_MAX_DISTANCE),
+    axis: maxMil => T.cartridges.axis({ distance: distanceTextIn(system)(SCHEME_MAX_DISTANCE), maxMil }),
+  };
+}
+
+function energyText(massG: number, muzzleVelocityMps: number, system: UnitSystem): string {
+  if (system === 'imperial') {
+    const footPounds = (toDisplay('bulletMass', massG, system) * toDisplay('muzzleVelocity', muzzleVelocityMps, system) ** 2) / IMPERIAL_ENERGY_DIVISOR;
+    return T.energy.imperial({ energy: Math.round(footPounds / ENERGY_ROUNDING) * ENERGY_ROUNDING });
+  }
+  const energyJ = ((massG / GRAMS_PER_KG) * muzzleVelocityMps ** 2) / 2;
+  return T.energy.metric({ energy: Math.round(energyJ / ENERGY_ROUNDING) * ENERGY_ROUNDING });
 }
 
 export function cartridgesView(cards: CardsByCartridge): readonly CartridgeSchemeItem[] {
   return CARTRIDGES.filter(cartridge => cards.has(cartridge.id)).map(cartridge => {
     const card = cards.get(cartridge.id)!;
-    const energyJ = ((cartridge.massG / GRAMS_PER_KG) * cartridge.muzzleVelocityMps ** 2) / 2;
+    const windUnitMps = fromInput('windSpeed', ONE_WIND_UNIT, card.system);
     return {
       id: cartridge.id,
       name: cartridge.name,
       facts: T.cartridgeFacts({
-        massG: cartridge.massG,
-        muzzleVelocityMps: cartridge.muzzleVelocityMps,
+        mass: UNITS.quantityText('bulletMass', cartridge.massG, card.system),
+        velocity: UNITS.quantityText('muzzleVelocity', cartridge.muzzleVelocityMps, card.system),
         ballisticCoefficient: cartridge.ballisticCoefficient,
-        energyJ: Math.round(energyJ / ENERGY_ROUNDING_J) * ENERGY_ROUNDING_J,
+        energy: energyText(cartridge.massG, cartridge.muzzleVelocityMps, card.system),
       }),
       drop: card.rows.map(row => ({ distanceM: row.distanceM, mil: row.elevationMil })),
-      driftPerMps: card.rows.map(row => ({ distanceM: row.distanceM, mil: row.distanceM / row.windConstant })),
+      driftPerWindUnit: card.rows.map(row => ({ distanceM: row.distanceM, mil: (row.distanceM / row.windConstant) * windUnitMps })),
     };
   });
 }
 
-export const ZONES_EXAMPLE_DISTANCE_M = 600;
+const ZONES_EXAMPLE_DISTANCE = 600;
 
 export interface ZonesView {
   distanceM: number;
   zones: readonly { fromM: number; toM: number; weight: number }[];
-  flagsM: readonly number[];
+  flags: readonly { distanceM: number; text: string }[];
+  caption: string;
 }
 
 export function zonesView(card: DopeCard): ZonesView {
-  const weights = dopeRowAt(card, ZONES_EXAMPLE_DISTANCE_M).zoneWeights;
+  const distanceM = metresIn(card.system)(ZONES_EXAMPLE_DISTANCE);
+  const layout = rangeLayout(card.system);
+  const weights = dopeRowAt(card, distanceM).zoneWeights;
   return {
-    distanceM: ZONES_EXAMPLE_DISTANCE_M,
-    zones: WIND_ZONE_LIMITS_M.map((untilM, index) => ({
-      fromM: index === 0 ? 0 : WIND_ZONE_LIMITS_M[index - 1],
-      toM: Math.min(untilM, ZONES_EXAMPLE_DISTANCE_M),
+    distanceM,
+    zones: layout.windZoneLimitsM.map((untilM, index) => ({
+      fromM: index === 0 ? 0 : layout.windZoneLimitsM[index - 1],
+      toM: Math.min(untilM, distanceM),
       weight: weights[index],
     })),
-    flagsM: FLAG_DISTANCES_M,
+    flags: layout.flagDistancesM.map(flagDistanceM => ({ distanceM: flagDistanceM, text: UNITS.numberText('distance', flagDistanceM, card.system, 0) })),
+    caption: T.zones.caption({ distance: distanceTextIn(card.system)(ZONES_EXAMPLE_DISTANCE), lastStretch: T.zones.lastStretch[card.system] }),
   };
 }
 

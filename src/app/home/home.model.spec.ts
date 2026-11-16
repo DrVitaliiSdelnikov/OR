@@ -71,3 +71,11 @@ describe('course progress in storage', () => {
     expect(withIntroCompleted(results({}, false)).isIntroCompleted).toBe(true);
   });
 });
+
+describe('название 10 в единицах игрока (T1.8c)', () => {
+  it('«Пристрелка на 425» в имперских, «на 400» в метрике', () => {
+    const toTen = results(Object.fromEntries(ADMISSION_IDS.slice(0, 9).map(id => [id, 3])));
+    expect(continueCard(toTen, 'imperial')).toMatchObject({ exerciseId: '10', title: 'Пристрелка на 425' });
+    expect(continueCard(toTen)).toMatchObject({ exerciseId: '10', title: 'Пристрелка на 400' });
+  });
+});

@@ -1,7 +1,8 @@
 import { text } from '../../i18n';
-import { COURSE, CourseResults, ExerciseDef } from '../../sim/course';
+import { COURSE, CourseResults, ExerciseDef, exerciseTitle } from '../../sim/course';
 import { schemeOf, TermScheme } from './schemes/scheme.model';
-import { CardsByCartridge, TERM_CARDS, TermCard, TermFormula, TEXTBOOK_CHAPTERS, TextbookChapter } from './terms';
+import { CardsByCartridge, TERM_CARDS, TermCard, termCards, TermFormula, TEXTBOOK_CHAPTERS, TextbookChapter } from './terms';
+import { UnitSystem } from '../../core/units';
 
 const INTRO_ID = '00';
 const T = text.textbook.model;
@@ -47,8 +48,8 @@ export function textbookView(results: CourseResults, isEverythingUnlocked: boole
   };
 }
 
-export function termSheetView(term: string, opened: ReadonlySet<string>, cards: CardsByCartridge | null): TermSheetView {
-  const card = termCard(term);
+export function termSheetView(term: string, opened: ReadonlySet<string>, cards: CardsByCartridge | null, system: UnitSystem = 'metric'): TermSheetView {
+  const card = termCard(term, system);
   return {
     term: card.term,
     chapter: card.chapter,
@@ -56,13 +57,13 @@ export function termSheetView(term: string, opened: ReadonlySet<string>, cards: 
     scheme: schemeOf(card.term),
     formula: card.formula ?? null,
     example: card.example?.(cards) ?? null,
-    whereLines: [...exerciseLines(term), ...card.places],
+    whereLines: [...exerciseLines(term, system), ...card.places],
     related: card.related.map(related => ({ term: related, isOpen: opened.has(related) })),
   };
 }
 
-export function termCard(term: string): TermCard {
-  const card = TERM_CARDS.find(item => item.term === term);
+export function termCard(term: string, system: UnitSystem = 'metric'): TermCard {
+  const card = termCards(system).find(item => item.term === term);
   if (!card) {
     throw new RangeError(`no textbook card for term «${term}»`);
   }
@@ -78,8 +79,8 @@ function lockText(def: ExerciseDef): string {
   return def.id === INTRO_ID ? T.lockIntro({ exerciseId: INTRO_ID }) : T.lockExercise({ exerciseId: def.id });
 }
 
-function exerciseLines(term: string): string[] {
-  return exercisesWith(term).map((def, index) => T.whereLine({ isFirst: index === 0, exerciseId: def.id, title: def.title }));
+function exerciseLines(term: string, system: UnitSystem): string[] {
+  return exercisesWith(term).map((def, index) => T.whereLine({ isFirst: index === 0, exerciseId: def.id, title: exerciseTitle(def, system) }));
 }
 
 function exercisesWith(term: string): ExerciseDef[] {

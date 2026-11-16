@@ -16,6 +16,7 @@ import { isRangeWithinTolerance } from '../core/game-formulas';
 import { mulberry32, RandomSource } from '../core/rng';
 import { ScenarioOptions } from '../core/scenario';
 import { CartridgeId, Correction, Loadout, Target } from '../core/types';
+import { fromInput, inSystem, toDisplay, UnitSystem } from '../core/units';
 import { FiringPlan } from './firing-line';
 import { PatrolTarget, patrolPlan } from './patrol';
 import { FreePlayScopeUnlocks, ScopeId, ScopeModel } from './scope-model';
@@ -185,8 +186,11 @@ const ZONE_WIND: ScenarioOptions = { isWindUniform: false };
 const OBLIQUE_CLOCKS = [1, 2, 4, 5, 7, 8, 10, 11];
 const MOUNTAIN_SLOPE: ScenarioOptions = { lookAngleRangeDeg: [10, 25], isLookAngleEitherWay: true, altitudeRangeM: [1000, 1500] };
 const EARTH_ROTATION: ScenarioOptions = { isSpinDriftOn: true, coriolisLatitudeRangeDeg: [40, 60] };
-const KNOWN_DISTANCE_STEP_M = 50;
-const UNKNOWN_DISTANCE_STEP_M = 5;
+const KNOWN_DISTANCE_STEP = 50;
+const UNKNOWN_DISTANCE_STEP = 5;
+const FIXED_DISTANCE_STEP = 25;
+const MAX_DISTANCE_IN_SYSTEM = 1000;
+const SAME_DISTANCE_EPSILON = 1e-6;
 const GONG_DIAMETER_M = 0.5;
 const LARGE_GONG_DIAMETER_M = 0.7;
 const LARGE_GONG_FROM_M = 600;
@@ -259,7 +263,7 @@ export const COURSE: readonly ExerciseDef[] = [
     conditions: MODERATE_WIND,
   }),
   exerciseDef('09', TITLES['09'], { count: 4, distance: { kind: 'known', fromM: 500, toM: 700 } }, { notebookMode: 'manual-easy', conditions: ZONE_WIND }),
-  exerciseDef('10', TITLES['10']({ distanceM: CONFIRM_ZERO_DISTANCE_M }), { count: 3, distance: { kind: 'fixed', distanceM: CONFIRM_ZERO_DISTANCE_M } }, {
+  exerciseDef('10', TITLES['10']({ distance: CONFIRM_ZERO_DISTANCE_M }), { count: 3, distance: { kind: 'fixed', distanceM: CONFIRM_ZERO_DISTANCE_M } }, {
     notebookMode: 'manual-hard',
     conditions: LIGHT_WIND,
   }),
@@ -337,9 +341,13 @@ export function exerciseById(id: ExerciseId): ExerciseDef | undefined {
   return COURSE.find(def => def.id === id);
 }
 
-export function setupTask(def: PositionTask, seed: number): ExerciseSetup {
+export function exerciseTitle(def: ExerciseDef, system: UnitSystem): string {
+  return def.id === '10' ? TITLES['10']({ distance: roundToStep(inSystem('distance', CONFIRM_ZERO_DISTANCE_M, system), FIXED_DISTANCE_STEP) }) : def.title;
+}
+
+export function setupTask(def: PositionTask, seed: number, system: UnitSystem = 'metric'): ExerciseSetup {
   const random = mulberry32(seed);
-  const targets = def.targets ? targetsFor(def.targets, random) : [];
+  const targets = def.targets ? targetsFor(def.targets, random, system) : [];
   return {
     targets,
     plan:
@@ -452,32 +460,60 @@ function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | n
   };
 }
 
-function targetsFor(targets: ExerciseTargets, random: RandomSource): Target[] {
-  const distances = Array.from({ length: targets.count }, () => distanceFor(targets.distance, random));
+function targetsFor(targets: ExerciseTargets, random: RandomSource, system: UnitSystem): Target[] {
+  const distances = Array.from({ length: targets.count }, () => distanceFor(targets.distance, random, system));
   const ordered = targets.isOutAndBack ? outAndBack(distances) : distances;
-  return ordered.map(distanceM => ({ distanceM, diameterM: targets.diameterM ?? gongDiameterM(distanceM) }));
+  return ordered.map(distanceM => ({ distanceM, diameterM: targetDiameterM(targets, distanceM, system) }));
 }
 
-function distanceFor(distance: TargetDistance, random: RandomSource): number {
+export function distanceBoundsIn(system: UnitSystem, fromM: number, toM: number): { from: number; to: number } {
+  return {
+    from: roundToStep(inSystem('distance', fromM, system), KNOWN_DISTANCE_STEP),
+    to: Math.min(MAX_DISTANCE_IN_SYSTEM, roundToStep(inSystem('distance', toM, system), KNOWN_DISTANCE_STEP)),
+  };
+}
+
+export function targetDistanceIn(distance: TargetDistance, system: UnitSystem): TargetDistance {
+  const toMetres = (value: number): number => fromInput('distance', value, system);
+  if (distance.kind === 'fixed') {
+    return { kind: 'fixed', distanceM: toMetres(roundToStep(inSystem('distance', distance.distanceM, system), FIXED_DISTANCE_STEP)) };
+  }
+  const { from, to } = distanceBoundsIn(system, distance.fromM, distance.toM);
+  return { kind: distance.kind, fromM: toMetres(from), toM: toMetres(to) };
+}
+
+export function targetDiameterM(targets: ExerciseTargets, distanceM: number, system: UnitSystem): number {
+  return diameterIn(system, targets.diameterM ?? gongDiameterM(distanceM, system));
+}
+
+function distanceFor(distance: TargetDistance, random: RandomSource, system: UnitSystem): number {
+  const toMetres = (value: number): number => fromInput('distance', value, system);
   switch (distance.kind) {
     case 'fixed':
-      return distance.distanceM;
-    case 'known':
-      return pickStep(distance.fromM, distance.toM, KNOWN_DISTANCE_STEP_M, random);
+      return toMetres(roundToStep(inSystem('distance', distance.distanceM, system), FIXED_DISTANCE_STEP));
+    case 'known': {
+      const { from, to } = distanceBoundsIn(system, distance.fromM, distance.toM);
+      return toMetres(pickStep(from, to, KNOWN_DISTANCE_STEP, random));
+    }
     case 'unknown': {
-      const candidates = steps(distance.fromM, distance.toM, UNKNOWN_DISTANCE_STEP_M).filter(distanceM => distanceM % KNOWN_DISTANCE_STEP_M !== 0);
-      return candidates[Math.floor(random() * candidates.length)];
+      const { from, to } = distanceBoundsIn(system, distance.fromM, distance.toM);
+      const candidates = steps(from, to, UNKNOWN_DISTANCE_STEP).filter(value => value % KNOWN_DISTANCE_STEP !== 0);
+      return toMetres(candidates[Math.floor(random() * candidates.length)]);
     }
   }
 }
 
-function pickStep(fromM: number, toM: number, stepM: number, random: RandomSource): number {
-  const candidates = steps(fromM, toM, stepM);
+function roundToStep(value: number, step: number): number {
+  return Math.round(value / step) * step;
+}
+
+function pickStep(from: number, to: number, step: number, random: RandomSource): number {
+  const candidates = steps(from, to, step);
   return candidates[Math.floor(random() * candidates.length)];
 }
 
-function steps(fromM: number, toM: number, stepM: number): number[] {
-  return Array.from({ length: Math.floor((toM - fromM) / stepM) + 1 }, (_, index) => fromM + index * stepM);
+function steps(from: number, to: number, step: number): number[] {
+  return Array.from({ length: Math.floor((to - from) / step) + 1 }, (_, index) => from + index * step);
 }
 
 function outAndBack(distances: readonly number[]): number[] {
@@ -487,8 +523,13 @@ function outAndBack(distances: readonly number[]): number[] {
   return [...outward, ...back];
 }
 
-function gongDiameterM(distanceM: number): number {
-  return distanceM > LARGE_GONG_FROM_M ? LARGE_GONG_DIAMETER_M : GONG_DIAMETER_M;
+function gongDiameterM(distanceM: number, system: UnitSystem): number {
+  const largeFrom = roundToStep(inSystem('distance', LARGE_GONG_FROM_M, system), KNOWN_DISTANCE_STEP);
+  return inSystem('distance', distanceM, system) > largeFrom + SAME_DISTANCE_EPSILON ? LARGE_GONG_DIAMETER_M : GONG_DIAMETER_M;
+}
+
+function diameterIn(system: UnitSystem, diameterM: number): number {
+  return fromInput('targetSize', toDisplay('targetSize', diameterM, system), system);
 }
 
 function knockedSightOffset(random: RandomSource): Correction {

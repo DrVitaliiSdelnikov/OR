@@ -1,17 +1,9 @@
-import { FLAG_DISTANCES_M, isCourseCartridgeId, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
+import { isCourseCartridgeId, rangeLayout, STANDARD_PRESSURE_HPA, STANDARD_TEMPERATURE_C } from '../../core/content';
 import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { windClockShare } from '../../core/field';
 import { text } from '../../i18n';
 import { decimal } from '../../i18n/format';
-import {
-  atmosphereCorrectionMil,
-  atmosphereCorrectionMilImperial,
-  crosswindMps,
-  imperialWindConstant,
-  STANDARD_PRESSURE_INHG,
-  STANDARD_TEMPERATURE_F,
-  windCorrectionMil,
-} from '../../core/game-formulas';
+import { atmosphereCorrectionMil, atmosphereCorrectionMilImperial, crosswindMps, imperialWindConstant, STANDARD_PRESSURE_INHG, STANDARD_TEMPERATURE_F, windCorrectionMil } from '../../core/game-formulas';
 import { DopeCard, DopeRow, dopeRowAt } from '../../core/dope-card';
 import { CartridgeId } from '../../core/types';
 import { fromInput, inSystem, UnitSystem } from '../../core/units';
@@ -229,7 +221,10 @@ export function windFlagText(distanceM: number, readingText: string, system: Uni
 function standardAtmosphereTexts(system: UnitSystem): { temperature: string; pressure: string } {
   return {
     temperature: UNITS.valueText('temperature', STANDARD_TEMPERATURE_C, system, STATION_TEMPERATURE_DIGITS),
-    pressure: UNITS.valueText('pressure', STANDARD_PRESSURE_HPA, system, STATION_PRESSURE_DIGITS[system]),
+    pressure:
+      system === 'imperial'
+        ? UNITS.displayText('pressure', STANDARD_PRESSURE_INHG, system, STATION_PRESSURE_DIGITS[system])
+        : UNITS.valueText('pressure', STANDARD_PRESSURE_HPA, system, STATION_PRESSURE_DIGITS[system]),
   };
 }
 
@@ -335,9 +330,10 @@ export function zoneTable(notebook: Notebook, system: UnitSystem = 'metric'): Zo
   }
   const weights = notebook.distanceM === null ? null : dopeRowAt(notebook.context.card, notebook.distanceM).zoneWeights;
   const { flagCrosswindsMps, flagsBehindBerm } = notebook.readings;
+  const flagDistancesM = rangeLayout(notebook.context.card.system).flagDistancesM;
   return {
-    weights: [T.zoneStation, ...FLAG_DISTANCES_M.map(flagDistanceM => UNITS.valueText('distance', flagDistanceM, system, DISTANCE_DIGITS))].map((label, index) => ({ label, value: weights ? decimal(weights[index], 2) : '—' })),
-    flags: FLAG_DISTANCES_M.map((distanceM, index) => {
+    weights: [T.zoneStation, ...flagDistancesM.map(flagDistanceM => UNITS.valueText('distance', flagDistanceM, system, DISTANCE_DIGITS))].map((label, index) => ({ label, value: weights ? decimal(weights[index], 2) : '—' })),
+    flags: flagDistancesM.map((distanceM, index) => {
       if (flagsBehindBerm.includes(index)) {
         return { distanceM, text: T.flagBehindBerm, isRead: true };
       }

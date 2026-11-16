@@ -3,7 +3,7 @@ import type { CheckErrorType } from '../../core/calc-check';
 import type { CauseKind, MainCause } from '../../sim/miss-breakdown';
 import type { ReticleMarkKind } from '../../sim/reticle';
 import type { ReticleKind } from '../../sim/scope-model';
-import { andList, decimal } from '../format';
+import { decimal } from '../format';
 
 const CHAPTERS = [
   'Винтовка',
@@ -37,13 +37,13 @@ const clickCount = (clicks: number): string => `${clicks} кл.`;
 const roundedDecimal = (value: number, maxDigits: number): string => decimal(Number(value.toFixed(maxDigits)));
 const arrow = (value: number, positive: string, negative: string): string => (value >= 0 ? positive : negative);
 
-const terms = (p: { rifleName: string; zeroM: number; flagDistancesM: readonly number[] }) =>
+const terms = (p: { rifleName: string; zero: string; flags: string; flagsAnd: string }) =>
   ({
     rifle: {
       term: 'винтовка',
       forms: ['винтовки', 'винтовку', 'винтовкой', 'винтовке'],
       chapter: 'Винтовка',
-      phrase: `Учебная винтовка ${p.rifleName}: ствол, затвор, магазин на 5 патронов и спуск. Пристреляна на ${p.zeroM} м.`,
+      phrase: `Учебная винтовка ${p.rifleName}: ствол, затвор, магазин на 5 патронов и спуск. Пристреляна на ${p.zero}.`,
       places: ['позиция'],
       related: ['затвор', 'прицел', 'ноль'],
     },
@@ -222,7 +222,7 @@ const terms = (p: { rifleName: string; zeroM: number; flagDistancesM: readonly n
       term: 'ноль',
       forms: ['ноля', 'нолю', 'нолём', 'нуля'],
       chapter: 'Баллистика',
-      phrase: `Дистанция, на которой при барабанах на нуле пуля приходит в центр. У винтовки курса — ${p.zeroM} м: дальше пуля падает, и ВЕРТ берут по ДОПЕ.`,
+      phrase: `Дистанция, на которой при барабанах на нуле пуля приходит в центр. У винтовки курса — ${p.zero}: дальше пуля падает, и ВЕРТ берут по ДОПЕ.`,
       places: ['упр. 02 · пристрелка сбитого прицела'],
       related: ['ZERO STOP', 'ДОПЕ', 'СТП'],
     },
@@ -281,7 +281,7 @@ const terms = (p: { rifleName: string; zeroM: number; flagDistancesM: readonly n
       forms: ['флажка', 'флажки', 'флажков', 'флажком', 'флажку', 'флажкам'],
       chapter: 'Ветер',
       phrase: 'Флажки на трассе показывают ветер там, где летит пуля. Чем сильнее ветер, тем больше угол.',
-      places: [`позиция · флажки ${p.flagDistancesM.join(', ')} м`],
+      places: [`позиция · флажки ${p.flags}`],
       related: ['зоны ветра', 'метеостанция'],
     },
     weatherStation: {
@@ -328,7 +328,7 @@ const terms = (p: { rifleName: string; zeroM: number; flagDistancesM: readonly n
       term: 'зоны ветра',
       forms: ['зон ветра', 'зонам ветра', 'зонах ветра'],
       chapter: 'Ветер',
-      phrase: `Трасса делится на зоны: у стрелка, у флажков ${andList(p.flagDistancesM)} м. Ветер в каждой свой, а вес зоны зависит от дистанции.`,
+      phrase: `Трасса делится на зоны: у стрелка, у флажков ${p.flagsAnd}. Ветер в каждой свой, а вес зоны зависит от дистанции.`,
       places: ['блокнот · вкладка ВЕТЕР, упр. с зонами'],
       related: ['средний ветер', 'флажок'],
     },
@@ -378,10 +378,10 @@ const terms = (p: { rifleName: string; zeroM: number; flagDistancesM: readonly n
       chapter: 'Атмосфера',
       phrase: 'Холодный и плотный воздух сильнее тормозит пулю — она падает ниже. Тёплый и разрежённый — наоборот.',
       places: ['блокнот · вкладка УСЛОВИЯ'],
-      related: ['эталон +15 / 1013', 'поправка условий'],
+      related: ['эталон условий', 'поправка условий'],
     },
     standardAtmosphere: {
-      term: 'эталон +15 / 1013',
+      term: 'эталон условий',
       forms: ['эталон', 'эталона'],
       chapter: 'Атмосфера',
       phrase: 'Условия, под которые посчитана карточка ДОПЕ: +15 °C и 1013 гПа. Если погода такая же, поправка условий — ноль.',
@@ -404,7 +404,7 @@ const terms = (p: { rifleName: string; zeroM: number; flagDistancesM: readonly n
         ],
       },
       places: ['блокнот · вкладка УСЛОВИЯ'],
-      related: ['эталон +15 / 1013', 'САМ'],
+      related: ['эталон условий', 'САМ'],
     },
     breathing: {
       term: 'дыхание',
@@ -515,7 +515,7 @@ const terms = (p: { rifleName: string; zeroM: number; flagDistancesM: readonly n
       term: 'угол нуля',
       forms: ['угла нуля', 'углом нуля'],
       chapter: 'Угол и вращение Земли',
-      phrase: `При ноле на ${p.zeroM} м ствол смотрит чуть выше линии прицела. Под углом наклоняется весь выстрел, поэтому угол нуля входит в расчёт.`,
+      phrase: `При ноле на ${p.zero} ствол смотрит чуть выше линии прицела. Под углом наклоняется весь выстрел, поэтому угол нуля входит в расчёт.`,
       formula: { line: 'Z', variables: [{ symbol: 'Z', meaning: 'угол нуля из шапки карточки ДОПЕ, MIL' }] },
       places: ['карточка ДОПЕ · шапка', 'блокнот · шаг «Угол места»'],
       related: ['правило косинуса', 'ноль'],
@@ -598,47 +598,147 @@ const terms = (p: { rifleName: string; zeroM: number; flagDistancesM: readonly n
     },
   }) satisfies Record<string, TermTexts>;
 
-const termExamples = {
-  coldBore: (p: { rifleName: string; distanceM: number; upMil: number; upCm: number; rightMil: number; rightCm: number }) =>
-    `${p.rifleName} на ${p.distanceM} м: ↑ ${decimal(p.upMil, 2)} MIL = ${decimal(p.upCm, 1)} см, → ${decimal(p.rightMil, 2)} MIL = ${decimal(p.rightCm, 1)} см`,
-  magnification: (p: { magnificationMin: number; magnificationMax: number }) => `курсовой прицел: ${p.magnificationMin}–${p.magnificationMax}×`,
-  click: (p: { correctionMil: number; clickMil: number; exactClicks: number; clicks: number; distanceM: number; clickCm: number }) =>
-    `П = ${decimal(p.correctionMil)} MIL: N = ${decimal(p.correctionMil)} / ${decimal(p.clickMil)} = ${decimal(p.exactClicks, 1)} → ${clickCount(p.clicks)}; на ${p.distanceM} м один клик — ${decimal(p.clickCm, 0)} см`,
-  turret: (p: { elevationTravelMil: number; windageTravelMil: number }) => `курсовой прицел: ВЕРТ до ${p.elevationTravelMil} MIL, ГОР ±${p.windageTravelMil} MIL`,
-  milling: (p: { gongSizeM: number; milledMil: number; rangeM: number }) => `гонг ${decimal(p.gongSizeM)} м занял в сетке ${decimal(p.milledMil)} MIL → ${decimal(p.rangeM, 0)} м`,
-  mil: (p: { mil: number; distanceM: number; sizeCm: number }) => `${decimal(p.mil)} MIL на ${p.distanceM} м = ${decimal(p.mil)} × ${p.distanceM} / 10 = ${decimal(p.sizeCm, 1)} см`,
-  moa: (p: { mil: number; moa: number; moaClickMil: number }) => `${decimal(p.mil)} MIL = ${decimal(p.moa, 2)} MOA; клик MOA-прицела ¼ MOA = ${decimal(p.moaClickMil, 3)} MIL`,
-  cartridgeCard: (p: { name: string; massG: number; muzzleVelocityMps: number; muzzleVelocitySdMps: number; dragModel: DragModel; ballisticCoefficient: number }) =>
-    `${p.name}: ${decimal(p.massG, 1)} г, ${p.muzzleVelocityMps} ± ${p.muzzleVelocitySdMps} м/с, ${p.dragModel} ${decimal(p.ballisticCoefficient, 3)}`,
-  ballisticCoefficient: (p: { cartridges: readonly { name: string; ballisticCoefficient: number }[] }) => p.cartridges.map(cartridge => `${cartridge.name} — ${decimal(cartridge.ballisticCoefficient, 3)}`).join(' · '),
-  energy: (p: { name: string; massKg: number; muzzleVelocityMps: number; energyJ: number }) => `${p.name}: ${decimal(p.massKg, 4)} × ${p.muzzleVelocityMps}² / 2 ≈ ${p.energyJ} Дж`,
-  velocitySpread: (p: { name: string; muzzleVelocityMps: number; muzzleVelocitySdMps: number }) => `${p.name}: ${p.muzzleVelocityMps} ± ${p.muzzleVelocitySdMps} м/с`,
-  dope: (p: { cartridgeName: string; distanceM: number; elevationMil: number; clicks: number }) => `${p.cartridgeName}, ${p.distanceM} м: ВЕРТ ${decimal(p.elevationMil, 1)} MIL = ${p.clicks} кл.`,
-  dopeRow: (p: { cartridgeName: string; distanceM: number; lowerM: number; lowerMil: number; upperM: number; upperMil: number; elevationMil: number; clicks: number }) =>
-    `${p.cartridgeName}, ${p.distanceM} м — между ${decimal(p.lowerMil, 1)} (${p.lowerM} м) и ${decimal(p.upperMil, 1)} (${p.upperM} м): ВЕРТ ${decimal(p.elevationMil, 2)} MIL = ${p.clicks} кл.`,
-  timeOfFlight: (p: { cartridgeName: string; distanceM: number; timeOfFlightS: number; soundDelayS: number }) =>
-    `${p.cartridgeName}, ${p.distanceM} м: t = ${decimal(p.timeOfFlightS, 2)} с, звон — через ${decimal(p.soundDelayS, 1)} с после выстрела`,
-  wind: (p: { speedMps: number; clockHours: number; distanceM: number; windConstant: number; correctionMil: number; clicks: number }) =>
-    `ветер ${p.speedMps} м/с с ${p.clockHours} ч, ${p.distanceM} м, патрон Б: W = ${p.speedMps} × ${p.distanceM} / ${p.windConstant} = ${decimal(p.correctionMil, 2)} MIL → ${clickCount(p.clicks)} влево`,
-  flag: (p: { angleDeg: number; degPerMps: number; speedMps: number }) => `флажок отклонён на ${p.angleDeg}°: ${p.angleDeg} / ${p.degPerMps} = ${decimal(p.speedMps, 0)} м/с`,
-  crosswind: (p: { speedMps: number; clockHours: number; share: number; crosswindMps: number }) =>
-    `${p.speedMps} м/с с ${p.clockHours} ч: V⊥ = ${p.speedMps} × ${decimal(p.share, 2)} = ${decimal(p.crosswindMps, 2)} м/с`,
-  clockShare: (p: { shares: readonly { clockHours: number; share: number }[] }) => p.shares.map(item => `${item.clockHours} ч → ${decimal(item.share, 2)}`).join(' · '),
-  windConstant: (p: { cartridgeName: string; nearM: number; nearConstant: number; farM: number; farConstant: number }) =>
-    `${p.cartridgeName}: K = ${p.nearConstant} на ${p.nearM} м, ${p.farConstant} на ${p.farM} м`,
-  windZones: (p: { cartridgeName: string; distanceM: number; weights: readonly number[] }) =>
-    `${p.cartridgeName}, ${p.distanceM} м — веса: ${p.weights.map(weight => decimal(weight, 2)).join(' · ')}`,
-  averageWind: (p: { distanceM: number; crosswindsMps: readonly number[]; weights: readonly number[]; averageMps: number }) => {
-    const parts = p.weights.map((weight, index) => `${decimal(weight, 2)} × ${p.crosswindsMps[index]}`).join(' + ');
-    return `${p.distanceM} м, зоны ${p.crosswindsMps.join(' · ')} м/с: ${parts} = ${decimal(p.averageMps, 2)} м/с`;
+export type CatalogTermId = keyof ReturnType<typeof terms>;
+
+const imperialTerms: Partial<Record<CatalogTermId, Partial<TermTexts>>> = {
+  click: { phrase: 'Один щелчок барабана: 0,1 MIL. Это 0,36″ на 100 ярдов.' },
+  mil: {
+    phrase: 'Тысячная — угол, под которым 1 ярд виден с 1000 ярдов. 0,1 MIL — 0,36″ на 100 ярдов. Поправки, сетка и барабаны в курсе — в MIL.',
+    formula: {
+      line: 'дюймы = MIL × D / 27,78',
+      variables: [
+        { symbol: 'дюймы', meaning: 'размер на цели, дюймы' },
+        { symbol: 'MIL', meaning: 'угол в тысячных' },
+        { symbol: 'D', meaning: 'дистанция, ярды' },
+      ],
+    },
   },
-  milFormula: (p: { gongSizeM: number; milledMil: number; rangeM: number }) =>
-    `гонг ${decimal(p.gongSizeM)} м, в сетке ${decimal(p.milledMil)} MIL: Д = ${decimal(p.gongSizeM)} × 1000 / ${decimal(p.milledMil)} = ${decimal(p.rangeM, 0)} м`,
+  moa: { phrase: 'Угловая минута, 1/60 градуса: около 1,05″ на 100 ярдов. Прицел в MOA — в свободной игре, в курсе всё в MIL.' },
+  energy: {
+    formula: {
+      line: 'E = m × v² / 450 240',
+      variables: [
+        { symbol: 'E', meaning: 'энергия у дула, фут-фунт' },
+        { symbol: 'm', meaning: 'масса пули, гран' },
+        { symbol: 'v', meaning: 'скорость у дула, фут/с' },
+      ],
+    },
+  },
+  wind: {
+    formula: {
+      line: 'W = V⊥ × D / K',
+      variables: [
+        { symbol: 'W', meaning: 'поправка на ветер, MIL' },
+        { symbol: 'V⊥', meaning: 'боковая часть ветра, миль/ч (скорость × доля по часам)' },
+        { symbol: 'D', meaning: 'дистанция до цели, ярды' },
+        { symbol: 'K', meaning: 'константа ветра из строки ДОПЕ' },
+      ],
+    },
+  },
+  crosswind: {
+    formula: {
+      line: 'V⊥ = V × доля',
+      variables: [
+        { symbol: 'V⊥', meaning: 'боковой ветер, миль/ч' },
+        { symbol: 'V', meaning: 'скорость ветра со станции, миль/ч' },
+        { symbol: 'доля', meaning: 'доля по часам' },
+      ],
+    },
+  },
+  averageWind: {
+    formula: {
+      line: 'V⊥ср = Σ вес × V⊥',
+      variables: [
+        { symbol: 'V⊥ср', meaning: 'средний боковой ветер, миль/ч' },
+        { symbol: 'вес', meaning: 'доля зоны из строки ДОПЕ' },
+        { symbol: 'V⊥', meaning: 'боковой ветер зоны, миль/ч' },
+      ],
+    },
+  },
+  milFormula: {
+    formula: {
+      line: 'Д = размер × 27,78 / mil',
+      variables: [
+        { symbol: 'Д', meaning: 'дальность, ярды' },
+        { symbol: 'размер', meaning: 'известный размер цели, дюймы' },
+        { symbol: 'mil', meaning: 'сколько MIL цель заняла в сетке' },
+      ],
+    },
+  },
+  standardAtmosphere: {
+    phrase: 'Условия, под которые посчитана карточка ДОПЕ: 59 °F и 29,92 дюйма рт. ст. Если погода такая же, поправка условий — ноль.',
+  },
+  atmosphereCorrection: {
+    formula: {
+      line: 'ΔВЕРТ = (59 − T) / 10 × Х + (P − 29,92) / 0,3 × Р',
+      variables: [
+        { symbol: 'ΔВЕРТ', meaning: 'добавка к ВЕРТ, MIL' },
+        { symbol: 'T', meaning: 'температура, °F' },
+        { symbol: 'Х', meaning: 'колонка «холоднее на 10 °F» строки ДОПЕ' },
+        { symbol: 'P', meaning: 'давление, дюймы рт. ст.' },
+        { symbol: 'Р', meaning: 'колонка «давление +0,3″» строки ДОПЕ' },
+      ],
+    },
+  },
+  lead: {
+    formula: {
+      line: 'L = 488,9 × V⊥ × t / D',
+      variables: [
+        { symbol: 'L', meaning: 'упреждение, MIL' },
+        { symbol: 'V⊥', meaning: 'скорость цели поперёк, миль/ч' },
+        { symbol: 't', meaning: 'время полёта из строки ДОПЕ, с' },
+        { symbol: 'D', meaning: 'дистанция, ярды' },
+      ],
+    },
+  },
+  eotvos: { phrase: 'Вертикальная часть вращения Земли: выстрел на восток идёт чуть выше, на запад — ниже. Доли клика, но на 1000 ярдов заметны.' },
+};
+
+const termExamples = {
+  coldBore: (p: { rifleName: string; distance: string; upMil: number; up: string; rightMil: number; right: string }) =>
+    `${p.rifleName} на ${p.distance}: ↑ ${decimal(p.upMil, 2)} MIL = ${p.up}, → ${decimal(p.rightMil, 2)} MIL = ${p.right}`,
+  magnification: (p: { magnificationMin: number; magnificationMax: number }) => `курсовой прицел: ${p.magnificationMin}–${p.magnificationMax}×`,
+  click: (p: { correctionMil: number; clickMil: number; exactClicks: number; clicks: number; distance: string; click: string }) =>
+    `П = ${decimal(p.correctionMil)} MIL: N = ${decimal(p.correctionMil)} / ${decimal(p.clickMil)} = ${decimal(p.exactClicks, 1)} → ${clickCount(p.clicks)}; на ${p.distance} один клик — ${p.click}`,
+  turret: (p: { elevationTravelMil: number; windageTravelMil: number }) => `курсовой прицел: ВЕРТ до ${p.elevationTravelMil} MIL, ГОР ±${p.windageTravelMil} MIL`,
+  milling: (p: { gongSize: string; milledMil: number; range: string }) => `гонг ${p.gongSize} занял в сетке ${decimal(p.milledMil)} MIL → ${p.range}`,
+  mil: (p: { mil: number; distance: string; distanceNumber: string; divisor: string; size: string }) =>
+    `${decimal(p.mil)} MIL на ${p.distance} = ${decimal(p.mil)} × ${p.distanceNumber} / ${p.divisor} = ${p.size}`,
+  moa: (p: { mil: number; moa: number; moaClickMil: number }) => `${decimal(p.mil)} MIL = ${decimal(p.moa, 2)} MOA; клик MOA-прицела ¼ MOA = ${decimal(p.moaClickMil, 3)} MIL`,
+  cartridgeCard: (p: { name: string; mass: string; velocity: string; dragModel: DragModel; ballisticCoefficient: number }) =>
+    `${p.name}: ${p.mass}, ${p.velocity}, ${p.dragModel} ${decimal(p.ballisticCoefficient, 3)}`,
+  ballisticCoefficient: (p: { cartridges: readonly { name: string; ballisticCoefficient: number }[] }) => p.cartridges.map(cartridge => `${cartridge.name} — ${decimal(cartridge.ballisticCoefficient, 3)}`).join(' · '),
+  energy: {
+    metric: (p: { name: string; mass: number; velocity: number; energy: number }) => `${p.name}: ${decimal(p.mass, 4)} × ${p.velocity}² / 2 ≈ ${p.energy} Дж`,
+    imperial: (p: { name: string; mass: number; velocity: number; energy: number }) => `${p.name}: ${p.mass} × ${p.velocity}² / 450 240 ≈ ${p.energy} фут-фунт`,
+  },
+  velocitySpread: (p: { name: string; velocity: string }) => `${p.name}: ${p.velocity}`,
+  dope: (p: { cartridgeName: string; distance: string; elevationMil: number; clicks: number }) => `${p.cartridgeName}, ${p.distance}: ВЕРТ ${decimal(p.elevationMil, 1)} MIL = ${p.clicks} кл.`,
+  dopeRow: (p: { cartridgeName: string; distance: string; lower: string; lowerMil: number; upper: string; upperMil: number; elevationMil: number; clicks: number }) =>
+    `${p.cartridgeName}, ${p.distance} — между ${decimal(p.lowerMil, 1)} (${p.lower}) и ${decimal(p.upperMil, 1)} (${p.upper}): ВЕРТ ${decimal(p.elevationMil, 2)} MIL = ${p.clicks} кл.`,
+  timeOfFlight: (p: { cartridgeName: string; distance: string; timeOfFlightS: number; soundDelayS: number }) =>
+    `${p.cartridgeName}, ${p.distance}: t = ${decimal(p.timeOfFlightS, 2)} с, звон — через ${decimal(p.soundDelayS, 1)} с после выстрела`,
+  wind: (p: { speed: string; speedNumber: string; clockHours: number; distance: string; distanceNumber: string; windConstant: number; correctionMil: number; clicks: number }) =>
+    `ветер ${p.speed} с ${p.clockHours} ч, ${p.distance}, патрон Б: W = ${p.speedNumber} × ${p.distanceNumber} / ${p.windConstant} = ${decimal(p.correctionMil, 2)} MIL → ${clickCount(p.clicks)} влево`,
+  flag: (p: { angleDeg: number; degPerSpeed: string; speed: string }) => `флажок отклонён на ${p.angleDeg}°: ${p.angleDeg} / ${p.degPerSpeed} = ${p.speed}`,
+  crosswind: (p: { speed: string; speedNumber: string; clockHours: number; share: number; crosswind: string }) =>
+    `${p.speed} с ${p.clockHours} ч: V⊥ = ${p.speedNumber} × ${decimal(p.share, 2)} = ${p.crosswind}`,
+  clockShare: (p: { shares: readonly { clockHours: number; share: number }[] }) => p.shares.map(item => `${item.clockHours} ч → ${decimal(item.share, 2)}`).join(' · '),
+  windConstant: (p: { cartridgeName: string; near: string; nearConstant: number; far: string; farConstant: number }) =>
+    `${p.cartridgeName}: K = ${p.nearConstant} на ${p.near}, ${p.farConstant} на ${p.far}`,
+  windZones: (p: { cartridgeName: string; distance: string; weights: readonly number[] }) =>
+    `${p.cartridgeName}, ${p.distance} — веса: ${p.weights.map(weight => decimal(weight, 2)).join(' · ')}`,
+  averageWind: (p: { distance: string; crosswinds: readonly number[]; speedUnit: string; weights: readonly number[]; average: string }) => {
+    const parts = p.weights.map((weight, index) => `${decimal(weight, 2)} × ${p.crosswinds[index]}`).join(' + ');
+    return `${p.distance}, зоны ${p.crosswinds.join(' · ')} ${p.speedUnit}: ${parts} = ${p.average}`;
+  },
+  milFormula: (p: { gongSize: string; gongSizeNumber: string; factor: string; milledMil: number; range: string }) =>
+    `гонг ${p.gongSize}, в сетке ${decimal(p.milledMil)} MIL: Д = ${p.gongSizeNumber} × ${p.factor} / ${decimal(p.milledMil)} = ${p.range}`,
   atmosphereCorrection: (p: {
     cartridgeName: string;
-    distanceM: number;
-    temperatureC: number;
-    pressureHpa: number;
+    distance: string;
+    temperature: string;
+    pressure: string;
     colderTens: number;
     colderMil: number;
     pressureTens: number;
@@ -646,25 +746,27 @@ const termExamples = {
     correctionMil: number;
     clicks: number;
   }) =>
-    `${p.cartridgeName}, ${p.distanceM} м, ${decimal(p.temperatureC)} °C, ${p.pressureHpa} гПа: ${decimal(p.colderTens, 0)} × ${decimal(p.colderMil, 2)} + ${decimal(p.pressureTens, 1)} × ${decimal(p.pressureMil, 2)} = ${decimal(p.correctionMil, 2)} MIL → ${clickCount(p.clicks)} вверх`,
-  lead: (p: { targetSpeedMps: number; distanceM: number; timeOfFlightS: number; leadMil: number }) =>
-    `шаг ${decimal(p.targetSpeedMps)} м/с поперёк, ${p.distanceM} м: L = ${decimal(p.targetSpeedMps)} × ${decimal(p.timeOfFlightS, 2)} / ${p.distanceM} × 1000 = ${decimal(p.leadMil, 2)} MIL`,
+    `${p.cartridgeName}, ${p.distance}, ${p.temperature}, ${p.pressure}: ${roundedDecimal(p.colderTens, 1)} × ${decimal(p.colderMil, 2)} + ${decimal(p.pressureTens, 1)} × ${decimal(p.pressureMil, 2)} = ${decimal(p.correctionMil, 2)} MIL → ${clickCount(p.clicks)} вверх`,
+  lead: {
+    metric: (p: { speed: string; speedNumber: string; distance: string; distanceNumber: string; timeOfFlightS: number; leadMil: number }) =>
+      `шаг ${p.speed} поперёк, ${p.distance}: L = ${p.speedNumber} × ${decimal(p.timeOfFlightS, 2)} / ${p.distanceNumber} × 1000 = ${decimal(p.leadMil, 2)} MIL`,
+    imperial: (p: { speed: string; speedNumber: string; distance: string; distanceNumber: string; timeOfFlightS: number; leadMil: number }) =>
+      `шаг ${p.speed} поперёк, ${p.distance}: L = 488,9 × ${p.speedNumber} × ${decimal(p.timeOfFlightS, 2)} / ${p.distanceNumber} = ${decimal(p.leadMil, 2)} MIL`,
+  },
   lookAngle: (p: { upDeg: number; downDeg: number; cos: number }) =>
     `«∠ +${p.upDeg}°» — цель выше на ${p.upDeg}°, «∠ −${p.downDeg}°» — ниже. cos +${p.upDeg}° = cos −${p.downDeg}° = ${decimal(p.cos, 2)}: поправка одна`,
-  zeroAngle: (p: { cartridgeName: string; zeroM: number; zeroAngleMil: number }) =>
-    `${p.cartridgeName}, ноль на ${p.zeroM} м: Z = ${decimal(p.zeroAngleMil, 2)} MIL`,
-  cosineRule: (p: { cartridgeName: string; distanceM: number; angleDeg: number; elevationMil: number; zeroAngleMil: number; cos: number; inclinedMil: number; clicks: number }) =>
-    `${p.cartridgeName}, ${p.distanceM} м, ∠ ${p.angleDeg}°: (${decimal(p.elevationMil, 1)} + ${decimal(p.zeroAngleMil, 2)}) × ${decimal(p.cos, 2)} − ${decimal(p.zeroAngleMil, 2)} = ${decimal(p.inclinedMil, 2)} MIL — на ${clickCount(p.clicks)} меньше ДОПЕ`,
-  rangeAltitude: (p: { lowAltitudeM: number; lowPressureHpa: number; highAltitudeM: number; highPressureHpa: number }) =>
-    `обычное давление: ${p.lowAltitudeM} м — ${decimal(p.lowPressureHpa, 0)} гПа, ${p.highAltitudeM} м — ${decimal(p.highPressureHpa, 0)} гПа`,
-  spinDrift: (p: { cartridgeName: string; distanceM: number; spinDriftMil: number; clicks: number }) =>
-    `${p.cartridgeName}, ${p.distanceM} м: ДЕР ${decimal(p.spinDriftMil, 2)} MIL вправо → ГОР ${clickCount(p.clicks)} влево`,
+  zeroAngle: (p: { cartridgeName: string; zero: string; zeroAngleMil: number }) => `${p.cartridgeName}, ноль на ${p.zero}: Z = ${decimal(p.zeroAngleMil, 2)} MIL`,
+  cosineRule: (p: { cartridgeName: string; distance: string; angleDeg: number; elevationMil: number; zeroAngleMil: number; cos: number; inclinedMil: number; clicks: number }) =>
+    `${p.cartridgeName}, ${p.distance}, ∠ ${p.angleDeg}°: (${decimal(p.elevationMil, 1)} + ${decimal(p.zeroAngleMil, 2)}) × ${decimal(p.cos, 2)} − ${decimal(p.zeroAngleMil, 2)} = ${decimal(p.inclinedMil, 2)} MIL — на ${clickCount(p.clicks)} меньше ДОПЕ`,
+  rangeAltitude: (p: { low: string; lowPressure: string; high: string; highPressure: string }) => `обычное давление: ${p.low} — ${p.lowPressure}, ${p.high} — ${p.highPressure}`,
+  spinDrift: (p: { cartridgeName: string; distance: string; spinDriftMil: number; clicks: number }) =>
+    `${p.cartridgeName}, ${p.distance}: ДЕР ${decimal(p.spinDriftMil, 2)} MIL вправо → ГОР ${clickCount(p.clicks)} влево`,
   twist: (p: { rifleName: string; twistInches: number; isRight: boolean }) =>
     `${p.rifleName}: 1 оборот на ${p.twistInches}″, ${p.isRight ? 'правый' : 'левый'} — деривация ${p.isRight ? 'вправо' : 'влево'}`,
-  coriolis: (p: { distanceM: number; timeOfFlightS: number; latitudeDeg: number; sinLatitude: number; coriolisMil: number }) =>
-    `${p.distanceM} м, t = ${decimal(p.timeOfFlightS, 2)} с, ${p.latitudeDeg}° с. ш.: 0,0729 × ${decimal(p.timeOfFlightS, 2)} × ${decimal(p.sinLatitude, 2)} = ${decimal(p.coriolisMil, 2)} MIL`,
-  eotvos: (p: { distanceM: number; timeOfFlightS: number; latitudeDeg: number; cosLatitude: number; azimuthDeg: number; eotvosMil: number }) =>
-    `${p.distanceM} м на восток (аз. ${p.azimuthDeg}°), ${p.latitudeDeg}° с. ш.: 0,0729 × ${decimal(p.timeOfFlightS, 2)} × ${decimal(p.cosLatitude, 2)} × 1 = ${decimal(p.eotvosMil, 2)} MIL`,
+  coriolis: (p: { distance: string; timeOfFlightS: number; latitudeDeg: number; sinLatitude: number; coriolisMil: number }) =>
+    `${p.distance}, t = ${decimal(p.timeOfFlightS, 2)} с, ${p.latitudeDeg}° с. ш.: 0,0729 × ${decimal(p.timeOfFlightS, 2)} × ${decimal(p.sinLatitude, 2)} = ${decimal(p.coriolisMil, 2)} MIL`,
+  eotvos: (p: { distance: string; timeOfFlightS: number; latitudeDeg: number; cosLatitude: number; azimuthDeg: number; eotvosMil: number }) =>
+    `${p.distance} на восток (аз. ${p.azimuthDeg}°), ${p.latitudeDeg}° с. ш.: 0,0729 × ${decimal(p.timeOfFlightS, 2)} × ${decimal(p.cosLatitude, 2)} × 1 = ${decimal(p.eotvosMil, 2)} MIL`,
   secondShotCorrection: (p: { rightMil: number; downMil: number; windageClicks: number; elevationClicks: number }) =>
     `ушёл на ${decimal(p.rightMil)} MIL вправо и ${decimal(p.downMil)} ниже: ГОР ${clickCount(p.windageClicks)} влево, ВЕРТ ${clickCount(p.elevationClicks)} вверх`,
 };
@@ -672,6 +774,7 @@ const termExamples = {
 export const textbook = {
   chapters: CHAPTERS,
   terms,
+  imperialTerms,
   termExamples,
   model: {
     counter: (p: { opened: number; total: number }) => `${p.opened} / ${p.total} терминов`,
@@ -737,14 +840,14 @@ export const textbook = {
     },
     flags: {
       terms: ['флажок'],
-      hint: (p: { flagDistancesM: readonly number[] }) => `Флажки на ${andList(p.flagDistancesM)} м. Чем сильнее ветер поперёк, тем круче полотнище`,
+      hint: (p: { flags: string }) => `Флажки на ${p.flags}. Чем сильнее ветер поперёк, тем круче полотнище`,
     },
     breathing: { terms: ['дыхание', 'пульс'], hint: 'Держи — дыхание задержано, сетка успокаивается. Держишь долго — снова качает' },
     trigger: { terms: ['спуск'], hint: 'Дави на спуск плавно, пока не выстрелит. Резкий рывок уводит пулю' },
     bolt: { terms: ['затвор'], hint: 'Выстрели — потом перезаряди затвором: вверх, назад, вперёд, вниз' },
     dope: {
       terms: ['ДОПЕ', 'строка ДОПЕ'],
-      hint: (p: { distanceM: number; lowerM: number; upperM: number }) => `Карточка ДОПЕ: для ${p.distanceM} м строки нет — поправка берётся между ${p.lowerM} и ${p.upperM}`,
+      hint: (p: { distance: string; lower: number; upper: number }) => `Карточка ДОПЕ: для ${p.distance} строки нет — поправка берётся между ${p.lower} и ${p.upper}`,
     },
   },
   schemeTerms: {
@@ -769,12 +872,8 @@ export const textbook = {
     secondPlaneCaption: (p: { magnification: number; dotMil: number; trueMagnification: number }) =>
       `на ${p.magnification}× точка = ${roundedDecimal(p.dotMil, 1)} MIL — ${p.magnification === p.trueMagnification ? 'верно' : `верно только на ${p.trueMagnification}×`}`,
     windClockCaption: (p: { clockHours: number; share: number }) => `${p.clockHours} ч — доля ${roundedDecimal(p.share, 2)}`,
-    cartridgeFacts: (p: { massG: number; muzzleVelocityMps: number; ballisticCoefficient: number; energyJ: number }) => [
-      `${roundedDecimal(p.massG, 1)} г`,
-      `${p.muzzleVelocityMps} м/с`,
-      `BC ${roundedDecimal(p.ballisticCoefficient, 3)}`,
-      `${p.energyJ} Дж`,
-    ],
+    cartridgeFacts: (p: { mass: string; velocity: string; ballisticCoefficient: number; energy: string }) => [p.mass, p.velocity, `BC ${roundedDecimal(p.ballisticCoefficient, 3)}`, p.energy],
+    energy: { metric: (p: { energy: number }) => `${p.energy} Дж`, imperial: (p: { energy: number }) => `${p.energy} фут-фунт` },
     groupCaption: (p: { upMil: number; rightMil: number; upClicks: number; rightClicks: number }) => {
       const offset = `${arrow(p.upMil, '↑', '↓')} ${roundedDecimal(Math.abs(p.upMil), 1)} ${arrow(p.rightMil, '→', '←')} ${roundedDecimal(Math.abs(p.rightMil), 1)} MIL`;
       const transfer = `${arrow(p.upClicks, '↑', '↓')} ${Math.abs(p.upClicks)} ${arrow(p.rightClicks, '→', '←')} ${Math.abs(p.rightClicks)} кл.`;
@@ -796,16 +895,15 @@ export const textbook = {
     },
     cartridges: {
       dropTitle: 'падение, MIL',
-      driftTitle: 'снос на 1 м/с, MIL',
-      axis: (p: { distanceM: number; maxMil: number }) => `${p.distanceM} м · ${roundedDecimal(p.maxMil, 1)} MIL`,
+      driftTitle: (p: { speed: string }) => `снос на ${p.speed}, MIL`,
+      axis: (p: { distance: string; maxMil: number }) => `${p.distance} · ${roundedDecimal(p.maxMil, 1)} MIL`,
     },
     trajectory: {
       label: 'Траектория патрона Б: поправка по дистанции',
       sightLine: 'линия прицеливания',
-      zero: (p: { zeroM: number }) => `ноль ${p.zeroM} м`,
+      zero: (p: { zero: string }) => `ноль ${p.zero}`,
       timeMark: (p: { timeOfFlightS: number }) => `${decimal(p.timeOfFlightS)} с`,
-      distanceTick: (p: { distanceM: number }) => `${p.distanceM} м`,
-      maxElevation: (p: { distanceM: number; maxMil: number }) => `на ${p.distanceM} м: ↑ ${decimal(p.maxMil)} MIL`,
+      maxElevation: (p: { distance: string; maxMil: number }) => `на ${p.distance}: ↑ ${decimal(p.maxMil)} MIL`,
       caption: 'Патрон Б: на сколько поднять прицел, чтобы попасть — та же кривая, что строки ДОПЕ. Точки — время полёта.',
     },
     windClock: {
@@ -817,8 +915,9 @@ export const textbook = {
     zones: {
       label: 'Зоны ветра по трассе и их веса',
       shooter: 'ты',
-      caption: (p: { distanceM: number }) =>
-        `Строка ${p.distanceM} м: средний ветер = Σ ветер зоны × вес. Ветер у стрелка сносит пулю раньше, и снос копится до самой цели: ближние зоны весят больше, последние метры — почти ничего.`,
+      caption: (p: { distance: string; lastStretch: string }) =>
+        `Строка ${p.distance}: средний ветер = Σ ветер зоны × вес. Ветер у стрелка сносит пулю раньше, и снос копится до самой цели: ближние зоны весят больше, последние ${p.lastStretch} — почти ничего.`,
+      lastStretch: { metric: 'метры', imperial: 'ярды' },
     },
   },
 };

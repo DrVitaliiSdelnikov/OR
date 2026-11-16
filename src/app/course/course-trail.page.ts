@@ -81,7 +81,7 @@ export class CourseTrailPage {
   protected readonly texts = text.screens.courseTrail;
   protected readonly attestationLine = this.texts.attestation({ rank: RANK_LABELS.sniper });
   protected readonly header = computed(() => rankHeader(this.progress.course()));
-  protected readonly nodes = computed(() => trailNodes(this.progress.course(), this.progress.settings().isEverythingUnlocked));
+  protected readonly nodes = computed(() => trailNodes(this.progress.course(), this.progress.settings().isEverythingUnlocked, this.progress.settings().unitSystem));
 
   protected stampLabel(stamp: ClassStamp): string {
     return this.texts.stamp({ exerciseClass: STAMP_CLASSES[stamp] });

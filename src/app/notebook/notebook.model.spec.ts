@@ -273,9 +273,9 @@ describe('блокнот в имперских единицах (T1.8a)', () => 
     expect(knownDistanceText(500, 'imperial')).toBe('Дистанция 547 ярдов · задана упражнением');
     expect(knownDistanceText(500, 'metric')).toBe('Дистанция 500 м · задана упражнением');
     expect(windCaptionText({ speedMps: 2.5, clock: 9 }, 'imperial')).toBe('ветер 5,6 миль/ч с 9 ч');
-    expect(dopeHeadingText(card, 'imperial')).toBe('Карточка патрона Б · ноль 109 ярдов · эталон +59 °F / 29,91 дюйма рт. ст.');
+    expect(dopeHeadingText(card, 'imperial')).toBe('Карточка патрона Б · ноль 109 ярдов · эталон +59 °F / 29,92 дюйма рт. ст.');
     expect(dopeHeadingText(card, 'metric')).toBe('Карточка патрона Б · ноль 100 м · эталон +15 °C / 1013 гПа');
-    expect(conditionsReferenceText('imperial')).toBe('Эталон ДОПЕ: +59 °F · 29,91 дюйма рт. ст.');
+    expect(conditionsReferenceText('imperial')).toBe('Эталон ДОПЕ: +59 °F · 29,92 дюйма рт. ст.');
     expect(conditionsReferenceText('metric')).toBe('Эталон ДОПЕ: +15 °C · 1013 гПа');
   });
 

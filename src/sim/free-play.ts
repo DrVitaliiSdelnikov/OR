@@ -1,7 +1,8 @@
 import { text } from '../i18n';
 import { ScenarioOptions } from '../core/scenario';
 import { CartridgeId } from '../core/types';
-import { FreePlayTask, FreePlayUnlocks } from './course';
+import { distanceBoundsIn, FreePlayTask, FreePlayUnlocks } from './course';
+import { fromInput, UnitSystem } from '../core/units';
 import { NotebookMode } from '../core/exercise-scoring';
 import { freePlayScopes, ScopeId, SCOPES } from './scope-model';
 import { loadoutOf, RifleProfile, scopeOf } from './rifle-profile';
@@ -37,7 +38,36 @@ export const DEFAULT_FREE_PLAY: FreePlaySettings = {
 const MIN_DISTANCE_M = 100;
 const MAX_DISTANCE_M = 1000;
 const DISTANCE_STEP_M = 50;
-export const FREE_PLAY_DISTANCES_M: readonly number[] = Array.from({ length: (MAX_DISTANCE_M - MIN_DISTANCE_M) / DISTANCE_STEP_M + 1 }, (_, index) => MIN_DISTANCE_M + index * DISTANCE_STEP_M);
+const SLIDER_DISTANCES_IN_SYSTEM: readonly number[] = Array.from({ length: (MAX_DISTANCE_M - MIN_DISTANCE_M) / DISTANCE_STEP_M + 1 }, (_, index) => MIN_DISTANCE_M + index * DISTANCE_STEP_M);
+const FREE_PLAY_DISTANCES: Record<UnitSystem, readonly number[]> = {
+  metric: SLIDER_DISTANCES_IN_SYSTEM,
+  imperial: SLIDER_DISTANCES_IN_SYSTEM.map(yards => fromInput('distance', yards, 'imperial')),
+};
+/** @deprecated T1.8c: ползунок зависит от системы — `freePlayDistances(system)`. Удалить в T2.1. */
+export const FREE_PLAY_DISTANCES_M: readonly number[] = FREE_PLAY_DISTANCES.metric;
+
+export function freePlayDistances(system: UnitSystem): readonly number[] {
+  return FREE_PLAY_DISTANCES[system];
+}
+
+export function terrainBoundsM(terrain: Terrain, system: UnitSystem): { fromM: number; toM: number } {
+  const preset = TERRAIN_PRESETS[terrain];
+  const bounds = distanceBoundsIn(system, preset.fromM, preset.toM);
+  return { fromM: fromInput('distance', bounds.from, system), toM: fromInput('distance', bounds.to, system) };
+}
+
+export function freePlayInSystem(settings: FreePlaySettings, system: UnitSystem): FreePlaySettings {
+  return { ...settings, distanceM: freePlayDistanceIn(system, settings.distanceM) };
+}
+
+export function freePlayDistanceIn(system: UnitSystem, distanceM: number): number {
+  const otherSystem: UnitSystem = system === 'metric' ? 'imperial' : 'metric';
+  const sameStep = FREE_PLAY_DISTANCES[otherSystem].indexOf(distanceM);
+  if (!FREE_PLAY_DISTANCES[system].includes(distanceM) && sameStep >= 0) {
+    return FREE_PLAY_DISTANCES[system][sameStep];
+  }
+  return freePlayDistances(system).reduce((nearest, candidate) => (Math.abs(candidate - distanceM) < Math.abs(nearest - distanceM) ? candidate : nearest));
+}
 
 export const WIND_PRESETS: Record<WindPreset, ScenarioOptions> = {
   calm: { windScale: 0, isWindUniform: true },
@@ -55,9 +85,10 @@ export const TERRAIN_PRESETS: Record<Terrain, { conditions: ScenarioOptions; fro
 
 const DEFAULT_SHOTS_PER_TARGET = 5;
 
-export function freePlayTask(settings: FreePlaySettings, ownProfile: RifleProfile | null = null): FreePlayTask {
+export function freePlayTask(settings: FreePlaySettings, ownProfile: RifleProfile | null = null, system: UnitSystem = 'metric'): FreePlayTask {
   const terrain = TERRAIN_PRESETS[settings.terrain];
-  const fixedDistanceM = Math.min(terrain.toM, Math.max(terrain.fromM, settings.distanceM));
+  const bounds = terrainBoundsM(settings.terrain, system);
+  const fixedDistanceM = Math.min(bounds.toM, Math.max(bounds.fromM, settings.distanceM));
   return {
     kind: 'free',
     title: text.content.freePlayTitle,
@@ -82,7 +113,7 @@ export function knownFreePlay(stored: Partial<FreePlaySettings> | undefined): Fr
   if (!stored) {
     return known;
   }
-  if (typeof stored.distanceM === 'number' && FREE_PLAY_DISTANCES_M.includes(stored.distanceM)) {
+  if (typeof stored.distanceM === 'number' && (FREE_PLAY_DISTANCES.metric.includes(stored.distanceM) || FREE_PLAY_DISTANCES.imperial.includes(stored.distanceM))) {
     known.distanceM = stored.distanceM;
   }
   if (typeof stored.isDistanceUnknown === 'boolean') {

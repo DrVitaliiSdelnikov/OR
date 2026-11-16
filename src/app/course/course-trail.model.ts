@@ -4,7 +4,7 @@ import { decimal } from '../../i18n/format';
 import { ScenarioOptions, ValueRange } from '../../core/scenario';
 import { UnitSystem } from '../../core/units';
 import { CartridgeId } from '../../core/types';
-import { ATTESTATION_ID, COURSE, courseProgress, CourseResults, ExerciseDef, ExerciseId, ExerciseTargets, TargetDistance } from '../../sim/course';
+import { ATTESTATION_ID, COURSE, courseProgress, CourseResults, ExerciseDef, ExerciseId, ExerciseTargets, exerciseTitle, targetDiameterM, TargetDistance, targetDistanceIn } from '../../sim/course';
 
 export interface ExerciseSheet {
   id: ExerciseId;
@@ -30,9 +30,6 @@ export interface TrailNode {
 }
 
 const INTRO_ID: ExerciseId = '00';
-const GONG_DIAMETER_M = 0.5;
-const LARGE_GONG_DIAMETER_M = 0.7;
-const LARGE_GONG_FROM_M = 600;
 const PAPER_TARGET_DISTANCE_M = 100;
 const OBLIQUE_CLOCK_COUNT = 8;
 const T = text.screens.exerciseSheet;
@@ -42,7 +39,7 @@ export const MODE_LABELS: Record<NotebookMode, string> = text.screens.courseTrai
 const STAMPS: Record<Exclude<ExerciseClass, 0>, ClassStamp> = { 1: 'gold', 2: 'silver', 3: 'bronze' };
 export const STAMP_CLASSES: Record<ClassStamp, Exclude<ExerciseClass, 0>> = { gold: 1, silver: 2, bronze: 3 };
 
-export function trailNodes(results: CourseResults, isEverythingUnlocked = false): TrailNode[] {
+export function trailNodes(results: CourseResults, isEverythingUnlocked = false, system: UnitSystem = 'metric'): TrailNode[] {
   const progress = courseProgress(results, isEverythingUnlocked);
   return COURSE.map(def => {
     const bestClass = results.bestClasses[def.id] ?? 0;
@@ -50,7 +47,7 @@ export function trailNodes(results: CourseResults, isEverythingUnlocked = false)
     const isPassed = isIntro ? results.isIntroCompleted : bestClass !== 0;
     return {
       id: def.id,
-      title: def.title,
+      title: exerciseTitle(def, system),
       state: nodeState(def.id, isPassed, progress.nextExerciseId, progress.unlockedIds),
       stamp: bestClass === 0 ? null : STAMPS[bestClass],
       isIntro,
@@ -73,7 +70,7 @@ export function exerciseSheet(def: ExerciseDef, system: UnitSystem = 'metric'): 
   const { conditions } = def;
   return {
     id: def.id,
-    title: def.title,
+    title: exerciseTitle(def, system),
     targets: def.targets ? targetsText(def.targets, system) : T.noShooting,
     shots: shotsText(def),
     wind: windText(conditions.windScale, conditions.windSpeedRangeMps, conditions.windClocks, conditions.isWindUniform, system),
@@ -84,9 +81,10 @@ export function exerciseSheet(def: ExerciseDef, system: UnitSystem = 'metric'): 
 }
 
 function targetsText(targets: ExerciseTargets, system: UnitSystem): string {
-  const [nearM, farM] = distanceBounds(targets.distance);
-  const isPaper = nearM === PAPER_TARGET_DISTANCE_M && farM === PAPER_TARGET_DISTANCE_M;
-  const diameters = targets.diameterM !== undefined ? [targets.diameterM] : [gongDiameterM(nearM), gongDiameterM(farM)];
+  const [courseNearM, courseFarM] = distanceBounds(targets.distance);
+  const isPaper = courseNearM === PAPER_TARGET_DISTANCE_M && courseFarM === PAPER_TARGET_DISTANCE_M;
+  const [nearM, farM] = distanceBounds(targetDistanceIn(targets.distance, system));
+  const diameters = targets.diameterM !== undefined ? [targetDiameterM(targets, nearM, system)] : [targetDiameterM(targets, nearM, system), targetDiameterM(targets, farM, system)];
   const lastDiameterM = diameters[diameters.length - 1];
   const sizeText = UNITS.rangeText('targetSize', [diameters[0], lastDiameterM], system);
   return T.targets({ count: targets.count, isPaper, size: sizeText, distance: distanceText(targets.distance, system), isOutAndBack: targets.isOutAndBack === true });
@@ -132,7 +130,8 @@ function terrainTexts(conditions: ScenarioOptions, system: UnitSystem): string[]
   ];
 }
 
-function distanceText(distance: TargetDistance, system: UnitSystem): string {
+function distanceText(courseDistance: TargetDistance, system: UnitSystem): string {
+  const distance = targetDistanceIn(courseDistance, system);
   switch (distance.kind) {
     case 'fixed':
       return UNITS.rangeText('distance', [distance.distanceM, distance.distanceM], system);
@@ -145,10 +144,6 @@ function distanceText(distance: TargetDistance, system: UnitSystem): string {
 
 function distanceBounds(distance: TargetDistance): [number, number] {
   return distance.kind === 'fixed' ? [distance.distanceM, distance.distanceM] : [distance.fromM, distance.toM];
-}
-
-function gongDiameterM(distanceM: number): number {
-  return distanceM > LARGE_GONG_FROM_M ? LARGE_GONG_DIAMETER_M : GONG_DIAMETER_M;
 }
 
 function rangeText([low, high]: ValueRange): string {

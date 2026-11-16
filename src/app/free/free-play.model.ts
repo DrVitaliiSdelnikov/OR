@@ -4,7 +4,7 @@ import { text } from '../../i18n';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId, Correction } from '../../core/types';
 import { FreePlayUnlocks } from '../../sim/course';
-import { FreePlayRifle, FreePlaySettings, Terrain, TERRAIN_PRESETS, WindPreset } from '../../sim/free-play';
+import { FreePlayRifle, FreePlaySettings, Terrain, TERRAIN_PRESETS, terrainBoundsM, WindPreset } from '../../sim/free-play';
 import { UnitSystem } from '../../core/units';
 import { RifleProfile } from '../../sim/rifle-profile';
 import { ScopeId, SCOPES } from '../../sim/scope-model';
@@ -139,11 +139,11 @@ function terrainLine(terrain: Terrain, system: UnitSystem): string {
       return lines.mountains({
         angle: `${lowDeg}${ANGLE_RANGE_SEPARATOR}${highDeg}`,
         altitude: UNITS.rangeText('altitude', preset.conditions.altitudeRangeM!, system),
-        upTo: UNITS.quantityText('distance', preset.toM, system),
+        upTo: UNITS.quantityText('distance', terrainBoundsM(terrain, system).toM, system),
       });
     }
     case 'long-range':
-      return lines['long-range']({ range: UNITS.rangeText('distance', [preset.fromM, preset.toM], system) });
+      return lines['long-range']({ range: UNITS.rangeText('distance', [terrainBoundsM(terrain, system).fromM, terrainBoundsM(terrain, system).toM], system) });
   }
 }
 

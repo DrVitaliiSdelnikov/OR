@@ -1,4 +1,4 @@
-import { courseLoadout } from '../../core/content';
+import { courseLoadout, rangeLayout } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { CheckErrorType, checkManualSteps, checkPreparation, CheckResult } from '../../core/calc-check';
@@ -142,6 +142,7 @@ export class PositionSession {
     private readonly engine: BallisticsEngine,
     private readonly accessibility: TriggerAccessibility,
     recalcNotebook: Notebook | undefined,
+    private readonly unitSystem: UnitSystem,
   ) {
     this.firingLine = new FiringLine(setup.plan);
     this.scope = new ScopeSession(def.rifle?.scope ?? scopeById(def.scopeId), POSITION_RESTING_BPM, scenario.seed, accessibility, this.firingLine.magazineLoaded);
@@ -154,19 +155,27 @@ export class PositionSession {
   }
 
   static async start(options: PositionStart): Promise<PositionSession> {
-    const setup = setupTask(options.def, options.seed);
+    const unitSystem = options.unitSystem ?? 'metric';
+    const setup = setupTask(options.def, options.seed, unitSystem);
     const cartridgeIds = [...new Set(options.def.stages.map(stage => stage.cartridgeId))];
     const cards = new Map<CartridgeId, DopeCard>();
     const turretClickMil = (options.def.rifle?.scope ?? scopeById(options.def.scopeId)).clickMrad;
     for (const cartridgeId of cartridgeIds) {
-      cards.set(cartridgeId, await buildDopeCard(options.engine, options.def.rifle?.loadout ?? courseLoadout(cartridgeId), turretClickMil, options.unitSystem));
+      cards.set(cartridgeId, await buildDopeCard(options.engine, loadoutFor(options.def, cartridgeId, unitSystem), turretClickMil, unitSystem));
     }
-    const scenario = createScenario(options.seed, setup.scenarioOptions);
-    return new PositionSession(options.def, setup, scenario, cards, options.engine, options.accessibility, options.recalcNotebook);
+    const scenario = createScenario(options.seed, setup.scenarioOptions, rangeLayout(unitSystem));
+    return new PositionSession(options.def, setup, scenario, cards, options.engine, options.accessibility, options.recalcNotebook, unitSystem);
   }
 
   restartForRecalc(engine: BallisticsEngine): Promise<PositionSession> {
-    return PositionSession.start({ def: this.def, seed: this.scenario.seed, engine, accessibility: this.accessibility, recalcNotebook: this.currentNotebook });
+    return PositionSession.start({
+      def: this.def,
+      seed: this.scenario.seed,
+      engine,
+      accessibility: this.accessibility,
+      recalcNotebook: this.currentNotebook,
+      unitSystem: this.unitSystem,
+    });
   }
 
   recordCall(playerCall: Correction): boolean {
@@ -506,7 +515,7 @@ export class PositionSession {
   }
 
   private get loadout(): Loadout {
-    return this.def.rifle?.loadout ?? courseLoadout(this.firingLine.cartridgeId);
+    return loadoutFor(this.def, this.firingLine.cartridgeId, this.unitSystem);
   }
 
   private async flightOf(target: Target, timeS: number, result: ShotResult): Promise<FlightPaths> {
@@ -610,4 +619,8 @@ function summaryOf(check: ShotCheck): ShotCheckSummary {
     rowVerdicts: Object.fromEntries(kinds.map((kind, index) => [kind, check.result.rows[index].status])),
     errorTypes: [...new Set(check.result.rows.flatMap(row => row.errorTypes))],
   };
+}
+
+function loadoutFor(def: PositionTask, cartridgeId: CartridgeId, system: UnitSystem): Loadout {
+  return def.rifle?.loadout ?? courseLoadout(cartridgeId, system);
 }

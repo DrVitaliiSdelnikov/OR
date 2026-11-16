@@ -1,5 +1,5 @@
 import { inSystem, Quantity, toDisplay, UnitSystem } from '../../core/units';
-import { decimal, plural, PluralForms, signed } from '../format';
+import { andList, decimal, plural, PluralForms, signed } from '../format';
 
 const YARD_FORMS: PluralForms = ['ярд', 'ярда', 'ярдов'];
 const INCH_FORMS: PluralForms = ['дюйм', 'дюйма', 'дюймов'];
@@ -64,6 +64,11 @@ export const units = {
       return low === high ? `${signed(low)} ${unit}` : `${signed(low)}…${decimal(high)} ${unit}`;
     }
     return low === high ? `${decimal(low)} ${unit}` : `${decimal(low)}–${decimal(high)} ${unit}`;
+  },
+  listText: (quantity: Quantity, baseValues: readonly number[], system: UnitSystem, isAndList = false): string => {
+    const displayValues = baseValues.map(baseValue => toDisplay(quantity, baseValue, system));
+    const numbers = displayValues.map(value => decimal(value));
+    return `${isAndList ? andList(numbers) : numbers.join(', ')} ${unitNameFor(UNIT_NAMES[quantity][system], displayValues[displayValues.length - 1])}`;
   },
   quantityText: (quantity: Quantity, baseValue: number, system: UnitSystem): string => {
     const displayValue = toDisplay(quantity, baseValue, system);

@@ -2,6 +2,7 @@ import { Ammo, Atmo, Calculator, DEFAULT_CONFIG, DragModel, DragTables, Shot, UN
 import { FLAT_GEOMETRY, MAX_TRAJECTORY_M, TRAJECTORY_STEP_M } from './content';
 import { Atmosphere, Cartridge, Loadout, RequiredCorrection, ShotGeometry, TrajectoryPoint, WindZone } from './types';
 
+const CENTIMETRES_PER_METRE = 100;
 const RADIANS_PER_DEGREE = Math.PI / 180;
 const DOWNHILL_MINIMUM_ALTITUDE_FT = DEFAULT_CONFIG.maximumDrop;
 
@@ -34,7 +35,7 @@ export class BallisticsEngine {
       trajectoryStep: UNew.Meter(stepM * horizontalPerSlant),
     });
     return result.samples.map(sample => ({
-      distanceM: Math.round(sample.distance.In(Unit.Meter) / horizontalPerSlant),
+      distanceM: Math.round((sample.distance.In(Unit.Meter) / horizontalPerSlant) * CENTIMETRES_PER_METRE) / CENTIMETRES_PER_METRE,
       dropMrad: sample.dropAngle.In(Unit.MRad),
       windageMrad: sample.windageAngle.In(Unit.MRad),
       timeS: sample.time,
