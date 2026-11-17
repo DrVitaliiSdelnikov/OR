@@ -36,19 +36,20 @@ test.describe('свободная игра (A7.1)', () => {
     await expect(page.getByTestId('result-sheet')).toHaveCount(0);
   });
 
-  test('новый игрок: «неизвестная», САМ и патрон А закрыты с подписью; после 08 патрон А открыт', async ({ page }) => {
+  test('новый игрок: все опции открыты сразу (В53) — «неизвестная», САМ лёгкий и сложный, патроны А и В, порывистый ветер', async ({ page }) => {
     await seed(page);
     await page.goto('/free');
-    await expect(page.getByTestId('free-unknown')).toContainText('откроется в упр. 05');
-    await expect(page.getByTestId('free-mode-manual-easy')).toBeDisabled();
-    await expect(page.getByTestId('free-mode-manual-easy')).toContainText('откроется в упр. 06');
+    await expect(page.getByText('откроется в упр.')).toHaveCount(0);
+    await expect(page.getByTestId('free-mode-manual-easy')).toBeEnabled();
+    await expect(page.getByTestId('free-mode-manual-hard')).toBeEnabled();
+    await expect(page.getByTestId('free-wind-gusty')).toBeEnabled();
     await page.getByTestId('free-cartridge').click();
-    await expect(page.getByTestId('free-pick-A')).toBeDisabled();
-    await expect(page.getByTestId('free-pick-A')).toContainText('откроется в упр. 08');
+    await expect(page.getByTestId('free-pick-A')).toBeEnabled();
+    await expect(page.getByTestId('free-pick-C')).toBeEnabled();
   });
 
-  test('после 08 патрон А выбирается и уходит на позицию', async ({ page }) => {
-    await seed(page, { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3, '06': 3, '07': 3, '08': 3 });
+  test('новый игрок: патрон А выбирается и уходит на позицию', async ({ page }) => {
+    await seed(page);
     await page.goto('/free');
     await page.getByTestId('free-cartridge').click();
     await page.getByTestId('free-pick-A').click();

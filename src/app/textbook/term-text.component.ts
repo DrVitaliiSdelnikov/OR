@@ -1,5 +1,4 @@
 import { Component, computed, inject, input } from '@angular/core';
-import { ProgressStore } from '../services/progress.store';
 import { termSegments } from './term-links';
 import { TermSheetService } from './term-sheet.service';
 import { openedTerms } from './textbook.model';
@@ -16,11 +15,10 @@ export class TermTextComponent {
   readonly text = input.required<string>();
   readonly term = input<string | null>(null);
 
-  private readonly progress = inject(ProgressStore);
   protected readonly termSheet = inject(TermSheetService);
 
   protected readonly segments = computed(() => {
-    const opened = openedTerms(this.progress.course(), this.progress.settings().isEverythingUnlocked);
+    const opened = openedTerms();
     const wholeTerm = this.term();
     if (wholeTerm !== null) {
       return [{ text: this.text(), term: opened.has(wholeTerm) ? wholeTerm : null }];

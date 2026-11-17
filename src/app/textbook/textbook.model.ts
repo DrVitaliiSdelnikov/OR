@@ -1,5 +1,5 @@
 import { text } from '../../i18n';
-import { COURSE, CourseResults, ExerciseDef, exerciseTitle } from '../../sim/course';
+import { COURSE, ExerciseDef, exerciseTitle } from '../../sim/course';
 import { schemeOf, TermScheme } from './schemes/scheme.model';
 import { CardsByCartridge, TERM_CARDS, TermCard, termCards, TermFormula, TEXTBOOK_CHAPTERS, TextbookChapter } from './terms';
 import { UnitSystem } from '../../core/units';
@@ -29,16 +29,14 @@ export interface TermSheetView {
   related: readonly { term: string; isOpen: boolean }[];
 }
 
-export function openedTerms(results: CourseResults, isEverythingUnlocked: boolean): ReadonlySet<string> {
-  if (isEverythingUnlocked) {
-    return new Set(TERM_CARDS.map(card => card.term));
-  }
-  const isOpened = (def: ExerciseDef): boolean => (def.id === INTRO_ID ? results.isIntroCompleted : (results.bestClasses[def.id] ?? 0) !== 0);
-  return new Set(COURSE.filter(isOpened).flatMap(def => def.terms));
+const ALL_TERMS: ReadonlySet<string> = new Set(TERM_CARDS.map(card => card.term));
+
+export function openedTerms(): ReadonlySet<string> {
+  return ALL_TERMS;
 }
 
-export function textbookView(results: CourseResults, isEverythingUnlocked: boolean): TextbookView {
-  const opened = openedTerms(results, isEverythingUnlocked);
+export function textbookView(): TextbookView {
+  const opened = openedTerms();
   return {
     counterText: T.counter({ opened: opened.size, total: TERM_CARDS.length }),
     chapters: TEXTBOOK_CHAPTERS.map(title => ({
@@ -75,6 +73,7 @@ function termTile(card: TermCard, opened: ReadonlySet<string>): TermTile {
   return { term: card.term, isOpen, lockText: isOpen ? null : lockText(exercisesWith(card.term)[0]) };
 }
 
+/** @deprecated В53: учебник открыт целиком, подпись замка не показывается; удалить в T2.3 вместе с `lockIntro`, `lockExercise` каталога и `TermTile.lockText`. */
 function lockText(def: ExerciseDef): string {
   return def.id === INTRO_ID ? T.lockIntro({ exerciseId: INTRO_ID }) : T.lockExercise({ exerciseId: def.id });
 }

@@ -516,14 +516,18 @@ describe('exerciseResult', () => {
 });
 
 describe('course progress', () => {
-  it('a fresh start opens only the intro', () => {
+  it('новый игрок: открыты вводное и 01 — вводное не обязательно (В53); следующее — всё ещё 00', () => {
     const progress = courseProgress({ isIntroCompleted: false, bestClasses: {} });
-    expect(progress.unlockedIds).toEqual(['00']);
+    expect(progress.unlockedIds).toEqual(['00', '01']);
     expect(progress.nextExerciseId).toBe('00');
     expect(progress.rank).toBe('cadet');
   });
 
-  it('the intro opens 01; 3rd class in 01 opens 02', () => {
+  it('01 без вводного: 3-й класс в 01 открывает 02', () => {
+    expect(courseProgress({ isIntroCompleted: false, bestClasses: { '01': 3 } }).unlockedIds).toEqual(['00', '01', '02']);
+  });
+
+  it('after the intro: 01 open; 3rd class in 01 opens 02', () => {
     expect(courseProgress({ isIntroCompleted: true, bestClasses: {} }).unlockedIds).toEqual(['00', '01']);
     const progress = courseProgress({ isIntroCompleted: true, bestClasses: { '01': 3 } });
     expect(progress.unlockedIds).toEqual(['00', '01', '02']);
@@ -541,31 +545,16 @@ describe('course progress', () => {
     expect(courseProgress({ isIntroCompleted: true, bestClasses: firstThree }).rank).toBe('rifleman');
     const allTop: CourseResults['bestClasses'] = Object.fromEntries(ids.map(id => [id, 1]));
     const finished = courseProgress({ isIntroCompleted: true, bestClasses: allTop });
-    expect(finished.freePlayUnlocks.secondFocalPlaneScope).toBe(true);
-    expect(courseProgress({ isIntroCompleted: true, bestClasses: { ...allTop, '12': 0 } }).freePlayUnlocks.secondFocalPlaneScope).toBe(false);
-    expect(courseProgress({ isIntroCompleted: true, bestClasses: { '09': 3 } }).freePlayUnlocks.longRangeScope).toBe(true);
     expect(finished.rank).toBe('sniper-instructor');
     expect(finished.nextExerciseId).toBe('13');
     const oneSecond: CourseResults['bestClasses'] = { ...allTop, '07': 2 };
     expect(courseProgress({ isIntroCompleted: true, bestClasses: oneSecond }).rank).toBe('sniper');
   });
 
-  it('free play unlocks follow the course', () => {
-    const after05 = courseProgress({ isIntroCompleted: true, bestClasses: { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3 } }).freePlayUnlocks;
-    expect(after05.milDotScope).toBe(false);
-    expect(after05.moaScope).toBe(false);
-    const after06 = courseProgress({ isIntroCompleted: true, bestClasses: { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3, '06': 3 } }).freePlayUnlocks;
-    expect(after06).toEqual({
-      unknownDistance: true,
-      manualEasy: true,
-      moaScope: true,
-      milDotScope: true,
-      cartridgesAC: false,
-      gustyWind: false,
-      longRangeScope: false,
-      manualHard: false,
-      secondFocalPlaneScope: false,
-    });
+  it('свободная игра открыта целиком с первого запуска, без курса (В53)', () => {
+    for (const course of [{ isIntroCompleted: false, bestClasses: {} }, { isIntroCompleted: true, bestClasses: { '01': 3 } }] as CourseResults[]) {
+      expect(Object.values(courseProgress(course).freePlayUnlocks).every(Boolean)).toBe(true);
+    }
   });
 
   it('"unlock everything" opens every exercise and free play option but leaves the rank', () => {

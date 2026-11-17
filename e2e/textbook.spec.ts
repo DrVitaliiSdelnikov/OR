@@ -9,16 +9,15 @@ async function seed(page: Page, bestClasses: Record<string, number> = {}): Promi
 }
 
 test.describe('учебник курсанта (A7.3)', () => {
-  test('главная → «03 · Учебник курсанта»: счётчик, главы, закрытая плитка с подписью', async ({ page }) => {
-    await seed(page, { '01': 2 });
+  test('главная → «03 · Учебник курсанта»: все 55 терминов открыты с первого запуска (В53), главы', async ({ page }) => {
+    await seed(page);
     await page.goto('/');
     await page.getByTestId('tile-textbook').click();
     await page.waitForURL('**/textbook');
-    await expect(page.getByTestId('textbook-counter')).toHaveText('11 / 55 терминов');
+    await expect(page.getByTestId('textbook-counter')).toHaveText('55 / 55 терминов');
     await expect(page.locator('[data-test^="textbook-chapter-"]')).toHaveCount(13);
-    await expect(page.getByTestId('textbook-term')).toHaveCount(11);
-    const milling = page.getByTestId('textbook-term-locked').filter({ hasText: 'миллинг' });
-    await expect(milling).toContainText('откроется в упр. 05');
+    await expect(page.getByTestId('textbook-term')).toHaveCount(55);
+    await expect(page.getByTestId('textbook-term-locked')).toHaveCount(0);
     await page.getByTestId('textbook-chip-7').click();
     await expect(page.getByTestId('textbook-chapter-7')).toBeInViewport();
   });
@@ -44,7 +43,8 @@ test.describe('учебник курсанта (A7.3)', () => {
     await page.goto('/textbook');
     await page.getByTestId('textbook-term').filter({ hasText: /^ДОПЕ$/ }).click();
     await expect(page.getByTestId('term-example')).toHaveText(/Патрон Б, 300 м: ВЕРТ \d,\d MIL = \d+ кл\./);
-    await expect(page.getByTestId('term-related-locked').filter({ hasText: 'строка ДОПЕ' })).toBeVisible();
+    await expect(page.getByTestId('term-related').filter({ hasText: 'строка ДОПЕ' })).toBeVisible();
+    await expect(page.getByTestId('term-related-locked')).toHaveCount(0);
   });
 
   test('лист итога 01 при первом допуске: термин-ссылка открывает карточку поверх итога', async ({ page }) => {

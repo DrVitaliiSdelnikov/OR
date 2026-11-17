@@ -115,3 +115,4 @@
 | sim · расчёт САМ в имперских (T1.8b) | [specs/sim-units-calc.md](specs/sim-units-calc.md) | реализовано, слито в `master` 16.11 |
 | app · курс и тексты в имперских (T1.8c) | [specs/app-units-course.md](specs/app-units-course.md) | реализовано, слито в `master` 16.11 |
 | sim · цепочка подстановок в разборе (T2.1) | [specs/sim-miss-chain.md](specs/sim-miss-chain.md) | реализовано, слито в `master` 17.11 |
+| app · открытый старт: 01 без вводного, учебник и свободная игра целиком (В53) | [specs/app-open-start.md](specs/app-open-start.md) | реализовано, слито в `master` 17.11 |

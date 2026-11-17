@@ -85,12 +85,12 @@ describe('стекло (U4)', () => {
 });
 
 describe('после вводного (U5)', () => {
-  it('после «ГОТОВ» открыт 01 и пять терминов 00', () => {
+  it('после «ГОТОВ» вводное пройдено; 01 открыт и до, и после него (В53)', () => {
     const before = { isIntroCompleted: false, bestClasses: {} };
     const after = withIntroCompleted(before);
-    expect(courseProgress(before, false).unlockedIds).not.toContain('01');
+    expect(after.isIntroCompleted).toBe(true);
+    expect(courseProgress(before, false).unlockedIds).toContain('01');
     expect(courseProgress(after, false).unlockedIds).toContain('01');
-    expect([...openedTerms(after, false)].sort()).toEqual([...exerciseById('00')!.terms].sort());
   });
 });
 

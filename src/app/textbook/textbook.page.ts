@@ -1,7 +1,6 @@
 import { Component, computed, ElementRef, inject, viewChildren } from '@angular/core';
 import { IonContent } from '@ionic/angular/standalone';
 import { text } from '../../i18n';
-import { ProgressStore } from '../services/progress.store';
 import { TermSheetService } from './term-sheet.service';
 import { TermTile, textbookView } from './textbook.model';
 import { BackLinkDirective } from '../services/back-link.directive';
@@ -64,12 +63,11 @@ import { BackLinkDirective } from '../services/back-link.directive';
   `,
 })
 export class TextbookPage {
-  private readonly progress = inject(ProgressStore);
   private readonly termSheet = inject(TermSheetService);
   private readonly chapterSections = viewChildren<ElementRef<HTMLElement>>('chapter');
 
   protected readonly texts = text.textbook.page;
-  protected readonly view = computed(() => textbookView(this.progress.course(), this.progress.settings().isEverythingUnlocked));
+  protected readonly view = computed(() => textbookView());
 
   protected open(tile: TermTile): void {
     this.termSheet.open(tile.term);

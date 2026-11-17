@@ -100,7 +100,7 @@ describe('учебник в имперских (T1.8c)', () => {
   });
 
   it('лист термина: тексты, пример и «где встречается» — в единицах игрока', () => {
-    const opened = openedTerms({ isIntroCompleted: true, bestClasses: {} }, true);
+    const opened = openedTerms();
     const sheet = termSheetView('ноль', opened, imperialCards, 'imperial');
     expect(termSheetView('формула тысячной', opened, imperialCards, 'imperial').formula!.line).toBe('Д = размер × 27,78 / mil');
     expect(sheet.phrase).toContain('У винтовки курса — 100 ярдов:');

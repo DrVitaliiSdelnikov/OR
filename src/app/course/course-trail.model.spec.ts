@@ -7,11 +7,12 @@ function results(bestClasses: CourseResults['bestClasses'], isIntroCompleted = t
 }
 
 describe('trail nodes', () => {
-  it('first launch: fifteen nodes, only the intro is current, the rest locked', () => {
+  it('first launch: fifteen nodes, the intro is current, 01 open without it (В53), the rest locked', () => {
     const nodes = trailNodes(results({}, false));
     expect(nodes.map(node => node.id)).toEqual(['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14']);
     expect(nodes[0].state).toBe('current');
-    expect(nodes.slice(1).every(node => node.state === 'locked')).toBe(true);
+    expect(nodes[1].state).toBe('open');
+    expect(nodes.slice(2).every(node => node.state === 'locked')).toBe(true);
   });
 
   it('in progress: passed with class stamps, the next current, then locked', () => {

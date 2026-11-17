@@ -62,10 +62,10 @@ async function toMeasureStep(page: Page): Promise<void> {
 }
 
 test.describe('упр. 00 «Винтовка и прицел» (A7.5)', () => {
-  test('новый игрок: тропа → 00 → семь шагов → «ГОТОВ» → 00 пройдено, 01 открыт, 5 терминов; журнал пуст', async ({ page }) => {
+  test('новый игрок: 01 открыт сразу (В53); тропа → 00 → семь шагов → «ГОТОВ» → 00 пройдено; журнал пуст', async ({ page }) => {
     await seedNewPlayer(page);
     await page.goto('/course');
-    await expect(page.getByTestId('node-01')).toBeDisabled();
+    await expect(page.getByTestId('node-01')).toBeEnabled();
     await page.getByTestId('node-00').click();
     await expect(page.getByTestId('briefing-intro')).toContainText('Без стрельбы и оценки');
     await expect(page.getByTestId('briefing-class-0')).toHaveCount(0);
@@ -89,7 +89,7 @@ test.describe('упр. 00 «Винтовка и прицел» (A7.5)', () => {
     await expect(page.getByTestId('node-00')).toContainText('пройдено');
     await expect(page.getByTestId('node-01')).toBeEnabled();
     await page.goto('/textbook');
-    await expect(page.getByTestId('textbook-counter')).toHaveText('5 / 55 терминов');
+    await expect(page.getByTestId('textbook-counter')).toHaveText('55 / 55 терминов');
     await page.goto('/journal');
     await expect(page.getByTestId('journal-empty')).toBeVisible();
   });
@@ -104,7 +104,7 @@ test.describe('упр. 00 «Винтовка и прицел» (A7.5)', () => {
     await expect(page.getByTestId('intro-next')).toBeEnabled();
   });
 
-  test('«назад» посреди шагов — лист 00; на тропе 00 не пройдено, 01 закрыт', async ({ page }) => {
+  test('«назад» посреди шагов — лист 00; на тропе 00 не пройдено, 01 всё равно открыт', async ({ page }) => {
     await seedNewPlayer(page);
     await page.goto('/intro');
     await tapAllParts(page, PARTS.rifle);
@@ -112,6 +112,7 @@ test.describe('упр. 00 «Винтовка и прицел» (A7.5)', () => {
     await page.waitForURL('**/course/00');
     await page.goto('/course');
     await expect(page.getByTestId('node-00')).not.toContainText('пройдено');
-    await expect(page.getByTestId('node-01')).toBeDisabled();
+    await expect(page.getByTestId('node-01')).toBeEnabled();
+    await expect(page.getByTestId('node-02')).toBeDisabled();
   });
 });

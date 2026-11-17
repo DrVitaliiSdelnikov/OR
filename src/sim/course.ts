@@ -232,6 +232,18 @@ const TITLES = text.content.exerciseTitles;
 
 export const FIRST_FIRING_EXERCISE_ID: ExerciseId = '01';
 export const ATTESTATION_ID: ExerciseId = '12';
+const INTRO_ID: ExerciseId = '00';
+const ALL_FREE_PLAY_OPEN: FreePlayUnlocks = {
+  unknownDistance: true,
+  manualEasy: true,
+  moaScope: true,
+  milDotScope: true,
+  longRangeScope: true,
+  secondFocalPlaneScope: true,
+  cartridgesAC: true,
+  gustyWind: true,
+  manualHard: true,
+};
 
 export const COURSE: readonly ExerciseDef[] = [
   exerciseDef('00', TITLES['00'], null, { stages: [], hasColdBore: false, notebookMode: null, conditions: CALM }),
@@ -416,26 +428,15 @@ export function courseProgress(results: CourseResults, isEverythingUnlocked = fa
       return true;
     }
     const previousId = COURSE[index - 1].id;
-    return previousId === '00' ? results.isIntroCompleted : isAdmitted(previousId);
+    return previousId === INTRO_ID || isAdmitted(previousId);
   }).map(def => def.id);
   const nextExercise = COURSE.find(def => unlockedIds.includes(def.id) && (def.targets ? !isAdmitted(def.id) : !results.isIntroCompleted));
-  const isOpenedBy = (id: ExerciseId): boolean => isEverythingUnlocked || isAdmitted(id);
   return {
     admissions,
     unlockedIds,
     nextExerciseId: nextExercise?.id ?? null,
     rank: rankFor(admissions, isEveryExerciseTopClass),
-    freePlayUnlocks: {
-      unknownDistance: isOpenedBy('05'),
-      manualEasy: isOpenedBy('06'),
-      moaScope: isOpenedBy('06'),
-      milDotScope: isOpenedBy('06'),
-      longRangeScope: isOpenedBy('09'),
-      secondFocalPlaneScope: isOpenedBy('12'),
-      cartridgesAC: isOpenedBy('08'),
-      gustyWind: isOpenedBy('09'),
-      manualHard: isOpenedBy('10'),
-    },
+    freePlayUnlocks: ALL_FREE_PLAY_OPEN,
   };
 }
 

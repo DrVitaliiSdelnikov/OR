@@ -111,7 +111,7 @@ export class TermSheetComponent {
   protected readonly cards = computed(() => this.textbookCards.cardsIn(this.unitSystem())());
   protected readonly canTry = computed(() => this.isOverTextbook && sandboxOf(this.term()) !== null);
   protected readonly view = computed(() =>
-    termSheetView(this.term(), openedTerms(this.progress.course(), this.progress.settings().isEverythingUnlocked), this.cards(), this.unitSystem()),
+    termSheetView(this.term(), openedTerms(), this.cards(), this.unitSystem()),
   );
 
   constructor() {
