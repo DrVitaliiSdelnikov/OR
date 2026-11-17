@@ -19,9 +19,12 @@ export type ProfileField =
   | 'clickValue'
   | 'magnification';
 
+export type EstimatedField = 'muzzleVelocityMps' | 'muzzleVelocitySdMps' | 'groupMoa';
+
 export interface RifleProfile {
   id: string;
   name: string;
+  estimates?: readonly EstimatedField[];
   rifle: {
     sightHeightCm: number;
     zeroM: number;
@@ -57,6 +60,10 @@ export type ProfileIssue =
 export interface StoredProfiles {
   profiles: RifleProfile[];
   activeProfileId: string | null;
+}
+
+export interface SeededProfiles extends StoredProfiles {
+  seededProfileIds: string[];
 }
 
 export type PresetCode = keyof typeof text.content.profilePresets;
@@ -97,6 +104,28 @@ const LIMITS = {
 } as const satisfies Partial<Record<ProfileField, readonly [number, number]>>;
 const BC_LIMITS: Record<DragModel, readonly [number, number]> = { G7: [0.1, 0.5], G1: [0.2, 1] };
 const CLICK_VALUES: Record<ScopeUnits, readonly number[]> = { MIL: [0.05, 0.1, 0.2], MOA: [0.125, 0.25, 0.5] };
+
+export const BUILT_IN_PROFILE_ID = 'builtin-custom';
+const ESTIMATED_FIELDS: readonly EstimatedField[] = ['muzzleVelocityMps', 'muzzleVelocitySdMps', 'groupMoa'];
+const SMK_69_GRAINS = 69;
+const SMK_69_LENGTH_IN = 0.9;
+const BUILT_IN_PROFILE: RifleProfile = {
+  id: BUILT_IN_PROFILE_ID,
+  name: text.content.builtInProfileName,
+  estimates: ESTIMATED_FIELDS,
+  rifle: { sightHeightCm: 4.5, zeroM: 50, twistInchesPerTurn: 7, twistDirection: 'right', groupMoa: 1.5 },
+  cartridge: {
+    muzzleVelocityMps: 808,
+    muzzleVelocitySdMps: 9,
+    dragModel: 'G7',
+    ballisticCoefficient: 0.152,
+    bcAtmosphere: 'icao',
+    massG: SMK_69_GRAINS / GRAINS_PER_GRAM,
+    bulletDiameterIn: 0.224,
+    bulletLengthMm: SMK_69_LENGTH_IN * MM_PER_INCH,
+  },
+  scope: { units: 'MOA', clickValue: 0.5, isFirstFocalPlane: false, magnificationMin: 1, magnificationMax: 8, reticle: 'moa-grid' },
+};
 
 const PRESET_RIFLE = { sightHeightCm: 5, zeroM: 100, twistDirection: 'right', groupMoa: 0.75 } as const;
 const PRESET_SCOPE: RifleProfile['scope'] = { units: 'MIL', clickValue: 0.1, isFirstFocalPlane: true, magnificationMin: 5, magnificationMax: 25, reticle: 'tree' };
@@ -234,7 +263,22 @@ export function scopeOf(profile: RifleProfile): ScopeModel {
 }
 
 export function canAddProfile(profiles: readonly RifleProfile[], isProUnlocked: boolean): boolean {
-  return isProUnlocked || profiles.length < FREE_PROFILE_LIMIT;
+  return isProUnlocked || profiles.filter(profile => profile.id !== BUILT_IN_PROFILE_ID).length < FREE_PROFILE_LIMIT;
+}
+
+export function builtInProfile(): RifleProfile {
+  return structuredClone(BUILT_IN_PROFILE);
+}
+
+export function withBuiltInProfile(stored: StoredProfiles, seededProfileIds: readonly string[]): SeededProfiles {
+  if (seededProfileIds.includes(BUILT_IN_PROFILE_ID)) {
+    return { ...stored, seededProfileIds: [...seededProfileIds] };
+  }
+  return {
+    profiles: [builtInProfile(), ...stored.profiles.filter(profile => profile.id !== BUILT_IN_PROFILE_ID)],
+    activeProfileId: stored.activeProfileId ?? BUILT_IN_PROFILE_ID,
+    seededProfileIds: [...seededProfileIds, BUILT_IN_PROFILE_ID],
+  };
 }
 
 export function knownProfiles(stored: { profiles?: unknown; activeProfileId?: unknown } | undefined): StoredProfiles {
@@ -247,6 +291,9 @@ export function knownProfiles(stored: { profiles?: unknown; activeProfileId?: un
 function isStoredProfile(candidate: unknown): candidate is RifleProfile {
   const profile = candidate as RifleProfile;
   if (typeof profile?.id !== 'string' || typeof profile.name !== 'string' || !profile.rifle || !profile.cartridge || !profile.scope) {
+    return false;
+  }
+  if (profile.estimates !== undefined && !(Array.isArray(profile.estimates) && profile.estimates.every(field => ESTIMATED_FIELDS.includes(field)))) {
     return false;
   }
   try {

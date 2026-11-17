@@ -4,8 +4,15 @@ import { PROGRESS_KEY, seedProgress } from './helpers';
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 const MIN_TOUCH_PX = 44;
 
-async function seed(page: Page, settings: Record<string, unknown> = {}): Promise<void> {
-  await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: {} }, shots: [], settings: { ...QUIET_SETTINGS, ...settings } });
+const BUILT_IN_PROFILE_ID = 'builtin-custom';
+
+async function seed(page: Page, settings: Record<string, unknown> = {}, isBuiltInRemoved = true): Promise<void> {
+  await seedProgress(page, {
+    course: { isIntroCompleted: true, bestClasses: {} },
+    shots: [],
+    settings: { ...QUIET_SETTINGS, ...settings },
+    ...(isBuiltInRemoved ? { seededProfileIds: [BUILT_IN_PROFILE_ID] } : {}),
+  });
 }
 
 async function typeInto(page: Page, testId: string, value: string): Promise<void> {
@@ -146,3 +153,26 @@ test.describe('экран «Винтовка» (T1.7)', () => {
     await expectTouchTargets(page, '[data-test="rifle-dope-page"] button, [data-test="rifle-dope-page"] a');
   });
 });
+
+test.describe('встроенная винтовка «своя-custom» (17.11)', () => {
+  test('новый игрок: в списке сразу «своя-custom», активная; в редакторе скорость помечена «оценка — замени замером»; ДОПЕ строится', async ({ page }) => {
+    await seed(page, {}, false);
+    await page.goto('/rifle');
+    await expect(page.getByTestId('rifle-name')).toHaveText(['своя-custom']);
+    await expect(page.getByTestId('rifle-active')).toHaveCount(1);
+    await page.getByTestId('rifle-edit').click();
+    await expect(page.getByTestId('error-muzzleVelocity')).toHaveText('оценка — замени замером');
+    await expect(page.getByTestId('rifle-save')).toBeEnabled();
+    await page.goto('/rifle');
+    await page.getByTestId('rifle-dope').click();
+    await expect(page.getByTestId('rifle-dope-title')).toContainText('своя-custom');
+  });
+
+  test('со «своей-custom» можно завести ещё одну свою — встроенная не занимает место', async ({ page }) => {
+    await seed(page, {}, false);
+    await page.goto('/rifle');
+    await page.getByTestId('rifle-add').click();
+    await expect(page.getByTestId('rifle-preset-308-175')).toBeVisible();
+  });
+});
+

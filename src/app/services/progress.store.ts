@@ -6,7 +6,7 @@ import { DEFAULT_FREE_PLAY, FreePlaySettings, knownFreePlay } from '../../sim/fr
 import { withExerciseResult, withIntroCompleted } from '../home/home.model';
 import { JournalSeries, withSeries } from '../journal/journal.model';
 import { DopeNotes, withDopeNote } from '../review/review.model';
-import { isProfileValid, knownProfiles, RifleProfile } from '../../sim/rifle-profile';
+import { isProfileValid, knownProfiles, RifleProfile, withBuiltInProfile } from '../../sim/rifle-profile';
 import { DEFAULT_SETTINGS, knownSettings, Settings } from '../settings/settings.model';
 
 export const PROGRESS_STORAGE_KEY = 'or.progress.v1';
@@ -19,13 +19,21 @@ interface ProgressState {
   freePlay: FreePlaySettings;
   profiles: RifleProfile[];
   activeProfileId: string | null;
+  seededProfileIds: string[];
 }
 
 const EMPTY_COURSE: CourseResults = { isIntroCompleted: false, bestClasses: {} };
 
 @Injectable({ providedIn: 'root' })
 export class ProgressStore {
-  private readonly state = signal<ProgressState>({ course: EMPTY_COURSE, settings: DEFAULT_SETTINGS, series: [], dopeNotes: {}, freePlay: DEFAULT_FREE_PLAY, profiles: [], activeProfileId: null });
+  private readonly state = signal<ProgressState>({
+    course: EMPTY_COURSE,
+    settings: DEFAULT_SETTINGS,
+    series: [],
+    dopeNotes: {},
+    freePlay: DEFAULT_FREE_PLAY,
+    ...withBuiltInProfile({ profiles: [], activeProfileId: null }, []),
+  });
 
   readonly course = computed(() => this.state().course);
   readonly settings = computed(() => this.state().settings);
@@ -42,14 +50,14 @@ export class ProgressStore {
       return;
     }
     try {
-      const stored = JSON.parse(value) as Partial<ProgressState> & { settings?: Record<string, unknown>; profiles?: unknown; activeProfileId?: unknown };
+      const stored = JSON.parse(value) as Partial<ProgressState> & { settings?: Record<string, unknown>; profiles?: unknown; activeProfileId?: unknown; seededProfileIds?: unknown };
       this.state.set({
         course: stored.course ?? EMPTY_COURSE,
         settings: knownSettings(stored.settings),
         series: Array.isArray(stored.series) ? stored.series : [],
         dopeNotes: stored.dopeNotes ?? {},
         freePlay: knownFreePlay(stored.freePlay),
-        ...knownProfiles(stored),
+        ...withBuiltInProfile(knownProfiles(stored), knownSeededIds(stored.seededProfileIds)),
       });
     } catch {
       await Preferences.remove({ key: PROGRESS_STORAGE_KEY });
@@ -115,4 +123,8 @@ export class ProgressStore {
     this.state.update(change);
     void Preferences.set({ key: PROGRESS_STORAGE_KEY, value: JSON.stringify(this.state()) });
   }
+}
+
+function knownSeededIds(stored: unknown): string[] {
+  return Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string') : [];
 }

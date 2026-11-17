@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { loadoutOf, profileFromPreset, RifleProfile } from './rifle-profile';
+import { builtInProfile, loadoutOf, profileFromPreset, RifleProfile } from './rifle-profile';
 import { BallisticsEngine } from '../core/engine';
 import { buildProfileDopeCard, ProfileDopeCard } from './profile-dope';
 import reference308 from '../core/reference/308-175.json';
@@ -120,5 +120,15 @@ describe('шапка карточки', () => {
     const card = await buildProfileDopeCard(engine, moaScope(profileFromPreset('308-175', 'p', 'p')), 'imperial');
     expect(card.header).toMatchObject({ zero: 109, temperature: 59, pressure: 29.91 });
     expect(card.header.zeroAngle).toBeCloseTo(metric308.header.zeroAngle / MRAD_PER_MOA, 1);
+  });
+});
+
+describe('карточка ДОПЕ встроенной «своя-custom» (17.11)', () => {
+  it('строится: ноль 50 м — на 50 м ноль, дальше вверх; поправки в кликах ½ MOA', async () => {
+    const card = await buildProfileDopeCard(new BallisticsEngine(), builtInProfile(), 'metric');
+    expect(card.rows).toHaveLength(20);
+    expect(card.rows[0]).toMatchObject({ distance: 50, elevation: 0, clicks: 0 });
+    expect(card.rows[3].elevation).toBeGreaterThan(0);
+    expect(card.rows[3].clicks).toBe(Math.round(card.rows[3].elevation / 0.5));
   });
 });

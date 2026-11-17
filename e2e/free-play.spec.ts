@@ -149,9 +149,23 @@ test.describe('своя винтовка в свободной игре (T1.7, �
   });
 
   test('без своей винтовки «своя» недоступна', async ({ page }) => {
-    await seed(page);
+    await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: {} }, shots: [], settings: QUIET_SETTINGS, seededProfileIds: ['builtin-custom'] });
     await page.goto('/free');
     await expect(page.getByTestId('free-rifle-own')).toBeDisabled();
     await expect(page.getByTestId('free-rifle-own')).toContainText('заведи на экране «Винтовка»');
   });
 });
+
+test.describe('встроенная винтовка в свободной игре (17.11)', () => {
+  test('новый игрок: «своя» — это «своя-custom», карточка ДОПЕ с её именем', async ({ page }) => {
+    await seed(page);
+    await page.goto('/free');
+    await page.getByTestId('free-rifle-own').click();
+    await page.getByTestId('free-start').click();
+    await page.waitForURL('**/position/free');
+    await page.getByTestId('tile-notebook').click();
+    await page.getByTestId('tab-dope').click();
+    await expect(page.getByTestId('dope-heading')).toContainText('своя-custom');
+  });
+});
+

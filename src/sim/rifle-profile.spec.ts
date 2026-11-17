@@ -2,19 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildDopeCard } from '../core/dope-card';
 import { BallisticsEngine } from '../core/engine';
 import { REFERENCE_LOADOUTS } from '../core/reference/reference-loadouts';
-import {
-  BC_ASM_TO_ICAO,
-  canAddProfile,
-  knownProfiles,
-  loadoutOf,
-  millerStability,
-  PROFILE_PRESETS,
-  profileFromPreset,
-  ProfileIssue,
-  RifleProfile,
-  scopeOf,
-  validateProfile,
-} from './rifle-profile';
+import { BC_ASM_TO_ICAO, BUILT_IN_PROFILE_ID, builtInProfile, canAddProfile, isProfileValid, knownProfiles, loadoutOf, millerStability, PROFILE_PRESETS, profileFromPreset, ProfileIssue, RifleProfile, scopeOf, validateProfile, withBuiltInProfile } from './rifle-profile';
 
 const MRAD_PER_MOA = 0.29089;
 const GROUP_SPREAD_PER_SIGMA = 3.08;
@@ -216,5 +204,41 @@ describe('хранение и лимит', () => {
     expect(knownProfiles({ profiles: [good], activeProfileId: good.id })).toEqual({ profiles: [good], activeProfileId: good.id });
     expect(knownProfiles({ profiles: 'oops', activeProfileId: 7 })).toEqual({ profiles: [], activeProfileId: null });
     expect(knownProfiles(undefined)).toEqual({ profiles: [], activeProfileId: null });
+  });
+});
+
+describe('встроенная винтовка «своя-custom» (LWRC M6IC, 17.11)', () => {
+  const custom = builtInProfile();
+
+  it('данные пользователя: .223, ствол 1:7, прицел 4,5 см, ноль 50 м, Sako 69 гр SMK, G7 0,152, Strike Eagle 1–8× MOA ½', () => {
+    expect(custom.id).toBe(BUILT_IN_PROFILE_ID);
+    expect(custom.name).toBe('своя-custom');
+    expect(custom.rifle).toMatchObject({ sightHeightCm: 4.5, zeroM: 50, twistInchesPerTurn: 7, twistDirection: 'right' });
+    expect(custom.cartridge).toMatchObject({ dragModel: 'G7', ballisticCoefficient: 0.152, bcAtmosphere: 'icao', bulletDiameterIn: 0.224 });
+    expect(custom.cartridge.massG).toBeCloseTo(69 * 0.06479891, 6);
+    expect(custom.scope).toEqual({ units: 'MOA', clickValue: 0.5, isFirstFocalPlane: false, magnificationMin: 1, magnificationMax: 8, reticle: 'moa-grid' });
+    expect(isProfileValid(custom)).toBe(true);
+  });
+
+  it('скорость 808 м/с, разброс и кучность — оценки: помечены, пока их не заменят', () => {
+    expect(custom.cartridge.muzzleVelocityMps).toBe(808);
+    expect(custom.estimates).toEqual(['muzzleVelocityMps', 'muzzleVelocitySdMps', 'groupMoa']);
+  });
+
+  it('появляется один раз: новый игрок и игрок со своими профилями получают её; удалённая не возвращается', () => {
+    expect(withBuiltInProfile({ profiles: [], activeProfileId: null }, [])).toEqual({ profiles: [custom], activeProfileId: BUILT_IN_PROFILE_ID, seededProfileIds: [BUILT_IN_PROFILE_ID] });
+    const own = profileFromPreset('308-175', 'profile-1', 'Моя .308');
+    expect(withBuiltInProfile({ profiles: [own], activeProfileId: own.id }, [])).toEqual({ profiles: [custom, own], activeProfileId: own.id, seededProfileIds: [BUILT_IN_PROFILE_ID] });
+    expect(withBuiltInProfile({ profiles: [own], activeProfileId: null }, [BUILT_IN_PROFILE_ID])).toEqual({ profiles: [own], activeProfileId: null, seededProfileIds: [BUILT_IN_PROFILE_ID] });
+  });
+
+  it('не занимает бесплатное место: с ней можно добавить одну свою', () => {
+    const own = profileFromPreset('308-175', 'profile-1', 'Моя .308');
+    expect(canAddProfile([custom], false)).toBe(true);
+    expect(canAddProfile([custom, own], false)).toBe(false);
+  });
+
+  it('хранится и читается обратно вместе с пометками оценок', () => {
+    expect(knownProfiles({ profiles: [custom], activeProfileId: custom.id })).toEqual({ profiles: [custom], activeProfileId: custom.id });
   });
 });

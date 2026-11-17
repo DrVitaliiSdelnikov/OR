@@ -55,6 +55,7 @@ export const rifle = {
     range: (p: { low: string; high: string; unit: string }) => `${p.low}–${p.high}${p.unit}`,
     bulletLengthSuffix: ', не короче калибра',
     clickValue: 'выбери из ряда прицела',
+    estimate: 'оценка — замени замером',
     magnificationOrder: (p: { range: string }) => `не меньше «от», ${p.range}`,
     stability: (p: { stability: number; minimum: number }) =>
       `Пуля может быть неустойчива: Sg ${decimal(p.stability, 2)} < ${decimal(p.minimum, 1)}. Проверь шаг нарезов`,

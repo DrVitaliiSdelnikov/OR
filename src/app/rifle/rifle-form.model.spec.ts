@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { profileFromPreset, RifleProfile } from '../../sim/rifle-profile';
+import { builtInProfile, profileFromPreset, RifleProfile } from '../../sim/rifle-profile';
 import { fieldMessages, formOf, isDirty, isSaveAllowed, profileOf, RifleForm, stabilityMessage } from './rifle-form.model';
 
 const own308 = profileFromPreset('308-175', 'profile-1', 'Моя .308');
@@ -107,5 +107,29 @@ describe('несохранённые правки', () => {
     expect(isDirty(form, own308, 'metric')).toBe(false);
     expect(isDirty(edited(form, { name: 'Другая' }), own308, 'metric')).toBe(true);
     expect(isDirty(edited(form, { zero: 200 }), own308, 'metric')).toBe(true);
+  });
+});
+
+describe('оценки во встроенной винтовке (17.11)', () => {
+  const custom = builtInProfile();
+
+  it('у скорости, разброса и кучности — «оценка — замени замером»', () => {
+    const messages = fieldMessages(custom, 'metric');
+    expect(messages.muzzleVelocity).toBe('оценка — замени замером');
+    expect(messages.muzzleVelocitySd).toBe('оценка — замени замером');
+    expect(messages.groupMoa).toBe('оценка — замени замером');
+    expect(messages.zero).toBeUndefined();
+    expect(fieldMessages(own308, 'metric').muzzleVelocity).toBeUndefined();
+  });
+
+  it('вписал свою скорость — пометка у скорости снята, у остальных осталась; оценка — не ошибка, сохранять можно', () => {
+    const form = formOf(custom, 'metric');
+    const saved = profileOf(edited(form, { muzzleVelocity: 790 }), custom, 'metric');
+    expect(saved.cartridge.muzzleVelocityMps).toBe(790);
+    expect(saved.estimates).toEqual(['muzzleVelocitySdMps', 'groupMoa']);
+    expect(fieldMessages(saved, 'metric').muzzleVelocity).toBeUndefined();
+    expect(isSaveAllowed(custom)).toBe(true);
+    const untouched = profileOf(form, custom, 'metric');
+    expect(untouched.estimates).toEqual(custom.estimates);
   });
 });

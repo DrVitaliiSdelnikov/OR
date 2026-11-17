@@ -2,7 +2,7 @@ import { DragModel, TwistDirection } from '../../core/types';
 import { fromInput, Quantity, toDisplay, UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
 import { decimal } from '../../i18n/format';
-import { BcAtmosphere, isProfileValid, MIN_STABILITY, ProfileField, RifleProfile, validateProfile } from '../../sim/rifle-profile';
+import { BcAtmosphere, EstimatedField, isProfileValid, MIN_STABILITY, ProfileField, RifleProfile, validateProfile } from '../../sim/rifle-profile';
 import { MRAD_PER_MOA, ReticleKind, ScopeUnits } from '../../sim/scope-model';
 
 export interface RifleForm {
@@ -40,6 +40,7 @@ interface MeasuredField {
 }
 
 const T = text.rifle;
+const ESTIMATE_FORM_FIELDS: Record<EstimatedField, FormField> = { muzzleVelocityMps: 'muzzleVelocity', muzzleVelocitySdMps: 'muzzleVelocitySd', groupMoa: 'groupMoa' };
 const MM_PER_CM = 10;
 const COLD_BORE_DIGITS = 2;
 
@@ -127,9 +128,11 @@ export function profileOf(form: RifleForm, base: RifleProfile, system: UnitSyste
     : isColdBoreSet
       ? { upMil: scopeToMil(form.coldBoreUp ?? 0, form.scopeUnits), rightMil: scopeToMil(form.coldBoreRight ?? 0, form.scopeUnits) }
       : undefined;
+  const estimates = (base.estimates ?? []).filter(field => form[ESTIMATE_FORM_FIELDS[field]] === before[ESTIMATE_FORM_FIELDS[field]]);
   return {
     id: base.id,
     name: form.name,
+    ...(estimates.length > 0 ? { estimates } : {}),
     rifle: {
       sightHeightCm: measured('sightHeight'),
       zeroM: measured('zero'),
@@ -171,6 +174,9 @@ export function fieldMessages(profile: RifleProfile, system: UnitSystem): FieldM
     }
     const target = ISSUE_FIELDS[issue.field];
     messages[target.field] = issueText(issue.field, issue.limits, profile, system);
+  }
+  for (const field of profile.estimates ?? []) {
+    messages[ESTIMATE_FORM_FIELDS[field]] ??= T.messages.estimate;
   }
   return messages;
 }
