@@ -119,3 +119,4 @@
 | sim · встроенная винтовка «своя-custom» (В54) | [specs/sim-builtin-rifle.md](specs/sim-builtin-rifle.md) | реализовано, слито в `master` 17.11 |
 | app · лестница причин и красный карандаш (T2.2, В52) | [specs/app-review-chain.md](specs/app-review-chain.md) | реализовано, слито в `master` 17.11 |
 | app · журнал с величинами причин и хранилище v2 (T2.3, В55) | [specs/app-journal-causes.md](specs/app-journal-causes.md) | реализовано 18.11 |
+| app · страница «О приложении» | [specs/app-about.md](specs/app-about.md) | реализовано 18.11 |

@@ -1,3 +1,4 @@
+import { about } from './about';
 import { content } from './content';
 import { instructor } from './instructor';
 import { intro } from './intro';
@@ -12,4 +13,4 @@ import { shell } from './shell';
 import { textbook } from './textbook';
 import { units } from './units';
 
-export const ru = { content, instructor, result, briefing, review, notebook, position, radio, shell, screens, textbook, intro, units, rifle };
+export const ru = { about, content, instructor, result, briefing, review, notebook, position, radio, shell, screens, textbook, intro, units, rifle };

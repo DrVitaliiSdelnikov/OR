@@ -47,6 +47,8 @@ import { continueCard, rankHeader } from './home.model';
             }
           }
         </button>
+
+        <a class="about-link" routerLink="/about" data-test="open-about">{{ aboutLink }}</a>
       </div>
     </ion-content>
   `,
@@ -64,6 +66,7 @@ import { continueCard, rankHeader } from './home.model';
     .continue-label { font: 700 var(--type-label) / 16px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; }
     .continue-title { font: 700 var(--type-value) / 22px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; }
     .continue-status { font: 500 var(--type-label) / 16px var(--font-mono); }
+    .about-link { align-self: center; display: grid; place-items: center; min-height: var(--touch-min); padding: 0 var(--space-3); font: 500 var(--type-label) / 16px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--device-text-muted); text-decoration: underline; }
   `,
 })
 export class HomePage {
@@ -71,6 +74,7 @@ export class HomePage {
   private readonly router = inject(Router);
 
   protected readonly texts = text.screens.home;
+  protected readonly aboutLink = text.about.link;
   protected readonly header = computed(() => rankHeader(this.progress.course()));
   protected readonly card = computed(() => continueCard(this.progress.course(), this.progress.settings().unitSystem));
   protected readonly cardExercise = computed(() => {
