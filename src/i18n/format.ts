@@ -10,6 +10,10 @@ export function decimal(value: number, digits?: number): string {
   return sign + unsigned.replace('.', DECIMAL_SEPARATOR);
 }
 
+export function lowerFirst(phrase: string): string {
+  return phrase.charAt(0).toLocaleLowerCase('ru') + phrase.slice(1);
+}
+
 export function signed(value: number, digits?: number): string {
   const text = decimal(value, digits);
   return value > 0 && NON_ZERO_DIGIT.test(text) ? `+${text}` : text;

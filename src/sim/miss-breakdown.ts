@@ -1,6 +1,6 @@
 import { roundToClicks } from '../core/game-formulas';
 import { Correction } from '../core/types';
-import { ChainLink, ChainLinkKind } from './miss-chain';
+import { CHAIN_ORDER, ChainLink, ChainLinkKind } from './miss-chain';
 
 export type ChainCauseKind = Exclude<ChainLinkKind, 'lead'> | 'lead-calc';
 export type ExecutionCauseKind = 'hold' | 'lead' | 'trigger' | 'zero';
@@ -34,6 +34,11 @@ export interface MissCause {
   link: ChainLink | null;
 }
 
+export interface CauseAmount {
+  kind: CauseKind;
+  mil: number;
+}
+
 export interface MissBreakdown {
   causes: MissCause[];
   chain: readonly ChainLink[];
@@ -50,6 +55,8 @@ const HIDDEN_LINKS: readonly CauseKind[] = ['rounding'];
 const CALC_CAUSES: readonly CauseKind[] = ['distance', 'dope', 'conditions', 'angle', 'earth', 'wind-calc', 'rounding', 'turret'];
 const WIND_CAUSES: readonly CauseKind[] = ['wind-speed', 'wind-clock', 'zones'];
 const LEAD_CAUSES: readonly CauseKind[] = ['lead-calc', 'lead'];
+const JOURNAL_STEPS_PER_MIL = 100;
+export const CAUSE_ORDER: readonly CauseKind[] = [...CHAIN_ORDER.map(causeKindOf), 'hold', 'lead', 'trigger', 'zero', 'formula', 'rifle', 'cold-bore'];
 
 /**
  * Попадание = (барабан − ядро) + сетка + спуск + винтовка + холодный ствол + сбитый прицел (`resolveShot`).
@@ -121,6 +128,17 @@ function largest<Kind>(candidates: readonly (readonly [Kind, number])[]): Kind |
 
 export function mainCauseOf(breakdown: MissBreakdown): MainCause | null {
   return breakdown.mainCause;
+}
+
+export function journalCauses(breakdown: MissBreakdown): CauseAmount[] {
+  return breakdown.causes
+    .filter(cause => cause.isPlayerError)
+    .map(cause => ({ kind: cause.kind, mil: Math.round(Math.hypot(cause.vector.upMrad, cause.vector.rightMrad) * JOURNAL_STEPS_PER_MIL) / JOURNAL_STEPS_PER_MIL }))
+    .filter(cause => cause.mil > 0);
+}
+
+export function mainOfAmounts(causes: readonly CauseAmount[], clickMil: number): CauseKind | null {
+  return largest(causes.map(cause => [cause.kind, Math.abs(roundToClicks(cause.mil, clickMil))] as const).filter(([, clicks]) => clicks > 0));
 }
 
 export function groupPoint(breakdown: MissBreakdown): Correction {

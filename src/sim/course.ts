@@ -20,7 +20,7 @@ import { fromInput, inSystem, toDisplay, UnitSystem } from '../core/units';
 import { FiringPlan } from './firing-line';
 import { PatrolTarget, patrolPlan } from './patrol';
 import { FreePlayScopeUnlocks, ScopeId, ScopeModel } from './scope-model';
-import { MainCause } from './miss-breakdown';
+import { CauseAmount, MainCause } from './miss-breakdown';
 import { CALL_TOLERANCE_MIL, ShotDiagnosis } from './shot-review';
 import { text } from '../i18n';
 
@@ -114,6 +114,8 @@ export interface ExerciseShotRecord {
   isAmbush?: boolean;
   isLeadBackward?: boolean;
   mainCause?: MainCause | null;
+  causes?: CauseAmount[];
+  clickMil?: number;
   windSpeedMps?: number;
 }
 

@@ -1,7 +1,8 @@
 import { ExerciseClass, FIRST_CLASS_SHARE, FIRST_SHOT_POINTS, SECOND_CLASS_SHARE, THIRD_CLASS_SHARE } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { courseProgress, CourseResults, exerciseById, ExerciseDef, ExerciseResult, ExerciseShotRecord, exerciseTitle, GoalCheck } from '../../sim/course';
-import { MainCause } from '../../sim/miss-breakdown';
+import { CAUSE_ORDER, MainCause, mainOfAmounts } from '../../sim/miss-breakdown';
+import { lowerFirst } from '../../i18n/format';
 import { RANK_LABELS } from '../home/home.model';
 import { UnitSystem } from '../../core/units';
 
@@ -129,12 +130,26 @@ function mainError(def: ExerciseDef, result: ExerciseResult, records: readonly E
   if (result.exerciseClass === 1) {
     return T.noErrors;
   }
+  const linkLine = mainLinkLine(records);
+  if (linkLine) {
+    return linkLine;
+  }
   const counts = MAIN_CAUSE_ORDER.map(cause => ({ cause, count: records.filter(record => record.mainCause === cause).length }));
   const top = counts.reduce((best, next) => (next.count > best.count ? next : best));
   if (top.count > 0) {
     return T.mainCauseLine({ count: top.count, total: records.length, cause: MAIN_CAUSE_PHRASES[top.cause] });
   }
   return T.unmetGoal({ goal: firstUnmetGoal(def, result) });
+}
+
+function mainLinkLine(records: readonly ExerciseShotRecord[]): string | null {
+  if (!records.every(record => record.causes && record.clickMil !== undefined)) {
+    return null;
+  }
+  const mains = records.map(record => mainOfAmounts(record.causes!, record.clickMil!));
+  const counts = CAUSE_ORDER.map(kind => ({ kind, count: mains.filter(main => main === kind).length }));
+  const top = counts.reduce((best, next) => (next.count > best.count ? next : best));
+  return top.count > 0 ? T.mainCauseLine({ count: top.count, total: records.length, cause: lowerFirst(text.review.causeNames[top.kind]) }) : null;
 }
 
 function firstUnmetGoal(def: ExerciseDef, result: ExerciseResult): string {

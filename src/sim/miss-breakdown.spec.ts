@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { roundToClicks } from '../core/game-formulas';
 import { Correction } from '../core/types';
-import { CauseKind, groupPoint, mainCauseOf, missBreakdown, MissBreakdownInput } from './miss-breakdown';
+import { CauseKind, groupPoint, journalCauses, mainCauseOf, mainOfAmounts, missBreakdown, MissBreakdownInput } from './miss-breakdown';
 import { CHAIN_ORDER, ChainLink, ChainLinkKind } from './miss-chain';
 
 const ZERO: Correction = { upMrad: 0, rightMrad: 0 };
@@ -228,5 +228,33 @@ describe('mainCauseOf: the rough category for the result and the journal (T2.2)'
     expect(mainCauseOf(missBreakdown(input({ reticle: point(0, 0.4) })))).toBe('hold');
     expect(mainCauseOf(missBreakdown(input({ triggerSpread: point(0.4, 0) })))).toBe('trigger');
     expect(mainCauseOf(missBreakdown(input()))).toBeNull();
+  });
+});
+
+describe('journalCauses: what the journal keeps of a shot (T2.3)', () => {
+  it('player causes to 0.01 MIL in ladder order; zeros, grey causes and rounding are left out', () => {
+    const value = input({ triggerSpread: point(0.03, 0.04), velocitySpread: point(0.3, 0), coldBore: point(0.2, 0) }, { distance: point(0.623, 0), rounding: point(0, 0.04), 'wind-speed': point(0, -0.004) });
+    expect(journalCauses(missBreakdown(value))).toEqual([
+      { kind: 'distance', mil: 0.62 },
+      { kind: 'trigger', mil: 0.05 },
+    ]);
+  });
+
+  it('a clean shot keeps an empty list', () => {
+    expect(journalCauses(missBreakdown(input()))).toEqual([]);
+  });
+});
+
+describe('mainOfAmounts: the main cause from the kept amounts (T2.3)', () => {
+  it('the largest of at least one click, the earliest on a tie', () => {
+    expect(mainOfAmounts([{ kind: 'distance', mil: 0.3 }, { kind: 'wind-speed', mil: 0.6 }, { kind: 'hold', mil: 0.6 }], 0.1)).toBe('wind-speed');
+    expect(mainOfAmounts([{ kind: 'trigger', mil: 0.05 }], 0.2)).toBeNull();
+    expect(mainOfAmounts([], 0.1)).toBeNull();
+  });
+
+  it('agrees with the breakdown main cause', () => {
+    const breakdown = missBreakdown(input({ reticle: point(0, 0.35) }, { dope: point(0.52, 0), 'wind-clock': point(0, 0.2) }));
+    expect(mainOfAmounts(journalCauses(breakdown), CLICK_MIL)).toBe(breakdown.main);
+    expect(breakdown.main).toBe('dope');
   });
 });

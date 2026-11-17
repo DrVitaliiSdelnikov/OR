@@ -6,7 +6,7 @@ import { gaugeWindAt, lateralWindMps, windAt } from '../../core/scenario';
 import { exerciseById } from '../../sim/course';
 import { DEFAULT_FREE_PLAY, freePlayTask } from '../../sim/free-play';
 import { loadoutOf, profileFromPreset } from '../../sim/rifle-profile';
-import { CauseKind, groupPoint, MissBreakdown } from '../../sim/miss-breakdown';
+import { CauseKind, groupPoint, journalCauses, MissBreakdown } from '../../sim/miss-breakdown';
 import { movementClockAt, targetOffsetMil } from '../../sim/patrol';
 import { flagReading } from '../scene/scene.model';
 import { PositionSession } from './position-session';
@@ -1013,6 +1013,17 @@ describe('PositionSession — цепочка подстановок в разб�
     const conditions = shot.review.breakdown.chain.find(link => link.kind === 'conditions')!;
     expect(conditions.vector.upMrad).toBeLessThan(-0.05);
     expect(playerLinks(shot.review.breakdown).filter(kind => kind !== 'wind-speed' && kind !== 'wind-clock')).toEqual(['conditions']);
+  });
+
+  it('T2.3: в записи выстрела — причины разбора с величинами и цена клика для журнала', async () => {
+    const session = await autoStart('06', 11);
+    withConditions(session);
+    session.enterWind(2, session.scenario.gauge.windClock);
+    dialToTarget(session);
+    const shot = (await shoot(session, ON_TARGET))!;
+    expect(shot.record.causes).toEqual(journalCauses(shot.review.breakdown));
+    expect(shot.record.causes!.map(cause => cause.kind)).toContain('wind-speed');
+    expect(shot.record.clickMil).toBe(shot.review.breakdown.clickMil);
   });
 });
 

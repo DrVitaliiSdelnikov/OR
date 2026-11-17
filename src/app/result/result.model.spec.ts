@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CourseResults, exerciseById, ExerciseId, exerciseResult, ExerciseResult, ExerciseRun, ExerciseShotRecord, ShotCheckSummary } from '../../sim/course';
-import { MainCause } from '../../sim/miss-breakdown';
+import { CauseKind, MainCause } from '../../sim/miss-breakdown';
 import { withExerciseResult } from '../home/home.model';
 import { resultSheet } from './result.model';
 
@@ -93,6 +93,19 @@ describe('resultSheet — the main error', () => {
 
   it('a tie goes by the order of the causes: calculation before hold', () => {
     const shots = [shot({ targetIndex: 0, isHit: false, mainCause: 'hold' }), shot({ targetIndex: 0, isHit: false, mainCause: 'calc' }), shot({ targetIndex: 1 }), shot({ targetIndex: 2 })];
+    expect(sheetFor('04', shots).sheet.mainError).toBe('1 из 4 — ошибка расчёта');
+  });
+
+  it('T2.3: по звеньям, как в разборе — главная причина каждого выстрела; ничья — по порядку лестницы', () => {
+    const linked = (kind: CauseKind, targetIndex: number, isHit = false) => shot({ targetIndex, isHit, mainCause: 'calc', causes: [{ kind, mil: 0.6 }, { kind: 'hold', mil: 0.2 }], clickMil: 0.1 });
+    const shots = [linked('wind-speed', 0), linked('wind-speed', 0, true), linked('dope', 1), linked('wind-speed', 2), shot({ targetIndex: 2, causes: [], clickMil: 0.1 })];
+    expect(sheetFor('04', shots).sheet.mainError).toBe('3 из 5 — скорость ветра');
+    const tie = [linked('hold', 0), linked('dope', 0), shot({ targetIndex: 1, causes: [], clickMil: 0.1 }), shot({ targetIndex: 2, causes: [], clickMil: 0.1 })];
+    expect(sheetFor('04', tie).sheet.mainError).toBe('1 из 4 — строка ДОПЕ');
+  });
+
+  it('T2.3: есть выстрел без величин — итог по грубой причине, как раньше', () => {
+    const shots = [shot({ targetIndex: 0, isHit: false, mainCause: 'hold', causes: [{ kind: 'hold', mil: 0.6 }], clickMil: 0.1 }), shot({ targetIndex: 0, isHit: false, mainCause: 'calc' }), shot({ targetIndex: 1 }), shot({ targetIndex: 2 })];
     expect(sheetFor('04', shots).sheet.mainError).toBe('1 из 4 — ошибка расчёта');
   });
 

@@ -2,7 +2,7 @@ import { chromium, Page } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:4310';
 const OUTPUT_DIR = process.argv[2] ?? 'docs/design/screens';
-const PROGRESS_KEY = 'CapacitorStorage.or.progress.v1';
+const PROGRESS_KEY = 'CapacitorStorage.or.progress.v2';
 
 async function seed(page: Page, isEverythingUnlocked: boolean): Promise<void> {
   await page.addInitScript(

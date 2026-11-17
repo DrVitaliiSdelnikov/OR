@@ -3,7 +3,7 @@ import { positionFromBriefing, seedProgress } from './helpers';
 
 const BASE_SETTINGS = { isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: true, volume: 0 };
 const SHOT_TIMEOUT_MS = 25_000;
-const PROGRESS_KEY = 'CapacitorStorage.or.progress.v1';
+const PROGRESS_KEY = 'CapacitorStorage.or.progress.v2';
 const SLOW_STEP_PX = 4;
 const SLOW_STEP_MS = 40;
 

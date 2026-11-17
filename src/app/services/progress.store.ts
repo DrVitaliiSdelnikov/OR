@@ -9,9 +9,11 @@ import { DopeNotes, withDopeNote } from '../review/review.model';
 import { isProfileValid, knownProfiles, RifleProfile, withBuiltInProfile } from '../../sim/rifle-profile';
 import { DEFAULT_SETTINGS, knownSettings, Settings } from '../settings/settings.model';
 
-export const PROGRESS_STORAGE_KEY = 'or.progress.v1';
+export const PROGRESS_STORAGE_KEY = 'or.progress.v2';
+export const PROGRESS_V1_STORAGE_KEY = 'or.progress.v1';
+const PROGRESS_VERSION = 2;
 
-interface ProgressState {
+export interface ProgressState {
   course: CourseResults;
   settings: Settings;
   series: JournalSeries[];
@@ -21,6 +23,8 @@ interface ProgressState {
   activeProfileId: string | null;
   seededProfileIds: string[];
 }
+
+type StoredProgress = Partial<ProgressState> & { settings?: Record<string, unknown>; profiles?: unknown; activeProfileId?: unknown; seededProfileIds?: unknown };
 
 const EMPTY_COURSE: CourseResults = { isIntroCompleted: false, bestClasses: {} };
 
@@ -46,21 +50,23 @@ export class ProgressStore {
 
   async load(): Promise<void> {
     const { value } = await Preferences.get({ key: PROGRESS_STORAGE_KEY });
-    if (!value) {
+    if (value) {
+      try {
+        this.state.set(knownProgress(JSON.parse(value) as StoredProgress));
+      } catch {
+        await Preferences.remove({ key: PROGRESS_STORAGE_KEY });
+      }
+      return;
+    }
+    const { value: v1 } = await Preferences.get({ key: PROGRESS_V1_STORAGE_KEY });
+    if (!v1) {
       return;
     }
     try {
-      const stored = JSON.parse(value) as Partial<ProgressState> & { settings?: Record<string, unknown>; profiles?: unknown; activeProfileId?: unknown; seededProfileIds?: unknown };
-      this.state.set({
-        course: stored.course ?? EMPTY_COURSE,
-        settings: knownSettings(stored.settings),
-        series: Array.isArray(stored.series) ? stored.series : [],
-        dopeNotes: stored.dopeNotes ?? {},
-        freePlay: knownFreePlay(stored.freePlay),
-        ...withBuiltInProfile(knownProfiles(stored), knownSeededIds(stored.seededProfileIds)),
-      });
+      this.state.set(migrateProgress(JSON.parse(v1) as StoredProgress));
+      this.save();
     } catch {
-      await Preferences.remove({ key: PROGRESS_STORAGE_KEY });
+      return;
     }
   }
 
@@ -121,8 +127,27 @@ export class ProgressStore {
 
   private update(change: (state: ProgressState) => ProgressState): void {
     this.state.update(change);
-    void Preferences.set({ key: PROGRESS_STORAGE_KEY, value: JSON.stringify(this.state()) });
+    this.save();
   }
+
+  private save(): void {
+    void Preferences.set({ key: PROGRESS_STORAGE_KEY, value: JSON.stringify({ version: PROGRESS_VERSION, ...this.state() }) });
+  }
+}
+
+export function migrateProgress(v1: StoredProgress): ProgressState {
+  return knownProgress(v1);
+}
+
+function knownProgress(stored: StoredProgress): ProgressState {
+  return {
+    course: stored.course ?? EMPTY_COURSE,
+    settings: knownSettings(stored.settings),
+    series: Array.isArray(stored.series) ? stored.series : [],
+    dopeNotes: stored.dopeNotes ?? {},
+    freePlay: knownFreePlay(stored.freePlay),
+    ...withBuiltInProfile(knownProfiles(stored), knownSeededIds(stored.seededProfileIds)),
+  };
 }
 
 function knownSeededIds(stored: unknown): string[] {

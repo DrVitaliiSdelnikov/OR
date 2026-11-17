@@ -11,7 +11,7 @@ import { BoltCycleResult, BoltEvent } from '../../sim/bolt';
 import { CheckRowKind, exerciseResult, ExerciseResult, ExerciseSetup, ExerciseShotRecord, isExerciseTask, PositionTask, setupTask, ShotCheckSummary } from '../../sim/course';
 import { FiringEvent, FiringLine } from '../../sim/firing-line';
 import { FlightPaths, flightPaths, flightSamples } from '../../sim/flight-path';
-import { groupPoint, mainCauseOf, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
+import { groupPoint, journalCauses, mainCauseOf, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
 import { Vector2 } from '../../sim/noise';
 import {
   changeContext,
@@ -424,6 +424,8 @@ export class PositionSession {
       isDialExactFirstTry: isFirstShotAtTarget && isDialExactFirstTry,
       isBreathHeld,
       mainCause: mainCauseOf(breakdown),
+      causes: journalCauses(breakdown),
+      clickMil: breakdown.clickMil,
       windSpeedMps: windAt(this.scenario, timeS)[0].speedMps,
       ...(check ? { check } : {}),
       ...(rangeEstimateM !== undefined ? { rangeEstimateM } : {}),

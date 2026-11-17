@@ -5,7 +5,8 @@ import { DopeCard } from '../../core/dope-card';
 import { ExerciseClass, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId } from '../../core/types';
 import { COURSE, courseProgress, CourseResults, exerciseById, ExerciseId, ExerciseResult, ExerciseShotRecord, exerciseTitle, isExerciseTask, PositionTask } from '../../sim/course';
-import { MainCause } from '../../sim/miss-breakdown';
+import { CAUSE_ORDER, CauseAmount, CauseKind, MainCause, mainOfAmounts } from '../../sim/miss-breakdown';
+import { roundToClicks } from '../../core/game-formulas';
 import { MODE_LABELS } from '../course/course-trail.model';
 import { RANK_LABELS } from '../home/home.model';
 import { CARTRIDGE_LETTERS, cartridgeLetter } from '../notebook/notebook.model';
@@ -21,6 +22,8 @@ export interface JournalShot {
   errorTypes: readonly CheckErrorType[];
   windSpeedMps: number;
   mode: NotebookMode;
+  causes?: CauseAmount[];
+  clickMil?: number;
 }
 
 export interface JournalSeries {
@@ -103,6 +106,8 @@ const WIND_BUCKETS: readonly { label: string; belowMps: number }[] = [
 ];
 const ERROR_ORDER: readonly CheckErrorType[] = ['side', 'substitution', 'arithmetic', 'factor', 'reading', 'lead', 'rounding', 'units', 'turret'];
 const EXECUTION_CAUSES: readonly MainCause[] = ['hold', 'trigger', 'wind-under', 'wind-over'];
+const LINK_ERROR_KEY_PREFIX = 'link:';
+const CHECKED_LINKS: Partial<Record<CauseKind, CheckErrorType>> = { turret: 'turret', 'lead-calc': 'lead' };
 
 export function journalSeries(input: SeriesInput): JournalSeries | null {
   if (input.records.length === 0) {
@@ -136,6 +141,7 @@ export function journalSeries(input: SeriesInput): JournalSeries | null {
         errorTypes: record.check?.errorTypes ?? [],
         windSpeedMps: record.windSpeedMps ?? 0,
         mode,
+        ...(record.causes && record.clickMil !== undefined ? { causes: record.causes, clickMil: record.clickMil } : {}),
       };
     }),
   };
@@ -187,7 +193,7 @@ export function feedView(journal: readonly JournalSeries[], system: UnitSystem =
     stamp: seriesStamp(series),
     stampTone: series.isInterrupted || series.exerciseClass === null ? 'graphite' : STAMP_TONES[series.exerciseClass],
     shots: series.shots.map((shot, index) =>
-      T.shotLine({ number: index + 1, distance: text.units.valueText('distance', shot.distanceM, system, 0), isHit: shot.isHit, cause: !shot.isHit && shot.mainCause ? MAIN_CAUSE_PHRASES[shot.mainCause] : null }),
+      T.shotLine({ number: index + 1, distance: text.units.valueText('distance', shot.distanceM, system, 0), isHit: shot.isHit, cause: shot.isHit ? null : shotCause(shot) }),
     ),
   }));
 }
@@ -208,14 +214,39 @@ export function errorsView(journal: readonly JournalSeries[]): ErrorRowView[] {
       for (const type of shot.errorTypes) {
         note(type, text.review.errorLabels[type], series, ERROR_ORDER.indexOf(type));
       }
-      if (shot.mainCause && EXECUTION_CAUSES.includes(shot.mainCause)) {
-        note(shot.mainCause, MAIN_CAUSE_PHRASES[shot.mainCause], series, ERROR_ORDER.length + EXECUTION_CAUSES.indexOf(shot.mainCause));
+      if (shot.causes && shot.clickMil !== undefined) {
+        for (const kind of linkErrors(shot.causes, shot.clickMil, shot.errorTypes)) {
+          note(`${LINK_ERROR_KEY_PREFIX}${kind}`, text.review.causeNames[kind], series, ERROR_ORDER.length + CAUSE_ORDER.indexOf(kind));
+        }
+      } else if (shot.mainCause && EXECUTION_CAUSES.includes(shot.mainCause)) {
+        note(shot.mainCause, MAIN_CAUSE_PHRASES[shot.mainCause], series, ERROR_ORDER.length + CAUSE_ORDER.length + EXECUTION_CAUSES.indexOf(shot.mainCause));
       }
     }
   }
   return [...rows.entries()]
     .sort(([, first], [, second]) => second.count - first.count || first.order - second.order)
     .map(([key, row], index) => ({ key, label: row.label, count: row.count, last: row.last, isTop: index === 0 }));
+}
+
+function shotCause(shot: JournalShot): string | null {
+  if (shot.causes && shot.clickMil !== undefined) {
+    const main = mainOfAmounts(shot.causes, shot.clickMil);
+    const amount = shot.causes.find(cause => cause.kind === main);
+    return amount ? T.shotCause({ name: text.review.causeNames[amount.kind], mil: decimal(amount.mil, 1) }) : null;
+  }
+  return shot.mainCause ? MAIN_CAUSE_PHRASES[shot.mainCause] : null;
+}
+
+function linkErrors(causes: readonly CauseAmount[], clickMil: number, errorTypes: readonly CheckErrorType[]): CauseKind[] {
+  const isCheckedAlready = (kind: CauseKind) => {
+    const checked = CHECKED_LINKS[kind];
+    return checked !== undefined && errorTypes.includes(checked);
+  };
+  return causes.filter(cause => Math.abs(roundToClicks(cause.mil, clickMil)) > 0 && !isCheckedAlready(cause.kind)).map(cause => cause.kind);
+}
+
+export function errorRowCause(key: string): CauseKind | null {
+  return key.startsWith(LINK_ERROR_KEY_PREFIX) ? (key.slice(LINK_ERROR_KEY_PREFIX.length) as CauseKind) : null;
 }
 
 function bar(label: string, shots: readonly JournalShot[]): BarView {

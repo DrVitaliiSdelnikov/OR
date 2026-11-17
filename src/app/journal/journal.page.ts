@@ -7,9 +7,9 @@ import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { text } from '../../i18n';
 import { ProgressStore } from '../services/progress.store';
-import { CHECK_ERROR_TERMS, MAIN_CAUSE_TERMS } from '../textbook/term-links';
+import { CAUSE_TERMS, CHECK_ERROR_TERMS, MAIN_CAUSE_TERMS } from '../textbook/term-links';
 import { TermTextComponent } from '../textbook/term-text.component';
-import { achievementsView, cardsView, errorsView, feedView, STATS_MIN_SHOTS, statsView } from './journal.model';
+import { achievementsView, cardsView, errorRowCause, errorsView, feedView, STATS_MIN_SHOTS, statsView } from './journal.model';
 import { BackLinkDirective } from '../services/back-link.directive';
 import { UnitSystem } from '../../core/units';
 
@@ -189,7 +189,8 @@ export class JournalPage {
   }
 
   protected termOf(key: string): string | null {
-    return CHECK_ERROR_TERMS[key as keyof typeof CHECK_ERROR_TERMS] ?? MAIN_CAUSE_TERMS[key as keyof typeof MAIN_CAUSE_TERMS] ?? null;
+    const cause = errorRowCause(key);
+    return cause ? CAUSE_TERMS[cause] : (CHECK_ERROR_TERMS[key as keyof typeof CHECK_ERROR_TERMS] ?? MAIN_CAUSE_TERMS[key as keyof typeof MAIN_CAUSE_TERMS] ?? null);
   }
 
   protected round(value: number): number {

@@ -144,6 +144,66 @@ describe('journal — errors', () => {
   });
 });
 
+describe('журнал с величинами причин (T2.3)', () => {
+  it('серия переносит причины и цену клика; у выстрела старой записи их нет', () => {
+    const def = exerciseById('04')!;
+    const causes = [{ kind: 'distance' as const, mil: 0.62 }];
+    const made = journalSeries({ id: 'x', task: def, startedAtIso: START, records: [record({ isHit: false, causes, clickMil: 0.1 }), record({ targetIndex: 1 })], result: null })!;
+    expect([made.shots[0].causes, made.shots[0].clickMil]).toEqual([causes, 0.1]);
+    expect('causes' in made.shots[1] || 'clickMil' in made.shots[1]).toBe(false);
+  });
+
+  it('лента: промах — главная причина с величиной; без причины от клика — без причины; старая запись — прежняя фраза', () => {
+    const [view] = feedView([
+      series({
+        shots: [
+          shot({ isHit: false, mainCause: 'calc', causes: [{ kind: 'distance', mil: 0.62 }, { kind: 'hold', mil: 0.2 }], clickMil: 0.1 }),
+          shot({ isHit: false, mainCause: null, causes: [{ kind: 'trigger', mil: 0.07 }], clickMil: 0.2 }),
+          shot({ isHit: false, mainCause: 'wind-under' }),
+        ],
+      }),
+    ]);
+    expect(view.shots).toEqual(['1 · 300 м · ✕ · Дальность, 0,6 MIL', '2 · 300 м · ✕', '3 · 300 м · ✕ · недооценка ветра']);
+  });
+
+  it('«Ошибки»: звенья от клика, и на попаданиях тоже; ошибки проверки остаются; старые записи — по грубой причине', () => {
+    const view = errorsView([
+      series({
+        id: 'a',
+        exerciseId: '06',
+        shots: [
+          shot({ isHit: false, mainCause: 'wind-under', errorTypes: ['side'], causes: [{ kind: 'wind-speed', mil: 0.6 }, { kind: 'distance', mil: 0.04 }], clickMil: 0.1 }),
+          shot({ mainCause: 'wind-under', causes: [{ kind: 'wind-speed', mil: 0.3 }, { kind: 'hold', mil: 0.2 }], clickMil: 0.1 }),
+        ],
+      }),
+      series({ id: 'b', exerciseId: '04', startedAtIso: new Date(2026, 10, 8, 9, 0).toISOString(), shots: [shot({ mainCause: 'trigger' })] }),
+    ]);
+    expect(view.map(row => [row.label, row.count, row.last])).toEqual([
+      ['Скорость ветра', 2, '06 · 9 нояб.'],
+      ['СТОРОНА', 1, '06 · 9 нояб.'],
+      ['Удержание', 1, '06 · 9 нояб.'],
+      ['срыв спуска', 1, '04 · 8 нояб.'],
+    ]);
+  });
+
+  it('«Ошибки»: накрутку и расчёт упреждения, уже отмеченные проверкой, выстрел не считает второй раз; упреждение сеткой — своя строка', () => {
+    const view = errorsView([
+      series({
+        shots: [
+          shot({ isHit: false, errorTypes: ['turret', 'lead'], causes: [{ kind: 'turret', mil: 2 }, { kind: 'lead-calc', mil: 0.5 }, { kind: 'lead', mil: 0.4 }], clickMil: 0.1 }),
+          shot({ isHit: false, causes: [{ kind: 'turret', mil: 0.3 }], clickMil: 0.1 }),
+        ],
+      }),
+    ]);
+    expect(view.map(row => [row.label, row.count])).toEqual([
+      ['УПРЕЖДЕНИЕ', 1],
+      ['БАРАБАН', 1],
+      ['Барабаны', 1],
+      ['Упреждение сеткой', 1],
+    ]);
+  });
+});
+
 describe('journal — statistics', () => {
   it(`fewer than ${STATS_MIN_SHOTS} first shots — not enough`, () => {
     expect(statsView([series({ shots: Array.from({ length: STATS_MIN_SHOTS - 1 }, () => shot()) })]).isEnough).toBe(false);

@@ -2,7 +2,7 @@ import { chromium, Page } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:4310';
 const OUTPUT_DIR = 'docs/design/screens';
-const PROGRESS_KEY = 'CapacitorStorage.or.progress.v1';
+const PROGRESS_KEY = 'CapacitorStorage.or.progress.v2';
 const JOURNAL_SERIES = [
   {
     id: 's1', startedAtIso: '2026-11-09T10:00:00.000Z', kind: 'exercise', exerciseId: '06', title: 'Часы ветра', mode: 'manual-easy',
