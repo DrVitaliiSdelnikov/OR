@@ -6,13 +6,15 @@ import { ChipKind, NotebookStepId, stepHasSide } from '../../sim/notebook';
 import { PositionSession } from '../position/position-session';
 import { DraftKey, editDraft, formulaTokens, hubSteps, missingInput, modeBadge, sideOptions, STEP_TITLES, tapeUnit, tapeLabels } from './calc-sheet.model';
 import { ChipTrayComponent } from './chip-tray.component';
+import { PencilNoteComponent } from './pencil-note.component';
+import { pencilNotes } from './pencil.model';
 import { KeypadComponent } from './keypad.component';
 
 const FORMULAS_TEXTS = text.notebook.formulas;
 
 @Component({
   selector: 'or-calc-sheet',
-  imports: [ChipTrayComponent, KeypadComponent],
+  imports: [ChipTrayComponent, KeypadComponent, PencilNoteComponent],
   template: `
     @let state = view();
     <section class="calc" data-test="calc-sheet">
@@ -25,6 +27,9 @@ const FORMULAS_TEXTS = text.notebook.formulas;
       </header>
 
       <div class="paper">
+        @if (state.pencil; as pencil) {
+          <or-pencil-note [note]="pencil" data-test="calc-pencil" />
+        }
         @if (state.missing; as missing) {
           <div class="missing mono" data-test="calc-missing">{{ missing }}</div>
         }
@@ -155,6 +160,7 @@ export class CalcSheetComponent {
       title: this.texts.title({ stepTitle: STEP_TITLES[step], number: steps.indexOf(step) + 1, count: steps.length }),
       badge: modeBadge(notebook.mode),
       missing: missingInput(notebook, step),
+      pencil: pencilNotes(session.pencilMarks(), notebook)[step] ?? null,
       tokens: formulaTokens(notebook, step),
       tapeLabels: tapeLabels(notebook, step),
       tape,

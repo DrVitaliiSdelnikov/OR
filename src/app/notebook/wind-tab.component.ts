@@ -2,6 +2,8 @@ import { Component, input, output, signal } from '@angular/core';
 import { UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
 import { windFlagText, ZoneTable } from './notebook.model';
+import { PencilNoteComponent } from './pencil-note.component';
+import { PencilNote } from './pencil.model';
 import { SpeedWheelComponent } from './speed-wheel.component';
 import { WindClockComponent } from './wind-clock.component';
 
@@ -12,10 +14,13 @@ export interface WindInput {
 
 @Component({
   selector: 'or-wind-tab',
-  imports: [WindClockComponent, SpeedWheelComponent],
+  imports: [WindClockComponent, SpeedWheelComponent, PencilNoteComponent],
   template: `
     <div class="wind">
       <div class="caption mono" data-test="wind-caption">{{ caption() }}</div>
+      @for (pencil of pencils(); track pencil.testId) {
+        <or-pencil-note [note]="pencil.note" [attr.data-test]="pencil.testId" />
+      }
       <div class="instruments">
         <or-wind-clock [clock]="wind()?.clock ?? null" [showShares]="showShares()" (clockChange)="chooseClock($event)" />
         <or-speed-wheel [system]="system()" [speed]="wind()?.speedMps ?? speedBeforeClock()" (speedChange)="chooseSpeed($event)" />
@@ -68,6 +73,7 @@ export class WindTabComponent {
   readonly stepLinkText = input<string | null>(null);
   readonly showShares = input(false);
   readonly zones = input<ZoneTable | null>(null);
+  readonly pencils = input<readonly { testId: string; note: PencilNote }[]>([]);
   readonly windChange = output<WindInput>();
   readonly toStep = output<void>();
 

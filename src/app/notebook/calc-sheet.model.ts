@@ -7,6 +7,7 @@ import { UnitSystem } from '../../core/units';
 import { modeMultiplier, NotebookMode } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { Chip, ChipKind, FLAG_ZONE_KINDS, geometryFactorsOn, Notebook, NotebookStepId, softHint, StaleReason, stepHasSide, stepSheet } from '../../sim/notebook';
+import type { PencilNote, PencilNotes } from './pencil.model';
 
 export type FormulaToken = { kind: 'text'; text: string } | { kind: 'slot'; index: number; label: string; placedText: string | null };
 export type HubRowState = 'empty' | 'recorded' | 'stale';
@@ -20,6 +21,7 @@ export interface HubRow {
   state: HubRowState;
   valueText: string;
   note: string;
+  pencil: PencilNote | null;
 }
 
 export interface SideOption {
@@ -100,10 +102,10 @@ export function hubSteps(notebook: Notebook): NotebookStepId[] {
   return steps;
 }
 
-export function hubRows(notebook: Notebook): HubRow[] {
+export function hubRows(notebook: Notebook, pencils: PencilNotes = {}): HubRow[] {
   return hubSteps(notebook).map((step, index) => {
     const state = notebook.steps[step];
-    const base = { step, number: index + 1, title: STEP_TITLES[step], formula: stepFormula(step, notebook.context.card.system) };
+    const base = { step, number: index + 1, title: STEP_TITLES[step], formula: stepFormula(step, notebook.context.card.system), pencil: pencils[step] ?? null };
     if (state.staleReason) {
       return { ...base, state: 'stale' as const, valueText: '', note: STALE_TEXTS[state.staleReason] };
     }

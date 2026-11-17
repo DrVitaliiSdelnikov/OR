@@ -27,7 +27,7 @@ export type ChainLinkKind =
   | 'rounding'
   | 'turret';
 
-export type ChainQuantity = 'distance' | 'windSpeed' | 'clock' | 'crosswinds' | 'mil' | 'mil-vector';
+export type ChainQuantity = 'distance' | 'windSpeed' | 'clock' | 'crosswinds' | 'mil' | 'mil-vector' | 'dial';
 export type ChainValue = number | readonly number[] | Correction | null;
 
 export interface ChainLink {
@@ -37,6 +37,13 @@ export interface ChainLink {
   quantity: ChainQuantity;
   player: ChainValue;
   truth: ChainValue;
+  parts?: readonly ChainLinkPart[];
+}
+
+export interface ChainLinkPart {
+  factor: NotebookFactor;
+  player: number;
+  truth: number;
 }
 
 export interface MissChainInput {
@@ -104,10 +111,10 @@ export function missChain(input: MissChainInput): ChainLink[] {
   const clickMil = notebook.context.card.clickMil;
   const plannedHold: Correction = { upMrad: planned.holdUpMil, rightMrad: planned.holdRightMil };
   const rounded: Correction = { upMrad: planned.elevation.targetClicks * clickMil + plannedHold.upMrad, rightMrad: -planned.windageLeft.targetClicks * clickMil + plannedHold.rightMrad };
-  const dialed = plus(input.hasKnockedSight ? ZERO : input.dial, plannedHold);
+  const turretDial = input.hasKnockedSight ? ZERO : input.dial;
   links.push(leadLink(notebook));
   links.push(chainLink(notebook, 'rounding', minus(rounded, previous.correction), { quantity: 'mil-vector', player: rounded, truth: previous.correction }));
-  links.push(chainLink(notebook, 'turret', minus(dialed, rounded), { quantity: 'mil-vector', player: dialed, truth: rounded }));
+  links.push(chainLink(notebook, 'turret', minus(plus(turretDial, plannedHold), rounded), { quantity: 'dial', player: turretDial, truth: minus(rounded, plannedHold) }));
   return links;
 }
 
@@ -150,7 +157,7 @@ function valuesOf(
   previous: FormulaAt,
   current: FormulaAt,
   playerWind: { speedMps: number; clock: number },
-): Pick<ChainLink, 'quantity' | 'player' | 'truth'> {
+): Pick<ChainLink, 'quantity' | 'player' | 'truth' | 'parts'> {
   switch (kind) {
     case 'distance':
       return { quantity: 'distance', player: notebook.distanceM ?? before.inputs.distanceM, truth: before.inputs.distanceM };
@@ -161,7 +168,7 @@ function valuesOf(
     case 'angle':
       return { quantity: 'mil', player: current.factorMil.angle, truth: previous.factorMil.angle };
     case 'earth':
-      return { quantity: 'mil-vector', player: earthOf(current), truth: earthOf(previous) };
+      return { quantity: 'mil-vector', player: earthOf(current), truth: earthOf(previous), parts: EARTH_FACTORS.map(factor => ({ factor, player: current.factorMil[factor], truth: previous.factorMil[factor] })) };
     case 'wind-speed':
       return { quantity: 'windSpeed', player: playerWind.speedMps, truth: before.inputs.wind.speedMps };
     case 'wind-clock':
@@ -188,7 +195,7 @@ function leadLink(notebook: Notebook): ChainLink {
   return chainLink(notebook, 'lead', { upMrad: 0, rightMrad: movementDirection(movement.clock) * (playerLeadMil - trueLeadMil) }, { quantity: 'mil', player: playerLeadMil, truth: trueLeadMil });
 }
 
-function chainLink(notebook: Notebook, kind: ChainLinkKind, vector: Correction, values: Pick<ChainLink, 'quantity' | 'player' | 'truth'>): ChainLink {
+function chainLink(notebook: Notebook, kind: ChainLinkKind, vector: Correction, values: Pick<ChainLink, 'quantity' | 'player' | 'truth' | 'parts'>): ChainLink {
   return { kind, vector, clicks: Math.abs(roundToClicks(Math.hypot(vector.upMrad, vector.rightMrad), notebook.context.card.clickMil)), ...values };
 }
 

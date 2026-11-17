@@ -680,32 +680,33 @@ describe('PositionSession — why the bullet went there (A6.2)', () => {
     const session = await start('01');
     dialToTarget(session);
     const shot = (await shoot(session, ON_TARGET))!;
-    for (const kind of ['calc', 'wind', 'hold', 'trigger'] as const) {
+    for (const kind of ['turret', 'wind-speed', 'wind-clock', 'hold', 'trigger'] as const) {
       expect(causeOf(shot, kind).clicks).toBe(0);
     }
     expect(causeOf(shot, 'formula').clicks).toBeLessThanOrEqual(1);
     expect(shot.review.breakdown.main).toBeNull();
   });
 
-  it('04: no wind written down — the wind estimate takes the whole wind, not the calculation', async () => {
+  it('04: no wind written down — the wind speed link takes the whole wind, not the turret; the rough cause is «wind under»', async () => {
     const session = await start('04');
     dialToTarget(session);
     const shot = (await shoot(session, ON_TARGET))!;
-    const wind = causeOf(shot, 'wind');
+    const wind = causeOf(shot, 'wind-speed');
     const formula = causeOf(shot, 'formula');
     expect(Math.abs(shot.result.ideal.rightMrad)).toBeGreaterThan(0.2);
-    expect(wind.vector.rightMrad + formula.vector.rightMrad).toBeCloseTo(-shot.result.ideal.rightMrad, 1);
-    expect(causeOf(shot, 'calc').clicks).toBe(0);
-    expect(shot.review.breakdown.windVerdict).toBe('under');
+    expect(wind.vector.rightMrad + causeOf(shot, 'wind-clock').vector.rightMrad + formula.vector.rightMrad).toBeCloseTo(-shot.result.ideal.rightMrad, 1);
+    expect(causeOf(shot, 'turret').clicks).toBe(0);
+    expect(shot.record.mainCause).toBe('wind-under');
   });
 
-  it('a turret 5 clicks above the plan is a 5-click calculation error', async () => {
+  it('a turret 5 clicks above the plan is a 5-click turret link and a calculation error in the journal', async () => {
     const session = await start('01');
     dialToTarget(session);
     session.turn('elevation', 5);
     const shot = (await shoot(session, ON_TARGET))!;
-    expect(causeOf(shot, 'calc').clicks).toBe(5);
-    expect(causeOf(shot, 'calc').vector.upMrad).toBeCloseTo(0.5, 6);
+    expect(causeOf(shot, 'turret').clicks).toBe(5);
+    expect(causeOf(shot, 'turret').vector.upMrad).toBeCloseTo(0.5, 6);
+    expect(shot.record.mainCause).toBe('calc');
   });
 
   it('the reticle off the centre is the hold', async () => {
@@ -727,7 +728,7 @@ describe('PositionSession — why the bullet went there (A6.2)', () => {
     const zero = causeOf(shot, 'zero');
     expect(zero.vector.upMrad).toBeCloseTo(session.setup.sightOffset.upMrad + 0.3, 6);
     expect(zero.vector.rightMrad).toBeCloseTo(session.setup.sightOffset.rightMrad, 6);
-    expect(causeOf(shot, 'calc').clicks).toBe(0);
+    expect(causeOf(shot, 'turret').clicks).toBe(0);
   });
 
   it('the flight paths end at the impact and at the centre', async () => {
@@ -748,7 +749,8 @@ describe('PositionSession — why the bullet went there (A6.2)', () => {
     expect(shots.map(shot => shot.review.group.length)).toEqual([1, 2, 3]);
     const first = shots[0];
     expect(first.review.group[0]).toEqual(groupPoint(first.review.breakdown));
-    expect(first.review.group[0].upMrad).toBeCloseTo(first.review.warmImpact.upMrad - causeOf(first, 'calc').vector.upMrad - causeOf(first, 'wind').vector.upMrad - causeOf(first, 'formula').vector.upMrad, 2);
+    const dataUpMil = first.review.breakdown.causes.filter(cause => cause.link !== null).reduce((sum, cause) => sum + cause.vector.upMrad, 0);
+    expect(first.review.group[0].upMrad).toBeCloseTo(first.review.warmImpact.upMrad - dataUpMil - causeOf(first, 'formula').vector.upMrad, 2);
     const repeat = await session.restartForRecalc(engine);
     expect((await shoot(repeat, ON_TARGET))!.review.group).toHaveLength(1);
   });
@@ -956,7 +958,6 @@ describe('PositionSession — полигон в единицах игрока (T
 describe('PositionSession — цепочка подстановок в разборе (T2.1)', () => {
   const IDS = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14'] as const;
   const plusVector = (first: Correction, second: Correction): Correction => ({ upMrad: first.upMrad + second.upMrad, rightMrad: first.rightMrad + second.rightMrad });
-  const chainSum = (breakdown: MissBreakdown): Correction => breakdown.chain.filter(link => link.kind !== 'lead').reduce((sum, link) => plusVector(sum, link.vector), { upMrad: 0, rightMrad: 0 });
   const autoStart = async (id: (typeof IDS)[number], seed: number) =>
     PositionSession.start({ def: { ...exerciseById(id)!, notebookMode: 'auto' }, seed, engine, accessibility: ACCESSIBILITY });
   const withConditions = (session: PositionSession): void => {
@@ -965,7 +966,7 @@ describe('PositionSession — цепочка подстановок в разб�
   };
   const playerLinks = (breakdown: MissBreakdown) => breakdown.chain.filter(link => link.kind !== 'rounding' && Math.hypot(link.vector.upMrad, link.vector.rightMrad) > 0.005).map(link => link.kind);
 
-  it('на всех упражнениях 01–14: сумма звеньев = прежние «расчёт» + «ветер» до 0,001 MIL', async () => {
+  it('на всех упражнениях 01–14: звенья вместо «расчёта» и «ветра», сумма причин = попадание (T2.2)', async () => {
     for (const id of IDS) {
       for (const seed of [1, 2]) {
         const session = await PositionSession.start({ def: exerciseById(id)!, seed, engine, accessibility: ACCESSIBILITY });
@@ -974,10 +975,10 @@ describe('PositionSession — цепочка подстановок в разб�
         session.turn('elevation', 2);
         const shot = (await shoot(session, { x: 0.1, y: -0.1 }))!;
         const { breakdown } = shot.review;
-        const old = plusVector(breakdown.causes.find(cause => cause.kind === 'calc')!.vector, breakdown.causes.find(cause => cause.kind === 'wind')!.vector);
-        const sum = chainSum(breakdown);
-        expect(Math.abs(sum.upMrad - old.upMrad), `${id}/${seed}`).toBeLessThan(0.001);
-        expect(Math.abs(sum.rightMrad - old.rightMrad), `${id}/${seed}`).toBeLessThan(0.001);
+        const sum = breakdown.causes.reduce((total, cause) => plusVector(total, cause.vector), { upMrad: 0, rightMrad: 0 });
+        expect(breakdown.causes.map(cause => cause.kind), `${id}/${seed}`).not.toContain('calc');
+        expect(Math.abs(sum.upMrad - shot.result.impact.upMrad), `${id}/${seed}`).toBeLessThan(0.02);
+        expect(Math.abs(sum.rightMrad - shot.result.impact.rightMrad), `${id}/${seed}`).toBeLessThan(0.02);
       }
     }
   });
@@ -1012,5 +1013,62 @@ describe('PositionSession — цепочка подстановок в разб�
     const conditions = shot.review.breakdown.chain.find(link => link.kind === 'conditions')!;
     expect(conditions.vector.upMrad).toBeLessThan(-0.05);
     expect(playerLinks(shot.review.breakdown).filter(kind => kind !== 'wind-speed' && kind !== 'wind-clock')).toEqual(['conditions']);
+  });
+});
+
+describe('PositionSession — красный карандаш (T2.2)', () => {
+  const autoStart = async (id: '05' | '06', seed = 11) => PositionSession.start({ def: { ...exerciseById(id)!, notebookMode: 'auto' }, seed, engine, accessibility: ACCESSIBILITY });
+  const places = (session: PositionSession) => session.pencilMarks().map(mark => mark.place);
+
+  it('06 в АВТО: скорость ветра 2 вместо истинной → после выстрела метка на скорости с «надо»; до выстрела меток нет', async () => {
+    const session = await autoStart('06');
+    session.measureStation(3, session.scenario.startTimeS);
+    session.toggleFactor('conditions');
+    session.enterWind(2, session.scenario.gauge.windClock);
+    dialToTarget(session);
+    expect(session.pencilMarks()).toEqual([]);
+    await shoot(session, FAR_OFF);
+    const speed = session.pencilMarks().find(mark => mark.place === 'wind-speed')!;
+    expect(speed).toMatchObject({ kind: 'wind-speed', player: 2 });
+    expect(speed.truth).toBeGreaterThan(2);
+  });
+
+  it('новый ввод ветра стирает метки ветра; новый миллинг в 05 — метку дальности', async () => {
+    const session = await autoStart('06');
+    session.enterWind(2, session.scenario.gauge.windClock);
+    dialToTarget(session);
+    await shoot(session, FAR_OFF);
+    expect(places(session)).toContain('wind-speed');
+    session.enterWind(session.scenario.gauge.windSpeedMps, session.scenario.gauge.windClock);
+    expect(places(session)).not.toContain('wind-speed');
+
+    const milled = await autoStart('05');
+    milled.enterWind(milled.scenario.gauge.windSpeedMps, milled.scenario.gauge.windClock);
+    milled.measureRange(rangeMil(milled) * 1.1);
+    dialToTarget(milled);
+    await shoot(milled, FAR_OFF);
+    expect(places(milled)).toContain('milling');
+    milled.measureRange(rangeMil(milled));
+    expect(places(milled)).not.toContain('milling');
+  });
+
+  it('следующая цель и перерасчёт — без меток', async () => {
+    const session = await autoStart('06');
+    session.enterWind(2, session.scenario.gauge.windClock);
+    dialToTarget(session);
+    let shot = (await shoot(session, FAR_OFF))!;
+    expect(places(session)).toContain('wind-speed');
+    const repeat = await session.restartForRecalc(engine);
+    expect(repeat.pencilMarks()).toEqual([]);
+    while (!shot.events.includes('next-target')) {
+      if (session.isBoltCycleDue) {
+        session.dragBolt(0, -62, 0);
+        session.dragBolt(-142, 0, 0.2);
+        session.dragBolt(142, 0, 0.4);
+        session.dragBolt(0, 62, 0.6);
+      }
+      shot = (await shoot(session, FAR_OFF))!;
+    }
+    expect(session.pencilMarks()).toEqual([]);
   });
 });

@@ -6,10 +6,11 @@ import { calcPoints, FIRST_SHOT_POINTS, modeMultiplier, NotebookMode, SECOND_SHO
 import { ScreenDirection, text } from '../../i18n';
 import { rangeByMilling, roundToClicks } from '../../core/game-formulas';
 import { Correction } from '../../core/types';
-import { UnitSystem } from '../../core/units';
+import { inSystem, UnitSystem } from '../../core/units';
 import { ExerciseShotRecord, PositionTask } from '../../sim/course';
 import { factorContributions, Notebook, NOTEBOOK_FACTORS, NotebookFactor, stepSheet, total } from '../../sim/notebook';
 import { CauseKind, MissBreakdown, MissCause } from '../../sim/miss-breakdown';
+import { ChainLinkKind, ChainQuantity, ChainValue } from '../../sim/miss-chain';
 import { analyseGroup, MIN_GROUP_SHOTS, ShotDiagnosis, TurretCorrection } from '../../sim/shot-review';
 import { SLOT_LABELS, STEP_TITLES } from '../notebook/calc-sheet.model';
 import { clockText, FACTOR_NAMES } from '../notebook/notebook.model';
@@ -45,6 +46,7 @@ export type DopeNotes = Partial<Record<string, DopeNote[]>>;
 export interface CauseRowView {
   kind: CauseKind;
   name: string;
+  values: string | null;
   text: string;
   isPlayerError: boolean;
   isMain: boolean;
@@ -54,6 +56,14 @@ export interface CauseRowView {
 export interface CausesView {
   conclusion: string;
   rows: CauseRowView[];
+}
+
+export type ValueAxis = 'vertical' | 'horizontal' | null;
+
+export interface ValuePair {
+  player: string;
+  truth: string;
+  unit: string;
 }
 
 const VERTICAL_STEPS: ReadonlySet<string> = new Set(['dope', 'atmosphere', 'angle', 'eotvos']);
@@ -66,6 +76,10 @@ const DISTANCE_DIGITS = 0;
 const SPEED_DIGITS = 1;
 const MOA_PER_MIL = 3.44;
 const DECIMALS = 100;
+const MIL_DIGITS = 1;
+const FINE_MIL_DIGITS = 2;
+const CLOCK_HALF_HOURS = 2;
+const LINK_AXES: Partial<Record<ChainLinkKind, ValueAxis>> = { dope: 'vertical', conditions: 'vertical', angle: 'vertical', 'wind-calc': 'horizontal' };
 
 export function shotPointsText(isHit: boolean, isFirstShotAtTarget: boolean, isPaperTarget: boolean): string {
   if (isPaperTarget) {
@@ -359,20 +373,110 @@ export function directionArrow(vector: Correction): string {
   return ARROWS_FROM_RIGHT[(sector + ARROWS_FROM_RIGHT.length) % ARROWS_FROM_RIGHT.length];
 }
 
-export function causesView(breakdown: MissBreakdown): CausesView {
+export function causesView(breakdown: MissBreakdown, system: UnitSystem = 'metric'): CausesView {
   const shown = breakdown.causes.filter(cause => cause.isShown);
+  const byClicks = (first: MissCause, second: MissCause): number => second.clicks - first.clicks;
+  const ordered = [...shown.filter(cause => cause.isPlayerError).sort(byClicks), ...shown.filter(cause => !cause.isPlayerError).sort(byClicks)];
   const largestClicks = Math.max(1, ...shown.map(cause => cause.clicks));
   return {
-    conclusion: conclusionText(breakdown),
-    rows: shown.map(cause => ({
+    conclusion: conclusionText(breakdown, system),
+    rows: ordered.map(cause => ({
       kind: cause.kind,
       name: T.causeNames[cause.kind],
+      values: causeValues(cause, system, breakdown.clickMil),
       text: cause.clicks === 0 ? T.causeClean : T.causeShift({ arrow: directionArrow(cause.vector), clicks: cause.clicks }),
       isPlayerError: cause.isPlayerError,
       isMain: cause.kind === breakdown.main,
       share: cause.clicks / largestClicks,
     })),
   };
+}
+
+function causeValues(cause: MissCause, system: UnitSystem, clickMil: number): string | null {
+  const link = cause.link;
+  if (!link) {
+    return null;
+  }
+  const pair = chainValuePair(link.quantity, link.player, link.truth, LINK_AXES[link.kind] ?? null, system, clickMil);
+  if (!pair) {
+    return null;
+  }
+  return link.quantity === 'dial' ? T.turretValues(pair) : T.valuesInstead(pair);
+}
+
+export function chainValuePair(quantity: ChainQuantity, player: ChainValue, truth: ChainValue, axis: ValueAxis, system: UnitSystem, clickMil: number): ValuePair | null {
+  if (player === null || truth === null) {
+    return null;
+  }
+  switch (quantity) {
+    case 'distance':
+      return { player: UNITS.numberText('distance', player as number, system, DISTANCE_DIGITS), truth: UNITS.numberText('distance', truth as number, system, DISTANCE_DIGITS), unit: ` ${UNITS.unitName('distance', system, Math.round(inSystem('distance', truth as number, system)))}` };
+    case 'windSpeed':
+      return { player: speedText(player as number, system), truth: speedText(truth as number, system), unit: ` ${UNITS.unitLabel('windSpeed', system)}` };
+    case 'clock':
+      return { player: clockText(halfHour(player as number)), truth: clockText(halfHour(truth as number)), unit: '' };
+    case 'crosswinds':
+      return { player: crosswindsText(player as readonly (number | null)[], system), truth: crosswindsText(truth as readonly (number | null)[], system), unit: ` ${UNITS.unitLabel('windSpeed', system)}` };
+    case 'mil': {
+      const digits = fineDigits([player as number, truth as number], MIL_DIGITS);
+      return { player: milText(player as number, axis, digits), truth: milText(truth as number, axis, digits), unit: T.milUnit };
+    }
+    case 'mil-vector': {
+      const [playerVector, truthVector] = [player as Correction, truth as Correction];
+      const digits = fineDigits([playerVector.upMrad, truthVector.upMrad], MIL_DIGITS) === MIL_DIGITS ? fineDigits([playerVector.rightMrad, truthVector.rightMrad], MIL_DIGITS) : FINE_MIL_DIGITS;
+      return { player: milVectorText(playerVector, digits), truth: milVectorText(truthVector, digits), unit: T.milUnit };
+    }
+    case 'dial':
+      return dialPair(player as Correction, truth as Correction, clickMil);
+  }
+}
+
+function speedText(speedMps: number, system: UnitSystem): string {
+  return roundedText(inSystem('windSpeed', speedMps, system), SPEED_DIGITS);
+}
+
+function halfHour(clock: number): number {
+  return Math.round(clock * CLOCK_HALF_HOURS) / CLOCK_HALF_HOURS;
+}
+
+function crosswindsText(crosswindsMps: readonly (number | null)[], system: UnitSystem): string {
+  return crosswindsMps.map(speedMps => (speedMps === null ? T.none : speedText(speedMps, system))).join(' · ');
+}
+
+// Две разные величины, что совпали бы при одном знаке после запятой, показываются с двумя.
+function fineDigits(values: readonly [number, number], digits: number): number {
+  return roundedText(values[0], digits) === roundedText(values[1], digits) && values[0] !== values[1] ? FINE_MIL_DIGITS : digits;
+}
+
+function milText(valueMil: number, axis: ValueAxis, digits: number): string {
+  const text = roundedText(Math.abs(valueMil), digits);
+  if (axis === null || Number(text.replace(',', '.')) === 0) {
+    return text;
+  }
+  const arrow = axis === 'vertical' ? (valueMil > 0 ? '↑' : '↓') : valueMil > 0 ? '→' : '←';
+  return `${arrow} ${text}`;
+}
+
+function milVectorText(vector: Correction, digits: number): string {
+  const parts = [milText(vector.upMrad, 'vertical', digits), milText(vector.rightMrad, 'horizontal', digits)].filter(part => part.includes(' '));
+  return parts.length === 0 ? roundedText(0, digits) : parts.join(' · ');
+}
+
+function dialPair(player: Correction, truth: Correction, clickMil: number): ValuePair {
+  const clicksOf = (mil: number): number => Math.round(mil / clickMil);
+  const axes: ['vertical' | 'horizontal', number, number][] = [
+    ['vertical', clicksOf(player.upMrad), clicksOf(truth.upMrad)],
+    ['horizontal', clicksOf(player.rightMrad), clicksOf(truth.rightMrad)],
+  ];
+  const differing = axes.filter(([, playerClicks, truthClicks]) => playerClicks !== truthClicks);
+  const shown = differing.length > 0 ? differing : axes.slice(0, 1);
+  const side = (index: 1 | 2) => shown.map(axis => milText(axis[index], axis[0], 0)).join(' · ');
+  return { player: side(1), truth: side(2), unit: T.clicksUnit };
+}
+
+function roundedText(value: number, digits: number): string {
+  const scale = 10 ** digits;
+  return decimal(Math.round(value * scale) / scale);
 }
 
 export function flightAxisTexts(distanceM: number, scaleCm: number, isSide: boolean, system: UnitSystem): { start: string; end: string; scale: string } {
@@ -388,30 +492,28 @@ export function groupText(points: readonly Correction[], rifleSpreadMil: number)
   return group ? T.groupTexts[group.shape] : T.groupTooSmall({ minShots: MIN_GROUP_SHOTS });
 }
 
-function conclusionText(breakdown: MissBreakdown): string {
+function conclusionText(breakdown: MissBreakdown, system: UnitSystem): string {
   const main = breakdown.causes.find(cause => cause.kind === breakdown.main);
   if (!main) {
     return breakdown.causes.some(cause => !cause.isPlayerError && cause.isShown) ? T.noPlayerErrors : T.clean;
   }
-  const phrase = mainCausePhrase(main, breakdown);
+  const phrase = mainCausePhrase(main, system, breakdown.clickMil);
   return main.kind !== 'trigger' && breakdown.isTriggerClean ? T.cleanTrigger({ phrase }) : phrase;
 }
 
-function mainCausePhrase(main: MissCause, breakdown: MissBreakdown): string {
+function mainCausePhrase(main: MissCause, system: UnitSystem, clickMil: number): string {
   const arrow = directionArrow(main.vector);
   const shift = T.causeShift({ arrow, clicks: main.clicks });
   switch (main.kind) {
-    case 'wind':
-      return T.windCause({ isUnder: breakdown.windVerdict === 'under', clicks: main.clicks });
-    case 'calc':
-      return T.calcCause({ arrow, clicks: main.clicks });
     case 'hold':
       return T.holdCause({ arrow, clicks: main.clicks });
     case 'lead':
       return T.leadCause({ arrow, clicks: main.clicks });
     case 'trigger':
       return T.triggerCause({ shift });
-    default:
+    case 'zero':
       return T.zeroCause({ shift });
+    default:
+      return T.linkCause({ name: T.causeNames[main.kind], values: causeValues(main, system, clickMil), shift });
   }
 }

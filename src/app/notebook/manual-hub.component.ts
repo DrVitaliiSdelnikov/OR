@@ -1,9 +1,11 @@
 import { Component, input, output } from '@angular/core';
 import { NotebookStepId } from '../../sim/notebook';
 import { HubRow } from './calc-sheet.model';
+import { PencilNoteComponent } from './pencil-note.component';
 
 @Component({
   selector: 'or-manual-hub',
+  imports: [PencilNoteComponent],
   template: `
     <div class="head">
       <span class="badge mono" data-test="manual-mode" data-hint="manual-mode">{{ badge() }}</span>
@@ -17,6 +19,9 @@ import { HubRow } from './calc-sheet.model';
             <span class="title">{{ row.title }}</span>
             <span class="formula mono">{{ row.formula }}</span>
             <span class="note mono" [attr.data-test]="'step-note-' + row.step">{{ row.note }}</span>
+            @if (row.pencil; as pencil) {
+              <or-pencil-note [note]="pencil" [attr.data-test]="'step-pencil-' + row.step" />
+            }
           </span>
           <span class="value mono" [attr.data-test]="'step-value-' + row.step">{{ row.valueText }}</span>
         </button>

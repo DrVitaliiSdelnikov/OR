@@ -72,7 +72,27 @@ describe('таблицы подписей', () => {
   });
 
   it('у каждого лепестка и главной причины — существующий термин', () => {
-    const kinds: CauseKind[] = ['calc', 'wind', 'hold', 'trigger', 'zero', 'formula', 'rifle', 'cold-bore'];
+    const kinds: CauseKind[] = [
+      'distance',
+      'dope',
+      'conditions',
+      'angle',
+      'earth',
+      'wind-speed',
+      'wind-clock',
+      'zones',
+      'wind-calc',
+      'lead-calc',
+      'rounding',
+      'turret',
+      'hold',
+      'lead',
+      'trigger',
+      'zero',
+      'formula',
+      'rifle',
+      'cold-bore',
+    ];
     kinds.forEach(kind => expect(CARD_TERMS, kind).toContain(CAUSE_TERMS[kind]));
     const causes: MainCause[] = ['calc', 'wind-under', 'wind-over', 'hold', 'trigger', 'zero'];
     causes.forEach(cause => expect(CARD_TERMS, cause).toContain(MAIN_CAUSE_TERMS[cause]));

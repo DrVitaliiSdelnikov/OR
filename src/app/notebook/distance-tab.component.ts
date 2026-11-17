@@ -1,5 +1,7 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { text } from '../../i18n';
+import { PencilNoteComponent } from './pencil-note.component';
+import { PencilNote } from './pencil.model';
 import { MILLING_GRID_MIL, MILLING_PT_PER_MIL, millingSize, snapMilling } from './notebook.model';
 
 const GRID_WIDTH_PT = 140;
@@ -9,6 +11,7 @@ const HASH_STEP_MIL = 0.5;
 
 @Component({
   selector: 'or-distance-tab',
+  imports: [PencilNoteComponent],
   template: `
     @if (knownText(); as known) {
       <div class="known mono" data-test="distance-known">{{ known }}</div>
@@ -38,6 +41,9 @@ const HASH_STEP_MIL = 0.5;
           @if (!isManual() && resultText(); as result) {
             <div class="result" data-test="milling-result" data-hint="milling-result">{{ result }}</div>
           }
+          @if (pencil(); as note) {
+            <or-pencil-note [note]="note" data-test="milling-pencil" />
+          }
         </div>
       </div>
     }
@@ -62,6 +68,7 @@ export class DistanceTabComponent {
   readonly gongMil = input(0);
   readonly resultText = input<string | null>(null);
   readonly isManual = input(false);
+  readonly pencil = input<PencilNote | null>(null);
   readonly measure = output<number>();
 
   protected readonly texts = text.notebook.distanceTab;

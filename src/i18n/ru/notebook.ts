@@ -57,6 +57,10 @@ export const notebook = {
     clockShare: (p: { clocks: readonly number[]; share: number }) => `${p.clocks.join(', ')} ч → ${decimal(p.share)}`,
     referencePrice: (p: { penalty: number }) => `Справочник стоит ${p.penalty} ${plural(p.penalty, POINT_FORMS)}`,
   },
+  pencil: {
+    needed: (p: { value: string }) => `надо ${p.value}`,
+    separator: ' · ',
+  },
   calc: {
     stepTitles: {
       distance: 'Дистанция',

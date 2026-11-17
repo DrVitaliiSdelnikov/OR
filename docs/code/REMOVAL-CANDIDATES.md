@@ -16,7 +16,6 @@
 | Что | Почему уходит | Чем заменяется | Удалить в | Помечено в коде |
 | --- | --- | --- | --- | --- |
 | подпись замка учебника: `lockText` в `textbook.model.ts`, `lockIntro`, `lockExercise` каталога, `TermTile.lockText`, разметка `textbook-term-locked`, `term-related-locked` | учебник открыт целиком (В53) | — | T2.3 | `app/textbook/textbook.model.ts` |
-| `formulaPlayerWind` в `MissBreakdownInput`, лепестки `calc` и `wind` в `sim/miss-breakdown.ts` | «расчёт» и «ветер» раскладывает цепочка подстановок (T2.1) | `MissBreakdown.chain`, `sim/miss-chain.ts` | T2.2 | `sim/miss-breakdown.ts` |
 | `FLAG_DISTANCES_M`, `WIND_ZONE_LIMITS_M` в `core/content.ts` | флажки и зоны зависят от системы (T1.8c) | `rangeLayout(system)` | T2.1 | `core/content.ts` |
 | `FREE_PLAY_DISTANCES_M` в `sim/free-play.ts` | ползунок зависит от системы (T1.8c) | `freePlayDistances(system)` | T2.1 | `sim/free-play.ts` |
 | `RIFLE` в `core/content.ts` | одна винтовка на всё приложение; движок, выстрел и разбор берут винтовку из снаряжения задачи — T1.2, В34 | `COURSE_RIFLE`, `courseLoadout(cartridgeId)`, `Loadout` | T1.5 | `core/content.ts`; импортов нет (охранник в `core/loadout.spec.ts`) |
@@ -33,6 +32,7 @@
 
 | Что | Когда | Задача |
 | --- | --- | --- |
+| `formulaPlayerWind` в `MissBreakdownInput`, лепестки `calc` и `wind`, `windVerdict`, тексты «Недокрут / Перекрут по ветру» и «Расчёт увёл пулю»; их заменили звенья цепочки | 17.11 | T2.2 |
 | `IMPLEMENTED_FEATURES`, `playability`, `Playability` в `position.model`, причина «откроется позже» и выключенная «НА ПОЗИЦИЮ» на брифинге; тест «играбельно всё» — с A9.3b играбельно всё | 13.11 | A10a |
 | `src/theme/_legacy-aliases.scss` (`--hub-*`, `--font-sans`, `--fire-gap`) и его `@use`; глобальные `.screen`, `.card`, `.spacer`, `.button`, `.chip`, `.top-bar`, `.ok-text`, `.error-text`, `.warn-text`, `.accent-text`; `--ion-tab-bar-*`; настройка `isSoundOn` (заменена громкостью, старое значение переводится при загрузке) | 10.11 | A7.4 |
 | старый журнал `app/log` и формат выстрела `ShotRecord` / `shots` — остаток удалённой свободной игры, никто не писал (В31) | 9.11 | A7.2 |

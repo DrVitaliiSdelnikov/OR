@@ -42,10 +42,10 @@ test.describe('ссылки на термины (A7.3b1)', () => {
   test('разбор: лепесток причины открывает свою карточку', async ({ page }) => {
     await seed(page, {}, true);
     await missFirstShotOf01(page);
-    const causeLink = page.getByTestId('cause-calc').getByTestId('term-link');
+    const causeLink = page.getByTestId('cause-hold').getByTestId('term-link');
     await causeLink.scrollIntoViewIfNeeded();
     await causeLink.click();
-    await expect(page.getByTestId('term-title')).toHaveText('САМ');
+    await expect(page.getByTestId('term-title')).toHaveText('дыхание');
   });
 
   test('журнал, ОШИБКИ: «СТОРОНА» открывает «правило часов»', async ({ page }) => {

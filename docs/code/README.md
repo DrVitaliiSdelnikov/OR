@@ -117,3 +117,4 @@
 | sim · цепочка подстановок в разборе (T2.1) | [specs/sim-miss-chain.md](specs/sim-miss-chain.md) | реализовано, слито в `master` 17.11 |
 | app · открытый старт: 01 без вводного, учебник и свободная игра целиком (В53) | [specs/app-open-start.md](specs/app-open-start.md) | реализовано, слито в `master` 17.11 |
 | sim · встроенная винтовка «своя-custom» (В54) | [specs/sim-builtin-rifle.md](specs/sim-builtin-rifle.md) | реализовано, слито в `master` 17.11 |
+| app · лестница причин и красный карандаш (T2.2, В52) | [specs/app-review-chain.md](specs/app-review-chain.md) | реализовано, слито в `master` 17.11 |

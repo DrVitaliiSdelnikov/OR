@@ -133,6 +133,10 @@ describe('одна подмена — одно звено (T2.1)', () => {
     expect(nonZeroPlayerLinks(chain)).toEqual(['turret']);
     expect(link(chain, 'turret').vector.upMrad).toBeCloseTo(0.2, 9);
     expect(link(chain, 'turret').clicks).toBe(2);
+    const planned = total(notebook);
+    expect(link(chain, 'turret').quantity).toBe('dial');
+    expect((link(chain, 'turret').player as Correction).upMrad).toBeCloseTo((planned.elevation.targetClicks + 2) * CLICK_MIL, 9);
+    expect((link(chain, 'turret').truth as Correction).upMrad).toBeCloseTo(planned.elevation.targetClicks * CLICK_MIL, 9);
   });
 
   it('САМ, ДОПЕ на 0,3 больше строки → только «строка ДОПЕ»; значения в MIL', () => {
@@ -209,6 +213,10 @@ describe('звенья с геометрией и зонами (T2.1)', () => {
     const chain = chainOf(notebook);
     expect(nonZeroPlayerLinks(chain)).toEqual(['earth']);
     expect(link(chain, 'earth').vector.rightMrad).toBeCloseTo(-0.1, 9);
+    const spinPart = link(chain, 'earth').parts!.find(part => part.factor === 'spin')!;
+    expect(spinPart.player).toBeCloseTo(wrongSpin, 9);
+    expect(spinPart.truth).toBeCloseTo(spinMil, 9);
+    expect(link(chain, 'earth').parts!.map(part => part.factor)).toEqual(['spin', 'coriolis', 'eotvos']);
   });
 
   it('АВТО с зонами: флажок 400 прочитан 3 вместо 1 м/с → только «зоны»', () => {

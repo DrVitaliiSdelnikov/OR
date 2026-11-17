@@ -22,7 +22,6 @@ import {
   createNotebook,
   enterWind,
   readFlag,
-  playerFlagCrosswindsMps,
   formulaCorrectionMil,
   FormulaInputs,
   measureRange,
@@ -61,6 +60,7 @@ import { movementClockAt, movingShotOptions, PatrolTarget, targetOffsetMil } fro
 import { FlagReading, flagReading, isFlagBeforeBerm } from '../scene/scene.model';
 import { TurretAxis } from './position.model';
 import { missChain } from '../../sim/miss-chain';
+import { PencilMark, pencilMarksAfterShot, withoutStaleMarks } from '../../sim/pencil-marks';
 
 export interface PositionStart {
   def: PositionTask;
@@ -125,6 +125,7 @@ export class PositionSession {
   private currentNotebook: Notebook;
   private entered: NotebookTotal | null = null;
   private stationMeasurements = 0;
+  private marks: PencilMark[] = [];
   private patrolStartS: number | null = null;
   private lastCall: Correction | null = null;
   private readonly shotRecords: ExerciseShotRecord[] = [];
@@ -295,6 +296,11 @@ export class PositionSession {
     return softHint(this.currentNotebook, step);
   }
 
+  pencilMarks(): readonly PencilMark[] {
+    this.marks = withoutStaleMarks(this.marks, this.currentNotebook);
+    return this.marks;
+  }
+
   staleness(): Record<NotebookStepId, StaleReason | null> {
     return staleness(this.currentNotebook);
   }
@@ -397,6 +403,7 @@ export class PositionSession {
       ...(patrol && this.patrolStartS !== null ? movingShotOptions(patrol.path, timeS - this.patrolStartS) : {}),
     });
     const breakdown = this.breakdownOf(notebookAtShot, target, timeS, outcome, result);
+    this.marks = pencilMarksAfterShot(this.currentNotebook, breakdown.chain);
     this.groupPoints.push(groupPoint(breakdown));
     this.shotCalls.push(outcome.hold);
     const flight = await this.flightOf(target, timeS, result);
@@ -486,17 +493,11 @@ export class PositionSession {
 
   private breakdownOf(notebook: Notebook, target: Target, timeS: number, outcome: FireOutcome, result: ShotResult): MissBreakdown {
     const truth = this.formulaTruth(notebook, target, timeS);
-    const playerWind: FormulaInputs = {
-      ...truth,
-      wind: notebook.readings.wind ?? { speedMps: 0, clock: truth.wind.clock },
-      flagCrosswindsMps: playerFlagCrosswindsMps(notebook),
-    };
     const planned = total(notebook);
     const clickMil = notebook.context.card.clickMil;
     return missBreakdown({
       ideal: result.ideal,
       formulaTruth: formulaCorrectionMil(notebook, truth),
-      formulaPlayerWind: formulaCorrectionMil(notebook, playerWind),
       dial: outcome.dial,
       plannedHold: { upMrad: planned.holdUpMil, rightMrad: planned.holdRightMil },
       reticle: outcome.reticle,
@@ -563,6 +564,7 @@ export class PositionSession {
   private followNewTarget(isNewTarget: boolean): void {
     if (isNewTarget) {
       this.patrolStartS = null;
+      this.marks = [];
     }
     const card = this.cards.get(this.firingLine.cartridgeId)!;
     this.currentNotebook = this.withFlagsBehindBerm(changeContext(this.currentNotebook, isNewTarget ? { card, target: this.notebookTarget() } : { card }));

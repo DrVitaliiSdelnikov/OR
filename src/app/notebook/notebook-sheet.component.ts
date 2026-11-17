@@ -36,11 +36,15 @@ import {
 import { ProgressStore } from '../services/progress.store';
 import { FactorRow, TotalTabComponent } from './total-tab.component';
 import { WindInput, WindTabComponent } from './wind-tab.component';
+import { AutoInput } from '../../sim/pencil-marks';
+import { pencilNotes } from './pencil.model';
 
 const SWIPE_CLOSE_PT = 80;
 const LOCKED_NOTICE_MS = 1800;
 const FORMULAS_TEXTS = text.notebook.formulas;
 const MODEL_TEXTS = text.notebook.model;
+
+const WIND_PENCIL_PLACES: readonly AutoInput[] = ['wind-speed', 'wind-clock', 'flags'];
 
 @Component({
   selector: 'or-notebook-sheet',
@@ -84,13 +88,13 @@ const MODEL_TEXTS = text.notebook.model;
             }
           }
           @case ('distance') {
-            <or-distance-tab [formula]="state.distanceFormula" [knownText]="state.knownDistance" [gongMil]="state.gongMil" [resultText]="state.millingResult" [isManual]="state.isManual" (measure)="measureRange($event)" />
+            <or-distance-tab [formula]="state.distanceFormula" [knownText]="state.knownDistance" [gongMil]="state.gongMil" [resultText]="state.millingResult" [isManual]="state.isManual" [pencil]="state.millingPencil" (measure)="measureRange($event)" />
           }
           @case ('conditions') {
             <or-conditions-tab [system]="unitSystem()" [reading]="state.station" [correctionText]="state.conditionsCorrection" [stepLinkText]="state.isManual ? texts.toAtmosphere : null" (measure)="measure.emit($event)" (toStep)="openStep('atmosphere')" />
           }
           @case ('wind') {
-            <or-wind-tab [system]="unitSystem()" [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? (state.hasZones ? texts.toZones : texts.toWind) : null" [showShares]="state.isEasy" [zones]="state.zones" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
+            <or-wind-tab [system]="unitSystem()" [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? (state.hasZones ? texts.toZones : texts.toWind) : null" [showShares]="state.isEasy" [zones]="state.zones" [pencils]="state.windPencils" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
           }
           @case ('dope') {
             <or-dope-tab [heading]="state.dopeHeading" [rows]="state.dopeRows" [system]="unitSystem()" />
@@ -193,13 +197,16 @@ export class NotebookSheetComponent {
     }));
     const reticleMil = notebook.readings.reticleMil;
     const isManual = notebook.mode !== 'auto';
+    const pencils = pencilNotes(session.pencilMarks(), notebook);
     const formulaLines: FormulaLine[] = hubSteps(notebook).map(step => ({ title: STEP_TITLES[step], formula: stepFormula(step, system) }));
     return {
       isManual,
       isEasy: notebook.mode === 'manual-easy',
       hasZones: notebook.context.hasZones,
       zones: zoneTable(notebook, system),
-      hubRows: isManual ? hubRows(notebook) : [],
+      hubRows: isManual ? hubRows(notebook, pencils) : [],
+      millingPencil: pencils.milling ?? null,
+      windPencils: WIND_PENCIL_PLACES.flatMap(place => (pencils[place] ? [{ testId: `pencil-${place}`, note: pencils[place]! }] : [])),
       badge: modeBadge(notebook.mode),
       formulasLabel: notebook.mode === 'manual-hard' && !notebook.hasOpenedReference ? FORMULAS_TEXTS.withPenalty({ penalty: REFERENCE_PENALTY }) : FORMULAS_TEXTS.title,
       formulaLines,

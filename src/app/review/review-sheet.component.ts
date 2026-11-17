@@ -58,7 +58,7 @@ import { TargetSchemeComponent } from './target-scheme.component';
           } @else {
             <div class="no-check mono" data-test="review-no-check">{{ state.noCheckText }}</div>
           }
-          <or-causes [breakdown]="shot().review.breakdown" />
+          <or-causes [breakdown]="shot().review.breakdown" [system]="unitSystem()" />
           <or-flight-view [flight]="shot().review.flight" [group]="shot().review.group" [radiusMil]="shot().review.targetRadiusMil" [distanceM]="shot().review.distanceM" [system]="unitSystem()" [rifleSpreadMil]="session().groupSigmaMil" />
         }
       </div>

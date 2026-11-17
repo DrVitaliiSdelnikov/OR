@@ -161,17 +161,19 @@ test.describe('разбор выстрела (A6.1)', () => {
 });
 
 test.describe('разбор: почему ушла пуля, траектории и группа (A6.2)', () => {
-  test('01: недокрученный барабан — лепестки игрока в кликах, главный — расчёт, фраза-вывод', async ({ page }) => {
+  test('01: недокрученный барабан — первая строка «Барабаны» с «было / надо», главная, фраза-вывод (T2.2)', async ({ page }) => {
     await toPosition(page, '01');
     await enterTotalOnTurrets(page);
     await tapShot(page);
     await expect(page.getByTestId('causes')).toBeVisible();
-    for (const kind of ['calc', 'wind', 'hold', 'trigger']) {
+    for (const kind of ['turret', 'hold', 'trigger']) {
       await expect(page.getByTestId(`cause-${kind}`)).toBeVisible();
     }
-    await expect(page.getByTestId('cause-calc')).toContainText(/↓ \d+ кл\./);
-    await expect(page.getByTestId('cause-calc')).toHaveClass(/main/);
-    await expect(page.getByTestId('causes-conclusion')).toHaveText(/^Расчёт увёл пулю ↓ на \d+ кл\./);
+    await expect(page.locator('[data-test^="cause-"]').first()).toHaveAttribute('data-test', 'cause-turret');
+    await expect(page.getByTestId('cause-turret')).toContainText(/↓ \d+ кл\./);
+    await expect(page.getByTestId('cause-turret')).toHaveClass(/main/);
+    await expect(page.getByTestId('cause-values-turret')).toHaveText(/^накручено 0 вместо ↑ \d+ кл\.$/);
+    await expect(page.getByTestId('causes-conclusion')).toHaveText(/^Барабаны: накручено 0 вместо ↑ \d+ кл\. — ↓ \d+ кл\./);
   });
 
   test('04: ветер записан неверно — лепесток ветра в кликах', async ({ page }) => {
@@ -184,7 +186,7 @@ test.describe('разбор: почему ушла пуля, траектори�
     await setWindSpeed(page, 9);
     await page.getByTestId('enter-turrets').click();
     await pressureShot(page);
-    await expect(page.getByTestId('cause-wind')).toContainText(/\d+ кл\./);
+    await expect(page.locator('[data-test="cause-wind-speed"], [data-test="cause-wind-clock"]').first()).toContainText(/\d+ кл\./);
   });
 
   test('переключатель: «сбоку» и «сверху» рисуют линию и пунктир, «спереди» — точки группы', async ({ page }) => {

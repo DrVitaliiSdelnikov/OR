@@ -88,7 +88,7 @@ test.describe('системная «назад» и выход (A8)', () => {
   test('E2 термин поверх разбора: «назад» снимает по слою, на подтверждении — «остаться»', async ({ page }) => {
     await toPosition(page, '01');
     await shootOnce(page);
-    const causeLink = page.getByTestId('cause-calc').getByTestId('term-link');
+    const causeLink = page.getByTestId('cause-hold').getByTestId('term-link');
     await causeLink.scrollIntoViewIfNeeded();
     await causeLink.click();
     await expect(page.getByTestId('term-sheet')).toBeVisible();

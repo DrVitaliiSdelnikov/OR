@@ -8,7 +8,9 @@ import { exerciseById, ExerciseShotRecord } from '../../sim/course';
 import { CheckTruth, checkInputs, createNotebook, enterWind, Notebook, placeChip, recordStation, recordStep, setSign, toggleFactor, typeTape } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
 import { ShotCheck } from '../position/position-session';
-import { CauseKind, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
+import { GreyCauseKind, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
+import { CHAIN_ORDER, ChainLink, ChainLinkKind, ChainQuantity, ChainValue } from '../../sim/miss-chain';
+import { roundToClicks } from '../../core/game-formulas';
 import { Correction } from '../../core/types';
 import { flightAxisTexts } from './review.model';
 import { causesView, checkSheet, correctionText, diagnosisText, directionArrow, dopeNoteTexts, groupText, shotPointsText, targetPlaques, withDopeNote } from './review.model';
@@ -180,26 +182,43 @@ describe('DOPE notes (Б7)', () => {
   });
 });
 
-function breakdownWith(vectors: Partial<Record<CauseKind, [number, number]>>): MissBreakdown {
+type Vector = [number, number];
+type LinkSpec = Vector | { vector: Vector; quantity: ChainQuantity; player: ChainValue; truth: ChainValue };
+type ExecutionSpec = Partial<Record<'hold' | 'lead' | 'trigger' | 'zero' | GreyCauseKind, Vector>>;
+
+const CLICK_MIL = 0.1;
+
+function correction([upMrad, rightMrad]: Vector): Correction {
+  return { upMrad, rightMrad };
+}
+
+// Звенья цепочки задаются прямо, барабан накручен по ним — как у `missChain`, сумма причин сходится.
+function breakdownWith(execution: ExecutionSpec, links: Partial<Record<ChainLinkKind, LinkSpec>> = {}): MissBreakdown {
   const zero: Correction = { upMrad: 0, rightMrad: 0 };
+  const chain: ChainLink[] = CHAIN_ORDER.map(kind => {
+    const spec = links[kind];
+    const values = spec && !Array.isArray(spec) ? spec : { vector: (spec as Vector | undefined) ?? [0, 0], quantity: 'mil-vector' as const, player: null, truth: null };
+    const vector = correction(values.vector);
+    return { kind, vector, clicks: Math.abs(roundToClicks(Math.hypot(vector.upMrad, vector.rightMrad), CLICK_MIL)), quantity: values.quantity, player: values.player, truth: values.truth };
+  });
+  const linkSum = chain.filter(link => link.kind !== 'lead').reduce((sum, link) => ({ upMrad: sum.upMrad + link.vector.upMrad, rightMrad: sum.rightMrad + link.vector.rightMrad }), zero);
+  const formula = execution.formula ? correction(execution.formula) : zero;
+  const trueWindMil = execution.zero ? 0 : 0.5;
   return missBreakdown({
-    ideal: zero,
-    formulaTruth: vectors.formula ? { upMrad: vectors.formula[0], rightMrad: vectors.formula[1] } : zero,
-    formulaPlayerWind: { upMrad: (vectors.formula?.[0] ?? 0) + (vectors.wind?.[0] ?? 0), rightMrad: (vectors.formula?.[1] ?? 0) + (vectors.wind?.[1] ?? 0) },
-    dial: {
-      upMrad: (vectors.formula?.[0] ?? 0) + (vectors.wind?.[0] ?? 0) + (vectors.calc?.[0] ?? 0),
-      rightMrad: (vectors.formula?.[1] ?? 0) + (vectors.wind?.[1] ?? 0) + (vectors.calc?.[1] ?? 0),
-    },
+    ideal: { upMrad: 0, rightMrad: trueWindMil },
+    formulaTruth: { upMrad: formula.upMrad, rightMrad: formula.rightMrad + trueWindMil },
+    dial: execution.zero ? zero : { upMrad: formula.upMrad + linkSum.upMrad, rightMrad: formula.rightMrad + trueWindMil + linkSum.rightMrad },
     plannedHold: zero,
-    reticle: vectors.hold ? { upMrad: vectors.hold[0], rightMrad: vectors.hold[1] } : zero,
-    ...(vectors.lead ? { targetMotion: { upMrad: 0, rightMrad: -vectors.lead[1] } } : {}),
-    triggerSpread: vectors.trigger ? { upMrad: vectors.trigger[0], rightMrad: vectors.trigger[1] } : zero,
-    velocitySpread: vectors.rifle ? { upMrad: vectors.rifle[0], rightMrad: vectors.rifle[1] } : zero,
+    reticle: execution.hold ? correction(execution.hold) : zero,
+    ...(execution.lead ? { targetMotion: { upMrad: 0, rightMrad: -execution.lead[1] } } : {}),
+    triggerSpread: execution.trigger ? correction(execution.trigger) : zero,
+    velocitySpread: execution.rifle ? correction(execution.rifle) : zero,
     rifleGroup: zero,
-    coldBore: vectors['cold-bore'] ? { upMrad: vectors['cold-bore'][0], rightMrad: vectors['cold-bore'][1] } : zero,
-    sightOffset: vectors.zero ? { upMrad: vectors.zero[0], rightMrad: vectors.zero[1] } : zero,
-    hasKnockedSight: vectors.zero !== undefined,
-    clickMil: 0.1,
+    coldBore: execution['cold-bore'] ? correction(execution['cold-bore']) : zero,
+    sightOffset: execution.zero ? correction(execution.zero) : zero,
+    hasKnockedSight: execution.zero !== undefined,
+    clickMil: CLICK_MIL,
+    chain,
   });
 }
 
@@ -217,38 +236,65 @@ describe('directionArrow', () => {
   });
 });
 
-describe('causesView', () => {
-  it('rows: player causes first, «чисто» at zero; grey from 1 click; the main one is marked', () => {
-    const view = causesView(breakdownWith({ wind: [0, -0.3], 'cold-bore': [0.15, 0.05], formula: [0.02, 0] }));
+describe('causesView: одна лестница (T2.2)', () => {
+  const WIND_SPEED: LinkSpec = { vector: [0, -0.3], quantity: 'windSpeed', player: 2, truth: 4.1 };
+  const DISTANCE: LinkSpec = { vector: [-0.5, 0], quantity: 'distance', player: 413, truth: 455 };
+
+  it('звенья и исполнение вперемешку по убыванию; крупнейшая — главная; нулевые скрыты; удержание и спуск — всегда; серые — внизу', () => {
+    const view = causesView(breakdownWith({ hold: [0.1, 0], 'cold-bore': [0.15, 0.05], formula: [0.02, 0] }, { 'wind-speed': WIND_SPEED, distance: DISTANCE, dope: [0.04, 0] }));
     expect(view.rows.map(row => [row.name, row.text, row.isPlayerError, row.isMain])).toEqual([
-      ['Расчёт', 'чисто', true, false],
-      ['Оценка ветра', '← 3 кл.', true, true],
-      ['Удержание', 'чисто', true, false],
+      ['Дальность', '↓ 5 кл.', true, true],
+      ['Скорость ветра', '← 3 кл.', true, false],
+      ['Удержание', '↑ 1 кл.', true, false],
       ['Спуск', 'чисто', true, false],
       ['Холодный ствол', '↑ 2 кл.', false, false],
     ]);
   });
 
-  it('the bar width follows the clicks against the largest row', () => {
-    const view = causesView(breakdownWith({ calc: [0.4, 0], hold: [0, 0.2] }));
-    expect(view.rows.find(row => row.kind === 'calc')!.share).toBe(1);
+  it('у звена — «было / надо» в единицах игрока, у исполнения — нет', () => {
+    const view = causesView(breakdownWith({ hold: [0.1, 0] }, { 'wind-speed': WIND_SPEED, distance: DISTANCE }));
+    expect(view.rows.map(row => row.values)).toEqual(['413 вместо 455 м', '2 вместо 4,1 м/с', null, null]);
+    const imperial = causesView(breakdownWith({}, { 'wind-speed': WIND_SPEED, distance: DISTANCE }), 'imperial');
+    expect(imperial.rows.map(row => row.values).slice(0, 2)).toEqual(['452 вместо 498 ярдов', '4,5 вместо 9,2 миль/ч']);
+  });
+
+  it('«было / надо» по видам величин', () => {
+    const valuesOf = (kind: ChainLinkKind, spec: LinkSpec): string | null => causesView(breakdownWith({}, { [kind]: spec })).rows.find(row => row.kind === (kind === 'lead' ? 'lead-calc' : kind))!.values;
+    expect(valuesOf('wind-clock', { vector: [0, 0.2], quantity: 'clock', player: 2, truth: 2.8 })).toBe('2 ч вместо 3 ч');
+    expect(valuesOf('wind-clock', { vector: [0, 0.2], quantity: 'clock', player: 3, truth: 3.4 })).toBe('3 ч вместо 3:30');
+    expect(valuesOf('zones', { vector: [0, 0.2], quantity: 'crosswinds', player: [1, 3, 1], truth: [1, 1, 1] })).toBe('1 · 3 · 1 вместо 1 · 1 · 1 м/с');
+    expect(valuesOf('dope', { vector: [0.3, 0], quantity: 'mil', player: 3.8, truth: 3.5 })).toBe('↑ 3,8 вместо ↑ 3,5 MIL');
+    expect(valuesOf('conditions', { vector: [-0.2, 0], quantity: 'mil', player: 0.1, truth: 0.3 })).toBe('↑ 0,1 вместо ↑ 0,3 MIL');
+    expect(valuesOf('dope', { vector: [0.1, 0], quantity: 'mil', player: 3.84, truth: 3.76 })).toBe('↑ 3,84 вместо ↑ 3,76 MIL');
+    expect(valuesOf('wind-calc', { vector: [0, 0.2], quantity: 'mil', player: -0.3, truth: -0.5 })).toBe('← 0,3 вместо ← 0,5 MIL');
+    expect(valuesOf('lead', { vector: [0, -0.3], quantity: 'mil', player: 0.8, truth: 1.1 })).toBe('0,8 вместо 1,1 MIL');
+    expect(valuesOf('earth', { vector: [0, -0.2], quantity: 'mil-vector', player: { upMrad: 0, rightMrad: 0.1 }, truth: { upMrad: 0.1, rightMrad: 0.3 } })).toBe('→ 0,1 вместо ↑ 0,1 · → 0,3 MIL');
+    expect(valuesOf('turret', { vector: [0.2, 0], quantity: 'dial', player: { upMrad: 3.7, rightMrad: 0.2 }, truth: { upMrad: 3.5, rightMrad: 0.2 } })).toBe('накручено ↑ 37 вместо ↑ 35 кл.');
+    expect(valuesOf('turret', { vector: [0, -0.2], quantity: 'dial', player: { upMrad: 3.5, rightMrad: -0.4 }, truth: { upMrad: 3.5, rightMrad: -0.2 } })).toBe('накручено ← 4 вместо ← 2 кл.');
+  });
+
+  it('новые строки: «Упреждение: расчёт» и «Упреждение сеткой» порознь', () => {
+    const view = causesView(breakdownWith({ lead: [0, -0.6] }, { lead: { vector: [0, -0.3], quantity: 'mil', player: 0.8, truth: 1.1 } }));
+    expect(view.rows.map(row => row.name)).toEqual(['Упреждение: расчёт', 'Упреждение сеткой', 'Удержание', 'Спуск']);
+  });
+
+  it('полоска — доля кликов от крупнейшей строки', () => {
+    const view = causesView(breakdownWith({ hold: [0, 0.2] }, { distance: [0.4, 0] }));
+    expect(view.rows.find(row => row.kind === 'distance')!.share).toBe(1);
     expect(view.rows.find(row => row.kind === 'hold')!.share).toBe(0.5);
     expect(view.rows.find(row => row.kind === 'trigger')!.share).toBe(0);
   });
 
-  it('the conclusion names the main cause, then «спуск чистый» when the trigger was clean', () => {
-    expect(causesView(breakdownWith({ formula: [0, 0.3], wind: [0, -0.1] })).conclusion).toBe('Недокрут по ветру 1 кл., спуск чистый');
-    expect(causesView(breakdownWith({ wind: [0, 0.4] })).conclusion).toBe('Перекрут по ветру 4 кл., спуск чистый');
-    expect(causesView(breakdownWith({ calc: [-0.4, 0] })).conclusion).toBe('Расчёт увёл пулю ↓ на 4 кл., спуск чистый');
+  it('вывод называет крупнейшую причину с «было / надо», потом «спуск чистый»', () => {
+    expect(causesView(breakdownWith({}, { 'wind-speed': WIND_SPEED })).conclusion).toBe('Скорость ветра: 2 вместо 4,1 м/с — ← 3 кл., спуск чистый');
+    expect(causesView(breakdownWith({ trigger: [0.1, 0] }, { distance: DISTANCE })).conclusion).toBe('Дальность: 413 вместо 455 м — ↓ 5 кл.');
     expect(causesView(breakdownWith({ hold: [0.2, 0.2] })).conclusion).toBe('Сетку увело ↗ на 3 кл., спуск чистый');
     expect(causesView(breakdownWith({ trigger: [-0.2, 0.2], hold: [0.1, 0] })).conclusion).toBe('Сорвал спуск: ↘ 3 кл.');
     expect(causesView(breakdownWith({ zero: [-0.6, -0.6] })).conclusion).toBe('Ноль прицела: СТП ↙ 8 кл., спуск чистый');
-    expect(causesView(breakdownWith({ wind: [0, 0.3], trigger: [0.1, 0] })).conclusion).toBe('Перекрут по ветру 3 кл.');
     expect(causesView(breakdownWith({ lead: [0, -0.6] })).conclusion).toBe('Упреждение: пуля ← на 6 кл. от цели, спуск чистый');
-    expect(causesView(breakdownWith({ lead: [0, -0.6] })).rows.map(row => row.name)).toContain('Упреждение');
   });
 
-  it('no player error from a click: the rifle when grey causes show, otherwise clean', () => {
+  it('нет твоих ошибок от клика: винтовка, если видны серые, иначе чисто', () => {
     expect(causesView(breakdownWith({ rifle: [0.2, 0] })).conclusion).toBe('Твоих ошибок нет — это разброс винтовки');
     expect(causesView(breakdownWith({})).conclusion).toBe('Чисто');
   });
