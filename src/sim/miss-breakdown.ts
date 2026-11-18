@@ -55,6 +55,7 @@ const HIDDEN_LINKS: readonly CauseKind[] = ['rounding'];
 const CALC_CAUSES: readonly CauseKind[] = ['distance', 'dope', 'conditions', 'angle', 'earth', 'wind-calc', 'rounding', 'turret'];
 const WIND_CAUSES: readonly CauseKind[] = ['wind-speed', 'wind-clock', 'zones'];
 const LEAD_CAUSES: readonly CauseKind[] = ['lead-calc', 'lead'];
+const EXECUTION_CAUSES: readonly CauseKind[] = ['hold', 'lead', 'trigger', 'zero'] satisfies ExecutionCauseKind[];
 const JOURNAL_STEPS_PER_MIL = 100;
 export const CAUSE_ORDER: readonly CauseKind[] = [...CHAIN_ORDER.map(causeKindOf), 'hold', 'lead', 'trigger', 'zero', 'formula', 'rifle', 'cold-bore'];
 
@@ -135,6 +136,14 @@ export function journalCauses(breakdown: MissBreakdown): CauseAmount[] {
     .filter(cause => cause.isPlayerError)
     .map(cause => ({ kind: cause.kind, mil: Math.round(Math.hypot(cause.vector.upMrad, cause.vector.rightMrad) * JOURNAL_STEPS_PER_MIL) / JOURNAL_STEPS_PER_MIL }))
     .filter(cause => cause.mil > 0);
+}
+
+export function hasDataError(breakdown: MissBreakdown): boolean {
+  return breakdown.causes.some(cause => cause.link !== null && cause.isPlayerError && cause.clicks > 0);
+}
+
+export function isExecutionCause(kind: CauseKind): boolean {
+  return EXECUTION_CAUSES.includes(kind);
 }
 
 export function mainOfAmounts(causes: readonly CauseAmount[], clickMil: number): CauseKind | null {

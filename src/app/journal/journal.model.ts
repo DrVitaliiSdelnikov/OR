@@ -5,7 +5,7 @@ import { DopeCard } from '../../core/dope-card';
 import { ExerciseClass, NotebookMode } from '../../core/exercise-scoring';
 import { CartridgeId } from '../../core/types';
 import { COURSE, courseProgress, CourseResults, exerciseById, ExerciseId, ExerciseResult, ExerciseShotRecord, exerciseTitle, isExerciseTask, PositionTask } from '../../sim/course';
-import { CAUSE_ORDER, CauseAmount, CauseKind, MainCause, mainOfAmounts } from '../../sim/miss-breakdown';
+import { CAUSE_ORDER, CauseAmount, CauseKind, isExecutionCause, MainCause, mainOfAmounts } from '../../sim/miss-breakdown';
 import { roundToClicks } from '../../core/game-formulas';
 import { MODE_LABELS } from '../course/course-trail.model';
 import { RANK_LABELS } from '../home/home.model';
@@ -215,10 +215,10 @@ export function errorsView(journal: readonly JournalSeries[]): ErrorRowView[] {
         note(type, text.review.errorLabels[type], series, ERROR_ORDER.indexOf(type));
       }
       if (shot.causes && shot.clickMil !== undefined) {
-        for (const kind of linkErrors(shot.causes, shot.clickMil, shot.errorTypes)) {
+        for (const kind of linkErrors(shot.causes, shot.clickMil, shot.errorTypes, shot.isHit)) {
           note(`${LINK_ERROR_KEY_PREFIX}${kind}`, text.review.causeNames[kind], series, ERROR_ORDER.length + CAUSE_ORDER.indexOf(kind));
         }
-      } else if (shot.mainCause && EXECUTION_CAUSES.includes(shot.mainCause)) {
+      } else if (!shot.isHit && shot.mainCause && EXECUTION_CAUSES.includes(shot.mainCause)) {
         note(shot.mainCause, MAIN_CAUSE_PHRASES[shot.mainCause], series, ERROR_ORDER.length + CAUSE_ORDER.length + EXECUTION_CAUSES.indexOf(shot.mainCause));
       }
     }
@@ -237,12 +237,14 @@ function shotCause(shot: JournalShot): string | null {
   return shot.mainCause ? MAIN_CAUSE_PHRASES[shot.mainCause] : null;
 }
 
-function linkErrors(causes: readonly CauseAmount[], clickMil: number, errorTypes: readonly CheckErrorType[]): CauseKind[] {
+function linkErrors(causes: readonly CauseAmount[], clickMil: number, errorTypes: readonly CheckErrorType[], isHit: boolean): CauseKind[] {
   const isCheckedAlready = (kind: CauseKind) => {
     const checked = CHECKED_LINKS[kind];
     return checked !== undefined && errorTypes.includes(checked);
   };
-  return causes.filter(cause => Math.abs(roundToClicks(cause.mil, clickMil)) > 0 && !isCheckedAlready(cause.kind)).map(cause => cause.kind);
+  return causes
+    .filter(cause => Math.abs(roundToClicks(cause.mil, clickMil)) > 0 && !isCheckedAlready(cause.kind) && !(isHit && isExecutionCause(cause.kind)))
+    .map(cause => cause.kind);
 }
 
 export function errorRowCause(key: string): CauseKind | null {

@@ -7,6 +7,7 @@ import { CausesComponent } from './causes.component';
 import { TermTextComponent } from '../textbook/term-text.component';
 import { CheckSheetComponent } from './check-sheet.component';
 import { FlightViewComponent } from './flight-view.component';
+import { hasDataError } from '../../sim/miss-breakdown';
 import { checkSheet, correctionText, diagnosisText, shotPointsText, targetPlaques } from './review.model';
 import { TargetSchemeComponent } from './target-scheme.component';
 
@@ -54,7 +55,7 @@ import { TargetSchemeComponent } from './target-scheme.component';
             <div class="correction mono" data-test="review-correction" data-hint="review-correction">{{ correction }}</div>
           }
           @if (state.check; as check) {
-            <or-check-sheet [view]="check" [isInitiallyOpen]="shot().review.diagnosis === 'data'" />
+            <or-check-sheet [view]="check" [isInitiallyOpen]="state.isCheckOpen" />
           } @else {
             <div class="no-check mono" data-test="review-no-check">{{ state.noCheckText }}</div>
           }
@@ -128,10 +129,12 @@ export class ReviewSheetComponent {
     const review = shot.review;
     const isPaper = session.def.stages.some(stage => !stage.closesOnHit);
     const coldBore = shot.result.coldBore;
+    const isDataWrong = hasDataError(review.breakdown);
     return {
       points: shotPointsText(shot.record.isHit, review.isFirstShotAtTarget, isPaper),
-      diagnosis: diagnosisText(review.diagnosis, review.call, review.isLeadBackward),
-      correction: correctionText(review.correction, review.diagnosis),
+      diagnosis: diagnosisText(review.diagnosis, review.call, review.isLeadBackward, isDataWrong),
+      correction: correctionText(review.correction, review.diagnosis, isDataWrong),
+      isCheckOpen: review.diagnosis === 'data' || (review.diagnosis === 'execution' && isDataWrong),
       check: review.check ? checkSheet(review.check, session.def.notebookMode ?? 'auto', this.unitSystem()) : null,
       noCheckText: review.isFirstShotAtTarget ? this.texts.noCalcRecorded : this.texts.checkFirstShotOnly,
       plaques: targetPlaques(session.def, session.records, { stageIndex: session.firingLine.stageIndex, targetIndex: session.firingLine.targetIndex }, session.isFinished),

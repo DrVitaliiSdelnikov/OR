@@ -62,6 +62,11 @@ describe('diagnosis and correction', () => {
     expect(correctionText({ upClicks: 0, rightClicks: 0 }, 'clean')).toBe('Поправка не нужна');
     expect(correctionText(null, 'data')).toBeNull();
   });
+
+  it('an execution miss with a data error too does not say the data are right', () => {
+    expect(diagnosisText('execution', { upMrad: -1.7, rightMrad: 0 }, false, true)).toBe('Сетка ушла вниз на 1,7 — ошибка выполнения и в данных');
+    expect(correctionText({ upClicks: 25, rightClicks: 0 }, 'execution', true)).toBe('Пуля ниже на 2,5 → 25 кл. вверх на барабане');
+  });
 });
 
 describe('check sheet, SAM', () => {

@@ -51,6 +51,21 @@ test.describe('разбор выстрела (A6.1)', () => {
     await expect(page.getByTestId('check-row-3')).toContainText('Барабан ВЕРТ');
   });
 
+  test('01: сетку увели вниз, а барабан не накручен — диагноз «и в данных», поправка в кликах, а не «данные верны»', async ({ page }) => {
+    await toPosition(page, '01');
+    const glass = (await page.getByTestId('glass').boundingBox())!;
+    for (let drag = 0; drag < 3; drag++) {
+      await page.mouse.move(glass.x + glass.width / 2, glass.y + glass.height * 0.8);
+      await page.mouse.down();
+      await page.mouse.move(glass.x + glass.width / 2, glass.y + glass.height * 0.2, { steps: 6 });
+      await page.mouse.up();
+    }
+    await tapShot(page);
+    await expect(page.getByTestId('review-diagnosis')).toContainText('ошибка выполнения и в данных');
+    await expect(page.getByTestId('review-correction')).toContainText('кл. вверх');
+    await expect(page.getByTestId('review-correction')).not.toContainText('Данные верны');
+  });
+
   test('04: ветер введён не со станции — «ОШИБКА» и «где сбился» про скорость', async ({ page }) => {
     await toPosition(page, '04');
     await page.getByTestId('tile-notebook').click();

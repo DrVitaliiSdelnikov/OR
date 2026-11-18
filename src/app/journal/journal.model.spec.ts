@@ -127,7 +127,7 @@ describe('journal — the feed', () => {
 describe('journal — errors', () => {
   it('counted by type over all series, the most frequent first, with where it happened last', () => {
     const view = errorsView([
-      series({ id: 'a', exerciseId: '06', shots: [shot({ errorTypes: ['side'] }), shot({ mainCause: 'trigger' as MainCause })] }),
+      series({ id: 'a', exerciseId: '06', shots: [shot({ errorTypes: ['side'] }), shot({ isHit: false, mainCause: 'trigger' as MainCause })] }),
       series({ id: 'b', exerciseId: '04', startedAtIso: new Date(2026, 10, 8, 9, 0).toISOString(), shots: [shot({ errorTypes: ['side', 'arithmetic'] })] }),
     ]);
     expect(view.map(row => [row.label, row.count, row.last])).toEqual([
@@ -166,7 +166,7 @@ describe('журнал с величинами причин (T2.3)', () => {
     expect(view.shots).toEqual(['1 · 300 м · ✕ · Дальность, 0,6 MIL', '2 · 300 м · ✕', '3 · 300 м · ✕ · недооценка ветра']);
   });
 
-  it('«Ошибки»: звенья от клика, и на попаданиях тоже; ошибки проверки остаются; старые записи — по грубой причине', () => {
+  it('«Ошибки»: звенья от клика, на попаданиях — только расчёт; ошибки проверки остаются; старые записи — по грубой причине', () => {
     const view = errorsView([
       series({
         id: 'a',
@@ -176,13 +176,28 @@ describe('журнал с величинами причин (T2.3)', () => {
           shot({ mainCause: 'wind-under', causes: [{ kind: 'wind-speed', mil: 0.3 }, { kind: 'hold', mil: 0.2 }], clickMil: 0.1 }),
         ],
       }),
-      series({ id: 'b', exerciseId: '04', startedAtIso: new Date(2026, 10, 8, 9, 0).toISOString(), shots: [shot({ mainCause: 'trigger' })] }),
+      series({ id: 'b', exerciseId: '04', startedAtIso: new Date(2026, 10, 8, 9, 0).toISOString(), shots: [shot({ isHit: false, mainCause: 'trigger' })] }),
     ]);
     expect(view.map(row => [row.label, row.count, row.last])).toEqual([
       ['Скорость ветра', 2, '06 · 9 нояб.'],
       ['СТОРОНА', 1, '06 · 9 нояб.'],
-      ['Удержание', 1, '06 · 9 нояб.'],
       ['срыв спуска', 1, '04 · 8 нояб.'],
+    ]);
+  });
+
+  it('«Ошибки»: на попадании исполнение не ошибка — ни по звеньям, ни в старых записях', () => {
+    const view = errorsView([
+      series({
+        shots: [
+          shot({ causes: [{ kind: 'hold', mil: 0.3 }, { kind: 'trigger', mil: 0.2 }, { kind: 'dope', mil: 0.2 }], clickMil: 0.1 }),
+          shot({ mainCause: 'hold' }),
+          shot({ isHit: false, causes: [{ kind: 'hold', mil: 0.3 }], clickMil: 0.1 }),
+        ],
+      }),
+    ]);
+    expect(view.map(row => [row.label, row.count])).toEqual([
+      ['Строка ДОПЕ', 1],
+      ['Удержание', 1],
     ]);
   });
 

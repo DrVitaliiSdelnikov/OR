@@ -67,6 +67,7 @@ export const review = {
   diagnosisClean: 'Чисто: сетка на цели, попадание',
   diagnosisData: 'Сетка была на цели — ошибка в данных',
   diagnosisExecution: (p: { direction: ScreenDirection; mil: number }) => `Сетка ушла ${DIRECTIONS[p.direction]} на ${decimal(p.mil, 1)} — ошибка выполнения`,
+  diagnosisExecutionAndData: (p: { direction: ScreenDirection; mil: number }) => `Сетка ушла ${DIRECTIONS[p.direction]} на ${decimal(p.mil, 1)} — ошибка выполнения и в данных`,
   diagnosisLeadBackward: 'Упреждение назад: сетка позади цели — выноси по ходу',
   repeatClean: 'Данные верны — повтори чисто',
   correctionVertical: (p: { isLow: boolean; mil: number; clicks: number }) =>

@@ -91,7 +91,7 @@ export function shotPointsText(isHit: boolean, isFirstShotAtTarget: boolean, isP
   return isFirstShotAtTarget ? T.firstShotPoints({ points: FIRST_SHOT_POINTS }) : T.secondShotPoints({ points: SECOND_SHOT_POINTS });
 }
 
-export function diagnosisText(diagnosis: ShotDiagnosis, call: Correction, isLeadBackward = false): string {
+export function diagnosisText(diagnosis: ShotDiagnosis, call: Correction, isLeadBackward = false, hasDataError = false): string {
   if (isLeadBackward) {
     return T.diagnosisLeadBackward;
   }
@@ -103,14 +103,15 @@ export function diagnosisText(diagnosis: ShotDiagnosis, call: Correction, isLead
   }
   const isVertical = Math.abs(call.upMrad) >= Math.abs(call.rightMrad);
   const direction = isVertical ? verticalDirection(call.upMrad) : horizontalDirection(call.rightMrad);
-  return T.diagnosisExecution({ direction, mil: Math.hypot(call.upMrad, call.rightMrad) });
+  const drift = { direction, mil: Math.hypot(call.upMrad, call.rightMrad) };
+  return hasDataError ? T.diagnosisExecutionAndData(drift) : T.diagnosisExecution(drift);
 }
 
-export function correctionText(correction: TurretCorrection | null, diagnosis: ShotDiagnosis): string | null {
+export function correctionText(correction: TurretCorrection | null, diagnosis: ShotDiagnosis, hasDataError = false): string | null {
   if (!correction) {
     return null;
   }
-  if (diagnosis === 'execution') {
+  if (diagnosis === 'execution' && !hasDataError) {
     return T.repeatClean;
   }
   const parts: string[] = [];

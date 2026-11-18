@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { roundToClicks } from '../core/game-formulas';
 import { Correction } from '../core/types';
-import { CauseKind, groupPoint, journalCauses, mainCauseOf, mainOfAmounts, missBreakdown, MissBreakdownInput } from './miss-breakdown';
+import { CauseKind, groupPoint, hasDataError, isExecutionCause, journalCauses, mainCauseOf, mainOfAmounts, missBreakdown, MissBreakdownInput } from './miss-breakdown';
 import { CHAIN_ORDER, ChainLink, ChainLinkKind } from './miss-chain';
 
 const ZERO: Correction = { upMrad: 0, rightMrad: 0 };
@@ -242,6 +242,25 @@ describe('journalCauses: what the journal keeps of a shot (T2.3)', () => {
 
   it('a clean shot keeps an empty list', () => {
     expect(journalCauses(missBreakdown(input()))).toEqual([]);
+  });
+});
+
+describe('hasDataError: a player link of at least one click', () => {
+  it('a link of a click is a data error; hold, trigger and grey causes are not', () => {
+    expect(hasDataError(missBreakdown(input({}, { dope: point(0.1, 0) })))).toBe(true);
+    expect(hasDataError(missBreakdown(input({ reticle: point(-1.7, 0), triggerSpread: point(0.5, 0), velocitySpread: point(0.4, 0), coldBore: point(0.3, 0) })))).toBe(false);
+  });
+
+  it('a link under half a click and the rounding link are not data errors', () => {
+    expect(hasDataError(missBreakdown(input({}, { dope: point(0.04, 0) })))).toBe(false);
+    expect(hasDataError(missBreakdown(input({}, { rounding: point(0.3, 0) })))).toBe(false);
+  });
+});
+
+describe('isExecutionCause', () => {
+  it('hold, lead, trigger and zero are execution; links are not', () => {
+    expect((['hold', 'lead', 'trigger', 'zero'] as const).every(isExecutionCause)).toBe(true);
+    expect((['dope', 'wind-speed', 'lead-calc', 'turret'] as const).some(isExecutionCause)).toBe(false);
   });
 });
 

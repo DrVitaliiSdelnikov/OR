@@ -593,6 +593,13 @@ describe('PositionSession — shot review (A6.1)', () => {
     expect(second.review.correction).toBeNull();
   });
 
+  it('an execution miss with an undialled turret still gives the turret correction', async () => {
+    const session = await start('01');
+    const shot = (await shoot(session, FAR_OFF))!;
+    expect(shot.review.diagnosis).toBe('execution');
+    expect(shot.review.correction!.upClicks).toBeGreaterThan(0);
+  });
+
   it('the cold bore shift is taken out of the impact for the correction and the DOPE note', async () => {
     const session = await start('02', 23);
     const shot = (await shoot(session, ON_TARGET))!;
