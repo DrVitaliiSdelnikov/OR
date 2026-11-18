@@ -652,6 +652,10 @@ function stepCheckInput(notebook: Notebook, step: NotebookStepId): CalcStepInput
   return { step: STEPS[step].kind, expectedInputs, playerInputs, expectedRawMil, playerMil, playerUnits: state.units };
 }
 
+export function stepReferenceMil(notebook: Notebook, step: NotebookStepId): number | null {
+  return expectedStepMil(notebook, step);
+}
+
 // Эталон шага — игровая формула от входов игрока (его дистанция, его ветер), чтобы ошибка считалась один раз (Б23).
 function expectedStepMil(notebook: Notebook, step: NotebookStepId): number | null {
   const { card, target } = notebook.context;

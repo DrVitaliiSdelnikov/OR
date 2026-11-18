@@ -36,6 +36,7 @@ export interface ExerciseTargets {
   distance: TargetDistance;
   diameterM?: number;
   isOutAndBack?: boolean;
+  isLadder?: boolean;
 }
 
 export interface ExerciseStage {
@@ -464,9 +465,19 @@ function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | n
 }
 
 function targetsFor(targets: ExerciseTargets, random: RandomSource, system: UnitSystem): Target[] {
-  const distances = Array.from({ length: targets.count }, () => distanceFor(targets.distance, random, system));
+  const distances = targets.isLadder ? ladderDistances(targets, system) : Array.from({ length: targets.count }, () => distanceFor(targets.distance, random, system));
   const ordered = targets.isOutAndBack ? outAndBack(distances) : distances;
   return ordered.map(distanceM => ({ distanceM, diameterM: targetDiameterM(targets, distanceM, system) }));
+}
+
+function ladderDistances(targets: ExerciseTargets, system: UnitSystem): number[] {
+  const distance = targets.distance;
+  if (distance.kind === 'fixed') {
+    return Array.from({ length: targets.count }, () => distance.distanceM);
+  }
+  const { from, to } = distanceBoundsIn(system, distance.fromM, distance.toM);
+  const rungStep = targets.count > 1 ? (to - from) / (targets.count - 1) : 0;
+  return Array.from({ length: targets.count }, (_, index) => fromInput('distance', from + index * rungStep, system));
 }
 
 export function distanceBoundsIn(system: UnitSystem, fromM: number, toM: number): { from: number; to: number } {
