@@ -75,7 +75,7 @@ describe('сложность попытки', () => {
 });
 
 describe('выстрел → попытки навыков', () => {
-  const base = { distanceM: 600, windSpeedMps: 4, mode: 'manual-easy' as const, clickMil: 0.1 };
+  const base = { distanceM: 600, windSpeedMps: 4, mode: 'manual-easy' as const, clickMil: 0.1, isHit: false };
 
   it('звено 0 кликов — 1, 1 клик — 0,5, больше — 0; навык — по самому большому звену', () => {
     const made = attemptsFromShot({ ...base, causes: [{ kind: 'wind-clock', mil: 0.3 }, { kind: 'wind-speed', mil: 0.02 }, { kind: 'distance', mil: 0.1 }, { kind: 'hold', mil: 0.04 }] });
@@ -88,6 +88,13 @@ describe('выстрел → попытки навыков', () => {
     expect(made.every(attempt => attempt.difficulty === attemptDifficulty({ level: 'learn', distanceM: 600, windSpeedMps: 4 }))).toBe(true);
   });
 
+  it('исполнение — движение, а не барабан: при попадании 1, при промахе — по кликам', () => {
+    const shakyHold = [{ kind: 'hold' as const, mil: 0.3 }, { kind: 'wind-speed' as const, mil: 0.3 }];
+    const outcomeOf = (isHit: boolean, skill: SkillAttempt['skill']) => attemptsFromShot({ ...base, isHit, causes: shakyHold }).find(attempt => attempt.skill === skill)?.outcome;
+    expect([outcomeOf(true, 'execution'), outcomeOf(false, 'execution')]).toEqual([1, 0]);
+    expect(outcomeOf(true, 'wind')).toBe(0);
+  });
+
   it('исполнение — всегда; ветер — если дул; ДОПЕ — только в ручных режимах; накрутка — это ДОПЕ', () => {
     const calmAuto = attemptsFromShot({ ...base, mode: 'auto', windSpeedMps: 0, causes: [] }).map(attempt => attempt.skill);
     expect(calmAuto).toEqual(['execution']);
@@ -95,8 +102,8 @@ describe('выстрел → попытки навыков', () => {
     expect(turret.find(attempt => attempt.skill === 'dope')?.outcome).toBe(0);
   });
 
-  it('время вышло — только «скорость» 0; без величин — попыток нет', () => {
-    expect(attemptsFromShot({ ...base, isTimedOut: true, causes: [] })).toEqual([{ skill: 'speed', outcome: 0, difficulty: attemptDifficulty({ level: 'timed', distanceM: 600, windSpeedMps: 4 }) }]);
+  it('время вышло — попыток нет («скорость» даёт раунд дрила); без величин — попыток нет', () => {
+    expect(attemptsFromShot({ ...base, isTimedOut: true, causes: [] })).toEqual([]);
     expect(attemptsFromShot({ ...base, causes: undefined })).toEqual([]);
   });
 });

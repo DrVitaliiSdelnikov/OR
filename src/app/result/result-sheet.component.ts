@@ -23,8 +23,15 @@ import { ResultSheetView } from './result.model';
             }
             <span [class]="'stamp tone-' + sheet.stampTone" data-test="result-stamp">{{ sheet.stamp }}</span>
           </div>
-          @if (sheet.rankPlate; as rank) {
-            <div class="rank mono" data-test="result-rank">{{ rank }}</div>
+          @if (sheet.skillGrowth.length > 0) {
+            <ul class="skills mono" data-test="result-skills">
+              @for (growth of sheet.skillGrowth; track growth.skill) {
+                <li class="skill" [class.up]="growth.isUp" data-test="result-skill">
+                  <span>{{ growth.skill }}</span>
+                  <span>{{ growth.text }} {{ growth.isUp ? '▲' : '▼' }}</span>
+                </li>
+              }
+            </ul>
           }
         </header>
 
@@ -90,7 +97,9 @@ import { ResultSheetView } from './result.model';
     .tone-bronze { color: var(--paper-stamp-bronze); }
     .tone-red { color: var(--paper-red-pencil); }
     .struck { font: 700 var(--type-body) / 20px var(--font-mono); color: var(--paper-graphite); text-decoration: line-through; }
-    .rank { align-self: flex-start; padding: 4px 10px; border: 1.5px solid var(--paper-ink); border-radius: var(--radius-paper); font: 700 var(--type-label) / 18px var(--font-mono); }
+    .skills { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .skill { display: flex; gap: 8px; padding: 4px 10px; border: 1.5px solid var(--paper-ink); border-radius: var(--radius-paper); font: 700 var(--type-label) / 18px var(--font-mono); }
+    .skill:not(.up) { border-style: dashed; }
     .class-rows { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
     .class-row { display: grid; grid-template-columns: 6px 64px minmax(0, 1fr) 20px; gap: var(--space-2); align-items: start; font: 500 12px / 16px var(--font-mono); color: var(--paper-graphite); }
     .class-row.met { color: var(--paper-ink); }

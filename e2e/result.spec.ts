@@ -27,7 +27,7 @@ async function shootCleanSeriesOf01(page: Page): Promise<void> {
 }
 
 test.describe('итог упражнения и брифинг (A6.3)', () => {
-  test('01 зачтено впервые: штамп, три строки классов, очки, мишень, главная ошибка, новые термины; «ДАЛЬШЕ» — тропа с открытым 02', async ({ page }) => {
+  test('01 зачтено впервые: штамп, три строки классов, очки, мишень, главная ошибка, новые термины, рост навыков вместо звания; «ДАЛЬШЕ» — тропа с открытым 02', async ({ page }) => {
     test.slow();
     await shootCleanSeriesOf01(page);
     await expect(page.getByTestId('result-stamp')).toHaveText(/^[123] КЛАСС$/);
@@ -42,6 +42,8 @@ test.describe('итог упражнения и брифинг (A6.3)', () => {
     await expect(page.getByTestId('result-term')).toHaveCount(6);
     await expect(page.getByTestId('result-term').last()).toBeVisible();
     await expect(page.getByTestId('result-opened')).toHaveText('Открыто: 02 · Ноль и холодный ствол');
+    await expect(page.getByTestId('result-skill').filter({ hasText: 'исполнение' })).toHaveText(/^исполнение\s*40 → 4[1-9] ▲$/);
+    await expect(page.getByTestId('result-sheet')).not.toContainText('Звание');
     await page.getByTestId('result-next').click();
     await page.waitForURL('**/course');
     await expect(page.getByTestId('node-02')).toBeEnabled();

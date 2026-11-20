@@ -9,6 +9,7 @@ import { JournalSeries, withSeries } from '../journal/journal.model';
 import { DopeNotes, withDopeNote } from '../review/review.model';
 import { isProfileValid, knownProfiles, RifleProfile, withBuiltInProfile } from '../../sim/rifle-profile';
 import { DEFAULT_SETTINGS, knownSettings, Settings } from '../settings/settings.model';
+import { emptyLedger, knownLedger, replayedLedger, SkillLedger, withRatedRound, withRatedSeries } from './skill-ledger.model';
 
 export const PROGRESS_STORAGE_KEY = 'or.progress.v2';
 export const PROGRESS_V1_STORAGE_KEY = 'or.progress.v1';
@@ -24,9 +25,10 @@ export interface ProgressState {
   activeProfileId: string | null;
   seededProfileIds: string[];
   drillRounds: DrillRoundRecord[];
+  skills: SkillLedger;
 }
 
-type StoredProgress = Partial<ProgressState> & { settings?: Record<string, unknown>; profiles?: unknown; activeProfileId?: unknown; seededProfileIds?: unknown };
+type StoredProgress = Partial<Omit<ProgressState, 'skills'>> & { settings?: Record<string, unknown>; profiles?: unknown; activeProfileId?: unknown; seededProfileIds?: unknown; skills?: unknown };
 
 const EMPTY_COURSE: CourseResults = { isIntroCompleted: false, bestClasses: {} };
 
@@ -39,6 +41,7 @@ export class ProgressStore {
     dopeNotes: {},
     freePlay: DEFAULT_FREE_PLAY,
     drillRounds: [],
+    skills: emptyLedger(),
     ...withBuiltInProfile({ profiles: [], activeProfileId: null }, []),
   });
 
@@ -48,6 +51,7 @@ export class ProgressStore {
   readonly dopeNotes = computed(() => this.state().dopeNotes);
   readonly freePlay = computed(() => this.state().freePlay);
   readonly drillRounds = computed(() => this.state().drillRounds);
+  readonly skills = computed(() => this.state().skills.ratings);
   readonly profiles = computed(() => this.state().profiles);
   readonly activeProfileId = computed(() => this.state().activeProfileId);
   readonly activeProfile = computed(() => this.state().profiles.find(profile => profile.id === this.state().activeProfileId) ?? null);
@@ -56,7 +60,11 @@ export class ProgressStore {
     const { value } = await Preferences.get({ key: PROGRESS_STORAGE_KEY });
     if (value) {
       try {
-        this.state.set(knownProgress(JSON.parse(value) as StoredProgress));
+        const stored = JSON.parse(value) as StoredProgress;
+        this.state.set(knownProgress(stored));
+        if (!knownLedger(stored.skills)) {
+          this.save();
+        }
       } catch {
         await Preferences.remove({ key: PROGRESS_STORAGE_KEY });
       }
@@ -87,11 +95,14 @@ export class ProgressStore {
   }
 
   addSeries(series: JournalSeries): void {
-    this.update(state => ({ ...state, series: withSeries(state.series, series) }));
+    this.update(state => {
+      const journal = withSeries(state.series, series);
+      return { ...state, series: journal, skills: withRatedSeries(state.skills, series, journal.map(saved => saved.id)) };
+    });
   }
 
   addDrillRound(round: DrillRoundRecord): void {
-    this.update(state => ({ ...state, drillRounds: withDrillRound(state.drillRounds, round) }));
+    this.update(state => ({ ...state, drillRounds: withDrillRound(state.drillRounds, round), skills: withRatedRound(state.skills, round) }));
   }
 
   updateFreePlay(patch: Partial<FreePlaySettings>): void {
@@ -130,7 +141,7 @@ export class ProgressStore {
   }
 
   resetProgress(): void {
-    this.update(state => ({ ...state, course: EMPTY_COURSE, series: [], dopeNotes: {}, drillRounds: [] }));
+    this.update(state => ({ ...state, course: EMPTY_COURSE, series: [], dopeNotes: {}, drillRounds: [], skills: emptyLedger() }));
   }
 
   private update(change: (state: ProgressState) => ProgressState): void {
@@ -148,13 +159,16 @@ export function migrateProgress(v1: StoredProgress): ProgressState {
 }
 
 function knownProgress(stored: StoredProgress): ProgressState {
+  const series = Array.isArray(stored.series) ? stored.series : [];
+  const drillRounds = Array.isArray(stored.drillRounds) ? stored.drillRounds : [];
   return {
     course: stored.course ?? EMPTY_COURSE,
     settings: knownSettings(stored.settings),
-    series: Array.isArray(stored.series) ? stored.series : [],
+    series,
     dopeNotes: stored.dopeNotes ?? {},
     freePlay: knownFreePlay(stored.freePlay),
-    drillRounds: Array.isArray(stored.drillRounds) ? stored.drillRounds : [],
+    drillRounds,
+    skills: knownLedger(stored.skills) ?? replayedLedger(series, drillRounds),
     ...withBuiltInProfile(knownProfiles(stored), knownSeededIds(stored.seededProfileIds)),
   };
 }

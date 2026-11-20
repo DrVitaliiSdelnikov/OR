@@ -6,7 +6,9 @@ export const result = {
   notAdmittedStamp: 'НЕ ЗАЧТЕНО',
   allFirstPaper: 'все в мишень',
   allFirst: 'все первым',
+  /** @deprecated T4.2: на итоге вместо звания — рост навыков (`skillGrowth`); см. REMOVAL-CANDIDATES. */
   rankPlate: (p: { rank: string }) => `Звание: ${p.rank}`,
+  skillGrowth: (p: { before: number; after: number }) => `${p.before} → ${p.after}`,
   opened: (p: { exerciseId: string; title: string }) => `Открыто: ${p.exerciseId} · ${p.title}`,
   classLabel: (p: { exerciseClass: number }) => `${p.exerciseClass} класс`,
   thirdClassRow: (p: { minShare: number; share: number }) => `≥ ${percent(p.minShare)} очков — ${percent(p.share)}`,

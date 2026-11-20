@@ -4,7 +4,7 @@ import { roundToClicks } from '../core/game-formulas';
 import { text } from '../i18n';
 import type { DrillCardResult, DrillRoundRecord } from './drill-round';
 import { drillById, DrillLevel, DrillSkill } from './drills';
-import { CauseAmount, CauseKind } from './miss-breakdown';
+import { CauseAmount, CauseKind, MainCause } from './miss-breakdown';
 
 export type SkillId = DrillSkill;
 export type AttemptOutcome = 0 | 0.5 | 1;
@@ -26,9 +26,14 @@ export interface ShotForRating {
   distanceM: number;
   windSpeedMps: number;
   mode: NotebookMode;
+  isHit: boolean;
   causes?: readonly CauseAmount[];
   clickMil?: number;
   isTimedOut?: boolean;
+}
+
+export interface RoughShotForRating extends Omit<ShotForRating, 'causes' | 'clickMil' | 'isTimedOut'> {
+  mainCause: MainCause | null;
 }
 
 export interface DifficultyInput {
@@ -71,6 +76,15 @@ const SKILL_OF_CAUSE: Partial<Record<CauseKind, SkillId>> = {
   trigger: 'execution',
   zero: 'execution',
 };
+const SKILL_OF_MAIN_CAUSE: Record<MainCause, SkillId> = {
+  calc: 'dope',
+  'wind-under': 'wind',
+  'wind-over': 'wind',
+  lead: 'lead',
+  hold: 'execution',
+  trigger: 'execution',
+  zero: 'execution',
+};
 const OUTCOME_OF_VERDICT: Record<CheckVerdict, AttemptOutcome> = { exact: 1, close: 0.5, error: 0 };
 
 export function initialRatings(): SkillRatings {
@@ -100,29 +114,33 @@ export function attemptDifficulty(input: DifficultyInput): number {
 }
 
 export function attemptsFromShot(shot: ShotForRating): SkillAttempt[] {
-  if (!shot.causes || shot.clickMil === undefined) {
+  if (!shot.causes || shot.clickMil === undefined || shot.isTimedOut) {
     return [];
   }
-  if (shot.isTimedOut) {
-    return [{ skill: 'speed', outcome: 0, difficulty: attemptDifficulty({ level: 'timed', distanceM: shot.distanceM, windSpeedMps: shot.windSpeedMps }) }];
-  }
-  const difficulty = attemptDifficulty({ level: 'learn', distanceM: shot.distanceM, windSpeedMps: shot.windSpeedMps });
+  const difficulty = shotDifficulty(shot);
   const worstClicks = new Map<SkillId, number>();
   const involve = (skill: SkillId, clicks = 0) => worstClicks.set(skill, Math.max(worstClicks.get(skill) ?? 0, clicks));
-  involve('execution');
-  if (shot.windSpeedMps > 0) {
-    involve('wind');
-  }
-  if (shot.mode !== 'auto') {
-    involve('dope');
-  }
+  alwaysInvolvedSkills(shot).forEach(skill => involve(skill));
   for (const cause of shot.causes) {
     const skill = SKILL_OF_CAUSE[cause.kind];
     if (skill) {
       involve(skill, Math.abs(roundToClicks(cause.mil, shot.clickMil)));
     }
   }
-  return SKILL_IDS.filter(skill => worstClicks.has(skill)).map(skill => ({ skill, outcome: outcomeOfClicks(worstClicks.get(skill)!), difficulty }));
+  return SKILL_IDS.filter(skill => worstClicks.has(skill)).map(skill => ({
+    skill,
+    outcome: skill === 'execution' && shot.isHit ? 1 : outcomeOfClicks(worstClicks.get(skill)!),
+    difficulty,
+  }));
+}
+
+export function attemptsFromRoughShot(shot: RoughShotForRating): SkillAttempt[] {
+  const difficulty = shotDifficulty(shot);
+  if (shot.isHit) {
+    const involved = alwaysInvolvedSkills(shot);
+    return SKILL_IDS.filter(skill => involved.includes(skill)).map(skill => ({ skill, outcome: 1, difficulty }));
+  }
+  return shot.mainCause ? [{ skill: SKILL_OF_MAIN_CAUSE[shot.mainCause], outcome: 0, difficulty }] : [];
 }
 
 export function attemptsFromDrillRound(round: DrillRoundRecord): SkillAttempt[] {
@@ -146,6 +164,14 @@ export function overallLevel(ratings: SkillRatings): { value: number; name: stri
   }
   const value = rated.reduce((total, skill) => total + skill.rating, 0) / rated.length;
   return { value, name: LEVEL_THRESHOLDS.find(threshold => value >= threshold.from)!.name };
+}
+
+function shotDifficulty(shot: Pick<ShotForRating, 'distanceM' | 'windSpeedMps'>): number {
+  return attemptDifficulty({ level: 'learn', distanceM: shot.distanceM, windSpeedMps: shot.windSpeedMps });
+}
+
+function alwaysInvolvedSkills(shot: Pick<ShotForRating, 'windSpeedMps' | 'mode'>): SkillId[] {
+  return ['execution', ...(shot.windSpeedMps > 0 ? ['wind' as const] : []), ...(shot.mode !== 'auto' ? ['dope' as const] : [])];
 }
 
 function outcomeOfClicks(clicks: number): AttemptOutcome {

@@ -15,6 +15,7 @@
 
 | Что | Почему уходит | Чем заменяется | Удалить в | Помечено в коде |
 | --- | --- | --- | --- | --- |
+| звания курса: `rankFor`, `Rank`, `RANK_FROM_ADMISSIONS`, `rank` в `courseProgress`, `RANK_LABELS`, текст `result.rankPlate`; строки звания на главной, тропе (`trail-progress`, аттестация) и в достижениях журнала — на итоге заменены ростом навыков, остальное заменят T3.5 и T4.3 (В39) | 20.11 | T4.2 |
 | подпись замка учебника: `lockText` в `textbook.model.ts`, `lockIntro`, `lockExercise` каталога, `TermTile.lockText`, разметка `textbook-term-locked`, `term-related-locked` | учебник открыт целиком (В53) | — | T2.3 | `app/textbook/textbook.model.ts` |
 | `FLAG_DISTANCES_M`, `WIND_ZONE_LIMITS_M` в `core/content.ts` | флажки и зоны зависят от системы (T1.8c) | `rangeLayout(system)` | T2.1 | `core/content.ts` |
 | `FREE_PLAY_DISTANCES_M` в `sim/free-play.ts` | ползунок зависит от системы (T1.8c) | `freePlayDistances(system)` | T2.1 | `sim/free-play.ts` |

@@ -80,6 +80,7 @@ export function exerciseClass(input: ExerciseClassInput): ExerciseClass {
   return 1;
 }
 
+/** @deprecated T4.2 (В39): уровень стрелка — рейтинг навыков `sim/skill-rating`; звание ещё на главной, тропе и в журнале до T3.5 / T4.3. */
 export function rankFor(admissions: number, isEveryExerciseTopClass: boolean): Rank {
   if (admissions >= COURSE_EXERCISES && isEveryExerciseTopClass) {
     return 'sniper-instructor';

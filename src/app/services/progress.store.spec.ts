@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUILT_IN_PROFILE_ID, builtInProfile, profileFromPreset } from '../../sim/rifle-profile';
+import { INITIAL_RATING, initialRatings } from '../../sim/skill-rating';
+import { replayedLedger } from './skill-ledger.model';
 
 const stored = new Map<string, string>();
 
@@ -152,6 +154,45 @@ describe('раунды дрилов в хранилище (T3.2)', () => {
     expect((await reloaded()).drillRounds()).toEqual([]);
     stored.set(PROGRESS_STORAGE_KEY, JSON.stringify({ version: 2, drillRounds: 'broken' }));
     expect((await reloaded()).drillRounds()).toEqual([]);
+  });
+});
+
+describe('рейтинг навыков в хранилище (T4.2)', () => {
+  const WINDY_MISS = { distanceM: 600, isHit: false, isFirstAtTarget: true, mainCause: 'wind-under' as const, errorTypes: [], windSpeedMps: 4, mode: 'auto' as const };
+  const SERIES = { id: 'f1', startedAtIso: '2026-11-19T10:00:00.000Z', kind: 'free' as const, exerciseId: null, title: 'Свободная', mode: 'auto' as const, cartridgeIds: ['B' as const], exerciseClass: null, total: null, isInterrupted: false, shots: [WINDY_MISS] };
+  const ROUND = { drillId: 'wind' as const, level: 'learn' as const, seed: 7, startedAtIso: '2026-11-20T10:00:00.000Z', cards: [{ verdict: 'exact' as const, errorTypes: [], seconds: 12 }] };
+
+  it('серия и раунд двигают рейтинг, рейтинг переживает перезагрузку; сброс возвращает начальный', async () => {
+    const store = new ProgressStore();
+    store.addSeries(SERIES);
+    store.addSeries(SERIES);
+    store.addDrillRound(ROUND);
+    expect(store.skills().wind.attempts).toBe(2);
+    expect(store.skills().wind.rating).toBeLessThan(INITIAL_RATING);
+    const next = await reloaded();
+    expect(next.skills()).toEqual(store.skills());
+    next.resetProgress();
+    expect((await reloaded()).skills()).toEqual(initialRatings());
+  });
+
+  it('хранилище без рейтинга (до T4.2) и снимок v1: журнал пересчитывается один раз и рейтинг записывается', async () => {
+    stored.set(PROGRESS_STORAGE_KEY, JSON.stringify({ version: 2, series: [SERIES], drillRounds: [ROUND] }));
+    const store = await reloaded();
+    expect(store.skills()).toEqual(replayedLedger([SERIES], [ROUND]).ratings);
+    expect(JSON.parse(stored.get(PROGRESS_STORAGE_KEY)!).skills.ratedShots).toEqual({ f1: 1 });
+    store.addSeries(SERIES);
+    expect(store.skills().wind.attempts).toBe(2);
+    stored.clear();
+    stored.set(PROGRESS_V1_STORAGE_KEY, JSON.stringify({ series: [SERIES] }));
+    expect((await reloaded()).skills().wind.attempts).toBe(1);
+  });
+
+  it('целый рейтинг не пересчитывается; битый — пересчитывается', async () => {
+    const kept = { ratings: { ...initialRatings(), speed: { rating: 70, attempts: 9 } }, ratedShots: { f1: 1 } };
+    stored.set(PROGRESS_STORAGE_KEY, JSON.stringify({ version: 2, series: [SERIES], skills: kept }));
+    expect((await reloaded()).skills()).toEqual(kept.ratings);
+    stored.set(PROGRESS_STORAGE_KEY, JSON.stringify({ version: 2, series: [SERIES], skills: { ratings: 'broken' } }));
+    expect((await reloaded()).skills()).toEqual(replayedLedger([SERIES], []).ratings);
   });
 });
 

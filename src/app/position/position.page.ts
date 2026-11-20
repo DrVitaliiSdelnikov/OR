@@ -263,6 +263,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   private dialAtLastShot = { elevation: 0, windageLeft: 0 };
   private aimLimitsKey = '';
   private seriesStartedAtIso = new Date().toISOString();
+  private skillsAtSeriesStart = this.progress.skills();
   private savedSeriesKey = '';
   private aimLimitsSession: PositionSession | null = null;
   private readonly glassPointers = new Map<number, Vector2>();
@@ -419,7 +420,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       this.progress.recordExerciseResult(session.def.id, result.exerciseClass, result.total);
       this.saveSeries();
       this.reviewFrame.set(this.fullFrame());
-      this.end.set(resultSheet({ def: session.def, result, records: session.records, courseBefore, courseAfter: this.progress.course(), system: this.unitSystem() }));
+      this.end.set(resultSheet({ def: session.def, result, records: session.records, courseBefore, courseAfter: this.progress.course(), skillsBefore: this.skillsAtSeriesStart, skillsAfter: this.progress.skills(), system: this.unitSystem() }));
     }
     this.refresh();
   }
@@ -432,6 +433,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     this.saveSeries();
     const repeat = await session.restartForRecalc(this.engine);
     this.seriesStartedAtIso = new Date().toISOString();
+    this.skillsAtSeriesStart = this.progress.skills();
     this.reviewedShot.set(null);
     this.end.set(null);
     this.marks.length = 0;
@@ -734,6 +736,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     });
     this.startedAtMs = performance.now();
     this.seriesStartedAtIso = new Date().toISOString();
+    this.skillsAtSeriesStart = this.progress.skills();
     this.session.set(session);
     this.refresh();
   }

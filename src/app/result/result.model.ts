@@ -3,7 +3,7 @@ import { text } from '../../i18n';
 import { courseProgress, CourseResults, exerciseById, ExerciseDef, ExerciseResult, ExerciseShotRecord, exerciseTitle, GoalCheck } from '../../sim/course';
 import { CAUSE_ORDER, MainCause, mainOfAmounts } from '../../sim/miss-breakdown';
 import { lowerFirst } from '../../i18n/format';
-import { RANK_LABELS } from '../home/home.model';
+import { SKILL_IDS, SkillRatings } from '../../sim/skill-rating';
 import { UnitSystem } from '../../core/units';
 
 export type StampTone = 'gold' | 'silver' | 'bronze' | 'red';
@@ -18,7 +18,7 @@ export interface ResultSheetView {
   stamp: string;
   stampTone: StampTone;
   struckClass: string | null;
-  rankPlate: string | null;
+  skillGrowth: SkillGrowthView[];
   classRows: ClassRowView[];
   scoreLine: string;
   recordLine: string;
@@ -28,12 +28,20 @@ export interface ResultSheetView {
   isAdmitted: boolean;
 }
 
+export interface SkillGrowthView {
+  skill: string;
+  text: string;
+  isUp: boolean;
+}
+
 export interface ResultInput {
   def: ExerciseDef;
   result: ExerciseResult;
   records: readonly ExerciseShotRecord[];
   courseBefore: CourseResults;
   courseAfter: CourseResults;
+  skillsBefore?: SkillRatings;
+  skillsAfter?: SkillRatings;
   system?: UnitSystem;
 }
 
@@ -63,14 +71,13 @@ export function resultSheet(input: ResultInput): ResultSheetView {
   const { def, result, courseBefore, courseAfter } = input;
   const previousClass = courseBefore.bestClasses[def.id];
   const isFirstAdmission = result.isAdmitted && !previousClass;
-  const rankBefore = courseProgress(courseBefore).rank;
   const progressAfter = courseProgress(courseAfter);
   const openedId = progressAfter.unlockedIds.find(id => !courseProgress(courseBefore).unlockedIds.includes(id));
   return {
     stamp: classStamp(result.exerciseClass),
     stampTone: STAMP_TONES[result.exerciseClass],
     struckClass: previousClass && result.exerciseClass !== 0 && result.exerciseClass < previousClass ? classStamp(previousClass) : null,
-    rankPlate: progressAfter.rank !== rankBefore ? T.rankPlate({ rank: RANK_LABELS[progressAfter.rank] }) : null,
+    skillGrowth: input.skillsBefore && input.skillsAfter ? skillGrowth(input.skillsBefore, input.skillsAfter) : [],
     classRows: classRows(def, result),
     scoreLine: scoreLine(def, result),
     recordLine: recordLine(result.total, courseBefore.bestTotals?.[def.id]),
@@ -79,6 +86,13 @@ export function resultSheet(input: ResultInput): ResultSheetView {
     openedLine: openedId ? T.opened({ exerciseId: openedId, title: exerciseTitle(exerciseById(openedId)!, input.system ?? 'metric') }) : null,
     isAdmitted: result.isAdmitted,
   };
+}
+
+export function skillGrowth(before: SkillRatings, after: SkillRatings): SkillGrowthView[] {
+  return SKILL_IDS.flatMap(skill => {
+    const [wasRating, isRating] = [Math.round(before[skill].rating), Math.round(after[skill].rating)];
+    return wasRating === isRating ? [] : [{ skill: text.drills.skills[skill], text: T.skillGrowth({ before: wasRating, after: isRating }), isUp: isRating > wasRating }];
+  });
 }
 
 function classRows(def: ExerciseDef, result: ExerciseResult): ClassRowView[] {

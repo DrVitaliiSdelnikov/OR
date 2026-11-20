@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CourseResults, exerciseById, ExerciseId, exerciseResult, ExerciseResult, ExerciseRun, ExerciseShotRecord, ShotCheckSummary } from '../../sim/course';
 import { CauseKind, MainCause } from '../../sim/miss-breakdown';
+import { initialRatings, SkillRatings } from '../../sim/skill-rating';
 import { withExerciseResult } from '../home/home.model';
 import { resultSheet } from './result.model';
 
@@ -16,11 +17,11 @@ function run(shots: ExerciseShotRecord[], fields: Partial<ExerciseRun> = {}): Ex
   return { mode: 'auto', hasOpenedReference: false, shots, ...fields };
 }
 
-function sheetFor(id: ExerciseId, shots: ExerciseShotRecord[], before: CourseResults = { isIntroCompleted: true, bestClasses: {} }, fields: Partial<ExerciseRun> = {}) {
+function sheetFor(id: ExerciseId, shots: ExerciseShotRecord[], before: CourseResults = { isIntroCompleted: true, bestClasses: {} }, fields: Partial<ExerciseRun> = {}, skills?: { before: SkillRatings; after: SkillRatings }) {
   const def = exerciseById(id)!;
   const result: ExerciseResult = exerciseResult(def, run(shots, fields));
   const after = withExerciseResult(before, id, result.exerciseClass, result.total);
-  return { result, sheet: resultSheet({ def, result, records: shots, courseBefore: before, courseAfter: after }) };
+  return { result, sheet: resultSheet({ def, result, records: shots, courseBefore: before, courseAfter: after, skillsBefore: skills?.before, skillsAfter: skills?.after }) };
 }
 
 const speedRight: ShotCheckSummary = { verdict: 'exact', rowVerdicts: { 'reading-speed': 'exact', 'turret-windage': 'exact' }, errorTypes: [] };
@@ -137,11 +138,16 @@ describe('resultSheet — what opens', () => {
     expect([sheet.newTerms, sheet.openedLine]).toEqual([[], null]);
   });
 
-  it('the third admission makes a «Стрелок»; the second does not', () => {
-    const two: CourseResults = { isIntroCompleted: true, bestClasses: { '01': 3, '02': 3 } };
-    expect(sheetFor('03', hits(5, { isBreathHeld: true }), two).sheet.rankPlate).toBe('Звание: Стрелок');
-    const one: CourseResults = { isIntroCompleted: true, bestClasses: { '01': 3 } };
-    expect(sheetFor('02', [shot({ distanceM: 100, isColdBore: true }), ...Array.from({ length: 4 }, () => shot({ distanceM: 100 }))], one).sheet.rankPlate).toBeNull();
+  it('skill growth replaces the rank plate: changed whole ratings only, in skill order, up or down', () => {
+    const before = initialRatings();
+    const after = { ...before, wind: { rating: 44.4, attempts: 3 }, distance: { rating: 38.6, attempts: 1 }, dope: { rating: 40.4, attempts: 1 } };
+    const sheet = sheetFor('03', hits(5, { isBreathHeld: true }), { isIntroCompleted: true, bestClasses: { '01': 3, '02': 3 } }, {}, { before, after }).sheet;
+    expect(sheet.skillGrowth).toEqual([
+      { skill: 'дальность', text: '40 → 39', isUp: false },
+      { skill: 'ветер', text: '40 → 44', isUp: true },
+    ]);
+    expect('rankPlate' in sheet).toBe(false);
+    expect(sheetFor('03', hits(5)).sheet.skillGrowth).toEqual([]);
   });
 
   it('a better repeat strikes the old class out; a worse one does not', () => {
