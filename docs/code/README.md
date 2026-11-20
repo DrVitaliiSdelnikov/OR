@@ -125,3 +125,4 @@
 | app · дрилы на позиции и таймер (T3.3, В60) | [specs/app-drill-timer.md](specs/app-drill-timer.md) | реализовано 20.11 |
 | sim · рейтинг по навыкам (T4.1, В39) | [specs/sim-skill-rating.md](specs/sim-skill-rating.md) | реализовано 20.11 |
 | app · хранение рейтинга и пересчёт журнала (T4.2, В39) | [specs/app-skill-storage.md](specs/app-skill-storage.md) | реализовано 20.11 |
+| sim · совет тренера (T3.4, В36) | [specs/sim-coach.md](specs/sim-coach.md) | реализовано 21.11 |
