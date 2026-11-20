@@ -1,4 +1,7 @@
-import type { DrillId } from '../../sim/drills';
+import type { DrillId, DrillSkill } from '../../sim/drills';
+import { decimal, percent, plural, PluralForms } from '../format';
+
+const ERROR_FORMS: PluralForms = ['ошибка', 'ошибки', 'ошибок'];
 
 export const drills = {
   titles: {
@@ -14,4 +17,45 @@ export const drills = {
     patrol: 'Дозор',
     'timed-stage': 'Этап на время',
   } satisfies Record<DrillId, string>,
+  skills: {
+    distance: 'дальность',
+    dope: 'ДОПЕ',
+    wind: 'ветер',
+    conditions: 'условия',
+    angle: 'угол',
+    lead: 'упреждение',
+    execution: 'исполнение',
+    speed: 'скорость',
+  } satisfies Record<DrillSkill, string>,
+  taughtIn: (p: { exerciseId: string }) => `учат в упражнении ${p.exerciseId}`,
+  list: {
+    title: 'Дрилы',
+    subtitle: 'Счётные карточки: 10 задач на один навык, ответ — на листе блокнота',
+    back: '← НАЗАД',
+  },
+  card: {
+    heading: (p: { number: number; count: number }) => `Карточка ${p.number} из ${p.count}`,
+    next: 'ДАЛЬШЕ',
+    finish: 'ИТОГ',
+    leave: '← ВЫЙТИ',
+    loading: 'Готовлю карточки…',
+  },
+  conditions: {
+    milling: (p: { size: string; reticleMil: number }) => `Цель ${p.size} · ${decimal(p.reticleMil)} MIL по сетке`,
+    wind: (p: { speed: string; clock: number; distance: string }) => `Ветер ${p.speed} с ${p.clock} ч · ${p.distance}`,
+    conditions: (p: { temperature: string; pressure: string; distance: string }) => `${p.temperature} · ${p.pressure} · ${p.distance}`,
+    angle: (p: { lookAngleDeg: number; distance: string }) => `Угол ${p.lookAngleDeg > 0 ? '+' : '−'}${Math.abs(p.lookAngleDeg)}° · ${p.distance}`,
+    lead: (p: { speed: string; clock: number; distance: string }) => `Цель идёт ${p.speed} на ${p.clock} ч · ${p.distance}`,
+  },
+  summary: {
+    title: 'Итог раунда',
+    counts: (p: { exact: number; close: number; error: number }) => `${p.exact} точно · ${p.close} близко · ${p.error} ${plural(p.error, ERROR_FORMS)}`,
+    accuracy: (p: { share: number }) => `Точность ${percent(p.share)}`,
+    averageTime: (p: { seconds: number }) => `В среднем ${Math.round(p.seconds)} с на карточку`,
+    error: (p: { label: string; count: number }) => `${p.label} ×${p.count}`,
+    noErrors: 'Ошибок нет',
+    again: 'ЕЩЁ РАУНД',
+    same: 'ЕЩЁ РАЗ ТЕ ЖЕ',
+    leave: 'ВЫЙТИ',
+  },
 };

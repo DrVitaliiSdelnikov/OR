@@ -2,6 +2,7 @@ import { computed, Injectable, signal } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { ExerciseClass } from '../../core/exercise-scoring';
 import { CourseResults, ExerciseId } from '../../sim/course';
+import { DrillRoundRecord, withDrillRound } from '../../sim/drill-round';
 import { DEFAULT_FREE_PLAY, FreePlaySettings, knownFreePlay } from '../../sim/free-play';
 import { withExerciseResult, withIntroCompleted } from '../home/home.model';
 import { JournalSeries, withSeries } from '../journal/journal.model';
@@ -22,6 +23,7 @@ export interface ProgressState {
   profiles: RifleProfile[];
   activeProfileId: string | null;
   seededProfileIds: string[];
+  drillRounds: DrillRoundRecord[];
 }
 
 type StoredProgress = Partial<ProgressState> & { settings?: Record<string, unknown>; profiles?: unknown; activeProfileId?: unknown; seededProfileIds?: unknown };
@@ -36,6 +38,7 @@ export class ProgressStore {
     series: [],
     dopeNotes: {},
     freePlay: DEFAULT_FREE_PLAY,
+    drillRounds: [],
     ...withBuiltInProfile({ profiles: [], activeProfileId: null }, []),
   });
 
@@ -44,6 +47,7 @@ export class ProgressStore {
   readonly journal = computed(() => this.state().series);
   readonly dopeNotes = computed(() => this.state().dopeNotes);
   readonly freePlay = computed(() => this.state().freePlay);
+  readonly drillRounds = computed(() => this.state().drillRounds);
   readonly profiles = computed(() => this.state().profiles);
   readonly activeProfileId = computed(() => this.state().activeProfileId);
   readonly activeProfile = computed(() => this.state().profiles.find(profile => profile.id === this.state().activeProfileId) ?? null);
@@ -86,6 +90,10 @@ export class ProgressStore {
     this.update(state => ({ ...state, series: withSeries(state.series, series) }));
   }
 
+  addDrillRound(round: DrillRoundRecord): void {
+    this.update(state => ({ ...state, drillRounds: withDrillRound(state.drillRounds, round) }));
+  }
+
   updateFreePlay(patch: Partial<FreePlaySettings>): void {
     this.update(state => ({ ...state, freePlay: { ...state.freePlay, ...patch } }));
   }
@@ -122,7 +130,7 @@ export class ProgressStore {
   }
 
   resetProgress(): void {
-    this.update(state => ({ ...state, course: EMPTY_COURSE, series: [], dopeNotes: {} }));
+    this.update(state => ({ ...state, course: EMPTY_COURSE, series: [], dopeNotes: {}, drillRounds: [] }));
   }
 
   private update(change: (state: ProgressState) => ProgressState): void {
@@ -146,6 +154,7 @@ function knownProgress(stored: StoredProgress): ProgressState {
     series: Array.isArray(stored.series) ? stored.series : [],
     dopeNotes: stored.dopeNotes ?? {},
     freePlay: knownFreePlay(stored.freePlay),
+    drillRounds: Array.isArray(stored.drillRounds) ? stored.drillRounds : [],
     ...withBuiltInProfile(knownProfiles(stored), knownSeededIds(stored.seededProfileIds)),
   };
 }

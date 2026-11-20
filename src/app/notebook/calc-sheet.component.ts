@@ -3,7 +3,7 @@ import { decimal, typedDecimal } from '../../i18n/format';
 import { REFERENCE_PENALTY } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { ChipKind, NotebookStepId, stepHasSide } from '../../sim/notebook';
-import { PositionSession } from '../position/position-session';
+import { NotebookEditor } from '../../sim/notebook-editor';
 import { DraftKey, editDraft, formulaTokens, hubSteps, missingInput, modeBadge, sideOptions, STEP_TITLES, tapeUnit, tapeLabels } from './calc-sheet.model';
 import { ChipTrayComponent } from './chip-tray.component';
 import { PencilNoteComponent } from './pencil-note.component';
@@ -133,7 +133,8 @@ const FORMULAS_TEXTS = text.notebook.formulas;
   `,
 })
 export class CalcSheetComponent {
-  readonly session = input.required<PositionSession>();
+  readonly editor = input.required<NotebookEditor>();
+  readonly heading = input<string | null>(null);
   readonly revision = input(0);
   readonly step = input.required<NotebookStepId>();
   readonly back = output<void>();
@@ -146,10 +147,10 @@ export class CalcSheetComponent {
   protected readonly draft = signal('');
   protected readonly view = computed(() => {
     this.revision();
-    const session = this.session();
+    const editor = this.editor();
     const step = this.step();
-    const notebook = session.notebook;
-    const sheet = session.stepSheet(step);
+    const notebook = editor.notebook;
+    const sheet = editor.stepSheet(step);
     const state = notebook.steps[step];
     const steps = hubSteps(notebook);
     const tape = state.tape;
@@ -157,10 +158,10 @@ export class CalcSheetComponent {
     const activeSlot = this.activeSlot();
     const isSideMissing = stepHasSide(step) && lastValue !== null && lastValue !== 0 && state.sign === null;
     return {
-      title: this.texts.title({ stepTitle: STEP_TITLES[step], number: steps.indexOf(step) + 1, count: steps.length }),
+      title: this.heading() ?? this.texts.title({ stepTitle: STEP_TITLES[step], number: steps.indexOf(step) + 1, count: steps.length }),
       badge: modeBadge(notebook.mode),
       missing: missingInput(notebook, step),
-      pencil: pencilNotes(session.pencilMarks(), notebook)[step] ?? null,
+      pencil: pencilNotes(editor.pencilMarks(), notebook)[step] ?? null,
       tokens: formulaTokens(notebook, step),
       tapeLabels: tapeLabels(notebook, step),
       tape,
@@ -190,7 +191,7 @@ export class CalcSheetComponent {
 
   protected tapSlot(index: number, isFilled: boolean): void {
     if (isFilled) {
-      this.session().removeChip(this.step(), index);
+      this.editor().removeChip(this.step(), index);
       this.changed.emit();
     }
     this.activeTape.set(null);
@@ -202,8 +203,8 @@ export class CalcSheetComponent {
     if (slotIndex === null) {
       return;
     }
-    this.session().placeChip(this.step(), kind, slotIndex);
-    const nextEmpty = this.session()
+    this.editor().placeChip(this.step(), kind, slotIndex);
+    const nextEmpty = this.editor()
       .stepSheet(this.step())
       .slots.findIndex(slot => slot.placed === null);
     this.activeSlot.set(nextEmpty >= 0 ? nextEmpty : null);
@@ -225,22 +226,22 @@ export class CalcSheetComponent {
     const draft = editDraft(this.draft(), key);
     this.draft.set(draft);
     const value = draft === '' ? null : Number.parseFloat(draft);
-    this.session().typeTape(this.step(), index, value !== null && Number.isFinite(value) ? value : null);
+    this.editor().typeTape(this.step(), index, value !== null && Number.isFinite(value) ? value : null);
     this.changed.emit();
   }
 
   protected chooseSide(sign: 1 | -1): void {
-    this.session().setSign(this.step(), sign);
+    this.editor().setSign(this.step(), sign);
     this.changed.emit();
   }
 
   protected toggleUnits(): void {
-    this.session().setUnits(this.step(), this.view().units === 'mil' ? 'moa' : 'mil');
+    this.editor().setUnits(this.step(), this.view().units === 'mil' ? 'moa' : 'mil');
     this.changed.emit();
   }
 
   protected record(): void {
-    this.session().recordStep(this.step());
+    this.editor().recordStep(this.step());
     this.activeSlot.set(null);
     this.activeTape.set(null);
     this.changed.emit();

@@ -46,10 +46,12 @@ import { CheckSheetView } from './review.model';
         } @else {
           <div class="clean mono">{{ texts.clean }}</div>
         }
-        <div class="footer mono">
-          <span data-test="check-points">{{ sheet.pointsText }}</span>
-          <span data-test="check-dialed">{{ texts.dialed({ dialed: sheet.dialed }) }}</span>
-        </div>
+        @if (isScoreShown()) {
+          <div class="footer mono">
+            <span data-test="check-points">{{ sheet.pointsText }}</span>
+            <span data-test="check-dialed">{{ texts.dialed({ dialed: sheet.dialed }) }}</span>
+          </div>
+        }
       }
     </section>
   `,
@@ -82,6 +84,7 @@ export class CheckSheetComponent {
   protected readonly texts = text.screens.checkSheet;
   readonly view = input.required<CheckSheetView>();
   readonly isInitiallyOpen = input(false);
+  readonly isScoreShown = input(true);
   protected readonly isOpen = signal(false);
 
   constructor() {

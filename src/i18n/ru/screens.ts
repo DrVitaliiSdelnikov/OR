@@ -22,6 +22,7 @@ export const screens = {
     title: 'Огневой рубеж',
     tiles: {
       course: 'Снайперская подготовка',
+      drills: 'Дрилы',
       free: 'Свободная игра',
       textbook: 'Учебник курсанта',
       journal: 'Журнал стрелка',

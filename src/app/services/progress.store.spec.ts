@@ -135,6 +135,26 @@ describe('хранилище v2 (T2.3)', () => {
   });
 });
 
+describe('раунды дрилов в хранилище (T3.2)', () => {
+  const ROUND = { drillId: 'wind' as const, level: 'learn' as const, seed: 7, startedAtIso: '2026-11-20T10:00:00.000Z', cards: [{ verdict: 'exact' as const, errorTypes: [], seconds: 12 }] };
+
+  it('раунд переживает перезагрузку; сброс прогресса его убирает', async () => {
+    const store = new ProgressStore();
+    store.addDrillRound(ROUND);
+    const next = await reloaded();
+    expect(next.drillRounds()).toEqual([ROUND]);
+    next.resetProgress();
+    expect((await reloaded()).drillRounds()).toEqual([]);
+  });
+
+  it('старый v2 без поля читается с пустым списком; битое поле отбрасывается', async () => {
+    stored.set(PROGRESS_STORAGE_KEY, JSON.stringify({ version: 2, course: { isIntroCompleted: true, bestClasses: {} } }));
+    expect((await reloaded()).drillRounds()).toEqual([]);
+    stored.set(PROGRESS_STORAGE_KEY, JSON.stringify({ version: 2, drillRounds: 'broken' }));
+    expect((await reloaded()).drillRounds()).toEqual([]);
+  });
+});
+
 describe('встроенная винтовка «своя-custom» в хранилище (17.11)', () => {
   it('новый игрок: «своя-custom» есть сразу и активна', () => {
     const store = new ProgressStore();

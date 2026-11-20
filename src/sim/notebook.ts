@@ -664,7 +664,9 @@ function expectedStepMil(notebook: Notebook, step: NotebookStepId): number | nul
       if (notebook.readings.reticleMil === null) {
         return null;
       }
-      return dopeRowAt(card, rangeByMilling(target.sizeM, notebook.readings.reticleMil)).elevationMil;
+      // Дальность вводят целыми метрами или ярдами: эталон округлён так же, иначе верный ответ у границы клика выходит «почти».
+      const milledInPlayerUnits = Math.round(inPlayerUnits(notebook, 'distance', rangeByMilling(target.sizeM, notebook.readings.reticleMil)));
+      return dopeRowAt(card, toBase(notebook, 'distance', milledInPlayerUnits)).elevationMil;
     }
     case 'dope':
       return autoDopeMil(notebook);

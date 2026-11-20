@@ -8,6 +8,8 @@ export const routes: Routes = [
   { path: 'course/:exerciseId', loadComponent: () => import('./course/exercise-sheet.page').then(module => module.ExerciseSheetPage) },
   { path: 'position/00', redirectTo: 'intro' },
   { path: 'position/:exerciseId', loadComponent: () => import('./position/position.page').then(module => module.PositionPage), canDeactivate: [(page: PositionPage) => page.canLeave()] },
+  { path: 'drills', loadComponent: () => import('./drill/drill-list.page').then(module => module.DrillListPage) },
+  { path: 'drill/:drillId', loadComponent: () => import('./drill/drill-round.page').then(module => module.DrillRoundPage) },
   { path: 'free', loadComponent: () => import('./free/free-play.page').then(module => module.FreePlayPage) },
   { path: 'settings', loadComponent: () => import('./settings/settings.page').then(module => module.SettingsPage) },
   { path: 'journal', loadComponent: () => import('./journal/journal.page').then(module => module.JournalPage) },

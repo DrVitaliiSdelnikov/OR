@@ -52,7 +52,7 @@ const WIND_PENCIL_PLACES: readonly AutoInput[] = ['wind-speed', 'wind-clock', 'f
   template: `
     @let state = view();
     @if (calcStep(); as step) {
-      <or-calc-sheet [session]="session()" [revision]="revision()" [step]="step" (back)="closeStep()" (changed)="changed.emit()" (formulas)="openFormulas()" />
+      <or-calc-sheet [editor]="session()" [revision]="revision()" [step]="step" (back)="closeStep()" (changed)="changed.emit()" (formulas)="openFormulas()" />
     } @else {
     <section class="sheet" [style.transform]="'translateY(' + dragOffsetPt() + 'px)'" role="dialog" [attr.aria-label]="texts.label" data-test="notebook-sheet">
       <header class="frame" (pointerdown)="dragStart($event)" (pointermove)="dragMove($event)" (pointerup)="dragEnd()" (pointercancel)="dragEnd()">

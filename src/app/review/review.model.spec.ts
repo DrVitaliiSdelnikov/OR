@@ -5,7 +5,7 @@ import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { NotebookMode } from '../../core/exercise-scoring';
 import { exerciseById, ExerciseShotRecord } from '../../sim/course';
-import { CheckTruth, checkInputs, createNotebook, enterWind, Notebook, placeChip, recordStation, recordStep, setSign, toggleFactor, typeTape } from '../../sim/notebook';
+import { CheckTruth, checkInputs, createNotebook, enterWind, measureRange, Notebook, placeChip, recordStation, recordStep, setSign, toggleFactor, typeTape } from '../../sim/notebook';
 import { scopeById } from '../../sim/scope-model';
 import { ShotCheck } from '../position/position-session';
 import { GreyCauseKind, missBreakdown, MissBreakdown } from '../../sim/miss-breakdown';
@@ -100,6 +100,14 @@ describe('check sheet, SAM', () => {
     notebook = recordStep(setSign(typeTape(notebook, 'wind', 2, 1.6), 'wind', -1), 'wind');
     const sheet = checkSheet(snapshot(notebook, { trueWindClock: 9, dialedElevationClicks: 0, dialedWindageLeftClicks: 0 }), 'manual-hard');
     expect(sheet.mainError?.phrase).toBe('В слот D поставлено 700, а нужно 600');
+  });
+
+  it('a wrong milled distance is told in metres, not in MIL', () => {
+    let notebook = measureRange(createNotebook({ card, scope, target: { sizeM: 1.5, distanceM: null }, hasZones: false, canTakeWindFromStation: false, seed: 3 }, 'manual-easy'), 3);
+    notebook = placeChip(placeChip(notebook, 'distance', 'target-size'), 'distance', 'reticle-mil');
+    notebook = recordStep(typeTape(notebook, 'distance', 0, 100), 'distance');
+    const sheet = checkSheet(snapshot(notebook, { trueWindClock: 12, dialedElevationClicks: 0, dialedWindageLeftClicks: 0 }), 'manual-easy');
+    expect(sheet.mainError?.phrase).toBe('Формула и подстановка верны, но выходит 500 м, а у тебя 100 м');
   });
 
   it('a reversed side is СТОРОНА in the difference', () => {

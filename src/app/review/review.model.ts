@@ -250,6 +250,9 @@ function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType, s
     return preparationPhrase(check, check.inputs.preparation[rowIndex], type, system);
   }
   const input = check.inputs.steps[rowIndex];
+  if (input.step === 'distance' && (type === 'arithmetic' || type === 'rounding')) {
+    return milledDistancePhrase(check.notebook, system);
+  }
   const clickMil = check.notebook.context.card.clickMil;
   const referenceMil = Number((Math.abs(roundToClicks(input.expectedRawMil, clickMil)) * clickMil).toFixed(1));
   const reference = decimal(referenceMil, 1);
@@ -268,6 +271,11 @@ function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType, s
     default:
       return T.arithmeticPhrase({ raw: decimal(Math.abs(input.expectedRawMil), 2), player });
   }
+}
+
+function milledDistancePhrase(notebook: Notebook, system: UnitSystem): string {
+  const milledM = rangeByMilling(notebook.context.target.sizeM, notebook.readings.reticleMil ?? 0);
+  return T.arithmeticPhrase({ raw: UNITS.valueText('distance', milledM, system, DISTANCE_DIGITS), player: UNITS.valueText('distance', notebook.distanceM ?? 0, system, DISTANCE_DIGITS) });
 }
 
 function substitutionPhrase(notebook: Notebook, input: CalcStepInput): string {

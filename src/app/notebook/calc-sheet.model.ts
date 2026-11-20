@@ -299,7 +299,7 @@ function stepValueText(step: NotebookStepId, value: number, sign: 1 | -1 | null,
   return `${arrow}${decimal(value)}${step === 'zones' ? ` ${UNITS.unitLabel('windSpeed', system)}` : ''}`;
 }
 
-function targetSizeText(value: number, system: UnitSystem): string {
+export function targetSizeText(value: number, system: UnitSystem): string {
   return system === 'metric' ? `${decimal(value)} ${UNITS.unitLabel('targetSize', system)}` : UNITS.displayText('targetSize', value, system, 1);
 }
 
