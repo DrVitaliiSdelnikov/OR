@@ -26,6 +26,8 @@ export interface DrillCardResult {
   seconds: number;
   isTimedOut?: boolean;
   missCause?: MainCause | null;
+  distanceM?: number;
+  windSpeedMps?: number;
 }
 
 export type DrillErrorKind = CheckErrorType | 'time' | `miss-${MainCause}`;
@@ -159,6 +161,7 @@ export class DrillRound implements NotebookEditor {
       verdict: result.verdict,
       errorTypes: [...new Set(result.rows.flatMap(row => row.errorTypes))],
       seconds: this.start.clockS() - this.cardStartedS,
+      ...this.cardConditions(),
     });
   }
 
@@ -175,7 +178,7 @@ export class DrillRound implements NotebookEditor {
       return false;
     }
     this.isCardTimedOut = true;
-    this.cardResults.push({ verdict: 'error', errorTypes: [], seconds: TIME_LIMITS.cardS, isTimedOut: true });
+    this.cardResults.push({ verdict: 'error', errorTypes: [], seconds: TIME_LIMITS.cardS, isTimedOut: true, ...this.cardConditions() });
     return true;
   }
 
@@ -200,6 +203,11 @@ export class DrillRound implements NotebookEditor {
       return null;
     }
     return { drillId: this.start.drillId, level: this.level, seed: this.start.seed, startedAtIso: this.start.startedAtIso, cards: [...this.cardResults] };
+  }
+
+  private cardConditions(): Pick<DrillCardResult, 'distanceM' | 'windSpeedMps'> {
+    const windSpeedMps = this.card.notebook.readings.wind?.speedMps;
+    return { distanceM: this.card.distanceM, ...(windSpeedMps !== undefined ? { windSpeedMps } : {}) };
   }
 
   private preparedNotebook(card: CountCard): Notebook {

@@ -93,6 +93,8 @@ describe('DrillRound (T3.2)', () => {
     clock.nowS = 112.5;
     answer(round);
     expect(round.results[0].seconds).toBe(12.5);
+    expect(round.results[0].distanceM).toBe(round.card.distanceM);
+    expect(round.results[0].windSpeedMps).toBe(round.card.notebook.readings.wind!.speedMps);
     round.next();
     clock.nowS = 120;
     answer(round);
@@ -184,7 +186,7 @@ describe('раунд на время (T3.3, В60: 2б)', () => {
     clock.nowS += TIME_LIMITS.cardS;
     expect(round.expireIfLate()).toBe(true);
     expect(round.isTimedOut).toBe(true);
-    expect(round.results[0]).toEqual({ verdict: 'error', errorTypes: [], seconds: TIME_LIMITS.cardS, isTimedOut: true });
+    expect(round.results[0]).toMatchObject({ verdict: 'error', errorTypes: [], seconds: TIME_LIMITS.cardS, isTimedOut: true });
     answerOnly(round, round.card.answer.value);
     expect(round.results).toHaveLength(1);
     expect(round.next()).toBe(true);

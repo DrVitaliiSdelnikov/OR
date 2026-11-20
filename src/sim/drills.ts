@@ -43,6 +43,7 @@ export interface CountCard {
   drillId: CountDrillId;
   seed: number;
   step: NotebookStepId;
+  distanceM: number;
   notebook: Notebook;
   answer: { value: number; sign: 1 | -1 | null };
 }
@@ -117,7 +118,7 @@ export function countCard(id: CountDrillId, seed: number, context: DrillContext)
   const step = (drillById(id) as CountDrillDef).step;
   const distanceM = fromInput('distance', cardDistance(id, random), system);
   const notebook = preparedNotebook(id, random, context, distanceM, seed);
-  return { drillId: id, seed, step, notebook, answer: answerOf(notebook, step) };
+  return { drillId: id, seed, step, distanceM, notebook, answer: answerOf(notebook, step) };
 }
 
 function cardDistance(id: CountDrillId, random: RandomSource): number {
