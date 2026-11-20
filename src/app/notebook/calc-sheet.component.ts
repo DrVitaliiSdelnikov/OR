@@ -19,10 +19,14 @@ const FORMULAS_TEXTS = text.notebook.formulas;
     @let state = view();
     <section class="calc" data-test="calc-sheet">
       <header class="head">
-        <button class="back" type="button" (click)="back.emit()" data-test="calc-back">{{ texts.back }}</button>
+        @if (isBackShown()) {
+          <button class="back" type="button" (click)="back.emit()" data-test="calc-back">{{ texts.back }}</button>
+        }
         <div class="titles">
           <div class="title" data-test="calc-title">{{ state.title }}</div>
-          <div class="badge mono" data-test="calc-mode">{{ state.badge }}</div>
+          @if (isModeShown()) {
+            <div class="badge mono" data-test="calc-mode">{{ state.badge }}</div>
+          }
         </div>
       </header>
 
@@ -135,6 +139,8 @@ const FORMULAS_TEXTS = text.notebook.formulas;
 export class CalcSheetComponent {
   readonly editor = input.required<NotebookEditor>();
   readonly heading = input<string | null>(null);
+  readonly isBackShown = input(true);
+  readonly isModeShown = input(true);
   readonly revision = input(0);
   readonly step = input.required<NotebookStepId>();
   readonly back = output<void>();

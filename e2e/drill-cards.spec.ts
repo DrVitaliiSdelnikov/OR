@@ -45,6 +45,8 @@ test.describe('счётные карточки (T3.2)', () => {
     await page.getByTestId('drill-item-milling').click();
     await expect(page.getByTestId('calc-title')).toHaveText('Карточка 1 из 10');
     await expect(page.getByTestId('drill-conditions')).toHaveText(/^Цель .* MIL по сетке$/);
+    await expect(page.getByTestId('calc-back')).toHaveCount(0);
+    await expect(page.getByTestId('calc-mode')).toHaveCount(0);
   });
 
   test('миллинг: верно → «ТОЧНО», неверно → «ОШИБКА» с главной ошибкой; 10 карточек → итог; «ЕЩЁ РАЗ ТЕ ЖЕ» — те же числа', async ({ page }) => {

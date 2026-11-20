@@ -55,7 +55,7 @@ const SEED_RANGE = 1_000_000_000;
             </section>
           } @else {
             <div class="sheet">
-              <or-calc-sheet [editor]="state.round" [revision]="revision()" [step]="state.step" [heading]="state.heading" (changed)="touch()" (back)="onSheetBack()" (formulas)="isFormulasOpen.set(true)" />
+              <or-calc-sheet [editor]="state.round" [revision]="revision()" [step]="state.step" [heading]="state.heading" [isBackShown]="false" [isModeShown]="false" (changed)="touch()" (formulas)="isFormulasOpen.set(true)" />
             </div>
           }
         }
@@ -135,12 +135,6 @@ export class DrillRoundPage {
 
   protected touch(): void {
     this.revision.update(value => value + 1);
-  }
-
-  protected onSheetBack(): void {
-    if (!this.round()?.check) {
-      this.leave();
-    }
   }
 
   protected next(): void {
