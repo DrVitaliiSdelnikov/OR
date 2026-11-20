@@ -60,10 +60,11 @@ test.describe('свободная игра (A7.1)', () => {
     await expect(page.getByTestId('dope-heading')).toContainText('А');
   });
 
-  test('«Инструктор рядом» — строка расчётных данных; выключен — строки нет; «назад» — настройки с прежним выбором', async ({ page }) => {
+  test('«Тренер рядом» — строка расчётных данных; выключен — строки нет; «назад» — настройки с прежним выбором', async ({ page }) => {
     await seed(page);
     await page.goto('/free');
     await setDistance(page, 500);
+    await expect(page.getByTestId('free-instructor')).toHaveText('Тренер рядом');
     await page.getByTestId('free-instructor').click();
     await page.getByTestId('free-start').click();
     await expect(page.getByTestId('instructor-line')).toHaveText(/^Расчётные данные: ↑ \d+,\d( [←→] \d+,\d)? MIL$/);

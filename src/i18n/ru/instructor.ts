@@ -1,11 +1,23 @@
-import { decimal } from '../format';
+import { decimal, plural, PluralForms } from '../format';
 
 export type DialDirection = 'up' | 'down' | 'right' | 'left';
 
 const DIAL_DIRECTIONS: Record<DialDirection, string> = { up: 'вверх', down: 'вниз', right: 'вправо', left: 'влево' };
 
+const ERROR_FORMS: PluralForms = ['ошибка', 'ошибки', 'ошибок'];
+const DAY_FORMS: PluralForms = ['день', 'дня', 'дней'];
 
 export const instructor = {
+  coach: {
+    title: (p: { skill: string }) => `Тренер: ${p.skill}`,
+    drill: (p: { title: string; level: string }) => `${p.title} · ${p.level}`,
+    levels: { learn: 'обучение', timed: 'на время' },
+    errors: (p: { count: number }) => `${p.count} ${plural(p.count, ERROR_FORMS)} за неделю`,
+    errorsWithType: (p: { count: number; type: string }) => `${p.count} ${plural(p.count, ERROR_FORMS)} за неделю, чаще ${p.type}`,
+    never: 'ещё не тренировали',
+    stale: (p: { days: number }) => `не тренировали ${p.days} ${plural(p.days, DAY_FORMS)}`,
+    weak: (p: { rating: number }) => `рейтинг ${p.rating} из 100`,
+  },
   dial: (p: { direction: DialDirection; clicks: number }) => `Крути ${DIAL_DIRECTIONS[p.direction]}: ещё ${p.clicks} кл.`,
   enter: 'Внеси итог на барабаны',
   firstClicks: {
