@@ -1,3 +1,4 @@
+import type { DrillLevel, PositionDrillId } from './drills';
 import { CalcStepKind, CheckErrorType, CheckVerdict, PreparationRowKind } from '../core/calc-check';
 import {
   calcPoints,
@@ -59,6 +60,12 @@ export interface PositionTask {
   scopeId: ScopeId;
   conditions: ScenarioOptions;
   rifle?: OwnRifle;
+  drill?: PositionDrillTag;
+}
+
+export interface PositionDrillTag {
+  id: PositionDrillId;
+  level: DrillLevel;
 }
 
 export interface OwnRifle {
@@ -118,6 +125,8 @@ export interface ExerciseShotRecord {
   causes?: CauseAmount[];
   clickMil?: number;
   windSpeedMps?: number;
+  isTimedOut?: boolean;
+  shotSeconds?: number;
 }
 
 export interface ExerciseRun {
@@ -366,7 +375,7 @@ export function setupTask(def: PositionTask, seed: number, system: UnitSystem = 
   return {
     targets,
     plan:
-      def.kind === 'free'
+      def.kind === 'free' && !def.drill
         ? { kind: 'free', cartridgeId: def.stages[0].cartridgeId }
         : { kind: 'exercise', hasColdBore: def.hasColdBore, stages: def.stages.map(stage => ({ ...stage, targetCount: targets.length })) },
     scenarioOptions: def.conditions,

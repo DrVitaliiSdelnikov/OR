@@ -10,6 +10,7 @@ import { CauseKind, groupPoint, journalCauses, MissBreakdown } from '../../sim/m
 import { movementClockAt, targetOffsetMil } from '../../sim/patrol';
 import { flagReading } from '../scene/scene.model';
 import { PositionSession } from './position-session';
+import { DrillLevel, PositionDrillId, positionDrillTask, TIME_LIMITS } from '../../sim/drills';
 import { Correction } from '../../core/types';
 
 const engine = new BallisticsEngine();
@@ -31,6 +32,59 @@ async function shoot(session: PositionSession, aim: { x: number; y: number }) {
   session.scope.aim = { ...aim };
   return session.fire(session.scenario.startTimeS);
 }
+
+describe('PositionSession — дрилы на позиции и таймер (T3.3)', () => {
+  async function drill(id: PositionDrillId, level: DrillLevel = 'learn'): Promise<PositionSession> {
+    return PositionSession.start({ def: positionDrillTask(id, 'metric', null, level), seed: 11, engine, accessibility: ACCESSIBILITY });
+  }
+
+  it('холодный выстрел: одна цель, один выстрел — серия закончена', async () => {
+    const session = await drill('cold-bore');
+    session.scope.aim = { ...FAR_OFF };
+    const shot = (await session.fire(session.scenario.startTimeS))!;
+    expect(shot.events).toContain('target-closed');
+    expect(session.isFinished).toBe(true);
+  });
+
+  it('учёба: отсчёта нет; выстрел пишет время от появления цели', async () => {
+    const session = await drill('distance-ladder');
+    const startS = session.scenario.startTimeS;
+    expect(session.timeLeftS(startS + 500)).toBeNull();
+    expect(session.timeOut(startS + 500)).toBeNull();
+    session.scope.aim = { ...FAR_OFF };
+    expect((await session.fire(startS + 12))!.record.shotSeconds).toBe(12);
+    session.scope.bolt.cycle();
+    session.scope.aim = { ...FAR_OFF };
+    expect((await session.fire(startS + 20))!.record.shotSeconds).toBe(8);
+  });
+
+  it(`на время: ${TIME_LIMITS.shotS} с на выстрел; время вышло — промах «время» без патрона; часы — заново`, async () => {
+    const session = await drill('distance-ladder', 'timed');
+    const startS = session.scenario.startTimeS;
+    expect(session.timeLeftS(startS + 30)).toBe(TIME_LIMITS.shotS - 30);
+    expect(session.timeOut(startS + 30)).toBeNull();
+    const roundsBefore = session.firingLine.magazineLeft;
+    const events = session.timeOut(startS + TIME_LIMITS.shotS)!;
+    expect(events).toEqual([]);
+    expect(session.records).toHaveLength(1);
+    expect(session.records[0]).toMatchObject({ isHit: false, isTimedOut: true, shotSeconds: TIME_LIMITS.shotS, targetIndex: 0 });
+    expect(session.firingLine.magazineLeft).toBe(roundsBefore);
+    expect(session.timeLeftS(startS + TIME_LIMITS.shotS)).toBe(TIME_LIMITS.shotS);
+    expect(session.timeOut(startS + 2 * TIME_LIMITS.shotS)).toContain('next-target');
+    expect(session.firingLine.targetIndex).toBe(1);
+  });
+
+  it(`этап на время: ${TIME_LIMITS.stageS} с на все цели; время вышло — оставшиеся цели «время», серия закончена`, async () => {
+    const session = await drill('timed-stage', 'timed');
+    const startS = session.scenario.startTimeS;
+    session.scope.aim = { ...FAR_OFF };
+    await session.fire(startS + 50);
+    expect(session.timeLeftS(startS + 60)).toBe(TIME_LIMITS.stageS - 60);
+    expect(session.timeOut(startS + TIME_LIMITS.stageS)).toContain('exercise-done');
+    expect(session.isFinished).toBe(true);
+    expect(session.records.map(record => record.isTimedOut === true)).toEqual([false, true, true, true, true]);
+  });
+});
 
 describe('PositionSession — start', () => {
   it('01: three gongs at 300 m, the course tree scope, the turret target is the DOPE row, 5 of 6 rounds loaded', async () => {

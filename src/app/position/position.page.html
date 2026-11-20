@@ -6,6 +6,9 @@
       <div class="titles">
         <div class="title" data-test="position-title">{{ state?.title ?? def()?.title ?? '' }}</div>
         <div class="subtitle mono" data-test="position-subtitle">{{ state?.subtitle ?? '' }}</div>
+        @if (state?.drillTimer; as timer) {
+          <div class="subtitle mono drill-timer" [class.urgent]="timer.isUrgent" data-test="drill-timer">{{ timer.text }}</div>
+        }
         @if (state?.patrolLine; as patrolLine) {
           <div class="subtitle mono" data-test="position-patrol" data-hint="position-patrol">{{ patrolLine }}</div>
         }
@@ -137,7 +140,7 @@
           [breath]="state.breath"
           [holdLabel]="state.holdLabel"
           [rounds]="state.rounds"
-          [isFireEnabled]="end() === null"
+          [isFireEnabled]="end() === null && drillEnd() === null"
           (fireTap)="fire()"
           (firePress)="pressTrigger($event)"
           (fireMove)="moveTrigger($event)"
@@ -200,6 +203,10 @@
           (journal)="toJournal()"
         />
       }
+    }
+
+    @if (drillEnd(); as summary) {
+      <or-drill-end class="review-sheet" [style.top.px]="reviewFrame()?.topPt" [style.height.px]="reviewFrame()?.heightPt" [view]="summary" (again)="againDrill()" (leave)="toDrills()" />
     }
 
     @if (radio(); as line) {

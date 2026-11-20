@@ -24,6 +24,7 @@ export interface JournalShot {
   mode: NotebookMode;
   causes?: CauseAmount[];
   clickMil?: number;
+  isTimedOut?: boolean;
 }
 
 export interface JournalSeries {
@@ -104,6 +105,7 @@ const WIND_BUCKETS: readonly { label: string; belowMps: number }[] = [
   { label: T.windBuckets.moderate, belowMps: 6.5 },
   { label: T.windBuckets.strong, belowMps: Infinity },
 ];
+const TIME_ERROR_KEY = 'time';
 const ERROR_ORDER: readonly CheckErrorType[] = ['side', 'substitution', 'arithmetic', 'factor', 'reading', 'lead', 'rounding', 'units', 'turret'];
 const EXECUTION_CAUSES: readonly MainCause[] = ['hold', 'trigger', 'wind-under', 'wind-over'];
 const LINK_ERROR_KEY_PREFIX = 'link:';
@@ -142,6 +144,7 @@ export function journalSeries(input: SeriesInput): JournalSeries | null {
         windSpeedMps: record.windSpeedMps ?? 0,
         mode,
         ...(record.causes && record.clickMil !== undefined ? { causes: record.causes, clickMil: record.clickMil } : {}),
+        ...(record.isTimedOut ? { isTimedOut: true } : {}),
       };
     }),
   };
@@ -193,7 +196,7 @@ export function feedView(journal: readonly JournalSeries[], system: UnitSystem =
     stamp: seriesStamp(series),
     stampTone: series.isInterrupted || series.exerciseClass === null ? 'graphite' : STAMP_TONES[series.exerciseClass],
     shots: series.shots.map((shot, index) =>
-      T.shotLine({ number: index + 1, distance: text.units.valueText('distance', shot.distanceM, system, 0), isHit: shot.isHit, cause: shot.isHit ? null : shotCause(shot) }),
+      T.shotLine({ number: index + 1, distance: text.units.valueText('distance', shot.distanceM, system, 0), isHit: shot.isHit, cause: shot.isHit ? null : shot.isTimedOut ? T.timedOut : shotCause(shot) }),
     ),
   }));
 }
@@ -211,6 +214,9 @@ export function errorsView(journal: readonly JournalSeries[]): ErrorRowView[] {
   };
   for (const series of journal) {
     for (const shot of series.shots) {
+      if (shot.isTimedOut) {
+        note(TIME_ERROR_KEY, T.timeError, series, ERROR_ORDER.length + CAUSE_ORDER.length + EXECUTION_CAUSES.length);
+      }
       for (const type of shot.errorTypes) {
         note(type, text.review.errorLabels[type], series, ERROR_ORDER.indexOf(type));
       }

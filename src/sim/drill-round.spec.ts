@@ -3,7 +3,7 @@ import { courseLoadout } from '../core/content';
 import { buildDopeCard, DopeCard } from '../core/dope-card';
 import { BallisticsEngine } from '../core/engine';
 import { DRILL_ROUNDS_KEPT, DrillRound, drillContext, withDrillRound } from './drill-round';
-import { countCard, DrillContext } from './drills';
+import { countCard, DrillContext, TIME_LIMITS } from './drills';
 import { checkInputs, placeChip, recordStep, stepSheet, typeTape } from './notebook';
 import { checkManualSteps } from '../core/calc-check';
 import { builtInProfile } from './rifle-profile';
@@ -148,6 +148,59 @@ describe('DrillRound (T3.2)', () => {
   it('тот же сид — те же карточки', () => {
     expect(started('dope', 5).round.cards).toEqual(started('dope', 5).round.cards);
     expect(started('dope', 5).round.cards).not.toEqual(started('dope', 6).round.cards);
+  });
+});
+
+describe('раунд на время (T3.3, В60: 2б)', () => {
+  function timed(drillId: 'wind' | 'milling' = 'wind') {
+    const clock = { nowS: 100 };
+    const round = DrillRound.start({ drillId, seed: 4, context: context(), startedAtIso: STARTED, clockS: () => clock.nowS, level: 'timed' });
+    return { round, clock };
+  }
+
+  function answerOnly(round: DrillRound, value: number): void {
+    const { step, answer: reference } = round.card;
+    round.typeTape(step, round.stepSheet(step).tapeLength - 1, value);
+    if (reference.sign !== null) {
+      round.setSign(step, reference.sign);
+    }
+    round.recordStep(step);
+  }
+
+  it('фишки уже в слотах: игрок пишет только число и сторону — «точно»', () => {
+    const { round } = timed();
+    expect(round.stepSheet(round.card.step).slots.every(slot => slot.placed !== null)).toBe(true);
+    answerOnly(round, round.card.answer.value);
+    expect(round.check?.result.verdict).toBe('exact');
+    expect(round.level).toBe('timed');
+  });
+
+  it(`отсчёт ${TIME_LIMITS.cardS} с; время вышло — карточка «время», без вердикта листа; ДАЛЬШЕ идёт`, () => {
+    const { round, clock } = timed();
+    expect(round.timeLeftS()).toBe(TIME_LIMITS.cardS);
+    clock.nowS += 12;
+    expect(round.timeLeftS()).toBe(TIME_LIMITS.cardS - 12);
+    expect(round.expireIfLate()).toBe(false);
+    clock.nowS += TIME_LIMITS.cardS;
+    expect(round.expireIfLate()).toBe(true);
+    expect(round.isTimedOut).toBe(true);
+    expect(round.results[0]).toEqual({ verdict: 'error', errorTypes: [], seconds: TIME_LIMITS.cardS, isTimedOut: true });
+    answerOnly(round, round.card.answer.value);
+    expect(round.results).toHaveLength(1);
+    expect(round.next()).toBe(true);
+    expect(round.isTimedOut).toBe(false);
+    expect(round.timeLeftS()).toBe(TIME_LIMITS.cardS);
+  });
+
+  it('записанная вовремя карточка не истекает; в учёбе отсчёта нет', () => {
+    const { round, clock } = timed();
+    answerOnly(round, round.card.answer.value);
+    clock.nowS += 60;
+    expect(round.expireIfLate()).toBe(false);
+    expect(round.results[0].isTimedOut).toBeUndefined();
+    const learn = started().round;
+    expect(learn.timeLeftS()).toBeNull();
+    expect(learn.expireIfLate()).toBe(false);
   });
 });
 

@@ -122,3 +122,4 @@
 | app · страница «О приложении» | [specs/app-about.md](specs/app-about.md) | реализовано 18.11 |
 | sim · каталог дрилов (T3.1, В57) | [specs/sim-drills.md](specs/sim-drills.md) | реализовано 18.11 |
 | app · экран счётных карточек (T3.2, В59) | [specs/app-drill-cards.md](specs/app-drill-cards.md) | реализовано 20.11 |
+| app · дрилы на позиции и таймер (T3.3, В60) | [specs/app-drill-timer.md](specs/app-drill-timer.md) | реализовано 20.11 |

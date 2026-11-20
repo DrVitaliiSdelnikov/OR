@@ -3,7 +3,7 @@ import { rangeByMilling } from '../core/game-formulas';
 import { mulberry32, RandomSource } from '../core/rng';
 import { fromInput, inSystem, UnitSystem } from '../core/units';
 import { text } from '../i18n';
-import { ExerciseId, FreePlayTask } from './course';
+import { ExerciseId, FreePlayTask, PositionTask } from './course';
 import { DEFAULT_FREE_PLAY, freePlayTask, WIND_PRESETS } from './free-play';
 import { createNotebook, enterWind, FULL_MEASUREMENT_S, measureRange, Notebook, NotebookContext, NotebookStepId, NotebookTarget, recordStation, stepHasSide, stepReferenceMil } from './notebook';
 import { RifleProfile } from './rifle-profile';
@@ -65,6 +65,7 @@ export const DRILLS: readonly DrillDef[] = [
 ];
 
 export const ROUND_CARDS = 10;
+export const TIME_LIMITS = { cardS: 30, shotS: 90, stageS: 120 } as const;
 const SEED_SALT = 0x0d7111;
 const MILLING_TARGET_SIZES_M: readonly number[] = [0.5, 0.75, 1, 1.5, 1.8];
 const RETICLE_READING_DECIMALS = 10;
@@ -172,12 +173,12 @@ function answerOf(notebook: Notebook, step: NotebookStepId): CountCard['answer']
   return { value: Math.abs(mil), sign: mil < 0 ? -1 : 1 };
 }
 
-export function positionDrillTask(id: PositionDrillId, system: UnitSystem, ownProfile: RifleProfile | null = null): FreePlayTask {
+export function positionDrillTask(id: PositionDrillId, system: UnitSystem, ownProfile: RifleProfile | null = null, level: DrillLevel = 'learn'): FreePlayTask {
   const base = freePlayTask({ ...DEFAULT_FREE_PLAY, rifle: ownProfile ? 'own' : 'course' }, ownProfile, system);
   const inMetres = (value: number) => fromInput('distance', value, system);
   const known = (span: { from: number; to: number }) => ({ kind: 'known' as const, fromM: inMetres(span.from), toM: inMetres(span.to) });
   const stage = base.stages[0];
-  const task: FreePlayTask = { ...base, title: drillTitle(id) };
+  const task: FreePlayTask = { ...base, title: drillTitle(id), drill: { id, level } };
   switch (id) {
     case 'cold-bore':
       return { ...task, targets: { count: 1, distance: known(KNOWN_SPAN_IN_SYSTEM) }, stages: [{ ...stage, maxShotsPerTarget: 1, closesOnHit: true }], hasColdBore: true };
@@ -199,6 +200,13 @@ export function positionDrillTask(id: PositionDrillId, system: UnitSystem, ownPr
     case 'timed-stage':
       return { ...task, targets: { count: STAGE_TARGETS, distance: known(STAGE_SPAN_IN_SYSTEM) }, stages: [{ ...stage, maxShotsPerTarget: 1, closesOnHit: true }] };
   }
+}
+
+export function positionTimeLimit(task: PositionTask): { scope: 'shot' | 'stage'; seconds: number } | null {
+  if (task.drill?.level !== 'timed') {
+    return null;
+  }
+  return task.drill.id === 'timed-stage' ? { scope: 'stage', seconds: TIME_LIMITS.stageS } : { scope: 'shot', seconds: TIME_LIMITS.shotS };
 }
 
 function range(from: number, to: number, step: number): number[] {

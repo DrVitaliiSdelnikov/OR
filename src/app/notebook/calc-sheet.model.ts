@@ -291,7 +291,7 @@ export function modeBadge(mode: NotebookMode): string {
   return `${MODE_NAMES[mode]} ×${decimal(modeMultiplier(mode, false))}`;
 }
 
-function stepValueText(step: NotebookStepId, value: number, sign: 1 | -1 | null, system: UnitSystem): string {
+export function stepValueText(step: NotebookStepId, value: number, sign: 1 | -1 | null, system: UnitSystem): string {
   if (step === 'distance') {
     return `${decimal(value)} ${UNITS.unitName('distance', system, value)}`;
   }

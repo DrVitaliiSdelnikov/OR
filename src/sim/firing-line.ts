@@ -90,6 +90,15 @@ export class FiringLine {
     return events;
   }
 
+  recordTimeout(): FiringEvent[] {
+    if (this.isExerciseDone) {
+      throw new RangeError('the exercise is over');
+    }
+    this.currentShots.push({ isHit: false, isColdBore: false });
+    this.stageRoundsFired++;
+    return this.plan.kind === 'exercise' ? this.advanceExercise(this.plan, false) : [];
+  }
+
   changeMagazine(cartridgeId?: CartridgeId): void {
     if (this.plan.kind === 'exercise') {
       if (this.roundsInMagazine > 0) {

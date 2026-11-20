@@ -51,6 +51,7 @@ import {
   typeTape,
 } from '../../sim/notebook';
 import { scopeById, TurretMove } from '../../sim/scope-model';
+import { positionTimeLimit } from '../../sim/drills';
 import { UnitSystem } from '../../core/units';
 import { FireOutcome, ScopeSession } from '../../sim/scope-session';
 import { callFromHeldLead, diagnoseShot, dopeNoteElevationMil, isCallAccurate, isLeadBackward, secondShotCorrection, ShotDiagnosis, TurretCorrection, warmImpact } from '../../sim/shot-review';
@@ -128,6 +129,9 @@ export class PositionSession {
   private marks: PencilMark[] = [];
   private patrolStartS: number | null = null;
   private lastCall: Correction | null = null;
+  private shotClockStartS: number;
+  private stageClockStartS: number;
+  private readonly timeLimit: ReturnType<typeof positionTimeLimit>;
   private readonly shotRecords: ExerciseShotRecord[] = [];
   private readonly groupPoints: Correction[] = [];
   private readonly shotCalls: Correction[] = [];
@@ -149,6 +153,9 @@ export class PositionSession {
     this.firingLine = new FiringLine(setup.plan);
     this.scope = new ScopeSession(def.rifle?.scope ?? scopeById(def.scopeId), POSITION_RESTING_BPM, scenario.seed, accessibility, this.firingLine.magazineLoaded);
     this.isRepeatAfterRecalc = recalcNotebook !== undefined;
+    this.shotClockStartS = scenario.startTimeS;
+    this.stageClockStartS = scenario.startTimeS;
+    this.timeLimit = positionTimeLimit(def);
     this.currentNotebook = this.withFlagsBehindBerm(
       recalcNotebook
         ? changeContext(recalcNotebook, { card: this.cards.get(this.firingLine.cartridgeId)!, target: this.notebookTarget() })
@@ -427,12 +434,14 @@ export class PositionSession {
       causes: journalCauses(breakdown),
       clickMil: breakdown.clickMil,
       windSpeedMps: windAt(this.scenario, timeS)[0].speedMps,
+      shotSeconds: timeS - this.shotClockStartS,
       ...(check ? { check } : {}),
       ...(rangeEstimateM !== undefined ? { rangeEstimateM } : {}),
       ...(patrol ? { isAmbush: patrol.isAmbush, isLeadBackward: isLeadBehind } : {}),
     };
     this.shotRecords.push(record);
     const events = this.firingLine.recordShot(result.isHit);
+    this.restartClocks(timeS, events);
     const warm = warmImpact(result.impact, result.coldBore);
     const clickMil = this.currentNotebook.context.card.clickMil;
     this.lastCall = outcome.hold;
@@ -458,6 +467,27 @@ export class PositionSession {
       this.followNewTarget(this.target !== target);
     }
     return { record, result, events, boltEvents, review };
+  }
+
+  timeLeftS(timeS: number): number | null {
+    if (!this.timeLimit) {
+      return null;
+    }
+    const clockStartS = this.timeLimit.scope === 'shot' ? this.shotClockStartS : this.stageClockStartS;
+    return Math.max(0, this.timeLimit.seconds - (timeS - clockStartS));
+  }
+
+  timeOut(timeS: number): FiringEvent[] | null {
+    const timeLeftS = this.timeLeftS(timeS);
+    if (timeLeftS === null || timeLeftS > 0 || this.firingLine.isFinished) {
+      return null;
+    }
+    const stageIndex = this.firingLine.stageIndex;
+    const events: FiringEvent[] = [];
+    do {
+      events.push(...this.timeOutShot(timeS));
+    } while (this.timeLimit!.scope === 'stage' && !this.firingLine.isFinished && this.firingLine.stageIndex === stageIndex);
+    return events;
   }
 
   changeMagazine(): BoltEvent[] {
@@ -561,6 +591,34 @@ export class PositionSession {
     }
     const fromGong = (point: Correction): Correction => ({ upMrad: point.upMrad, rightMrad: point.rightMrad - shiftMil });
     return { ...outcome, hold: fromGong(outcome.hold), reticle: fromGong(outcome.reticle) };
+  }
+
+  private timeOutShot(timeS: number): FiringEvent[] {
+    const target = this.target;
+    this.shotRecords.push({
+      stageIndex: this.firingLine.stageIndex,
+      targetIndex: this.firingLine.targetIndex,
+      distanceM: target.distanceM,
+      isHit: false,
+      isColdBore: false,
+      impact: { upMrad: 0, rightMrad: 0 },
+      diagnosis: 'execution',
+      isTimedOut: true,
+      shotSeconds: timeS - this.shotClockStartS,
+    });
+    const events = this.firingLine.recordTimeout();
+    this.restartClocks(timeS, events);
+    if (events.includes('next-target') || events.includes('stage-done')) {
+      this.followNewTarget(this.target !== target);
+    }
+    return events;
+  }
+
+  private restartClocks(timeS: number, events: readonly FiringEvent[]): void {
+    this.shotClockStartS = timeS;
+    if (events.includes('stage-done')) {
+      this.stageClockStartS = timeS;
+    }
   }
 
   private followNewTarget(isNewTarget: boolean): void {

@@ -1,4 +1,8 @@
-import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, input, signal, viewChild } from '@angular/core';
+import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, input, signal, untracked, viewChild } from '@angular/core';
+import { drillRoundSummary, isTimedOpen, positionDrillRecord } from '../../sim/drill-levels';
+import { DrillLevel, POSITION_DRILL_IDS, PositionDrillId, positionDrillTask } from '../../sim/drills';
+import { POSITION_DRILL_PREFIX, positionSummaryView, SummaryView } from '../drill/drill-cards.model';
+import { DrillEndComponent } from '../drill/drill-end.component';
 import { Router } from '@angular/router';
 import { IonContent, ViewWillEnter, ViewWillLeave } from '@ionic/angular/standalone';
 import { targetRadiusMrad } from '../../core/content';
@@ -45,6 +49,8 @@ const MARKS_ON_GLASS = 8;
 const UI_REFRESH_S = 0.1;
 const RADIO_MS = 4000;
 const FREE_PLAY_ID = 'free';
+const URGENT_TIME_LEFT_S = 10;
+const TEXTS_DRILLS = text.drills;
 const INSTRUCTOR_ON = 'on';
 const STOP_BADGE_MS = 900;
 const FLAG_READING_SHOWN_MS = 2000;
@@ -76,6 +82,7 @@ const BOLT_EVENT_FEEDBACK: Partial<Record<BoltEvent, FeedbackEvent>> = {
     NotebookSheetComponent,
     ReviewSheetComponent,
     ResultSheetComponent,
+    DrillEndComponent,
     RadioPlateComponent,
     TeachingOverlayComponent,
   ],
@@ -88,6 +95,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   readonly instructor = input<string>();
   readonly mode = input<NotebookMode>();
   readonly sandboxTerm = input<string | undefined>(undefined, { alias: 'sandbox' });
+  readonly level = input<string | undefined>();
 
   protected readonly texts = T;
 
@@ -102,6 +110,16 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   private readonly positionRoot = viewChild<ElementRef<HTMLElement>>('positionRoot');
 
   protected readonly isFreePlay = computed(() => this.exerciseId() === FREE_PLAY_ID);
+  protected readonly positionDrill = computed<{ id: PositionDrillId; level: DrillLevel } | null>(() => {
+    const id = this.exerciseId().slice(POSITION_DRILL_PREFIX.length) as PositionDrillId;
+    if (!this.exerciseId().startsWith(POSITION_DRILL_PREFIX) || !POSITION_DRILL_IDS.includes(id)) {
+      return null;
+    }
+    const isTimed = this.level() === 'timed' && untracked(() => isTimedOpen(id, this.progress.drillRounds(), this.progress.settings().isEverythingUnlocked));
+    return { id, level: isTimed ? 'timed' : 'learn' };
+  });
+  private readonly isTimedDrill = computed(() => this.positionDrill()?.level === 'timed');
+  protected readonly drillEnd = signal<SummaryView | null>(null);
   protected readonly sandbox = computed(() => {
     const term = this.sandboxTerm();
     return this.isFreePlay() && term ? sandboxOf(term) : null;
@@ -110,6 +128,10 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     const sandbox = this.sandbox();
     if (sandbox) {
       return { ...freePlayTask(sandboxSettings(sandbox, this.unitSystem()), null, this.unitSystem()), title: T.sandboxTitle };
+    }
+    const drill = this.positionDrill();
+    if (drill) {
+      return positionDrillTask(drill.id, this.unitSystem(), this.progress.activeProfile(), drill.level);
     }
     return this.isFreePlay()
       ? freePlayTask(
@@ -188,6 +210,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     return {
       title: isExerciseTask(session.def) ? T.exerciseTitle({ exerciseId: session.def.id, title: exerciseTitle(session.def, this.unitSystem()) }) : session.def.title,
       instructorLine: this.isFreePlay() && !this.sandbox() && this.progress.freePlay().isInstructorNear ? instructorLineText(session.trueCorrection(this.scenarioTimeS(session))) : null,
+      drillTimer: this.drillTimer(session),
       subtitle: subtitleText(notebook.context.target.distanceM, session.firingLine.targetIndex + 1, session.setup.targets.length, this.unitSystem()),
       patrolLine: session.patrol ? patrolLineText(session.patrol, session.patrolWalkedS(this.scenarioTimeS(session)), this.unitSystem()) : null,
       geometryLine: geometryLineText(session.scenario.geometry),
@@ -372,6 +395,11 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     }
     this.marks.unshift(shot.result.impact);
     this.marks.length = Math.min(this.marks.length, MARKS_ON_GLASS);
+    if (this.isTimedDrill()) {
+      this.finishDrillIfDone(session);
+      this.refresh();
+      return;
+    }
     this.closeSheet();
     this.fingerMarker = null;
     this.reviewFrame.set(this.fullFrame());
@@ -382,6 +410,9 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   protected closeReview(): void {
     const session = this.session();
     this.reviewedShot.set(null);
+    if (session) {
+      this.finishDrillIfDone(session);
+    }
     const result = session?.result();
     if (session && result && isExerciseTask(session.def)) {
       const courseBefore = this.progress.course();
@@ -524,7 +555,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
 
   private isLeaveConfirmNeeded(): boolean {
     const session = this.session();
-    return session !== null && session.hasFired && !session.isFinished && !this.isFreePlay();
+    return session !== null && session.hasFired && !session.isFinished && !this.isFreePlay() && !this.positionDrill();
   }
 
   protected stay(): void {
@@ -540,7 +571,46 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       void this.router.navigate(['/textbook']).then(() => this.termSheet.open(sandboxTerm));
       return;
     }
-    void this.router.navigate(this.isFreePlay() ? ['/free'] : ['/course', this.exerciseId()]);
+    void this.router.navigate(this.positionDrill() ? ['/drills'] : this.isFreePlay() ? ['/free'] : ['/course', this.exerciseId()]);
+  }
+
+  protected toDrills(): void {
+    void this.router.navigate(['/drills']);
+  }
+
+  protected async againDrill(): Promise<void> {
+    this.drillEnd.set(null);
+    this.marks.length = 0;
+    await this.startSession();
+  }
+
+  private finishDrillIfDone(session: PositionSession): void {
+    const drill = this.positionDrill();
+    if (!drill || !session.isFinished || this.drillEnd()) {
+      return;
+    }
+    this.saveSeries();
+    const record = positionDrillRecord({ drillId: drill.id, level: drill.level, seed: session.scenario.seed, startedAtIso: this.seriesStartedAtIso, records: session.records });
+    this.progress.addDrillRound(record);
+    this.reviewFrame.set(this.fullFrame());
+    this.drillEnd.set(positionSummaryView(drillRoundSummary(record.cards)));
+  }
+
+  private drillTimer(session: PositionSession): { text: string; isUrgent: boolean } | null {
+    const timeLeftS = session.timeLeftS(this.scenarioTimeS(session));
+    return timeLeftS === null || session.isFinished ? null : { text: TEXTS_DRILLS.card.timeLeft({ seconds: Math.ceil(timeLeftS) }), isUrgent: timeLeftS <= URGENT_TIME_LEFT_S };
+  }
+
+  private checkTimeOut(session: PositionSession): void {
+    if (!this.isTimedDrill() || this.isFiring || this.drillEnd()) {
+      return;
+    }
+    if (session.timeOut(this.scenarioTimeS(session))) {
+      this.stopBadge.set(TEXTS_DRILLS.card.timedOut);
+      setTimeout(() => this.stopBadge.set(null), STOP_BADGE_MS);
+      this.finishDrillIfDone(session);
+      this.refresh();
+    }
   }
 
   protected toTrail(): void {
@@ -707,6 +777,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
           this.fingerMarker = null;
           void this.fire();
         }
+        this.checkTimeOut(session);
         this.draw(session);
       }
       this.uiAccumulatorS += dtS;

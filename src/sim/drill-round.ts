@@ -3,7 +3,9 @@ import { courseLoadout } from '../core/content';
 import { buildDopeCard } from '../core/dope-card';
 import { BallisticsEngine } from '../core/engine';
 import { UnitSystem } from '../core/units';
-import { CountCard, CountDrillId, countRound, DrillContext, DrillLevel } from './drills';
+import { drillRoundSummary } from './drill-levels';
+import { CountCard, CountDrillId, countRound, DrillContext, DrillId, DrillLevel, TIME_LIMITS } from './drills';
+import { MainCause } from './miss-breakdown';
 import { DEFAULT_FREE_PLAY } from './free-play';
 import { checkInputs, CheckTruth, ChipKind, Notebook, NotebookCheckInputs, NotebookStepId, placeChip, recordStep, removeChip, setSign, setUnits, stepSheet, StepSheet, typeTape } from './notebook';
 import { NotebookEditor } from './notebook-editor';
@@ -22,10 +24,14 @@ export interface DrillCardResult {
   verdict: CheckVerdict;
   errorTypes: CheckErrorType[];
   seconds: number;
+  isTimedOut?: boolean;
+  missCause?: MainCause | null;
 }
 
+export type DrillErrorKind = CheckErrorType | 'time' | `miss-${MainCause}`;
+
 export interface DrillRoundRecord {
-  drillId: CountDrillId;
+  drillId: DrillId;
   level: DrillLevel;
   seed: number;
   startedAtIso: string;
@@ -38,7 +44,7 @@ export interface DrillRoundSummary {
   error: number;
   accuracy: number;
   averageSeconds: number;
-  errorCounts: { type: CheckErrorType; count: number }[];
+  errorCounts: { type: DrillErrorKind; count: number }[];
 }
 
 export interface DrillRoundStart {
@@ -47,6 +53,7 @@ export interface DrillRoundStart {
   context: DrillContext;
   startedAtIso: string;
   clockS: () => number;
+  level?: DrillLevel;
 }
 
 export const DRILL_ROUNDS_KEPT = 200;
@@ -58,12 +65,13 @@ export class DrillRound implements NotebookEditor {
   private currentIndex = 0;
   private currentNotebook: Notebook;
   private currentCheck: DrillCardCheck | null = null;
+  private isCardTimedOut = false;
   private cardStartedS: number;
   private readonly cardResults: DrillCardResult[] = [];
 
   private constructor(private readonly start: DrillRoundStart) {
     this.cards = countRound(start.drillId, start.seed, start.context);
-    this.currentNotebook = this.cards[0].notebook;
+    this.currentNotebook = this.preparedNotebook(this.cards[0]);
     this.cardStartedS = start.clockS();
   }
 
@@ -77,6 +85,14 @@ export class DrillRound implements NotebookEditor {
 
   get seed(): number {
     return this.start.seed;
+  }
+
+  get level(): DrillLevel {
+    return this.start.level ?? 'learn';
+  }
+
+  get isTimedOut(): boolean {
+    return this.isCardTimedOut;
   }
 
   get cardIndex(): number {
@@ -132,7 +148,7 @@ export class DrillRound implements NotebookEditor {
   }
 
   recordStep(step: NotebookStepId): void {
-    if (this.currentCheck) {
+    if (this.currentCheck || this.isCardTimedOut) {
       return;
     }
     this.currentNotebook = recordStep(this.currentNotebook, step);
@@ -146,45 +162,55 @@ export class DrillRound implements NotebookEditor {
     });
   }
 
+  timeLeftS(): number | null {
+    if (this.level !== 'timed') {
+      return null;
+    }
+    return Math.max(0, TIME_LIMITS.cardS - (this.start.clockS() - this.cardStartedS));
+  }
+
+  expireIfLate(): boolean {
+    const timeLeftS = this.timeLeftS();
+    if (timeLeftS === null || timeLeftS > 0 || this.currentCheck || this.isCardTimedOut) {
+      return false;
+    }
+    this.isCardTimedOut = true;
+    this.cardResults.push({ verdict: 'error', errorTypes: [], seconds: TIME_LIMITS.cardS, isTimedOut: true });
+    return true;
+  }
+
   next(): boolean {
-    if (!this.currentCheck || this.currentIndex === this.cards.length - 1) {
+    if ((!this.currentCheck && !this.isCardTimedOut) || this.currentIndex === this.cards.length - 1) {
       return false;
     }
     this.currentIndex++;
-    this.currentNotebook = this.card.notebook;
+    this.currentNotebook = this.preparedNotebook(this.card);
     this.currentCheck = null;
+    this.isCardTimedOut = false;
     this.cardStartedS = this.start.clockS();
     return true;
   }
 
   summary(): DrillRoundSummary | null {
-    if (!this.isFinished) {
-      return null;
-    }
-    const countOf = (verdict: CheckVerdict) => this.cardResults.filter(result => result.verdict === verdict).length;
-    const errorCounts = new Map<CheckErrorType, number>();
-    for (const type of this.cardResults.flatMap(result => result.errorTypes)) {
-      errorCounts.set(type, (errorCounts.get(type) ?? 0) + 1);
-    }
-    return {
-      exact: countOf('exact'),
-      close: countOf('close'),
-      error: countOf('error'),
-      accuracy: countOf('exact') / this.cards.length,
-      averageSeconds: this.cardResults.reduce((total, result) => total + result.seconds, 0) / this.cards.length,
-      errorCounts: [...errorCounts.entries()].map(([type, count]) => ({ type, count })).sort((first, second) => second.count - first.count),
-    };
+    return this.isFinished ? drillRoundSummary(this.cardResults) : null;
   }
 
   toRecord(): DrillRoundRecord | null {
     if (!this.isFinished) {
       return null;
     }
-    return { drillId: this.start.drillId, level: 'learn', seed: this.start.seed, startedAtIso: this.start.startedAtIso, cards: [...this.cardResults] };
+    return { drillId: this.start.drillId, level: this.level, seed: this.start.seed, startedAtIso: this.start.startedAtIso, cards: [...this.cardResults] };
+  }
+
+  private preparedNotebook(card: CountCard): Notebook {
+    if (this.level !== 'timed') {
+      return card.notebook;
+    }
+    return stepSheet(card.notebook, card.step).slots.reduce((notebook, slot, index) => placeChip(notebook, card.step, slot.chipKind, index), card.notebook);
   }
 
   private edit(change: (notebook: Notebook) => Notebook): void {
-    if (!this.currentCheck) {
+    if (!this.currentCheck && !this.isCardTimedOut) {
       this.currentNotebook = change(this.currentNotebook);
     }
   }

@@ -1,16 +1,31 @@
 import { displayDigits, Quantity, UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
-import { DrillRoundSummary } from '../../sim/drill-round';
-import { COUNT_DRILL_IDS, CountCard, CountDrillId, drillById, drillTitle } from '../../sim/drills';
+import { isTimedOpen } from '../../sim/drill-levels';
+import { DrillErrorKind, DrillRoundRecord, DrillRoundSummary } from '../../sim/drill-round';
+import { COUNT_DRILL_IDS, CountCard, DrillId, drillById, DrillLevel, drillTitle, POSITION_DRILL_IDS } from '../../sim/drills';
+import { MAIN_CAUSE_PHRASES } from '../result/result.model';
 import { targetSizeText } from '../notebook/calc-sheet.model';
 
 const T = text.drills;
+export const POSITION_DRILL_PREFIX = 'drill-';
+const MISS_PREFIX = 'miss-';
 
 export interface DrillListRow {
-  id: CountDrillId;
+  id: DrillId;
   title: string;
   skill: string;
   taughtIn: string | null;
+  timed: { isOpen: boolean; label: string };
+}
+
+export interface DrillListGroup {
+  title: string;
+  rows: DrillListRow[];
+}
+
+export interface DrillLink {
+  path: string[];
+  query: Record<string, string>;
 }
 
 export interface SummaryView {
@@ -20,11 +35,27 @@ export interface SummaryView {
   errors: string[];
 }
 
-export function drillListRows(): DrillListRow[] {
-  return COUNT_DRILL_IDS.map(id => {
+export function drillListGroups(rounds: readonly DrillRoundRecord[], isEverythingUnlocked: boolean): DrillListGroup[] {
+  const rowOf = (id: DrillId): DrillListRow => {
     const drill = drillById(id)!;
-    return { id, title: drillTitle(id), skill: T.skills[drill.skill], taughtIn: drill.taughtIn ? T.taughtIn({ exerciseId: drill.taughtIn }) : null };
-  });
+    const isOpen = isTimedOpen(id, rounds, isEverythingUnlocked);
+    return {
+      id,
+      title: drillTitle(id),
+      skill: T.skills[drill.skill],
+      taughtIn: drill.taughtIn ? T.taughtIn({ exerciseId: drill.taughtIn }) : null,
+      timed: { isOpen, label: isOpen ? T.list.timed : T.list.timedLocked },
+    };
+  };
+  return [
+    { title: T.list.countGroup, rows: COUNT_DRILL_IDS.map(rowOf) },
+    { title: T.list.positionGroup, rows: POSITION_DRILL_IDS.map(rowOf) },
+  ];
+}
+
+export function drillLink(id: DrillId, level: DrillLevel): DrillLink {
+  const query: Record<string, string> = level === 'timed' ? { level } : {};
+  return drillById(id)!.kind === 'count' ? { path: ['/drill', id], query } : { path: ['/position', `${POSITION_DRILL_PREFIX}${id}`], query };
 }
 
 export function conditionsText(card: CountCard): string {
@@ -53,8 +84,32 @@ export function summaryView(summary: DrillRoundSummary): SummaryView {
     counts: T.summary.counts(summary),
     accuracy: T.summary.accuracy({ share: summary.accuracy }),
     averageTime: T.summary.averageTime({ seconds: summary.averageSeconds }),
-    errors: summary.errorCounts.map(item => T.summary.error({ label: text.review.errorLabels[item.type], count: item.count })),
+    errors: errorsOf(summary),
   };
+}
+
+export function positionSummaryView(summary: DrillRoundSummary): SummaryView {
+  const shots = summary.exact + summary.close + summary.error;
+  return {
+    counts: T.summary.hits({ hits: summary.exact, shots }),
+    accuracy: T.summary.accuracy({ share: summary.accuracy }),
+    averageTime: T.summary.averageShotTime({ seconds: summary.averageSeconds }),
+    errors: errorsOf(summary),
+  };
+}
+
+function errorsOf(summary: DrillRoundSummary): string[] {
+  return summary.errorCounts.map(item => T.summary.error({ label: errorLabel(item.type), count: item.count }));
+}
+
+function errorLabel(kind: DrillErrorKind): string {
+  if (kind === 'time') {
+    return T.summary.time;
+  }
+  if (kind.startsWith(MISS_PREFIX)) {
+    return MAIN_CAUSE_PHRASES[kind.slice(MISS_PREFIX.length) as keyof typeof MAIN_CAUSE_PHRASES];
+  }
+  return text.review.errorLabels[kind as keyof typeof text.review.errorLabels];
 }
 
 function valueText(quantity: Quantity, baseValue: number, system: UnitSystem): string {

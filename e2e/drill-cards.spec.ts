@@ -34,12 +34,12 @@ async function expectTouchable(page: Page, testId: string): Promise<void> {
 }
 
 test.describe('счётные карточки (T3.2)', () => {
-  test('главная → «Дрилы» → список из 6 счётных → миллинг: карточка 1 из 10 с условиями', async ({ page }) => {
+  test('главная → «Дрилы» → список дрилов → миллинг: карточка 1 из 10 с условиями', async ({ page }) => {
     await seed(page);
     await page.goto('/');
     await page.getByTestId('tile-drills').click();
     await expect(page.getByTestId('drill-list')).toBeVisible();
-    await expect(page.locator('.drill')).toHaveCount(6);
+    await expect(page.locator('.drill')).toHaveCount(11);
     await expect(page.getByTestId('drill-item-milling')).toContainText('учат в упражнении 05');
     await expectTouchable(page, 'drill-item-milling');
     await page.getByTestId('drill-item-milling').click();

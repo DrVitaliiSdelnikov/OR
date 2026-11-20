@@ -2,6 +2,8 @@ export const EXIT_HINT_MS = 2000;
 
 const HOME_URL = '/';
 const FREE_PLAY_ID = 'free';
+const POSITION_DRILL_PREFIX = 'drill-';
+const DRILLS_URL = '/drills';
 const SANDBOX_PARAM = 'sandbox';
 
 export type SystemBackAction = 'close-layer' | 'page' | 'history' | 'parent' | 'exit-hint' | 'exit' | 'none';
@@ -76,12 +78,18 @@ export function parentRoute(url: string): string | null {
   if (section === 'course' && id !== undefined) {
     return '/course';
   }
+  if (section === 'drill') {
+    return DRILLS_URL;
+  }
   if (section === 'intro') {
     return '/course/00';
   }
   if (section === 'position') {
     if (new URLSearchParams(query).has(SANDBOX_PARAM)) {
       return '/textbook';
+    }
+    if (id?.startsWith(POSITION_DRILL_PREFIX)) {
+      return DRILLS_URL;
     }
     return id === FREE_PLAY_ID ? '/free' : `/course/${id}`;
   }

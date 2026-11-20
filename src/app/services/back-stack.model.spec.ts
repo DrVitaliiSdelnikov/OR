@@ -63,7 +63,9 @@ describe('systemBackAction (A8)', () => {
     expect(parentRoute('/position/04?instructor=on')).toBe('/course/04');
     expect(parentRoute('/position/free')).toBe('/free');
     expect(parentRoute('/position/free?sandbox=MIL')).toBe('/textbook');
-    for (const url of ['/free', '/journal', '/textbook', '/settings']) {
+    expect(parentRoute('/position/drill-patrol?level=timed')).toBe('/drills');
+    expect(parentRoute('/drill/wind')).toBe('/drills');
+    for (const url of ['/free', '/journal', '/textbook', '/settings', '/drills']) {
       expect(parentRoute(url)).toBe('/');
     }
   });

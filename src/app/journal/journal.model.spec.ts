@@ -185,6 +185,14 @@ describe('журнал с величинами причин (T2.3)', () => {
     ]);
   });
 
+  it('время вышло (T3.3): в серии — признак, в ленте — «время вышло», в «Ошибках» — «ВРЕМЯ»', () => {
+    const made = journalSeries({ id: 'x', task: exerciseById('04')!, startedAtIso: START, records: [record({ isHit: false, isTimedOut: true, causes: [], clickMil: 0.1 }), record({ targetIndex: 1 })], result: null })!;
+    expect(made.shots.map(item => item.isTimedOut)).toEqual([true, undefined]);
+    const [view] = feedView([series({ shots: [shot({ isHit: false, isTimedOut: true, causes: [], clickMil: 0.1 })] })]);
+    expect(view.shots[0]).toBe('1 · 300 м · ✕ · время вышло');
+    expect(errorsView([series({ shots: [shot({ isHit: false, isTimedOut: true, causes: [], clickMil: 0.1 })] })]).map(row => [row.label, row.count])).toEqual([['ВРЕМЯ', 1]]);
+  });
+
   it('«Ошибки»: на попадании исполнение не ошибка — ни по звеньям, ни в старых записях', () => {
     const view = errorsView([
       series({

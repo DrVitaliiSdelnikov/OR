@@ -23,6 +23,21 @@ describe('FiringLine — exercise', () => {
     expect(line.isNextShotCold).toBe(true);
   });
 
+  it('time out (T3.3): a miss without a round — the magazine and the cold bore stay, even when the magazine is empty', () => {
+    const line = new FiringLine(exercise([gongs(1)]));
+    expect(line.recordTimeout()).toEqual([]);
+    expect([line.targetIndex, line.magazineLeft, line.isNextShotCold]).toEqual([0, line.magazineLoaded, true]);
+    expect(line.recordTimeout()).toContain('target-closed');
+    expect(line.isFinished).toBe(true);
+    const empty = new FiringLine(exercise([gongs(3)]));
+    for (let shot = 0; shot < 5; shot++) {
+      empty.recordShot(MISS);
+    }
+    expect(empty.magazineLeft).toBe(0);
+    expect(empty.recordTimeout()).toContain('target-closed');
+    expect(empty.isFinished).toBe(true);
+  });
+
   it('a first-shot hit closes the target and moves on', () => {
     const line = new FiringLine(exercise([gongs(3)]));
     expect(line.recordShot(HIT)).toEqual(['target-closed', 'next-target']);

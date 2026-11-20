@@ -2,6 +2,7 @@ import type { DrillId, DrillSkill } from '../../sim/drills';
 import { decimal, percent, plural, PluralForms } from '../format';
 
 const ERROR_FORMS: PluralForms = ['ошибка', 'ошибки', 'ошибок'];
+const HIT_FORMS: PluralForms = ['попадание', 'попадания', 'попаданий'];
 
 export const drills = {
   titles: {
@@ -30,8 +31,12 @@ export const drills = {
   taughtIn: (p: { exerciseId: string }) => `учат в упражнении ${p.exerciseId}`,
   list: {
     title: 'Дрилы',
-    subtitle: 'Счётные карточки: 10 задач на один навык, ответ — на листе блокнота',
+    subtitle: 'Короткие упражнения на один навык: карточки на счёт и стрельба на позиции',
     back: '← НАЗАД',
+    countGroup: 'Счётные карточки',
+    positionGroup: 'На позиции',
+    timed: 'НА ВРЕМЯ',
+    timedLocked: 'НА ВРЕМЯ · 2 раунда ≥ 80 %',
   },
   card: {
     heading: (p: { number: number; count: number }) => `Карточка ${p.number} из ${p.count}`,
@@ -39,6 +44,9 @@ export const drills = {
     finish: 'ИТОГ',
     leave: '← ВЫЙТИ',
     loading: 'Готовлю карточки…',
+    timedOut: 'ВРЕМЯ ВЫШЛО',
+    reference: (p: { value: string }) => `Ответ: ${p.value}`,
+    timeLeft: (p: { seconds: number }) => `${p.seconds} с`,
   },
   conditions: {
     milling: (p: { size: string; reticleMil: number }) => `Цель ${p.size} · ${decimal(p.reticleMil)} MIL по сетке`,
@@ -47,6 +55,10 @@ export const drills = {
     angle: (p: { lookAngleDeg: number; distance: string }) => `Угол ${p.lookAngleDeg > 0 ? '+' : '−'}${Math.abs(p.lookAngleDeg)}° · ${p.distance}`,
     lead: (p: { speed: string; clock: number; distance: string }) => `Цель идёт ${p.speed} на ${p.clock} ч · ${p.distance}`,
   },
+  answer: {
+    answer: 'Ответ',
+    record: 'ЗАПИСАТЬ',
+  },
   summary: {
     title: 'Итог раунда',
     counts: (p: { exact: number; close: number; error: number }) => `${p.exact} точно · ${p.close} близко · ${p.error} ${plural(p.error, ERROR_FORMS)}`,
@@ -54,8 +66,12 @@ export const drills = {
     averageTime: (p: { seconds: number }) => `В среднем ${Math.round(p.seconds)} с на карточку`,
     error: (p: { label: string; count: number }) => `${p.label} ×${p.count}`,
     noErrors: 'Ошибок нет',
+    time: 'ВРЕМЯ',
+    hits: (p: { hits: number; shots: number }) => `${p.hits} ${plural(p.hits, HIT_FORMS)} из ${p.shots}`,
+    averageShotTime: (p: { seconds: number }) => `В среднем ${Math.round(p.seconds)} с на выстрел`,
     again: 'ЕЩЁ РАУНД',
     same: 'ЕЩЁ РАЗ ТЕ ЖЕ',
     leave: 'ВЫЙТИ',
+    toDrills: 'К ДРИЛАМ',
   },
 };

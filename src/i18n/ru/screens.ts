@@ -114,6 +114,8 @@ export const screens = {
       `патрон ${p.cartridges.join(', ')} · ${p.mode}${p.isTapTrigger ? ' · спуск тапом' : ''} · ${p.time}`,
     shotLine: (p: { number: number; distance: string; isHit: boolean; cause: string | null }) =>
       `${p.number} · ${p.distance} · ${p.isHit ? '✓' : '✕'}${p.cause ? ` · ${p.cause}` : ''}`,
+    timedOut: 'время вышло',
+    timeError: 'ВРЕМЯ',
     shotCause: (p: { name: string; mil: string }) => `${p.name}, ${p.mil} MIL`,
     errorPlace: (p: { exerciseId: string | null; day: string }) => `${p.exerciseId ?? 'своб.'} · ${p.day}`,
     cardTitle: (p: { letter: string }) => `Патрон ${p.letter}`,

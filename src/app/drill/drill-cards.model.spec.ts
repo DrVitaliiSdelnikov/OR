@@ -3,11 +3,11 @@ import { courseLoadout } from '../../core/content';
 import { buildDopeCard, DopeCard } from '../../core/dope-card';
 import { BallisticsEngine } from '../../core/engine';
 import { UnitSystem } from '../../core/units';
-import { DrillRoundSummary } from '../../sim/drill-round';
-import { COUNT_DRILL_IDS, countCard } from '../../sim/drills';
+import { DrillRoundRecord, DrillRoundSummary } from '../../sim/drill-round';
+import { COUNT_DRILL_IDS, countCard, POSITION_DRILL_IDS } from '../../sim/drills';
 import { scopeById } from '../../sim/scope-model';
 import { decimal } from '../../i18n/format';
-import { conditionsText, drillListRows, summaryView } from './drill-cards.model';
+import { conditionsText, drillLink, drillListGroups, positionSummaryView, summaryView } from './drill-cards.model';
 
 const cards = new Map<UnitSystem, DopeCard>();
 
@@ -49,11 +49,37 @@ describe('строка условий карточки', () => {
   });
 });
 
-describe('список счётных дрилов', () => {
-  it('6 строк по каталогу: название, навык, где учат', () => {
-    const rows = drillListRows();
-    expect(rows.map(row => row.id)).toEqual(COUNT_DRILL_IDS);
-    expect(rows[0]).toEqual({ id: 'milling', title: 'Миллинг', skill: 'дальность', taughtIn: 'учат в упражнении 05' });
+describe('список дрилов (T3.2, T3.3)', () => {
+  const learnRound = (drillId: DrillRoundRecord['drillId'], exact: number): DrillRoundRecord => ({
+    drillId,
+    level: 'learn',
+    seed: 1,
+    startedAtIso: '2026-11-20T10:00:00.000Z',
+    cards: Array.from({ length: 10 }, (_, index) => ({ verdict: index < exact ? ('exact' as const) : ('error' as const), errorTypes: [], seconds: 9 })),
+  });
+
+  it('две группы: 6 счётных и 5 на позиции; название, навык, где учат', () => {
+    const groups = drillListGroups([], false);
+    expect(groups.map(group => group.title)).toEqual(['Счётные карточки', 'На позиции']);
+    expect(groups[0].rows.map(row => row.id)).toEqual(COUNT_DRILL_IDS);
+    expect(groups[1].rows.map(row => row.id)).toEqual(POSITION_DRILL_IDS);
+    expect(groups[0].rows[0]).toMatchObject({ id: 'milling', title: 'Миллинг', skill: 'дальность', taughtIn: 'учат в упражнении 05' });
+    expect(groups[1].rows.at(-1)).toMatchObject({ id: 'timed-stage', taughtIn: null });
+  });
+
+  it('«на время» закрыт с условием; открыт после двух раундов ≥ 80 % или с «Открыть всё»', () => {
+    const closed = drillListGroups([], false)[0].rows[2];
+    expect(closed.timed).toEqual({ isOpen: false, label: 'НА ВРЕМЯ · 2 раунда ≥ 80 %' });
+    const opened = drillListGroups([learnRound('wind', 8), learnRound('wind', 9)], false)[0].rows[2];
+    expect(opened.timed).toEqual({ isOpen: true, label: 'НА ВРЕМЯ' });
+    expect(drillListGroups([], true)[1].rows[0].timed.isOpen).toBe(true);
+  });
+});
+
+describe('ссылки на дрил', () => {
+  it('счётный — /drill/:id, на позиции — /position/drill-:id; уровень — в query', () => {
+    expect(drillLink('wind', 'learn')).toEqual({ path: ['/drill', 'wind'], query: {} });
+    expect(drillLink('patrol', 'timed')).toEqual({ path: ['/position', 'drill-patrol'], query: { level: 'timed' } });
   });
 });
 
@@ -66,6 +92,16 @@ describe('итог раунда', () => {
       averageTime: 'В среднем 14 с на карточку',
       errors: ['СТОРОНА ×2', 'ОКРУГЛЕНИЕ ×1'],
     });
+  });
+
+  it('время и причины промахов подписаны словами', () => {
+    const summary: DrillRoundSummary = { exact: 1, close: 0, error: 2, accuracy: 1 / 3, averageSeconds: 50, errorCounts: [{ type: 'time', count: 1 }, { type: 'miss-hold', count: 1 }] };
+    expect(summaryView(summary).errors).toEqual(['ВРЕМЯ ×1', 'удержание сетки ×1']);
+  });
+
+  it('серия на позиции: попадания из выстрелов, точность, среднее время на выстрел', () => {
+    const view = positionSummaryView({ exact: 4, close: 0, error: 2, accuracy: 4 / 6, averageSeconds: 21.4, errorCounts: [{ type: 'miss-wind-under', count: 2 }] });
+    expect(view).toEqual({ counts: '4 попадания из 6', accuracy: 'Точность 67 %', averageTime: 'В среднем 21 с на выстрел', errors: ['недооценка ветра ×2'] });
   });
 
   it('без ошибок — пустой список ошибок', () => {
