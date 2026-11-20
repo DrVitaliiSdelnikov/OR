@@ -133,6 +133,7 @@ export const notebook = {
       factor: 'проверь, что учтено',
       turret: 'проверь барабан',
     } satisfies Record<CheckErrorType, string>,
+    dopeRowHint: 'проверь строку карточки',
     stale: {
       cartridge: 'устарело · патрон сменён',
       distance: 'устарело · новая дистанция',

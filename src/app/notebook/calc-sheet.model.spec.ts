@@ -126,6 +126,11 @@ describe('manual hub', () => {
     expect(hubRows(wrong)[2].note).toBe('записано · проверь умножение и деление');
   });
 
+  it('a wrong DOPE value points to the card row, not to multiplication', () => {
+    const misread = recordStep(setSign(typeTape(placeChip(notebookAt(300), 'dope', 'distance'), 'dope', 0, 0.1), 'dope', 1), 'dope');
+    expect(hubRows(misread)[0].note).toBe('записано · проверь строку карточки');
+  });
+
   it('a stale step says why', () => {
     const stale = changeContext(windRecorded(), { card: cards.get('C')! });
     expect(hubRows(stale)[2]).toMatchObject({ state: 'stale', valueText: '', note: 'устарело · патрон сменён' });

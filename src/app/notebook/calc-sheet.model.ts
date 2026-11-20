@@ -113,8 +113,12 @@ export function hubRows(notebook: Notebook, pencils: PencilNotes = {}): HubRow[]
       return { ...base, state: 'empty' as const, valueText: '', note: T.notRecorded };
     }
     const hint = softHint(notebook, step);
-    return { ...base, state: 'recorded' as const, valueText: stepValueText(step, state.tape[state.tape.length - 1]!, state.sign, notebook.context.card.system), note: hint ? T.recordedWithHint({ hint: HINT_TEXTS[hint] }) : T.recorded };
+    return { ...base, state: 'recorded' as const, valueText: stepValueText(step, state.tape[state.tape.length - 1]!, state.sign, notebook.context.card.system), note: hint ? T.recordedWithHint({ hint: hintText(step, hint) }) : T.recorded };
   });
+}
+
+function hintText(step: NotebookStepId, hint: CheckErrorType): string {
+  return step === 'dope' && hint === 'arithmetic' ? T.dopeRowHint : HINT_TEXTS[hint];
 }
 
 export function formulaTokens(notebook: Notebook, step: NotebookStepId): FormulaToken[] {
