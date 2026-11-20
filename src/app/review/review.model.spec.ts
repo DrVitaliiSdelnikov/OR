@@ -102,6 +102,16 @@ describe('check sheet, SAM', () => {
     expect(sheet.mainError?.phrase).toBe('В слот D поставлено 700, а нужно 600');
   });
 
+  it('a click of ¼ MOA: the reference is shown to the click, not to a tenth', async () => {
+    const moaCard = await buildDopeCard(new BallisticsEngine(), courseLoadout('B'), scopeById('moa').clickMrad);
+    let notebook = enterWind(createNotebook({ card: moaCard, scope: scopeById('moa'), target: { sizeM: 0.5, distanceM: 200 }, hasZones: false, canTakeWindFromStation: false, seed: 3 }, 'manual-easy'), 3.5, 5);
+    notebook = placeChip(placeChip(notebook, 'wind', 'crosswind'), 'wind', 'distance');
+    notebook = recordStep(setSign(typeTape(notebook, 'wind', 2, 0.29), 'wind', 1), 'wind');
+    const sheet = checkSheet(snapshot(notebook, { trueWindClock: 5, dialedElevationClicks: 0, dialedWindageLeftClicks: 0 }), 'manual-easy');
+    expect(sheet.rows[0].reference).toMatch(/^[←→] \d,\d\d$/);
+    expect(checkSheet(windSheet('crosswind', 0.7), 'manual-hard').rows[0].reference).toBe('← 0,7');
+  });
+
   it('a wrong milled distance is told in metres, not in MIL', () => {
     let notebook = measureRange(createNotebook({ card, scope, target: { sizeM: 1.5, distanceM: null }, hasZones: false, canTakeWindFromStation: false, seed: 3 }, 'manual-easy'), 3);
     notebook = placeChip(placeChip(notebook, 'distance', 'target-size'), 'distance', 'reticle-mil');

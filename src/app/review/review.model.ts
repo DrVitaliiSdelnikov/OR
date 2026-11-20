@@ -78,6 +78,8 @@ const MOA_PER_MIL = 3.44;
 const DECIMALS = 100;
 const MIL_DIGITS = 1;
 const FINE_MIL_DIGITS = 2;
+const TENTHS_PER_MIL = 10;
+const CLICK_EPSILON = 1e-9;
 const CLOCK_HALF_HOURS = 2;
 const LINK_AXES: Partial<Record<ChainLinkKind, ValueAxis>> = { dope: 'vertical', conditions: 'vertical', angle: 'vertical', 'wind-calc': 'horizontal' };
 
@@ -203,7 +205,7 @@ function manualRows(check: ShotCheck, system: UnitSystem): CheckRowView[] {
     return {
       label: STEP_TITLES[input.step],
       player: `${arrowed(input.step, input.playerMil, trimmed(Math.abs(input.playerMil)))}${unit}`,
-      reference: arrowed(input.step, input.expectedRawMil, decimal(Math.abs(roundToClicks(input.expectedRawMil, clickMil)) * clickMil, 1)),
+      reference: arrowed(input.step, input.expectedRawMil, decimal(Math.abs(roundToClicks(input.expectedRawMil, clickMil)) * clickMil, clickDigits(clickMil))),
       diff: diffText(checked),
       status: checked.status,
     };
@@ -254,8 +256,9 @@ function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType, s
     return milledDistancePhrase(check.notebook, system);
   }
   const clickMil = check.notebook.context.card.clickMil;
-  const referenceMil = Number((Math.abs(roundToClicks(input.expectedRawMil, clickMil)) * clickMil).toFixed(1));
-  const reference = decimal(referenceMil, 1);
+  const digits = clickDigits(clickMil);
+  const referenceMil = Number((Math.abs(roundToClicks(input.expectedRawMil, clickMil)) * clickMil).toFixed(digits));
+  const reference = decimal(referenceMil, digits);
   const player = trimmed(Math.abs(input.playerMil));
   switch (type) {
     case 'substitution':
@@ -271,6 +274,10 @@ function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType, s
     default:
       return T.arithmeticPhrase({ raw: decimal(Math.abs(input.expectedRawMil), 2), player });
   }
+}
+
+function clickDigits(clickMil: number): number {
+  return Math.abs(clickMil * TENTHS_PER_MIL - Math.round(clickMil * TENTHS_PER_MIL)) < CLICK_EPSILON ? 1 : 2;
 }
 
 function milledDistancePhrase(notebook: Notebook, system: UnitSystem): string {
