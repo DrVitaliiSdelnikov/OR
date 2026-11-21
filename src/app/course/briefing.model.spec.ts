@@ -111,3 +111,13 @@ describe('брифинг в имперских единицах (T1.8a)', () => 
     expect(briefingCard(exerciseById('05')!, { isIntroCompleted: true, bestClasses: {} }, 'imperial').scheme.distanceText).toBe('350–650 ярдов · неизвестно');
   });
 });
+
+describe('лист 12 в режиме экзамена (T3.6)', () => {
+  it('шапка «ЭКЗАМЕН» и условие зачёта; без экзамена — строки нет', () => {
+    const exam = briefingCard(exerciseById('12')!, FRESH, 'metric', true);
+    expect(exam.header).toBe('ЗАДАНИЕ 12 · ЭКЗАМЕН');
+    expect(exam.examLine).toBe('Зачёт: от 85 % очков — упражнения 01–11 зачтены экзаменом');
+    expect(card('12').examLine).toBeNull();
+    expect(card('12').header).toBe('ЗАДАНИЕ 12 · АТТЕСТАЦИЯ');
+  });
+});

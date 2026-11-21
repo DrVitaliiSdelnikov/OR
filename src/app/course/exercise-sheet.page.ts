@@ -3,12 +3,13 @@ import { Router } from '@angular/router';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import { NotebookMode } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
-import { exerciseById, ExerciseId } from '../../sim/course';
+import { ATTESTATION_ID, exerciseById, ExerciseId, isExamOffered } from '../../sim/course';
 import { ProgressStore } from '../services/progress.store';
 import { TermTextComponent } from '../textbook/term-text.component';
 import { briefingCard } from './briefing.model';
 import { BackLinkDirective } from '../services/back-link.directive';
 
+const EXAM_ON = 'on';
 const SCHEME_WIDTH = 300;
 const SCHEME_HEIGHT = 90;
 const SHOOTER_X = 28;
@@ -87,6 +88,9 @@ const GROUND_Y = 66;
               </ul>
             }
 
+            @if (briefing.examLine; as examLine) {
+              <div class="exam-line" data-test="briefing-exam">{{ examLine }}</div>
+            }
             @if (briefing.novelty; as novelty) {
               <div class="novelty" data-test="briefing-novelty">{{ novelty }}</div>
             }
@@ -149,11 +153,13 @@ const GROUND_Y = 66;
     .dock { position: sticky; bottom: 0; margin-top: auto; padding: var(--space-3) 0 calc(var(--space-3) + env(safe-area-inset-bottom)); background: var(--device-bg); }
     .to-position { width: 100%; min-height: var(--button-main-height); border: 0; border-radius: var(--radius-device); background: var(--device-accent); color: var(--device-on-accent); font: 700 var(--type-value) / 22px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; }
     .to-position:disabled { opacity: 0.45; }
+    .exam-line { padding: var(--space-2) var(--space-3); border: 2px dashed currentColor; font: 700 var(--type-label) / 18px var(--font-mono); text-transform: uppercase; }
     .intro-line { margin: 0; font: 500 var(--type-body) / 1.4 var(--font-text); }
   `,
 })
 export class ExerciseSheetPage {
   readonly exerciseId = input.required<string>();
+  readonly exam = input<string>();
   private readonly router = inject(Router);
   private readonly progress = inject(ProgressStore);
 
@@ -167,8 +173,9 @@ export class ExerciseSheetPage {
   private readonly def = computed(() => exerciseById(this.exerciseId() as ExerciseId) ?? null);
   protected readonly card = computed(() => {
     const def = this.def();
-    return def ? briefingCard(def, this.progress.course(), this.progress.settings().unitSystem) : null;
+    return def ? briefingCard(def, this.progress.course(), this.progress.settings().unitSystem, this.isExam()) : null;
   });
+  private readonly isExam = computed(() => this.exam() === EXAM_ON && this.exerciseId() === ATTESTATION_ID && isExamOffered(this.progress.course()));
   protected readonly chosenMode = linkedSignal<NotebookMode | null>(() => this.def()?.notebookMode ?? null);
   protected readonly isInstructorOn = linkedSignal(() => this.card()?.instructor?.isDefaultOn ?? false);
   protected readonly targetXs = computed(() => {
@@ -184,7 +191,7 @@ export class ExerciseSheetPage {
     const isWithInstructor = this.card()?.instructor !== null && this.isInstructorOn();
     const chosenMode = this.chosenMode();
     const isModeChosen = this.card()?.modeOptions !== null && chosenMode !== null && chosenMode !== this.def()?.notebookMode;
-    const queryParams = { ...(isWithInstructor ? { instructor: 'on' } : {}), ...(isModeChosen ? { mode: chosenMode } : {}) };
+    const queryParams = { ...(isWithInstructor ? { instructor: 'on' } : {}), ...(isModeChosen ? { mode: chosenMode } : {}), ...(this.isExam() ? { exam: EXAM_ON } : {}) };
     void this.router.navigate(['/position', this.exerciseId()], Object.keys(queryParams).length > 0 ? { queryParams } : {});
   }
 }

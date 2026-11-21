@@ -1,10 +1,10 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { ExerciseClass } from '../../core/exercise-scoring';
-import { CourseResults, ExerciseId } from '../../sim/course';
+import { CourseResults, ExerciseId, ExerciseResult } from '../../sim/course';
 import { DrillRoundRecord, withDrillRound } from '../../sim/drill-round';
 import { DEFAULT_FREE_PLAY, FreePlaySettings, knownFreePlay } from '../../sim/free-play';
-import { withExerciseResult, withIntroCompleted } from '../home/home.model';
+import { withExamResult, withExerciseResult, withIntroCompleted } from '../home/home.model';
 import { JournalSeries, withSeries } from '../journal/journal.model';
 import { DopeNotes, withDopeNote } from '../review/review.model';
 import { isProfileValid, knownProfiles, RifleProfile, withBuiltInProfile } from '../../sim/rifle-profile';
@@ -84,6 +84,10 @@ export class ProgressStore {
 
   recordExerciseResult(exerciseId: ExerciseId, exerciseClass: ExerciseClass, total: number): void {
     this.update(state => ({ ...state, course: withExerciseResult(state.course, exerciseId, exerciseClass, total) }));
+  }
+
+  recordExamResult(result: Pick<ExerciseResult, 'hitShare' | 'exerciseClass' | 'total'>): void {
+    this.update(state => ({ ...state, course: withExamResult(state.course, result) }));
   }
 
   completeIntro(): void {

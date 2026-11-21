@@ -42,6 +42,9 @@ export const screens = {
     passed: 'пройдено',
     stamp: (p: { exerciseClass: number }) => `${p.exerciseClass} кл.`,
     attestation: (p: { rank: string }) => `аттестация · ${p.rank}`,
+    examStamp: 'экзамен',
+    examOffer: 'Экзамен вместо курса',
+    examOfferLine: 'Знаешь баллистику? Сдай 12 в САМ: от 85 % очков — 01–11 зачтены',
   },
   exerciseSheet: {
     noShooting: 'без стрельбы',

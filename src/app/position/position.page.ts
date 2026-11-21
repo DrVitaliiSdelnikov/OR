@@ -13,7 +13,7 @@ import { lateralWindMps, windAt } from '../../core/scenario';
 import { NotebookMode } from '../../core/exercise-scoring';
 import { Correction } from '../../core/types';
 import { BoltEvent } from '../../sim/bolt';
-import { courseProgress, exerciseById, ExerciseDef, ExerciseId, exerciseTitle, isExerciseTask, PositionTask, withChosenMode } from '../../sim/course';
+import { ATTESTATION_ID, courseProgress, exerciseById, ExerciseDef, ExerciseId, exerciseTitle, isExamOffered, isExerciseTask, PositionTask, withChosenMode } from '../../sim/course';
 import { allowedFreePlay, freePlayInSystem, freePlayTask } from '../../sim/free-play';
 import { instructorLineText } from '../free/free-play.model';
 import { factorContributions, forgottenFactor, NotebookFactor, NotebookStepId, tabs } from '../../sim/notebook';
@@ -52,6 +52,7 @@ const FREE_PLAY_ID = 'free';
 const URGENT_TIME_LEFT_S = 10;
 const TEXTS_DRILLS = text.drills;
 const INSTRUCTOR_ON = 'on';
+const EXAM_ON = 'on';
 const STOP_BADGE_MS = 900;
 const FLAG_READING_SHOWN_MS = 2000;
 const PINCH_STEP_PT = 40;
@@ -96,6 +97,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   readonly mode = input<NotebookMode>();
   readonly sandboxTerm = input<string | undefined>(undefined, { alias: 'sandbox' });
   readonly level = input<string | undefined>();
+  readonly exam = input<string>();
 
   protected readonly texts = T;
 
@@ -417,10 +419,15 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     const result = session?.result();
     if (session && result && isExerciseTask(session.def)) {
       const courseBefore = this.progress.course();
-      this.progress.recordExerciseResult(session.def.id, result.exerciseClass, result.total);
+      const isExam = this.exam() === EXAM_ON && session.def.id === ATTESTATION_ID && isExamOffered(courseBefore);
+      if (isExam) {
+        this.progress.recordExamResult(result);
+      } else {
+        this.progress.recordExerciseResult(session.def.id, result.exerciseClass, result.total);
+      }
       this.saveSeries();
       this.reviewFrame.set(this.fullFrame());
-      this.end.set(resultSheet({ def: session.def, result, records: session.records, courseBefore, courseAfter: this.progress.course(), skillsBefore: this.skillsAtSeriesStart, skillsAfter: this.progress.skills(), system: this.unitSystem() }));
+      this.end.set(resultSheet({ def: session.def, result, records: session.records, courseBefore, courseAfter: this.progress.course(), skillsBefore: this.skillsAtSeriesStart, skillsAfter: this.progress.skills(), system: this.unitSystem(), isExam }));
     }
     this.refresh();
   }

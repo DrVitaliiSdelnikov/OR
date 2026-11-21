@@ -1,6 +1,6 @@
 import { ExerciseClass, Rank } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
-import { courseProgress, CourseResults, exerciseById, ExerciseId, exerciseTitle, mergeBestClass } from '../../sim/course';
+import { ATTESTATION_ID, courseProgress, CourseResults, exerciseById, ExerciseId, ExerciseResult, exerciseTitle, isExamPassed, mergeBestClass } from '../../sim/course';
 import { UnitSystem } from '../../core/units';
 
 export type ContinueCard =
@@ -43,6 +43,13 @@ export function withExerciseResult(results: CourseResults, exerciseId: ExerciseI
   const previousTotal = results.bestTotals?.[exerciseId];
   const bestTotal = previousTotal === undefined ? total : Math.max(previousTotal, total);
   return { ...results, bestClasses, bestTotals: { ...results.bestTotals, [exerciseId]: bestTotal } };
+}
+
+export function withExamResult(results: CourseResults, result: Pick<ExerciseResult, 'hitShare' | 'exerciseClass' | 'total'>): CourseResults {
+  if (!isExamPassed(result)) {
+    return results;
+  }
+  return { ...withExerciseResult(results, ATTESTATION_ID, result.exerciseClass, result.total), isExamPassed: true };
 }
 
 export function withIntroCompleted(results: CourseResults): CourseResults {

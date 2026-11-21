@@ -1,7 +1,7 @@
 import { modeMultiplier, NotebookMode, SECOND_CLASS_SHARE, THIRD_CLASS_SHARE } from '../../core/exercise-scoring';
 import { UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
-import { ATTESTATION_ID, CourseResults, ExerciseDef, exerciseTitle, TargetDistance, targetDistanceIn } from '../../sim/course';
+import { ATTESTATION_ID, CourseResults, EXAM_PASS_SHARE, ExerciseDef, exerciseTitle, TargetDistance, targetDistanceIn } from '../../sim/course';
 import { teachingScript } from '../instructor/teaching.model';
 import { classStamp, firstClassGoalText, isPaperExercise } from '../result/result.model';
 import { exerciseSheet, ExerciseSheet, MODE_LABELS } from './course-trail.model';
@@ -26,18 +26,19 @@ export interface BriefingCard {
   termsLine: string | null;
   instructor: { isDefaultOn: boolean } | null;
   introLine: string | null;
+  examLine: string | null;
 }
 
 const INTRO_ID = '00';
 const T = text.briefing;
 
-export function briefingCard(def: ExerciseDef, course: CourseResults, system: UnitSystem = 'metric'): BriefingCard {
+export function briefingCard(def: ExerciseDef, course: CourseResults, system: UnitSystem = 'metric', isExam = false): BriefingCard {
   const bestClass = course.bestClasses[def.id];
   const bestTotal = course.bestTotals?.[def.id];
   const isAdmittedBefore = bestClass !== undefined && bestClass !== 0;
   const isIntro = def.id === INTRO_ID;
   return {
-    header: T.header({ exerciseId: def.id, kind: isIntro ? 'intro' : def.id === ATTESTATION_ID ? 'attestation' : 'training' }),
+    header: T.header({ exerciseId: def.id, kind: isIntro ? 'intro' : isExam ? 'exam' : def.id === ATTESTATION_ID ? 'attestation' : 'training' }),
     title: exerciseTitle(def, system),
     scheme: {
       distanceText: def.targets ? distanceText(def.targets.distance, system) : '',
@@ -60,6 +61,7 @@ export function briefingCard(def: ExerciseDef, course: CourseResults, system: Un
     termsLine: def.terms.length > 0 ? T.terms({ terms: def.terms }) : null,
     instructor: teachingScript(def.id) ? { isDefaultOn: !isAdmittedBefore } : null,
     introLine: isIntro ? T.introLine : null,
+    examLine: isExam ? T.examLine({ minShare: EXAM_PASS_SHARE }) : null,
   };
 }
 

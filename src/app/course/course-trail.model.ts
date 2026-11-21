@@ -4,7 +4,7 @@ import { decimal } from '../../i18n/format';
 import { ScenarioOptions, ValueRange } from '../../core/scenario';
 import { UnitSystem } from '../../core/units';
 import { CartridgeId } from '../../core/types';
-import { ATTESTATION_ID, COURSE, courseProgress, CourseResults, ExerciseDef, ExerciseId, ExerciseTargets, exerciseTitle, targetDiameterM, TargetDistance, targetDistanceIn } from '../../sim/course';
+import { ATTESTATION_ID, COURSE, courseProgress, CourseResults, ExerciseDef, ExerciseId, ExerciseTargets, exerciseTitle, isExamCredited, targetDiameterM, TargetDistance, targetDistanceIn } from '../../sim/course';
 
 export interface ExerciseSheet {
   id: ExerciseId;
@@ -19,12 +19,13 @@ export interface ExerciseSheet {
 
 export type TrailNodeState = 'passed' | 'current' | 'open' | 'locked';
 export type ClassStamp = 'gold' | 'silver' | 'bronze';
+export type TrailStamp = ClassStamp | 'exam';
 
 export interface TrailNode {
   id: ExerciseId;
   title: string;
   state: TrailNodeState;
-  stamp: ClassStamp | null;
+  stamp: TrailStamp | null;
   isIntro: boolean;
   isAttestation: boolean;
 }
@@ -44,12 +45,13 @@ export function trailNodes(results: CourseResults, isEverythingUnlocked = false,
   return COURSE.map(def => {
     const bestClass = results.bestClasses[def.id] ?? 0;
     const isIntro = def.id === INTRO_ID;
-    const isPassed = isIntro ? results.isIntroCompleted : bestClass !== 0;
+    const isCreditedByExam = isExamCredited(results, def.id);
+    const isPassed = isIntro ? results.isIntroCompleted : bestClass !== 0 || isCreditedByExam;
     return {
       id: def.id,
       title: exerciseTitle(def, system),
       state: nodeState(def.id, isPassed, progress.nextExerciseId, progress.unlockedIds),
-      stamp: bestClass === 0 ? null : STAMPS[bestClass],
+      stamp: bestClass !== 0 ? STAMPS[bestClass] : isCreditedByExam ? 'exam' : null,
       isIntro,
       isAttestation: def.id === ATTESTATION_ID,
     };

@@ -10,6 +10,8 @@ export const result = {
   rankPlate: (p: { rank: string }) => `Звание: ${p.rank}`,
   skillGrowth: (p: { before: number; after: number }) => `${p.before} → ${p.after}`,
   opened: (p: { exerciseId: string; title: string }) => `Открыто: ${p.exerciseId} · ${p.title}`,
+  examPassed: (p: { share: number; minShare: number }) => `ЭКЗАМЕН СДАН · ${percent(p.share)} ≥ ${percent(p.minShare)} · 01–11 зачтены`,
+  examFailed: (p: { share: number; minShare: number }) => `ЭКЗАМЕН НЕ СДАН · ${percent(p.share)} < ${percent(p.minShare)}`,
   classLabel: (p: { exerciseClass: number }) => `${p.exerciseClass} класс`,
   thirdClassRow: (p: { minShare: number; share: number }) => `≥ ${percent(p.minShare)} очков — ${percent(p.share)}`,
   secondClassRow: (p: { minShare: number; goal: string; fact: string }) => `≥ ${percent(p.minShare)} и ${p.goal} — ${p.fact}`,
@@ -43,8 +45,9 @@ export const result = {
 };
 
 export const briefing = {
-  header: (p: { exerciseId: string; kind: 'intro' | 'attestation' | 'training' }) =>
-    `ЗАДАНИЕ ${p.exerciseId} · ${{ intro: 'ВВОДНОЕ', attestation: 'АТТЕСТАЦИЯ', training: 'УЧЕБНОЕ' }[p.kind]}`,
+  header: (p: { exerciseId: string; kind: 'intro' | 'attestation' | 'training' | 'exam' }) =>
+    `ЗАДАНИЕ ${p.exerciseId} · ${{ intro: 'ВВОДНОЕ', attestation: 'АТТЕСТАЦИЯ', training: 'УЧЕБНОЕ', exam: 'ЭКЗАМЕН' }[p.kind]}`,
+  examLine: (p: { minShare: number }) => `Зачёт: от ${percent(p.minShare)} очков — упражнения 01–11 зачтены экзаменом`,
   introLine: 'Без стрельбы и оценки. Семь шагов: винтовка, прицел, барабан, кратность, сетки, патроны, затвор',
   thirdClass: (p: { minShare: number }) => `3 класс — от ${percent(p.minShare)} очков`,
   secondClass: (p: { minShare: number; goal: string }) => `2 класс — ${percent(p.minShare)} и ${p.goal}`,

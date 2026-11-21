@@ -56,6 +56,10 @@ import { ResultSheetView } from './result.model';
 
         <div class="main-error" [class.clean]="sheet.mainError === noErrors" data-test="result-main-error">{{ sheet.mainError }}</div>
 
+        @if (sheet.examLine; as examLine) {
+          <div class="exam mono" data-test="result-exam">{{ examLine }}</div>
+        }
+
         @if (sheet.newTerms.length > 0 || sheet.openedLine) {
           <div class="news" data-test="result-news">
             @if (sheet.newTerms.length > 0) {
@@ -119,6 +123,7 @@ import { ResultSheetView } from './result.model';
     .terms-label { font: 500 12px / 16px var(--font-mono); color: var(--paper-graphite); text-transform: uppercase; letter-spacing: var(--tracking-label); }
     .terms { display: flex; flex-wrap: wrap; gap: 6px; }
     .term { min-height: var(--touch-min); padding: 0 var(--space-3); border: 1.5px solid var(--paper-ink); border-radius: var(--radius-paper); background: transparent; color: var(--paper-ink); font: 500 12px / 16px var(--font-mono); animation: term-in 0.3s ease-out both; }
+    .exam { padding: var(--space-2) var(--space-3); border: 2px dashed currentColor; font: 700 var(--type-label) / 18px var(--font-mono); }
     .opened { margin-top: 4px; font: 700 var(--type-label) / 18px var(--font-mono); }
     .foot { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-2); padding: var(--space-2) var(--gutter) var(--space-3); }
     .foot:has(> :nth-child(2):last-child) { grid-template-columns: 1.4fr 1fr; }

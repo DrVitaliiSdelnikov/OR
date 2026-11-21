@@ -170,3 +170,19 @@ describe('итог: открытое упражнение в единицах и
     expect(resultSheet({ def, result, records: shots, courseBefore: before, courseAfter: after }).openedLine).toBe('Открыто: 10 · Пристрелка на 400');
   });
 });
+
+describe('resultSheet — экзамен (T3.6)', () => {
+  const examSheet = (hitTargets: number, isExam = true) => {
+    const def = exerciseById('12')!;
+    const shots = Array.from({ length: 10 }, (_, targetIndex) => shot({ targetIndex, isHit: targetIndex < hitTargets }));
+    const result = exerciseResult(def, run(shots, { mode: 'manual-easy' }));
+    const before: CourseResults = { isIntroCompleted: true, bestClasses: {} };
+    return resultSheet({ def, result, records: shots, courseBefore: before, courseAfter: before, isExam });
+  };
+
+  it('сдан — доля, порог и зачёт 01–11; не сдан — доля меньше порога; не экзамен — строки нет', () => {
+    expect(examSheet(9).examLine).toBe('ЭКЗАМЕН СДАН · 90 % ≥ 85 % · 01–11 зачтены');
+    expect(examSheet(8).examLine).toBe('ЭКЗАМЕН НЕ СДАН · 80 % < 85 %');
+    expect(examSheet(9, false).examLine).toBeNull();
+  });
+});

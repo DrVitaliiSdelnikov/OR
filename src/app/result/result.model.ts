@@ -1,6 +1,6 @@
 import { ExerciseClass, FIRST_CLASS_SHARE, FIRST_SHOT_POINTS, SECOND_CLASS_SHARE, THIRD_CLASS_SHARE } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
-import { courseProgress, CourseResults, exerciseById, ExerciseDef, ExerciseResult, ExerciseShotRecord, exerciseTitle, GoalCheck } from '../../sim/course';
+import { courseProgress, CourseResults, EXAM_PASS_SHARE, exerciseById, ExerciseDef, ExerciseResult, ExerciseShotRecord, exerciseTitle, GoalCheck, isExamPassed } from '../../sim/course';
 import { CAUSE_ORDER, MainCause, mainOfAmounts } from '../../sim/miss-breakdown';
 import { lowerFirst } from '../../i18n/format';
 import { SKILL_IDS, SkillRatings } from '../../sim/skill-rating';
@@ -25,6 +25,7 @@ export interface ResultSheetView {
   mainError: string;
   newTerms: readonly string[];
   openedLine: string | null;
+  examLine: string | null;
   isAdmitted: boolean;
 }
 
@@ -43,6 +44,7 @@ export interface ResultInput {
   skillsBefore?: SkillRatings;
   skillsAfter?: SkillRatings;
   system?: UnitSystem;
+  isExam?: boolean;
 }
 
 const T = text.result;
@@ -67,6 +69,11 @@ export function firstClassGoalText(def: ExerciseDef): string {
   return def.goals.first ? T.bothGoals({ allFirst: allFirstText(def), goal: def.goals.first }) : allFirstText(def);
 }
 
+function examLine(result: ExerciseResult): string {
+  const shares = { share: result.hitShare, minShare: EXAM_PASS_SHARE };
+  return isExamPassed(result) ? T.examPassed(shares) : T.examFailed(shares);
+}
+
 export function resultSheet(input: ResultInput): ResultSheetView {
   const { def, result, courseBefore, courseAfter } = input;
   const previousClass = courseBefore.bestClasses[def.id];
@@ -83,6 +90,7 @@ export function resultSheet(input: ResultInput): ResultSheetView {
     recordLine: recordLine(result.total, courseBefore.bestTotals?.[def.id]),
     mainError: mainError(def, result, input.records),
     newTerms: isFirstAdmission ? def.terms : [],
+    examLine: input.isExam ? examLine(result) : null,
     openedLine: openedId ? T.opened({ exerciseId: openedId, title: exerciseTitle(exerciseById(openedId)!, input.system ?? 'metric') }) : null,
     isAdmitted: result.isAdmitted,
   };

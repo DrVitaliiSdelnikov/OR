@@ -154,3 +154,13 @@ describe('лист упражнения: полигон в ярдах (T1.8c)', 
     expect(trailNodes({ isIntroCompleted: true, bestClasses: {} }).find(node => node.id === '10')!.title).toBe('Пристрелка на 400');
   });
 });
+
+describe('тропа после экзамена (T3.6)', () => {
+  it('01–11 без класса — пройдены со штампом «экзамен»; свой класс важнее; 12 текущий', () => {
+    const nodes = trailNodes({ isIntroCompleted: true, isExamPassed: true, bestClasses: { '03': 2 } });
+    expect(nodes.find(node => node.id === '04')).toMatchObject({ state: 'passed', stamp: 'exam' });
+    expect(nodes.find(node => node.id === '03')).toMatchObject({ state: 'passed', stamp: 'silver' });
+    expect(nodes.find(node => node.id === '12')).toMatchObject({ state: 'current', stamp: null });
+    expect(trailNodes(results({})).find(node => node.id === '04')!.stamp).toBeNull();
+  });
+});

@@ -1,15 +1,16 @@
 import { Component, computed, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { text } from '../../i18n';
 import { RANK_LABELS, rankHeader } from '../home/home.model';
 import { ProgressStore } from '../services/progress.store';
-import { ClassStamp, STAMP_CLASSES, TrailNode, trailNodes } from './course-trail.model';
+import { isExamOffered } from '../../sim/course';
+import { STAMP_CLASSES, TrailNode, trailNodes, TrailStamp } from './course-trail.model';
 import { BackLinkDirective } from '../services/back-link.directive';
 
 @Component({
   selector: 'or-course-trail',
-  imports: [BackLinkDirective, IonContent],
+  imports: [BackLinkDirective, IonContent, RouterLink],
   template: `
     <ion-content>
       <div class="trail-screen">
@@ -20,6 +21,13 @@ import { BackLinkDirective } from '../services/back-link.directive';
             <div class="meta" data-test="trail-progress">{{ texts.progress({ admissions: header().admissions, admissionsTotal: header().admissionsTotal, rank: header().rankLabel }) }}</div>
           </div>
         </header>
+
+        @if (isExamOffered()) {
+          <a class="exam-offer" routerLink="/course/12" [queryParams]="{ exam: 'on' }" data-test="exam-offer">
+            <span class="exam-title">{{ texts.examOffer }}</span>
+            <span class="exam-line">{{ texts.examOfferLine }}</span>
+          </a>
+        }
 
         <ol class="trail">
           @for (node of nodes(); track node.id) {
@@ -67,6 +75,10 @@ import { BackLinkDirective } from '../services/back-link.directive';
     .badge, .attestation { font: 500 var(--type-label) / 16px var(--font-mono); color: var(--device-text-muted); }
     .attestation { grid-column: 2 / 4; color: var(--device-accent); }
     .stamp { padding: 2px var(--space-2); border: 2px solid currentColor; border-radius: var(--radius-device); font: 700 var(--type-label) / 16px var(--font-mono); text-transform: uppercase; }
+    .stamp.exam { color: var(--device-accent); border-style: dashed; }
+    .exam-offer { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) var(--space-4); border: var(--border-width) dashed var(--device-accent); border-radius: var(--radius-device); color: var(--device-text); text-decoration: none; }
+    .exam-title { font: 700 var(--type-value) / 22px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; color: var(--device-accent); }
+    .exam-line { font: 500 var(--type-body) / 1.4 var(--font-text); color: var(--device-text-muted); }
     .stamp.gold { color: var(--device-accent); }
     .stamp.silver { color: var(--device-text); }
     .stamp.bronze { color: var(--device-text-muted); }
@@ -83,8 +95,10 @@ export class CourseTrailPage {
   protected readonly header = computed(() => rankHeader(this.progress.course()));
   protected readonly nodes = computed(() => trailNodes(this.progress.course(), this.progress.settings().isEverythingUnlocked, this.progress.settings().unitSystem));
 
-  protected stampLabel(stamp: ClassStamp): string {
-    return this.texts.stamp({ exerciseClass: STAMP_CLASSES[stamp] });
+  protected readonly isExamOffered = computed(() => isExamOffered(this.progress.course()));
+
+  protected stampLabel(stamp: TrailStamp): string {
+    return stamp === 'exam' ? this.texts.examStamp : this.texts.stamp({ exerciseClass: STAMP_CLASSES[stamp] });
   }
 
   protected open(node: TrailNode): void {

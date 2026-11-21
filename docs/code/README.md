@@ -128,3 +128,4 @@
 | sim · совет тренера (T3.4, В36) | [specs/sim-coach.md](specs/sim-coach.md) | реализовано 21.11 |
 | app · экран «Дрилы» и главный (T3.5, В35) | [specs/app-drills-screen.md](specs/app-drills-screen.md) | реализовано 21.11 |
 | app · экран «Прогресс» (T4.3, В39) | [specs/app-progress.md](specs/app-progress.md) | реализовано 21.11 |
+| sim + app · экзамен вместо курса (T3.6, В35) | [specs/sim-course-exam.md](specs/sim-course-exam.md) | реализовано 21.11 |

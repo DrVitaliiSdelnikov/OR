@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CourseResults, ExerciseId } from '../../sim/course';
-import { continueCard, rankHeader, withExerciseResult, withIntroCompleted } from './home.model';
+import { continueCard, rankHeader, withExamResult, withExerciseResult, withIntroCompleted } from './home.model';
 
 const ADMISSION_IDS: ExerciseId[] = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
 
@@ -77,5 +77,18 @@ describe('название 10 в единицах игрока (T1.8c)', () => {
     const toTen = results(Object.fromEntries(ADMISSION_IDS.slice(0, 9).map(id => [id, 3])));
     expect(continueCard(toTen, 'imperial')).toMatchObject({ exerciseId: '10', title: 'Пристрелка на 425' });
     expect(continueCard(toTen)).toMatchObject({ exerciseId: '10', title: 'Пристрелка на 400' });
+  });
+});
+
+describe('exam result (T3.6)', () => {
+  const examRun = (hitShare: number) => ({ hitShare, exerciseClass: 2 as const, total: 180 });
+
+  it('passed: the exam flag and the class and total of 12', () => {
+    expect(withExamResult(results({ '01': 3 }), examRun(0.9))).toEqual({ isIntroCompleted: true, isExamPassed: true, bestClasses: { '01': 3, '12': 2 }, bestTotals: { '12': 180 } });
+  });
+
+  it('failed: the course does not change', () => {
+    const before = results({ '01': 3 });
+    expect(withExamResult(before, examRun(0.8))).toBe(before);
   });
 });

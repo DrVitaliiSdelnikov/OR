@@ -168,6 +168,7 @@ export interface ExerciseResult {
 
 export interface CourseResults {
   isIntroCompleted: boolean;
+  isExamPassed?: boolean;
   bestClasses: Partial<Record<ExerciseId, ExerciseClass>>;
   bestTotals?: Partial<Record<ExerciseId, number>>;
 }
@@ -244,6 +245,7 @@ const TITLES = text.content.exerciseTitles;
 
 export const FIRST_FIRING_EXERCISE_ID: ExerciseId = '01';
 export const ATTESTATION_ID: ExerciseId = '12';
+export const EXAM_PASS_SHARE = 0.85;
 const INTRO_ID: ExerciseId = '00';
 const ALL_FREE_PLAY_OPEN: FreePlayUnlocks = {
   unknownDistance: true,
@@ -430,9 +432,21 @@ export function mergeBestClass(previous: ExerciseClass | undefined, next: Exerci
   return Math.min(previous, next) as ExerciseClass;
 }
 
+export function isExamPassed(result: Pick<ExerciseResult, 'hitShare'>): boolean {
+  return result.hitShare >= EXAM_PASS_SHARE;
+}
+
+export function isExamCredited(results: CourseResults, id: ExerciseId): boolean {
+  return results.isExamPassed === true && examCreditedIds().includes(id) && !hasClass(results, id);
+}
+
+export function isExamOffered(results: CourseResults): boolean {
+  return examCreditedIds().some(id => !isAdmittedIn(results, id));
+}
+
 export function courseProgress(results: CourseResults, isEverythingUnlocked = false): CourseProgress {
-  const exercises = COURSE.slice(0, COURSE.findIndex(def => def.id === ATTESTATION_ID) + 1).filter(def => def.targets);
-  const isAdmitted = (id: ExerciseId): boolean => (results.bestClasses[id] ?? 0) !== 0;
+  const exercises = admissionExercises();
+  const isAdmitted = (id: ExerciseId): boolean => isAdmittedIn(results, id);
   const admissions = exercises.filter(def => isAdmitted(def.id)).length;
   const isEveryExerciseTopClass = exercises.every(def => results.bestClasses[def.id] === 1);
   const unlockedIds = COURSE.filter((def, index) => {
@@ -450,6 +464,24 @@ export function courseProgress(results: CourseResults, isEverythingUnlocked = fa
     rank: rankFor(admissions, isEveryExerciseTopClass),
     freePlayUnlocks: ALL_FREE_PLAY_OPEN,
   };
+}
+
+function admissionExercises(): ExerciseDef[] {
+  return COURSE.slice(0, COURSE.findIndex(def => def.id === ATTESTATION_ID) + 1).filter(def => def.targets);
+}
+
+function examCreditedIds(): ExerciseId[] {
+  return admissionExercises()
+    .map(def => def.id)
+    .filter(id => id !== ATTESTATION_ID);
+}
+
+function hasClass(results: CourseResults, id: ExerciseId): boolean {
+  return (results.bestClasses[id] ?? 0) !== 0;
+}
+
+function isAdmittedIn(results: CourseResults, id: ExerciseId): boolean {
+  return hasClass(results, id) || isExamCredited(results, id);
 }
 
 function exerciseDef(id: ExerciseId, title: string, targets: ExerciseTargets | null, fields: Partial<Omit<ExerciseDef, 'kind' | 'id' | 'title' | 'targets' | 'goals' | 'novelty' | 'terms'>>): ExerciseDef {
