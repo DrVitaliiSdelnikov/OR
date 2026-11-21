@@ -12,6 +12,7 @@ export const routes: Routes = [
   { path: 'drill/:drillId', loadComponent: () => import('./drill/drill-round.page').then(module => module.DrillRoundPage) },
   { path: 'free', loadComponent: () => import('./free/free-play.page').then(module => module.FreePlayPage) },
   { path: 'settings', loadComponent: () => import('./settings/settings.page').then(module => module.SettingsPage) },
+  { path: 'progress', loadComponent: () => import('./progress/progress.page').then(module => module.ProgressPage) },
   { path: 'journal', loadComponent: () => import('./journal/journal.page').then(module => module.JournalPage) },
   { path: 'intro', loadComponent: () => import('./intro/intro.page').then(module => module.IntroPage) },
   { path: 'rifle', loadComponent: () => import('./rifle/rifle.page').then(module => module.RiflePage) },

@@ -47,7 +47,7 @@ const DRILL_OF_SKILL: Record<SkillId, DrillId> = {
   execution: 'cold-bore',
   speed: 'timed-stage',
 };
-const ERROR_TYPE_ORDER: readonly CheckErrorType[] = ['side', 'substitution', 'arithmetic', 'factor', 'reading', 'lead', 'rounding', 'units', 'turret'];
+export const ERROR_TYPE_ORDER: readonly CheckErrorType[] = ['side', 'substitution', 'arithmetic', 'factor', 'reading', 'lead', 'rounding', 'units', 'turret'];
 
 export function skillPriority(rating: number, daysSincePractice: number | null): number {
   const staleness = daysSincePractice === null ? 1 : Math.min(daysSincePractice / STALE_DAYS, 1);

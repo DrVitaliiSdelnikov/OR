@@ -28,7 +28,7 @@ const PERCENT = 100;
     <ion-content>
       <div class="journal" data-test="journal">
         <header class="header">
-          <a class="back" orBackLink="/" [attr.aria-label]="texts.back" data-test="journal-back">←</a>
+          <a class="back" orBackLink="/progress" [attr.aria-label]="texts.back" data-test="journal-back">←</a>
           <h1 class="title">{{ texts.title }}</h1>
         </header>
 

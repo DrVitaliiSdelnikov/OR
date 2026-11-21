@@ -24,7 +24,7 @@ export const screens = {
       course: 'Снайперская подготовка',
       drills: 'Дрилы',
       textbook: 'Учебник курсанта',
-      journal: 'Журнал стрелка',
+      progress: 'Прогресс',
       rifle: 'Винтовка',
     },
     start: 'Начать',

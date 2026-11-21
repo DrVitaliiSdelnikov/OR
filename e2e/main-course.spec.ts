@@ -9,20 +9,19 @@ async function seedCourse(page: import('@playwright/test').Page, isIntroComplete
 }
 
 test.describe('главный экран и курс-тропа', () => {
-  test('первый запуск: курсант, 0 допусков, карточка «НАЧАТЬ · 00»', async ({ page }) => {
+  test('первый запуск: уровень не определён, 0 допусков, карточка «НАЧАТЬ · 00»', async ({ page }) => {
     await seedCourse(page, false, {});
     await page.goto('/');
-    await expect(page.getByTestId('rank')).toHaveText('Курсант');
+    await expect(page.getByTestId('level')).toHaveText('Уровень не определён');
     await expect(page.getByTestId('admissions')).toHaveText('допуски 0 / 12');
     await expect(page.getByTestId('continue-card')).toContainText('Начать');
     await expect(page.getByTestId('continue-card')).toContainText('00 · Винтовка и прицел');
     await expect(page.locator('ion-tab-bar')).toHaveCount(0);
   });
 
-  test('прогресс из хранилища: стрелок, 4 допуска, «ПРОДОЛЖИТЬ · 05» ведёт на лист упражнения', async ({ page }) => {
+  test('прогресс из хранилища: 4 допуска, «ПРОДОЛЖИТЬ · 05» ведёт на лист упражнения', async ({ page }) => {
     await seedCourse(page, true, { '01': 3, '02': 3, '03': 1, '04': 2 });
     await page.goto('/');
-    await expect(page.getByTestId('rank')).toHaveText('Стрелок');
     await expect(page.getByTestId('admissions')).toHaveText('допуски 4 / 12');
     await expect(page.getByTestId('continue-card')).toContainText('05 · Дистанции: ДОПЕ и дальномер');
     await expect(page.getByTestId('continue-card')).toContainText('новое');
@@ -57,7 +56,7 @@ test.describe('главный экран и курс-тропа', () => {
     await expect(page.locator('[data-test^="node-"]')).toHaveCount(15);
   });
 
-  test('вводное открывается; шестерёнка, учебник и журнал открываются', async ({ page }) => {
+  test('вводное открывается; шестерёнка, учебник, прогресс и журнал открываются', async ({ page }) => {
     await seedCourse(page, false, {});
     await page.goto('/');
     await page.getByTestId('tile-textbook').click();
@@ -66,7 +65,8 @@ test.describe('главный экран и курс-тропа', () => {
     await page.getByTestId('open-settings').click();
     await expect(page.getByTestId('reset-progress')).toBeVisible();
     await page.goto('/');
-    await page.getByTestId('tile-journal').click();
+    await page.getByTestId('tile-progress').click();
+    await page.getByTestId('progress-journal').click();
     await expect(page).toHaveURL(/\/journal$/);
     await page.goto('/course');
     await page.getByTestId('node-00').click();
