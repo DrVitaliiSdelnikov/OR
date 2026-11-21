@@ -62,7 +62,7 @@ describe('briefingCard', () => {
 
   it('12 is the attestation without the terms line', () => {
     const briefing = card('12');
-    expect(briefing.header).toBe('ЗАДАНИЕ 12 · АТТЕСТАЦИЯ');
+    expect(briefing.header).toBe('ЗАДАНИЕ 12 · ЗАЧЁТ');
     expect(briefing.termsLine).toBeNull();
     expect(briefing.novelty).toBeNull();
   });
@@ -118,6 +118,6 @@ describe('лист 12 в режиме экзамена (T3.6)', () => {
     expect(exam.header).toBe('ЗАДАНИЕ 12 · ЭКЗАМЕН');
     expect(exam.examLine).toBe('Зачёт: от 85 % очков — упражнения 01–11 зачтены экзаменом');
     expect(card('12').examLine).toBeNull();
-    expect(card('12').header).toBe('ЗАДАНИЕ 12 · АТТЕСТАЦИЯ');
+    expect(card('12').header).toBe('ЗАДАНИЕ 12 · ЗАЧЁТ');
   });
 });

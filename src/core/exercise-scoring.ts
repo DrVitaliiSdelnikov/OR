@@ -2,7 +2,6 @@ import type { CheckVerdict } from './calc-check';
 
 export type NotebookMode = 'auto' | 'manual-easy' | 'manual-hard';
 export type ExerciseClass = 0 | 1 | 2 | 3;
-export type Rank = 'cadet' | 'rifleman' | 'senior-rifleman' | 'sniper' | 'sniper-instructor';
 
 export interface SeriesTotalInput {
   targetPoints: readonly number[];
@@ -27,16 +26,9 @@ export const SECOND_CLASS_SHARE = 0.85;
 export const FIRST_CLASS_SHARE = 1;
 const SHARE_EPSILON = 1e-9;
 const ROUNDING_EPSILON = 1e-9;
-const COURSE_EXERCISES = 12;
 
 const CALC_POINTS: Record<CheckVerdict, number> = { exact: 10, close: 5, error: 0 };
 const MODE_MULTIPLIERS: Record<NotebookMode, number> = { auto: 1, 'manual-easy': 1.5, 'manual-hard': 2 };
-const RANK_FROM_ADMISSIONS: readonly { minAdmissions: number; rank: Rank }[] = [
-  { minAdmissions: 12, rank: 'sniper' },
-  { minAdmissions: 7, rank: 'senior-rifleman' },
-  { minAdmissions: 3, rank: 'rifleman' },
-  { minAdmissions: 0, rank: 'cadet' },
-];
 
 export function targetPoints(shotHits: readonly boolean[], maxShotsPerTarget = DEFAULT_MAX_SHOTS_PER_TARGET): number {
   if (shotHits.length > maxShotsPerTarget) {
@@ -80,13 +72,6 @@ export function exerciseClass(input: ExerciseClassInput): ExerciseClass {
   return 1;
 }
 
-/** @deprecated T4.2 (В39): уровень стрелка — рейтинг навыков `sim/skill-rating`; звание ещё на главной, тропе и в журнале до T3.5 / T4.3. */
-export function rankFor(admissions: number, isEveryExerciseTopClass: boolean): Rank {
-  if (admissions >= COURSE_EXERCISES && isEveryExerciseTopClass) {
-    return 'sniper-instructor';
-  }
-  return RANK_FROM_ADMISSIONS.find(step => admissions >= step.minAdmissions)!.rank;
-}
 
 function sum(values: readonly number[]): number {
   return values.reduce((total, value) => total + value, 0);

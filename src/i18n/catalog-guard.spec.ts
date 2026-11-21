@@ -60,3 +60,25 @@ describe('каталог текстов', () => {
     expect(withUnit).toEqual([]);
   });
 });
+
+const TEXTS_DIR = new URL('./ru/', import.meta.url);
+const MILITARY_WORDS = /[а-яё]*(снайпер|курсант|инструктор|аттестац|звани)[а-яё]*/giu;
+const COURSE_NAME_UNTIL_P16A = 'Снайперская подготовка';
+
+function militaryWordsIn(sourceText: string): string[] {
+  return [...sourceText.replaceAll(COURSE_NAME_UNTIL_P16A, '').matchAll(MILITARY_WORDS)].map(match => match[0]);
+}
+
+describe('спортивная лексика (T4.4, В44)', () => {
+  it('в текстах нет военных слов, кроме названия курса до П16а', () => {
+    const found = readdirSync(TEXTS_DIR)
+      .filter(name => name.endsWith('.ts') && !name.endsWith('.spec.ts'))
+      .flatMap(name => militaryWordsIn(readFileSync(new URL(name, TEXTS_DIR), 'utf-8')).map(word => `${name}: ${word}`));
+    expect(found).toEqual([]);
+  });
+
+  it('сторож ловит слово в любом регистре и пропускает только название курса', () => {
+    expect(militaryWordsIn('Учебник курсанта · СНАЙПЕР · с инструктором · аттестация · Звание')).toEqual(['курсанта', 'СНАЙПЕР', 'инструктором', 'аттестация', 'Звание']);
+    expect(militaryWordsIn('Снайперская подготовка · тренер · стрелок')).toEqual([]);
+  });
+});

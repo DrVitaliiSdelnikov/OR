@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CourseResults, ExerciseId } from '../../sim/course';
-import { continueCard, rankHeader, withExamResult, withExerciseResult, withIntroCompleted } from './home.model';
+import { admissionsHeader, continueCard, withExamResult, withExerciseResult, withIntroCompleted } from './home.model';
 
 const ADMISSION_IDS: ExerciseId[] = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
 
@@ -33,16 +33,10 @@ describe('continue card', () => {
   });
 });
 
-describe('rank header', () => {
-  it.each([
-    [0, false, 'Курсант'],
-    [3, false, 'Стрелок'],
-    [7, false, 'Старший стрелок'],
-    [12, false, 'Снайпер'],
-    [12, true, 'Снайпер-инструктор'],
-  ] as const)('%i admissions (all 1st class: %s) → %s', (admissions, isAllTop, label) => {
-    const bestClasses = Object.fromEntries(ADMISSION_IDS.slice(0, admissions).map(id => [id, isAllTop ? 1 : 3]));
-    expect(rankHeader(results(bestClasses))).toEqual({ rankLabel: label, admissions, admissionsTotal: 12 });
+describe('admissions header (T4.4: no ranks)', () => {
+  it.each([0, 3, 12])('%i admissions of 12', admissions => {
+    const bestClasses = Object.fromEntries(ADMISSION_IDS.slice(0, admissions).map(id => [id, 1]));
+    expect(admissionsHeader(results(bestClasses))).toEqual({ admissions, admissionsTotal: 12 });
   });
 });
 

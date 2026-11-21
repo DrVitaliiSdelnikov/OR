@@ -47,7 +47,7 @@ test.describe('экран «Дрилы» (T3.5)', () => {
   test('главная: без «Свободной игры»; курс пройден — карточка «Дрилы» с советом ведёт на «Дрилы»', async ({ page }) => {
     await seed(page, Object.fromEntries(COURSE_IDS.map(id => [id, 3])));
     await page.goto('/');
-    await expect(page.locator('.tile')).toHaveText([/Снайперская подготовка/, /Дрилы/, /Винтовка/, /Учебник курсанта/, /Прогресс/]);
+    await expect(page.locator('.tile')).toHaveText([/Снайперская подготовка/, /Дрилы/, /Винтовка/, /Учебник стрелка/, /Прогресс/]);
     await expect(page.getByTestId('continue-card')).toContainText('Дрилы');
     await expect(page.getByTestId('continue-card')).toContainText('Тренер: дальность');
     await page.getByTestId('continue-card').click();

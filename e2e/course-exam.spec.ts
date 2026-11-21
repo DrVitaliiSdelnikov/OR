@@ -23,7 +23,7 @@ test.describe('экзамен вместо курса (T3.6)', () => {
     expect([params.get('exam'), params.get('mode')]).toEqual(['on', 'manual-hard']);
   });
 
-  test('экзамен сдан: 01–11 «экзамен», свой класс остаётся, 13 текущий, плашки нет; лист 12 — обычная аттестация', async ({ page }) => {
+  test('экзамен сдан: 01–11 «экзамен», свой класс остаётся, 13 текущий, плашки нет; лист 12 — обычный зачёт', async ({ page }) => {
     await seedCourse(page, { isExamPassed: true, bestClasses: { '03': 2, '12': 2 } });
     await page.goto('/course');
     await expect(page.getByTestId('exam-offer')).toHaveCount(0);
@@ -31,7 +31,7 @@ test.describe('экзамен вместо курса (T3.6)', () => {
     await expect(page.getByTestId('stamp-03')).toHaveText('2 кл.');
     await expect(page.getByTestId('node-13')).toHaveAttribute('data-state', 'current');
     await page.goto('/course/12?exam=on');
-    await expect(page.getByTestId('briefing-header')).toHaveText('ЗАДАНИЕ 12 · АТТЕСТАЦИЯ');
+    await expect(page.getByTestId('briefing-header')).toHaveText('ЗАДАНИЕ 12 · ЗАЧЁТ');
     await expect(page.getByTestId('briefing-exam')).toHaveCount(0);
   });
 

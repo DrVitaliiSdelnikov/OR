@@ -39,7 +39,7 @@ test.describe('главный экран и курс-тропа', () => {
     await expect(page.getByTestId('stamp-03')).toHaveText('3 кл.');
     await expect(page.getByTestId('node-04')).toHaveAttribute('data-state', 'current');
     await expect(page.getByTestId('node-05')).toBeDisabled();
-    await expect(page.getByTestId('node-12')).toContainText('аттестация');
+    await expect(page.getByTestId('node-12')).toContainText('зачёт курса');
     await expect(page.getByTestId('trail-progress')).toContainText('пройдено 3 / 12');
   });
 
@@ -93,7 +93,7 @@ test.describe('главный экран и курс-тропа', () => {
 test.describe('после зачёта: 13 «Горный склон» и 14 «Дальний рубеж» (В45)', () => {
   const TO_ATTESTATION = { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3, '06': 3, '07': 3, '08': 3, '09': 3, '10': 3, '11': 3, '12': 3 };
 
-  test('после 12: 13 текущий, 14 закрыт; лист 13 — склон и высота; позиция — «∠ ±N°» и шаг «Угол места»; звание и допуски по 12', async ({ page }) => {
+  test('после 12: 13 текущий, 14 закрыт; лист 13 — склон и высота; позиция — «∠ ±N°» и шаг «Угол места»; допуски по 12', async ({ page }) => {
     await seedCourse(page, true, TO_ATTESTATION);
     await page.goto('/');
     await expect(page.getByTestId('admissions')).toHaveText('допуски 12 / 12');

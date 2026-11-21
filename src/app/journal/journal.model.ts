@@ -8,7 +8,6 @@ import { COURSE, courseProgress, CourseResults, exerciseById, ExerciseId, Exerci
 import { CAUSE_ORDER, CauseAmount, CauseKind, isExecutionCause, MainCause, mainOfAmounts } from '../../sim/miss-breakdown';
 import { roundToClicks } from '../../core/game-formulas';
 import { MODE_LABELS } from '../course/course-trail.model';
-import { RANK_LABELS } from '../home/home.model';
 import { CARTRIDGE_LETTERS, cartridgeLetter } from '../notebook/notebook.model';
 import { text } from '../../i18n';
 import { classStamp, MAIN_CAUSE_PHRASES, STAMP_TONES, StampTone } from '../result/result.model';
@@ -87,7 +86,6 @@ export interface CardView {
 }
 
 export interface AchievementsView {
-  rank: string;
   admissions: string;
   classes: { id: ExerciseId; title: string; stamp: string | null }[];
   records: string[];
@@ -294,7 +292,6 @@ export function achievementsView(course: CourseResults, system: UnitSystem = 'me
   const progress = courseProgress(course);
   const graded = COURSE.filter(def => def.targets !== null);
   return {
-    rank: RANK_LABELS[progress.rank],
     admissions: T.admissions({ admissions: progress.admissions, admissionsTotal: ADMISSIONS_TOTAL }),
     classes: graded.map(def => {
       const best = course.bestClasses[def.id];

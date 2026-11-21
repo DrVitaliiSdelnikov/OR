@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { text } from '../../i18n';
-import { RANK_LABELS, rankHeader } from '../home/home.model';
+import { admissionsHeader } from '../home/home.model';
 import { ProgressStore } from '../services/progress.store';
 import { isExamOffered } from '../../sim/course';
 import { STAMP_CLASSES, TrailNode, trailNodes, TrailStamp } from './course-trail.model';
@@ -18,7 +18,7 @@ import { BackLinkDirective } from '../services/back-link.directive';
           <a class="back" orBackLink="/" [attr.aria-label]="texts.back" data-test="trail-back">←</a>
           <div>
             <h1>{{ texts.title }}</h1>
-            <div class="meta" data-test="trail-progress">{{ texts.progress({ admissions: header().admissions, admissionsTotal: header().admissionsTotal, rank: header().rankLabel }) }}</div>
+            <div class="meta" data-test="trail-progress">{{ texts.progress({ admissions: header().admissions, admissionsTotal: header().admissionsTotal }) }}</div>
           </div>
         </header>
 
@@ -91,8 +91,8 @@ export class CourseTrailPage {
   private readonly router = inject(Router);
 
   protected readonly texts = text.screens.courseTrail;
-  protected readonly attestationLine = this.texts.attestation({ rank: RANK_LABELS.sniper });
-  protected readonly header = computed(() => rankHeader(this.progress.course()));
+  protected readonly attestationLine = this.texts.attestation;
+  protected readonly header = computed(() => admissionsHeader(this.progress.course()));
   protected readonly nodes = computed(() => trailNodes(this.progress.course(), this.progress.settings().isEverythingUnlocked, this.progress.settings().unitSystem));
 
   protected readonly isExamOffered = computed(() => isExamOffered(this.progress.course()));

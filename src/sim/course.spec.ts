@@ -520,7 +520,7 @@ describe('course progress', () => {
     const progress = courseProgress({ isIntroCompleted: false, bestClasses: {} });
     expect(progress.unlockedIds).toEqual(['00', '01']);
     expect(progress.nextExerciseId).toBe('00');
-    expect(progress.rank).toBe('cadet');
+    expect('rank' in progress).toBe(false);
   });
 
   it('01 без вводного: 3-й класс в 01 открывает 02', () => {
@@ -539,16 +539,11 @@ describe('course progress', () => {
     expect(courseProgress({ isIntroCompleted: true, bestClasses: { '01': 0 } }).unlockedIds).toEqual(['00', '01']);
   });
 
-  it('ranks by admissions: 3 → rifleman, 12 all 1st class → sniper-instructor', () => {
+  it('all twelve admitted: 12 admissions, next is 13', () => {
     const ids: ExerciseId[] = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
-    const firstThree: CourseResults['bestClasses'] = Object.fromEntries(ids.slice(0, 3).map(id => [id, 3]));
-    expect(courseProgress({ isIntroCompleted: true, bestClasses: firstThree }).rank).toBe('rifleman');
-    const allTop: CourseResults['bestClasses'] = Object.fromEntries(ids.map(id => [id, 1]));
-    const finished = courseProgress({ isIntroCompleted: true, bestClasses: allTop });
-    expect(finished.rank).toBe('sniper-instructor');
+    const finished = courseProgress({ isIntroCompleted: true, bestClasses: Object.fromEntries(ids.map(id => [id, 1])) });
+    expect(finished.admissions).toBe(12);
     expect(finished.nextExerciseId).toBe('13');
-    const oneSecond: CourseResults['bestClasses'] = { ...allTop, '07': 2 };
-    expect(courseProgress({ isIntroCompleted: true, bestClasses: oneSecond }).rank).toBe('sniper');
   });
 
   it('свободная игра открыта целиком с первого запуска, без курса (В53)', () => {
@@ -557,11 +552,11 @@ describe('course progress', () => {
     }
   });
 
-  it('"unlock everything" opens every exercise and free play option but leaves the rank', () => {
+  it('"unlock everything" opens every exercise and free play option but leaves the admissions', () => {
     const progress = courseProgress({ isIntroCompleted: false, bestClasses: {} }, true);
     expect(progress.unlockedIds).toEqual(COURSE.map(def => def.id));
     expect(Object.values(progress.freePlayUnlocks).every(Boolean)).toBe(true);
-    expect(progress.rank).toBe('cadet');
+    expect(progress.admissions).toBe(0);
   });
 
   it('a repeat never lowers the best class', () => {

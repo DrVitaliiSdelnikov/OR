@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calcPoints, exerciseClass, hitShare, modeMultiplier, rankFor, seriesTotal, targetPoints } from './exercise-scoring';
+import { calcPoints, exerciseClass, hitShare, modeMultiplier, seriesTotal, targetPoints } from './exercise-scoring';
 
 describe('targetPoints', () => {
   it('gives 10 for a first-round hit, 5 for a second-round hit, 0 for a miss', () => {
@@ -92,21 +92,4 @@ describe('exerciseClass', () => {
   });
 });
 
-describe('rankFor', () => {
-  it.each([
-    [0, 'cadet'],
-    [2, 'cadet'],
-    [3, 'rifleman'],
-    [6, 'rifleman'],
-    [7, 'senior-rifleman'],
-    [11, 'senior-rifleman'],
-    [12, 'sniper'],
-  ] as const)('%i admissions give %s', (admissions, rank) => {
-    expect(rankFor(admissions, false)).toBe(rank);
-  });
 
-  it('all twelve on 1st class make a sniper-instructor', () => {
-    expect(rankFor(12, true)).toBe('sniper-instructor');
-    expect(rankFor(11, true)).toBe('senior-rifleman');
-  });
-});

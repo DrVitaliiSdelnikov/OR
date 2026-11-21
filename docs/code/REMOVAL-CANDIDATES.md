@@ -15,7 +15,6 @@
 
 | Что | Почему уходит | Чем заменяется | Удалить в | Помечено в коде |
 | --- | --- | --- | --- | --- |
-| звания курса: `rankFor`, `Rank`, `RANK_FROM_ADMISSIONS`, `rank` в `courseProgress`, `RANK_LABELS`, текст `result.rankPlate`; строки звания на главной, тропе (`trail-progress`, аттестация) и в достижениях журнала — на итоге заменены ростом навыков, остальное заменят T3.5 и T4.3 (В39) | 20.11 | T4.2 |
 | `drillListGroups`, `DrillListGroup`, тексты `drills.list.countGroup` / `positionGroup` | список дрилов по навыкам (T3.5) | `drillSkillGroups`, `DrillSkillGroup` | T4.3 | `app/drill/drill-cards.model.ts` |
 | подпись замка учебника: `lockText` в `textbook.model.ts`, `lockIntro`, `lockExercise` каталога, `TermTile.lockText`, разметка `textbook-term-locked`, `term-related-locked` | учебник открыт целиком (В53) | — | T2.3 | `app/textbook/textbook.model.ts` |
 | `FLAG_DISTANCES_M`, `WIND_ZONE_LIMITS_M` в `core/content.ts` | флажки и зоны зависят от системы (T1.8c) | `rangeLayout(system)` | T2.1 | `core/content.ts` |
@@ -34,6 +33,7 @@
 
 | Что | Когда | Задача |
 | --- | --- | --- |
+| звания курса: `Rank`, `rankFor`, `RANK_FROM_ADMISSIONS`, `rank` в `courseProgress`, `RANK_LABELS`, `home.ranks`, `result.rankPlate`, `rankHeader` (→ `admissionsHeader`), звание на тропе и в достижениях журнала — В39, В44 | 21.11 | T4.4 |
 | `formulaPlayerWind` в `MissBreakdownInput`, лепестки `calc` и `wind`, `windVerdict`, тексты «Недокрут / Перекрут по ветру» и «Расчёт увёл пулю»; их заменили звенья цепочки | 17.11 | T2.2 |
 | `IMPLEMENTED_FEATURES`, `playability`, `Playability` в `position.model`, причина «откроется позже» и выключенная «НА ПОЗИЦИЮ» на брифинге; тест «играбельно всё» — с A9.3b играбельно всё | 13.11 | A10a |
 | `src/theme/_legacy-aliases.scss` (`--hub-*`, `--font-sans`, `--fire-gap`) и его `@use`; глобальные `.screen`, `.card`, `.spacer`, `.button`, `.chip`, `.top-bar`, `.ok-text`, `.error-text`, `.warn-text`, `.accent-text`; `--ion-tab-bar-*`; настройка `isSoundOn` (заменена громкостью, старое значение переводится при загрузке) | 10.11 | A7.4 |

@@ -1,4 +1,4 @@
-import { ExerciseClass, Rank } from '../../core/exercise-scoring';
+import { ExerciseClass } from '../../core/exercise-scoring';
 import { text } from '../../i18n';
 import { ATTESTATION_ID, courseProgress, CourseResults, exerciseById, ExerciseId, ExerciseResult, exerciseTitle, isExamPassed, mergeBestClass } from '../../sim/course';
 import { UnitSystem } from '../../core/units';
@@ -8,15 +8,12 @@ export type ContinueCard =
   | { kind: 'continue'; exerciseId: ExerciseId; title: string; status: 'new' | 'not-admitted' }
   | { kind: 'drills' };
 
-export interface RankHeader {
-  rankLabel: string;
+export interface AdmissionsHeader {
   admissions: number;
   admissionsTotal: number;
 }
 
 export const ADMISSIONS_TOTAL = 12;
-
-export const RANK_LABELS: Record<Rank, string> = text.screens.home.ranks;
 
 export function continueCard(results: CourseResults, system: UnitSystem = 'metric'): ContinueCard {
   const nextId = courseProgress(results).nextExerciseId;
@@ -30,9 +27,9 @@ export function continueCard(results: CourseResults, system: UnitSystem = 'metri
   return { kind: 'continue', exerciseId: nextId, title, status: results.bestClasses[nextId] === undefined ? 'new' : 'not-admitted' };
 }
 
-export function rankHeader(results: CourseResults): RankHeader {
+export function admissionsHeader(results: CourseResults): AdmissionsHeader {
   const progress = courseProgress(results);
-  return { rankLabel: RANK_LABELS[progress.rank], admissions: progress.admissions, admissionsTotal: ADMISSIONS_TOTAL };
+  return { admissions: progress.admissions, admissionsTotal: ADMISSIONS_TOTAL };
 }
 
 export function withExerciseResult(results: CourseResults, exerciseId: ExerciseId, exerciseClass: ExerciseClass, total?: number): CourseResults {

@@ -6,8 +6,6 @@ export const result = {
   notAdmittedStamp: 'НЕ ЗАЧТЕНО',
   allFirstPaper: 'все в мишень',
   allFirst: 'все первым',
-  /** @deprecated T4.2: на итоге вместо звания — рост навыков (`skillGrowth`); см. REMOVAL-CANDIDATES. */
-  rankPlate: (p: { rank: string }) => `Звание: ${p.rank}`,
   skillGrowth: (p: { before: number; after: number }) => `${p.before} → ${p.after}`,
   opened: (p: { exerciseId: string; title: string }) => `Открыто: ${p.exerciseId} · ${p.title}`,
   examPassed: (p: { share: number; minShare: number }) => `ЭКЗАМЕН СДАН · ${percent(p.share)} ≥ ${percent(p.minShare)} · 01–11 зачтены`,
@@ -46,7 +44,7 @@ export const result = {
 
 export const briefing = {
   header: (p: { exerciseId: string; kind: 'intro' | 'attestation' | 'training' | 'exam' }) =>
-    `ЗАДАНИЕ ${p.exerciseId} · ${{ intro: 'ВВОДНОЕ', attestation: 'АТТЕСТАЦИЯ', training: 'УЧЕБНОЕ', exam: 'ЭКЗАМЕН' }[p.kind]}`,
+    `ЗАДАНИЕ ${p.exerciseId} · ${{ intro: 'ВВОДНОЕ', attestation: 'ЗАЧЁТ', training: 'УЧЕБНОЕ', exam: 'ЭКЗАМЕН' }[p.kind]}`,
   examLine: (p: { minShare: number }) => `Зачёт: от ${percent(p.minShare)} очков — упражнения 01–11 зачтены экзаменом`,
   introLine: 'Без стрельбы и оценки. Семь шагов: винтовка, прицел, барабан, кратность, сетки, патроны, затвор',
   thirdClass: (p: { minShare: number }) => `3 класс — от ${percent(p.minShare)} очков`,

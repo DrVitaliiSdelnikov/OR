@@ -145,19 +145,14 @@ describe('прогресс: 13–14 после зачёта, звания по 0
     expect(after13.nextExerciseId).toBe('14');
   });
 
-  it('12 допусков без 13–14 — «Снайпер»; 1 класс на 00–12 — «Снайпер-инструктор»; 13–14 счёт не меняют', () => {
-    const sniper = courseProgress({ isIntroCompleted: true, bestClasses: allClasses(2, BEFORE_ATTESTATION) });
-    expect(sniper.rank).toBe('sniper');
-    expect(sniper.admissions).toBe(12);
-    const instructor = courseProgress({ isIntroCompleted: true, bestClasses: allClasses(1, BEFORE_ATTESTATION) });
-    expect(instructor.rank).toBe('sniper-instructor');
+  it('13–14 допуски не меняют: 12 из 12', () => {
+    const passed = courseProgress({ isIntroCompleted: true, bestClasses: allClasses(2, BEFORE_ATTESTATION) });
+    expect(passed.admissions).toBe(12);
     const withAll = courseProgress({ isIntroCompleted: true, bestClasses: { ...allClasses(1, BEFORE_ATTESTATION), '13': 3, '14': 3 } });
-    expect(withAll.rank).toBe('sniper-instructor');
     expect(withAll.admissions).toBe(12);
     expect(withAll.nextExerciseId).toBeNull();
     const onlyFirstEleven = courseProgress({ isIntroCompleted: true, bestClasses: { ...allClasses(2, BEFORE_ATTESTATION.slice(0, 11)), '13': 1, '14': 1 } });
     expect(onlyFirstEleven.admissions).toBe(11);
-    expect(onlyFirstEleven.rank).toBe('senior-rifleman');
   });
 
   it('«открыть всё» открывает и 13, и 14', () => {

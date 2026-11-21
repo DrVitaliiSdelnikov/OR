@@ -1,4 +1,4 @@
-import type { NotebookMode, Rank } from '../../core/exercise-scoring';
+import type { NotebookMode } from '../../core/exercise-scoring';
 import type { CartridgeId } from '../../core/types';
 import type { Terrain, WindPreset } from '../../sim/free-play';
 import { decimal, plural, PluralForms, signed } from '../format';
@@ -10,20 +10,13 @@ const BACK = 'Назад';
 
 export const screens = {
   home: {
-    ranks: {
-      cadet: 'Курсант',
-      rifleman: 'Стрелок',
-      'senior-rifleman': 'Старший стрелок',
-      sniper: 'Снайпер',
-      'sniper-instructor': 'Снайпер-инструктор',
-    } satisfies Record<Rank, string>,
     admissions: (p: { admissions: number; admissionsTotal: number }) => `допуски ${p.admissions} / ${p.admissionsTotal}`,
     settings: 'Настройки',
     title: 'Огневой рубеж',
     tiles: {
       course: 'Снайперская подготовка',
       drills: 'Дрилы',
-      textbook: 'Учебник курсанта',
+      textbook: 'Учебник стрелка',
       progress: 'Прогресс',
       rifle: 'Винтовка',
     },
@@ -37,11 +30,11 @@ export const screens = {
     modes: { auto: 'АВТО', 'manual-easy': 'САМ · лёгкий', 'manual-hard': 'САМ · сложный' } satisfies Record<NotebookMode, string>,
     back: BACK,
     title: 'Снайперская подготовка',
-    progress: (p: { admissions: number; admissionsTotal: number; rank: string }) => `пройдено ${p.admissions} / ${p.admissionsTotal} · ${p.rank}`,
+    progress: (p: { admissions: number; admissionsTotal: number }) => `пройдено ${p.admissions} / ${p.admissionsTotal}`,
     locked: 'закрыто',
     passed: 'пройдено',
     stamp: (p: { exerciseClass: number }) => `${p.exerciseClass} кл.`,
-    attestation: (p: { rank: string }) => `аттестация · ${p.rank}`,
+    attestation: 'зачёт курса',
     examStamp: 'экзамен',
     examOffer: 'Экзамен вместо курса',
     examOfferLine: 'Знаешь баллистику? Сдай 12 в САМ: от 85 % очков — 01–11 зачтены',

@@ -784,7 +784,7 @@ export const textbook = {
   },
   page: {
     back: 'Назад',
-    title: 'Учебник курсанта',
+    title: 'Учебник стрелка',
   },
   sheet: {
     example: 'пример',

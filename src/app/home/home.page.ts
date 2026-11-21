@@ -5,7 +5,7 @@ import { text } from '../../i18n';
 import { progressCoachView } from '../drill/coach.model';
 import { levelView } from '../progress/progress.model';
 import { ProgressStore } from '../services/progress.store';
-import { continueCard, rankHeader } from './home.model';
+import { admissionsHeader, continueCard } from './home.model';
 
 
 @Component({
@@ -16,7 +16,7 @@ import { continueCard, rankHeader } from './home.model';
       <div class="home">
         <header class="header">
           <div>
-            <div class="rank" [class.unknown]="!level().isKnown" data-test="level">{{ level().text }}</div>
+            <div class="level" [class.unknown]="!level().isKnown" data-test="level">{{ level().text }}</div>
             <div class="admissions" data-test="admissions">{{ texts.admissions({ admissions: header().admissions, admissionsTotal: header().admissionsTotal }) }}</div>
           </div>
           <a class="gear" routerLink="/settings" [attr.aria-label]="texts.settings" data-test="open-settings">⚙</a>
@@ -57,8 +57,8 @@ import { continueCard, rankHeader } from './home.model';
   styles: `
     .home { display: flex; flex-direction: column; gap: var(--space-4); min-height: 100%; padding: var(--space-3) var(--gutter) var(--space-6); }
     .header { display: flex; align-items: flex-start; justify-content: space-between; }
-    .rank { font: 700 var(--type-value) / 22px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; color: var(--device-accent); }
-    .rank.unknown { color: var(--device-text-muted); }
+    .level { font: 700 var(--type-value) / 22px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; color: var(--device-accent); }
+    .level.unknown { color: var(--device-text-muted); }
     .admissions { font: 500 var(--type-label) / 18px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--device-text-muted); }
     .gear { display: grid; place-items: center; min-width: var(--touch-min); min-height: var(--touch-min); border: var(--border-width) solid var(--device-line); border-radius: var(--radius-device); color: var(--device-text); font-size: var(--type-title); text-decoration: none; }
     .title { margin: var(--space-4) 0 var(--space-2); font: 700 var(--type-hero) / 44px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; color: var(--device-text); }
@@ -78,7 +78,7 @@ export class HomePage {
 
   protected readonly texts = text.screens.home;
   protected readonly aboutLink = text.about.link;
-  protected readonly header = computed(() => rankHeader(this.progress.course()));
+  protected readonly header = computed(() => admissionsHeader(this.progress.course()));
   protected readonly level = computed(() => levelView(this.progress.skills()));
   protected readonly card = computed(() => continueCard(this.progress.course(), this.progress.settings().unitSystem));
   protected readonly cardExercise = computed(() => {

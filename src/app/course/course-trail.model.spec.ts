@@ -31,7 +31,7 @@ describe('trail nodes', () => {
     const nodes = trailNodes(results({}, false));
     expect(nodes.filter(node => node.isIntro).map(node => node.id)).toEqual(['00']);
     expect(nodes.filter(node => node.isAttestation).map(node => node.id)).toEqual(['12']);
-    expect(nodes[12].title).toBe('Полевой рубеж');
+    expect(nodes[12].title).toBe('Полевой зачёт');
   });
 
   it('"unlock everything": nothing locked, the first not admitted is current', () => {

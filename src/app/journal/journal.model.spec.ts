@@ -266,10 +266,10 @@ describe('journal — cards and achievements', () => {
     ]);
   });
 
-  it('rank, admissions, class stamps and records', () => {
+  it('admissions without a rank (T4.4), class stamps and records', () => {
     const course: CourseResults = { isIntroCompleted: true, bestClasses: { '01': 1, '02': 3, '03': 0 }, bestTotals: { '01': 30, '02': 40 } };
     const view = achievementsView(course);
-    expect(view.rank).toBe('Курсант');
+    expect('rank' in view).toBe(false);
     expect(view.admissions).toBe('допуски 2 / 12');
     expect(view.classes.slice(0, 4).map(row => [row.id, row.stamp])).toEqual([
       ['01', '1 КЛАСС'],

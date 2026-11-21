@@ -7,8 +7,6 @@ import {
   hitShare,
   modeMultiplier,
   NotebookMode,
-  Rank,
-  rankFor,
   REFERENCE_PENALTY,
   seriesTotal,
   targetPoints,
@@ -185,7 +183,6 @@ export interface CourseProgress {
   admissions: number;
   unlockedIds: ExerciseId[];
   nextExerciseId: ExerciseId | null;
-  rank: Rank;
   freePlayUnlocks: FreePlayUnlocks;
 }
 
@@ -448,7 +445,6 @@ export function courseProgress(results: CourseResults, isEverythingUnlocked = fa
   const exercises = admissionExercises();
   const isAdmitted = (id: ExerciseId): boolean => isAdmittedIn(results, id);
   const admissions = exercises.filter(def => isAdmitted(def.id)).length;
-  const isEveryExerciseTopClass = exercises.every(def => results.bestClasses[def.id] === 1);
   const unlockedIds = COURSE.filter((def, index) => {
     if (isEverythingUnlocked || index === 0) {
       return true;
@@ -461,7 +457,6 @@ export function courseProgress(results: CourseResults, isEverythingUnlocked = fa
     admissions,
     unlockedIds,
     nextExerciseId: nextExercise?.id ?? null,
-    rank: rankFor(admissions, isEveryExerciseTopClass),
     freePlayUnlocks: ALL_FREE_PLAY_OPEN,
   };
 }

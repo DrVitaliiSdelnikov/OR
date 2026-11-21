@@ -129,3 +129,4 @@
 | app · экран «Дрилы» и главный (T3.5, В35) | [specs/app-drills-screen.md](specs/app-drills-screen.md) | реализовано 21.11 |
 | app · экран «Прогресс» (T4.3, В39) | [specs/app-progress.md](specs/app-progress.md) | реализовано 21.11 |
 | sim + app · экзамен вместо курса (T3.6, В35) | [specs/sim-course-exam.md](specs/sim-course-exam.md) | реализовано 21.11 |
+| app · спортивная лексика (T4.4, В44) | [specs/app-sport-lexicon.md](specs/app-sport-lexicon.md) | реализовано 21.11 |

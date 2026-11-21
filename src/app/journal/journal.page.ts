@@ -111,7 +111,6 @@ const PERCENT = 100;
             }
             @case ('achievements') {
               <section class="sheet" data-test="journal-achievements">
-                <div class="rank">{{ achievements().rank }}</div>
                 <div class="mono">{{ achievements().admissions }}</div>
                 @for (row of achievements().classes; track row.id) {
                   <div class="error-row">
@@ -139,7 +138,7 @@ const PERCENT = 100;
     .tab.active { border-color: var(--device-accent); color: var(--device-accent); }
     .sheet { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border: 0; border-radius: var(--radius-paper); background: var(--paper-bg); color: var(--paper-ink); box-shadow: var(--paper-shadow); text-align: left; font: 400 var(--type-body) / 20px var(--font-text); }
     .series-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-    .series-title, .card-title, .rank { font: 700 var(--type-body) / 20px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; }
+    .series-title, .card-title { font: 700 var(--type-body) / 20px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; }
     .meta, .shot { font: 500 var(--type-label) / 18px var(--font-mono); color: var(--paper-graphite); }
     .stamp { --tone: var(--paper-graphite); padding: 0 var(--space-2); border: 2px solid var(--tone); border-radius: 3px; color: var(--tone); font-weight: 700; transform: rotate(-4deg); }
     .stamp[data-tone='gold'] { --tone: var(--paper-stamp-gold); }

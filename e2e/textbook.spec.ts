@@ -9,7 +9,7 @@ async function seed(page: Page, bestClasses: Record<string, number> = {}): Promi
 }
 
 test.describe('учебник курсанта (A7.3)', () => {
-  test('главная → «03 · Учебник курсанта»: все 55 терминов открыты с первого запуска (В53), главы', async ({ page }) => {
+  test('главная → «04 · Учебник стрелка»: все 55 терминов открыты с первого запуска (В53), главы', async ({ page }) => {
     await seed(page);
     await page.goto('/');
     await page.getByTestId('tile-textbook').click();
