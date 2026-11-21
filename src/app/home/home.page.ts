@@ -4,6 +4,8 @@ import { IonContent } from '@ionic/angular/standalone';
 import { text } from '../../i18n';
 import { progressCoachView } from '../drill/coach.model';
 import { levelView } from '../progress/progress.model';
+import { dailyDateKey } from '../../sim/daily';
+import { dailyTileLine } from '../daily/daily.model';
 import { ProgressStore } from '../services/progress.store';
 import { admissionsHeader, continueCard } from './home.model';
 
@@ -27,9 +29,10 @@ import { admissionsHeader, continueCard } from './home.model';
         <nav class="menu">
           <a class="tile" routerLink="/course" data-test="tile-course"><span class="number">01</span>{{ texts.tiles.course }}</a>
           <a class="tile" routerLink="/drills" data-test="tile-drills"><span class="number">02</span>{{ texts.tiles.drills }}</a>
-          <a class="tile" routerLink="/rifle" data-test="tile-rifle"><span class="number">03</span>{{ texts.tiles.rifle }}</a>
-          <a class="tile" routerLink="/textbook" data-test="tile-textbook"><span class="number">04</span>{{ texts.tiles.textbook }}</a>
-          <a class="tile" routerLink="/progress" data-test="tile-progress"><span class="number">05</span>{{ texts.tiles.progress }}</a>
+          <a class="tile" routerLink="/daily" data-test="tile-daily"><span class="number">03</span><span class="tile-name">{{ texts.tiles.daily }}<span class="tile-note mono" data-test="tile-daily-note">{{ dailyNote() }}</span></span></a>
+          <a class="tile" routerLink="/rifle" data-test="tile-rifle"><span class="number">04</span>{{ texts.tiles.rifle }}</a>
+          <a class="tile" routerLink="/textbook" data-test="tile-textbook"><span class="number">05</span>{{ texts.tiles.textbook }}</a>
+          <a class="tile" routerLink="/progress" data-test="tile-progress"><span class="number">06</span>{{ texts.tiles.progress }}</a>
         </nav>
 
         <button class="continue" type="button" (click)="openContinue()" data-test="continue-card">
@@ -64,6 +67,8 @@ import { admissionsHeader, continueCard } from './home.model';
     .title { margin: var(--space-4) 0 var(--space-2); font: 700 var(--type-hero) / 44px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; color: var(--device-text); }
     .menu { display: flex; flex-direction: column; gap: var(--space-2); }
     .tile { display: flex; align-items: center; gap: var(--space-3); min-height: var(--button-main-height); padding: 0 var(--space-4); border: var(--border-width) solid var(--device-line-strong); border-radius: var(--radius-device); background: var(--device-surface); color: var(--device-text); font: 700 var(--type-value) / 22px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; text-align: left; text-decoration: none; cursor: pointer; }
+    .tile-name { display: flex; flex-direction: column; }
+    .tile-note { font: 500 var(--type-label) / 16px var(--font-mono); letter-spacing: var(--tracking-label); color: var(--device-text-muted); }
     .number { font: 700 var(--type-label) / 16px var(--font-mono); color: var(--device-accent); }
     .continue { display: flex; flex-direction: column; gap: var(--space-1); margin-top: auto; min-height: var(--button-main-height); padding: var(--space-3) var(--space-4); border: 0; border-radius: var(--radius-device); background: var(--device-accent); color: var(--device-on-accent); text-align: left; cursor: pointer; }
     .continue-label { font: 700 var(--type-label) / 16px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; }
@@ -80,6 +85,7 @@ export class HomePage {
   protected readonly aboutLink = text.about.link;
   protected readonly header = computed(() => admissionsHeader(this.progress.course()));
   protected readonly level = computed(() => levelView(this.progress.skills()));
+  protected readonly dailyNote = computed(() => dailyTileLine(this.progress.daily(), dailyDateKey(new Date().toISOString())));
   protected readonly card = computed(() => continueCard(this.progress.course(), this.progress.settings().unitSystem));
   protected readonly cardExercise = computed(() => {
     const card = this.card();

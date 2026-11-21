@@ -19,7 +19,7 @@ import { SummaryView } from './drill-cards.model';
       </ul>
       <div class="actions">
         <button class="action main mono" type="button" (click)="again.emit()" data-test="drill-again">{{ texts.summary.again }}</button>
-        <button class="action mono" type="button" (click)="leave.emit()" data-test="drill-exit">{{ texts.summary.toDrills }}</button>
+        <button class="action mono" type="button" (click)="leave.emit()" data-test="drill-exit">{{ leaveLabel() ?? texts.summary.toDrills }}</button>
       </div>
     </section>
   `,
@@ -36,6 +36,7 @@ import { SummaryView } from './drill-cards.model';
 })
 export class DrillEndComponent {
   readonly view = input.required<SummaryView>();
+  readonly leaveLabel = input<string | null>(null);
   readonly again = output<void>();
   readonly leave = output<void>();
   protected readonly texts = text.drills;

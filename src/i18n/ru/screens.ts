@@ -16,6 +16,7 @@ export const screens = {
     tiles: {
       course: 'Снайперская подготовка',
       drills: 'Дрилы',
+      daily: 'Задание дня',
       textbook: 'Учебник стрелка',
       progress: 'Прогресс',
       rifle: 'Винтовка',

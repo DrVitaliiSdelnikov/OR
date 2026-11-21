@@ -44,8 +44,12 @@ export function positionDrillRecord(input: PositionDrillRoundInput): DrillRoundR
     level: input.level,
     seed: input.seed,
     startedAtIso: input.startedAtIso,
-    cards: input.records.map(record => positionCard(record)),
+    cards: positionCards(input.records),
   };
+}
+
+export function positionCards(records: readonly ExerciseShotRecord[]): DrillCardResult[] {
+  return records.map(positionCard);
 }
 
 function positionCard(record: ExerciseShotRecord): DrillCardResult {

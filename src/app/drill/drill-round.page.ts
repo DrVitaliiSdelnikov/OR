@@ -3,7 +3,9 @@ import { Router } from '@angular/router';
 import { BallisticsEngine } from '../../core/engine';
 import { text } from '../../i18n';
 import { typedDecimal } from '../../i18n/format';
+import { dailyDateKey, dailyFromCards, dailyTask } from '../../sim/daily';
 import { isTimedOpen } from '../../sim/drill-levels';
+import { DAILY_ON } from '../daily/daily.model';
 import { DrillRound, drillContext } from '../../sim/drill-round';
 import { COUNT_DRILL_IDS, CountDrillId, DrillLevel, drillTitle } from '../../sim/drills';
 import { CalcSheetComponent } from '../notebook/calc-sheet.component';
@@ -49,7 +51,7 @@ const MIL_UNIT = 'MIL';
             <div class="actions">
               <button class="action main mono" type="button" (click)="restart(false)" data-test="drill-again">{{ texts.summary.again }}</button>
               <button class="action mono" type="button" (click)="restart(true)" data-test="drill-same">{{ texts.summary.same }}</button>
-              <button class="action mono" type="button" (click)="leave()" data-test="drill-exit">{{ texts.summary.leave }}</button>
+              <button class="action mono" type="button" (click)="leave()" data-test="drill-exit">{{ dailyTask() ? dailyTexts.toDaily : texts.summary.leave }}</button>
             </div>
           </section>
         } @else {
@@ -125,6 +127,7 @@ const MIL_UNIT = 'MIL';
 export class DrillRoundPage {
   readonly drillId = input.required<string>();
   readonly level = input<string | undefined>();
+  readonly daily = input<string | undefined>();
 
   private readonly progress = inject(ProgressStore);
   private readonly router = inject(Router);
@@ -137,7 +140,12 @@ export class DrillRoundPage {
   protected readonly draft = signal('');
   private readonly formulasLayer = backLayer(() => this.isFormulasOpen(), () => this.isFormulasOpen.set(false));
   private readonly countDrillId = computed(() => (COUNT_DRILL_IDS as readonly string[]).includes(this.drillId()) ? (this.drillId() as CountDrillId) : null);
-  private readonly drillLevel = computed<DrillLevel>(() => (this.level() === 'timed' ? 'timed' : 'learn'));
+  protected readonly dailyTexts = text.daily;
+  protected readonly dailyTask = computed(() => {
+    const task = dailyTask(dailyDateKey(new Date().toISOString()));
+    return this.daily() === DAILY_ON && task.drillId === this.countDrillId() ? task : null;
+  });
+  private readonly drillLevel = computed<DrillLevel>(() => (this.level() === 'timed' && !this.dailyTask() ? 'timed' : 'learn'));
   protected readonly title = computed(() => {
     const id = this.countDrillId();
     return id ? drillTitle(id) : '';
@@ -187,7 +195,7 @@ export class DrillRoundPage {
         void this.router.navigate(['/drills']);
         return;
       }
-      untracked(() => void this.startRound(id, randomSeed()));
+      untracked(() => void this.startRound(id, this.dailyTask()?.seed ?? randomSeed()));
     });
     const ticker = setInterval(() => this.tick(), TIMER_TICK_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(ticker));
@@ -239,6 +247,10 @@ export class DrillRoundPage {
       const record = round.toRecord();
       if (record) {
         this.progress.addDrillRound(record);
+        const task = this.dailyTask();
+        if (task) {
+          this.progress.addDailyRecord(dailyFromCards(task, record.cards));
+        }
       }
       this.isSummaryShown.set(true);
     } else {
@@ -257,11 +269,11 @@ export class DrillRoundPage {
   }
 
   protected leave(): void {
-    void this.router.navigate(['/drills']);
+    void this.router.navigate([this.dailyTask() ? '/daily' : '/drills']);
   }
 
   private async startRound(id: CountDrillId, seed: number): Promise<void> {
-    const context = await drillContext(this.engine, this.progress.activeProfile(), this.progress.settings().unitSystem);
+    const context = await drillContext(this.engine, this.dailyTask() ? null : this.progress.activeProfile(), this.progress.settings().unitSystem);
     this.isSummaryShown.set(false);
     this.draft.set('');
     this.round.set(DrillRound.start({ drillId: id, seed, context, level: this.drillLevel(), startedAtIso: new Date().toISOString(), clockS: () => performance.now() / MS_PER_S }));

@@ -206,7 +206,7 @@
     }
 
     @if (drillEnd(); as summary) {
-      <or-drill-end class="review-sheet" [style.top.px]="reviewFrame()?.topPt" [style.height.px]="reviewFrame()?.heightPt" [view]="summary" (again)="againDrill()" (leave)="toDrills()" />
+      <or-drill-end class="review-sheet" [style.top.px]="reviewFrame()?.topPt" [style.height.px]="reviewFrame()?.heightPt" [view]="summary" [leaveLabel]="isDaily() ? dailyLeaveLabel : null" (again)="againDrill()" (leave)="toDrills()" />
     }
 
     @if (radio(); as line) {

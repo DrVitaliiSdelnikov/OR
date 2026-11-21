@@ -1,5 +1,7 @@
 import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, input, signal, untracked, viewChild } from '@angular/core';
-import { drillRoundSummary, isTimedOpen, positionDrillRecord } from '../../sim/drill-levels';
+import { dailyDateKey, dailyFromShots, dailyPositionTask, dailyTask } from '../../sim/daily';
+import { drillRoundSummary, isTimedOpen, positionCards, positionDrillRecord } from '../../sim/drill-levels';
+import { DAILY_POSITION_ID } from '../daily/daily.model';
 import { DrillLevel, POSITION_DRILL_IDS, PositionDrillId, positionDrillTask } from '../../sim/drills';
 import { POSITION_DRILL_PREFIX, positionSummaryView, SummaryView } from '../drill/drill-cards.model';
 import { DrillEndComponent } from '../drill/drill-end.component';
@@ -112,6 +114,8 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   private readonly positionRoot = viewChild<ElementRef<HTMLElement>>('positionRoot');
 
   protected readonly isFreePlay = computed(() => this.exerciseId() === FREE_PLAY_ID);
+  protected readonly dailyLeaveLabel = text.daily.toDaily;
+  protected readonly isDaily = computed(() => this.exerciseId() === DAILY_POSITION_ID);
   protected readonly positionDrill = computed<{ id: PositionDrillId; level: DrillLevel } | null>(() => {
     const id = this.exerciseId().slice(POSITION_DRILL_PREFIX.length) as PositionDrillId;
     if (!this.exerciseId().startsWith(POSITION_DRILL_PREFIX) || !POSITION_DRILL_IDS.includes(id)) {
@@ -141,7 +145,9 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
           this.progress.activeProfile(),
           this.unitSystem(),
         )
-      : this.chosenModeDef(exerciseById(this.exerciseId() as ExerciseId) ?? null);
+      : this.isDaily()
+        ? dailyPositionTask(this.unitSystem())
+        : this.chosenModeDef(exerciseById(this.exerciseId() as ExerciseId) ?? null);
   });
   protected readonly session = signal<PositionSession | null>(null);
 
@@ -584,7 +590,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   }
 
   protected toDrills(): void {
-    void this.router.navigate(['/drills']);
+    void this.router.navigate([this.isDaily() ? '/daily' : '/drills']);
   }
 
   protected async againDrill(): Promise<void> {
@@ -594,6 +600,10 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   }
 
   private finishDrillIfDone(session: PositionSession): void {
+    if (this.isDaily()) {
+      this.finishDailyIfDone(session);
+      return;
+    }
     const drill = this.positionDrill();
     if (!drill || !session.isFinished || this.drillEnd()) {
       return;
@@ -603,6 +613,16 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
     this.progress.addDrillRound(record);
     this.reviewFrame.set(this.fullFrame());
     this.drillEnd.set(positionSummaryView(drillRoundSummary(record.cards)));
+  }
+
+  private finishDailyIfDone(session: PositionSession): void {
+    if (!session.isFinished || this.drillEnd()) {
+      return;
+    }
+    this.saveSeries();
+    this.progress.addDailyRecord(dailyFromShots(dailyTask(dailyDateKey(this.seriesStartedAtIso)), session.records));
+    this.reviewFrame.set(this.fullFrame());
+    this.drillEnd.set(positionSummaryView(drillRoundSummary(positionCards(session.records))));
   }
 
   private drillTimer(session: PositionSession): { text: string; isUrgent: boolean } | null {
@@ -733,7 +753,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
   private async startSession(): Promise<void> {
     const settings = this.progress.settings();
     this.attempt++;
-    const seed = (Date.now() + this.attempt) % SEED_RANGE;
+    const seed = this.isDaily() ? dailyTask(dailyDateKey(new Date().toISOString())).seed : (Date.now() + this.attempt) % SEED_RANGE;
     const session = await PositionSession.start({
       def: this.def()!,
       seed,

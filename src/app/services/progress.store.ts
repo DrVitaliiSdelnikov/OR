@@ -2,6 +2,8 @@ import { computed, Injectable, signal } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { ExerciseClass } from '../../core/exercise-scoring';
 import { CourseResults, ExerciseId, ExerciseResult } from '../../sim/course';
+import { DailyRecord, withDailyRecord } from '../../sim/daily';
+import { knownDailyRecords } from '../daily/daily.model';
 import { DrillRoundRecord, withDrillRound } from '../../sim/drill-round';
 import { DEFAULT_FREE_PLAY, FreePlaySettings, knownFreePlay } from '../../sim/free-play';
 import { withExamResult, withExerciseResult, withIntroCompleted } from '../home/home.model';
@@ -26,9 +28,10 @@ export interface ProgressState {
   seededProfileIds: string[];
   drillRounds: DrillRoundRecord[];
   skills: SkillLedger;
+  daily: DailyRecord[];
 }
 
-type StoredProgress = Partial<Omit<ProgressState, 'skills'>> & { settings?: Record<string, unknown>; profiles?: unknown; activeProfileId?: unknown; seededProfileIds?: unknown; skills?: unknown };
+type StoredProgress = Partial<Omit<ProgressState, 'skills' | 'daily'>> & { daily?: unknown; settings?: Record<string, unknown>; profiles?: unknown; activeProfileId?: unknown; seededProfileIds?: unknown; skills?: unknown };
 
 const EMPTY_COURSE: CourseResults = { isIntroCompleted: false, bestClasses: {} };
 
@@ -42,6 +45,7 @@ export class ProgressStore {
     freePlay: DEFAULT_FREE_PLAY,
     drillRounds: [],
     skills: emptyLedger(),
+    daily: [],
     ...withBuiltInProfile({ profiles: [], activeProfileId: null }, []),
   });
 
@@ -51,6 +55,7 @@ export class ProgressStore {
   readonly dopeNotes = computed(() => this.state().dopeNotes);
   readonly freePlay = computed(() => this.state().freePlay);
   readonly drillRounds = computed(() => this.state().drillRounds);
+  readonly daily = computed(() => this.state().daily);
   readonly skills = computed(() => this.state().skills.ratings);
   readonly profiles = computed(() => this.state().profiles);
   readonly activeProfileId = computed(() => this.state().activeProfileId);
@@ -109,6 +114,10 @@ export class ProgressStore {
     this.update(state => ({ ...state, drillRounds: withDrillRound(state.drillRounds, round), skills: withRatedRound(state.skills, round) }));
   }
 
+  addDailyRecord(record: DailyRecord): void {
+    this.update(state => ({ ...state, daily: withDailyRecord(state.daily, record) }));
+  }
+
   updateFreePlay(patch: Partial<FreePlaySettings>): void {
     this.update(state => ({ ...state, freePlay: { ...state.freePlay, ...patch } }));
   }
@@ -145,7 +154,7 @@ export class ProgressStore {
   }
 
   resetProgress(): void {
-    this.update(state => ({ ...state, course: EMPTY_COURSE, series: [], dopeNotes: {}, drillRounds: [], skills: emptyLedger() }));
+    this.update(state => ({ ...state, course: EMPTY_COURSE, series: [], dopeNotes: {}, drillRounds: [], skills: emptyLedger(), daily: [] }));
   }
 
   private update(change: (state: ProgressState) => ProgressState): void {
@@ -173,6 +182,7 @@ function knownProgress(stored: StoredProgress): ProgressState {
     freePlay: knownFreePlay(stored.freePlay),
     drillRounds,
     skills: knownLedger(stored.skills) ?? replayedLedger(series, drillRounds),
+    daily: knownDailyRecords(stored.daily),
     ...withBuiltInProfile(knownProfiles(stored), knownSeededIds(stored.seededProfileIds)),
   };
 }

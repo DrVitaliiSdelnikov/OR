@@ -59,7 +59,7 @@ const LEVEL_THRESHOLDS: readonly { from: number; name: string }[] = [
   { from: 40, name: text.skills.levels.amateur },
   { from: -Infinity, name: text.skills.levels.beginner },
 ];
-const SKILL_OF_CAUSE: Partial<Record<CauseKind, SkillId>> = {
+export const SKILL_OF_CAUSE: Partial<Record<CauseKind, SkillId>> = {
   distance: 'distance',
   dope: 'dope',
   turret: 'dope',
