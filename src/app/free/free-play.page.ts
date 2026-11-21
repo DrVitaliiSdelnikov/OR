@@ -23,7 +23,7 @@ type PickerKind = 'scope' | 'cartridge';
     <ion-content>
       <div class="free" data-test="free-play">
         <header class="header">
-          <a class="back" orBackLink="/" [attr.aria-label]="texts.back" data-test="free-back">←</a>
+          <a class="back" orBackLink="/drills" [attr.aria-label]="texts.back" data-test="free-back">←</a>
           <div>
             <h1 class="title">{{ texts.title }}</h1>
             <div class="subtitle mono">{{ texts.subtitle }}</div>

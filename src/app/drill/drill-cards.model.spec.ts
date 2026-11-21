@@ -6,8 +6,9 @@ import { UnitSystem } from '../../core/units';
 import { DrillRoundRecord, DrillRoundSummary } from '../../sim/drill-round';
 import { COUNT_DRILL_IDS, countCard, POSITION_DRILL_IDS } from '../../sim/drills';
 import { scopeById } from '../../sim/scope-model';
+import { initialRatings } from '../../sim/skill-rating';
 import { decimal } from '../../i18n/format';
-import { conditionsText, drillLink, drillListGroups, positionSummaryView, summaryView } from './drill-cards.model';
+import { conditionsText, drillLink, drillListGroups, drillSkillGroups, positionSummaryView, summaryView } from './drill-cards.model';
 
 const cards = new Map<UnitSystem, DopeCard>();
 
@@ -73,6 +74,29 @@ describe('список дрилов (T3.2, T3.3)', () => {
     const opened = drillListGroups([learnRound('wind', 8), learnRound('wind', 9)], false)[0].rows[2];
     expect(opened.timed).toEqual({ isOpen: true, label: 'НА ВРЕМЯ' });
     expect(drillListGroups([], true)[1].rows[0].timed.isOpen).toBe(true);
+  });
+});
+
+describe('список по навыкам (T3.5)', () => {
+  const ratings = { ...initialRatings(), wind: { rating: 41.6, attempts: 12 } };
+
+  it('8 групп в порядке навыков; шапка — навык и округлённый рейтинг', () => {
+    const groups = drillSkillGroups([], ratings, false);
+    expect(groups.map(group => group.skill)).toEqual(['distance', 'dope', 'wind', 'conditions', 'angle', 'lead', 'execution', 'speed']);
+    expect(groups[2].title).toBe('ветер · 42');
+    expect(groups[0].title).toBe('дальность · 40');
+  });
+
+  it('в группе дрилы навыка: счётный первым, подпись типа; «на время» с замком', () => {
+    const groups = drillSkillGroups([], ratings, false);
+    expect(groups[2].rows.map(row => [row.id, row.kindLabel])).toEqual([
+      ['wind', 'карточки'],
+      ['wind-bracket', 'на позиции'],
+    ]);
+    expect(groups[6].rows.map(row => row.id)).toEqual(['cold-bore']);
+    expect(groups[2].rows[0]).toMatchObject({ title: 'Ветер', taughtIn: 'учат в упражнении 04', timed: { isOpen: false } });
+    expect(groups.flatMap(group => group.rows)).toHaveLength(11);
+    expect(drillSkillGroups([], ratings, true)[2].rows[1].timed.isOpen).toBe(true);
   });
 });
 

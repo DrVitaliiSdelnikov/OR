@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CoachAdvice } from '../../sim/coach';
 import { DrillRoundRecord } from '../../sim/drill-round';
+import { initialRatings } from '../../sim/skill-rating';
 import { JournalSeries, JournalShot } from '../journal/journal.model';
-import { coachView, skillPractices } from './coach.model';
+import { coachView, progressCoachView, skillPractices } from './coach.model';
 
 const STARTED = '2026-11-20T10:00:00.000Z';
 
@@ -77,5 +78,26 @@ describe('вид совета', () => {
     expect(reasonOf({ kind: 'stale', days: 9 })).toBe('не тренировали 9 дней');
     expect(reasonOf({ kind: 'stale', days: 21 })).toBe('не тренировали 21 день');
     expect(reasonOf({ kind: 'weak', rating: 33 })).toBe('рейтинг 33 из 100');
+  });
+});
+
+describe('совет по прогрессу (T3.5)', () => {
+  const EIGHT_DAYS_LATER = '2026-11-28T10:00:00.000Z';
+  const weakWind = { ...initialRatings(), wind: { rating: 0, attempts: 20 } };
+  const progress = (fields: Partial<Parameters<typeof progressCoachView>[0]>) =>
+    progressCoachView({ journal: [], rounds: [], ratings: initialRatings(), isEverythingUnlocked: false, nowIso: EIGHT_DAYS_LATER, ...fields });
+
+  it('без занятий и с равным рейтингом — первый навык, «ещё не тренировали»', () => {
+    expect(progress({})).toEqual({ title: 'Тренер: дальность', drill: 'Миллинг · обучение', reason: 'ещё не тренировали', link: { path: ['/drill', 'milling'], query: {} } });
+  });
+
+  it('рейтинг, журнал, раунды и время доходят до совета', () => {
+    expect(progress({ ratings: weakWind }).title).toBe('Тренер: ветер');
+    expect(progress({ ratings: weakWind, journal: [series([journalShot()])] }).reason).toBe('не тренировали 8 дней');
+    expect(progress({ ratings: weakWind, rounds: [round({ cards: [{ verdict: 'exact', errorTypes: [], seconds: 9 }] })] }).reason).toBe('не тренировали 8 дней');
+  });
+
+  it('«Открыть всё» — совет на время', () => {
+    expect(progress({ isEverythingUnlocked: true }).link.query).toEqual({ level: 'timed' });
   });
 });

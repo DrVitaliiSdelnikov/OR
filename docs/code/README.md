@@ -126,3 +126,4 @@
 | sim · рейтинг по навыкам (T4.1, В39) | [specs/sim-skill-rating.md](specs/sim-skill-rating.md) | реализовано 20.11 |
 | app · хранение рейтинга и пересчёт журнала (T4.2, В39) | [specs/app-skill-storage.md](specs/app-skill-storage.md) | реализовано 20.11 |
 | sim · совет тренера (T3.4, В36) | [specs/sim-coach.md](specs/sim-coach.md) | реализовано 21.11 |
+| app · экран «Дрилы» и главный (T3.5, В35) | [specs/app-drills-screen.md](specs/app-drills-screen.md) | реализовано 21.11 |

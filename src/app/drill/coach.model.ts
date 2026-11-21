@@ -1,8 +1,8 @@
 import { text } from '../../i18n';
-import { CoachAdvice, CoachReason, SkillPractice } from '../../sim/coach';
+import { CoachAdvice, coachAdvice, CoachReason, SkillPractice } from '../../sim/coach';
 import { DrillRoundRecord } from '../../sim/drill-round';
 import { drillById, drillTitle } from '../../sim/drills';
-import { attemptsFromDrillRound, SkillAttempt } from '../../sim/skill-rating';
+import { attemptsFromDrillRound, SkillAttempt, SkillRatings } from '../../sim/skill-rating';
 import { JournalSeries } from '../journal/journal.model';
 import { attemptsFromJournalShot } from '../services/skill-ledger.model';
 import { DrillLink, drillLink } from './drill-cards.model';
@@ -14,7 +14,20 @@ export interface CoachView {
   link: DrillLink;
 }
 
+export interface CoachProgress {
+  journal: readonly JournalSeries[];
+  rounds: readonly DrillRoundRecord[];
+  ratings: SkillRatings;
+  isEverythingUnlocked: boolean;
+  nowIso: string;
+}
+
 const T = text.instructor.coach;
+
+export function progressCoachView(progress: CoachProgress): CoachView {
+  const { journal, rounds, ratings, isEverythingUnlocked, nowIso } = progress;
+  return coachView(coachAdvice({ ratings, practices: skillPractices(journal, rounds), rounds, nowIso, isEverythingUnlocked }));
+}
 
 export function skillPractices(journal: readonly JournalSeries[], rounds: readonly DrillRoundRecord[]): SkillPractice[] {
   const fromSeries = journal.flatMap(series => series.shots.flatMap(attemptsFromJournalShot).map(attempt => practiceOf(attempt, series.startedAtIso)));

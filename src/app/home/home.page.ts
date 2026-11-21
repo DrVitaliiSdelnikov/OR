@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { text } from '../../i18n';
+import { progressCoachView } from '../drill/coach.model';
 import { ProgressStore } from '../services/progress.store';
 import { continueCard, rankHeader } from './home.model';
 
@@ -25,10 +26,9 @@ import { continueCard, rankHeader } from './home.model';
         <nav class="menu">
           <a class="tile" routerLink="/course" data-test="tile-course"><span class="number">01</span>{{ texts.tiles.course }}</a>
           <a class="tile" routerLink="/drills" data-test="tile-drills"><span class="number">02</span>{{ texts.tiles.drills }}</a>
-          <a class="tile" routerLink="/free" data-test="tile-free"><span class="number">03</span>{{ texts.tiles.free }}</a>
+          <a class="tile" routerLink="/rifle" data-test="tile-rifle"><span class="number">03</span>{{ texts.tiles.rifle }}</a>
           <a class="tile" routerLink="/textbook" data-test="tile-textbook"><span class="number">04</span>{{ texts.tiles.textbook }}</a>
           <a class="tile" routerLink="/journal" data-test="tile-journal"><span class="number">05</span>{{ texts.tiles.journal }}</a>
-          <a class="tile" routerLink="/rifle" data-test="tile-rifle"><span class="number">06</span>{{ texts.tiles.rifle }}</a>
         </nav>
 
         <button class="continue" type="button" (click)="openContinue()" data-test="continue-card">
@@ -42,9 +42,9 @@ import { continueCard, rankHeader } from './home.model';
               <span class="continue-title">{{ cardExercise() }}</span>
               <span class="continue-status">{{ cardStatus() }}</span>
             }
-            @case ('free-play') {
-              <span class="continue-label">{{ texts.freePlay }}</span>
-              <span class="continue-title">{{ texts.coursePassed }}</span>
+            @case ('drills') {
+              <span class="continue-label">{{ texts.drillsCard }}</span>
+              <span class="continue-title">{{ coachTitle() }}</span>
             }
           }
         </button>
@@ -80,8 +80,18 @@ export class HomePage {
   protected readonly card = computed(() => continueCard(this.progress.course(), this.progress.settings().unitSystem));
   protected readonly cardExercise = computed(() => {
     const card = this.card();
-    return card.kind === 'free-play' ? '' : `${card.exerciseId} · ${card.title}`;
+    return card.kind === 'drills' ? '' : `${card.exerciseId} · ${card.title}`;
   });
+  protected readonly coachTitle = computed(
+    () =>
+      progressCoachView({
+        journal: this.progress.journal(),
+        rounds: this.progress.drillRounds(),
+        ratings: this.progress.skills(),
+        isEverythingUnlocked: this.progress.settings().isEverythingUnlocked,
+        nowIso: new Date().toISOString(),
+      }).title,
+  );
   protected readonly cardStatus = computed(() => {
     const card = this.card();
     return card.kind === 'continue' && card.status === 'not-admitted' ? this.texts.notAdmitted : this.texts.new;
@@ -89,8 +99,8 @@ export class HomePage {
 
   protected openContinue(): void {
     const card = this.card();
-    if (card.kind === 'free-play') {
-      void this.router.navigate(['/free']);
+    if (card.kind === 'drills') {
+      void this.router.navigate(['/drills']);
       return;
     }
     void this.router.navigate(['/course', card.exerciseId]);

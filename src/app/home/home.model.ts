@@ -6,7 +6,7 @@ import { UnitSystem } from '../../core/units';
 export type ContinueCard =
   | { kind: 'start'; exerciseId: ExerciseId; title: string }
   | { kind: 'continue'; exerciseId: ExerciseId; title: string; status: 'new' | 'not-admitted' }
-  | { kind: 'free-play' };
+  | { kind: 'drills' };
 
 export interface RankHeader {
   rankLabel: string;
@@ -21,7 +21,7 @@ export const RANK_LABELS: Record<Rank, string> = text.screens.home.ranks;
 export function continueCard(results: CourseResults, system: UnitSystem = 'metric'): ContinueCard {
   const nextId = courseProgress(results).nextExerciseId;
   if (nextId === null) {
-    return { kind: 'free-play' };
+    return { kind: 'drills' };
   }
   const title = exerciseTitle(exerciseById(nextId)!, system);
   if (!results.isIntroCompleted) {

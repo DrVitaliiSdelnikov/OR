@@ -14,10 +14,11 @@ async function setDistance(page: Page, distanceM: number): Promise<void> {
 }
 
 test.describe('свободная игра (A7.1)', () => {
-  test('главная → «02 · Свободная игра» → настройки; «ЗАНЯТЬ ПОЗИЦИЮ» видна без прокрутки', async ({ page }) => {
+  test('главная → «Дрилы» → «Свой дрил» → настройки; «ЗАНЯТЬ ПОЗИЦИЮ» видна без прокрутки', async ({ page }) => {
     await seed(page);
     await page.goto('/');
-    await page.getByTestId('tile-free').click();
+    await page.getByTestId('tile-drills').click();
+    await page.getByTestId('drills-free').click();
     await page.waitForURL('**/free');
     await expect(page.getByTestId('free-distance')).toHaveText('300 м');
     await expect(page.getByTestId('free-start')).toBeInViewport();

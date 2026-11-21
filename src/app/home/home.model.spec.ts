@@ -24,8 +24,8 @@ describe('continue card', () => {
     });
   });
 
-  it('course finished with 13–14: free play', () => {
-    expect(continueCard(results(Object.fromEntries([...ADMISSION_IDS, '13', '14'].map(id => [id, 3]))))).toEqual({ kind: 'free-play' });
+  it('course finished with 13–14: drills', () => {
+    expect(continueCard(results(Object.fromEntries([...ADMISSION_IDS, '13', '14'].map(id => [id, 3]))))).toEqual({ kind: 'drills' });
   });
 
   it('after the attestation: continue with 13', () => {

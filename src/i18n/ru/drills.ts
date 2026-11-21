@@ -37,6 +37,10 @@ export const drills = {
     positionGroup: 'На позиции',
     timed: 'НА ВРЕМЯ',
     timedLocked: 'НА ВРЕМЯ · 2 раунда ≥ 80 %',
+    skillGroup: (p: { skill: string; rating: number }) => `${p.skill} · ${p.rating}`,
+    kinds: { count: 'карточки', position: 'на позиции' },
+    ownDrill: 'Свой дрил',
+    ownDrillLine: 'параметры выстрела на выбор',
   },
   card: {
     heading: (p: { number: number; count: number }) => `Карточка ${p.number} из ${p.count}`,

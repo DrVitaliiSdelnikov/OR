@@ -13,9 +13,9 @@ test.describe('навигация без вкладок', () => {
     }
   });
 
-  test('старой свободной игры нет: плитка ведёт на новую (A7.1), старые адреса — на главный', async ({ page }) => {
-    await page.goto('/');
-    await page.getByTestId('tile-free').click();
+  test('старой свободной игры нет: «Свой дрил» ведёт на новую (A7.1), старые адреса — на главный', async ({ page }) => {
+    await page.goto('/drills');
+    await page.getByTestId('drills-free').click();
     await page.waitForURL('**/free');
     await expect(page.getByTestId('free-play')).toBeVisible();
     for (const path of ['/weather', '/calc', '/calc/wind', '/dope', '/scope']) {

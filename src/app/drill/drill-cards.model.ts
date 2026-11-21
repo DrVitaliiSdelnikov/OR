@@ -3,6 +3,7 @@ import { text } from '../../i18n';
 import { isTimedOpen } from '../../sim/drill-levels';
 import { DrillErrorKind, DrillRoundRecord, DrillRoundSummary } from '../../sim/drill-round';
 import { COUNT_DRILL_IDS, CountCard, DrillId, drillById, DrillLevel, drillTitle, POSITION_DRILL_IDS } from '../../sim/drills';
+import { SKILL_IDS, SkillId, SkillRatings } from '../../sim/skill-rating';
 import { MAIN_CAUSE_PHRASES } from '../result/result.model';
 import { targetSizeText } from '../notebook/calc-sheet.model';
 
@@ -14,11 +15,18 @@ export interface DrillListRow {
   id: DrillId;
   title: string;
   skill: string;
+  kindLabel: string;
   taughtIn: string | null;
   timed: { isOpen: boolean; label: string };
 }
 
 export interface DrillListGroup {
+  title: string;
+  rows: DrillListRow[];
+}
+
+export interface DrillSkillGroup {
+  skill: SkillId;
   title: string;
   rows: DrillListRow[];
 }
@@ -35,22 +43,35 @@ export interface SummaryView {
   errors: string[];
 }
 
+export function drillSkillGroups(rounds: readonly DrillRoundRecord[], ratings: SkillRatings, isEverythingUnlocked: boolean): DrillSkillGroup[] {
+  const drillIds = [...COUNT_DRILL_IDS, ...POSITION_DRILL_IDS];
+  return SKILL_IDS.map(skill => ({
+    skill,
+    title: T.list.skillGroup({ skill: T.skills[skill], rating: Math.round(ratings[skill].rating) }),
+    rows: drillIds.filter(id => drillById(id)!.skill === skill).map(id => drillListRow(id, rounds, isEverythingUnlocked)),
+  }));
+}
+
+/** @deprecated T3.5: список по навыкам — `drillSkillGroups`. */
 export function drillListGroups(rounds: readonly DrillRoundRecord[], isEverythingUnlocked: boolean): DrillListGroup[] {
-  const rowOf = (id: DrillId): DrillListRow => {
-    const drill = drillById(id)!;
-    const isOpen = isTimedOpen(id, rounds, isEverythingUnlocked);
-    return {
-      id,
-      title: drillTitle(id),
-      skill: T.skills[drill.skill],
-      taughtIn: drill.taughtIn ? T.taughtIn({ exerciseId: drill.taughtIn }) : null,
-      timed: { isOpen, label: isOpen ? T.list.timed : T.list.timedLocked },
-    };
-  };
+  const rowOf = (id: DrillId) => drillListRow(id, rounds, isEverythingUnlocked);
   return [
     { title: T.list.countGroup, rows: COUNT_DRILL_IDS.map(rowOf) },
     { title: T.list.positionGroup, rows: POSITION_DRILL_IDS.map(rowOf) },
   ];
+}
+
+function drillListRow(id: DrillId, rounds: readonly DrillRoundRecord[], isEverythingUnlocked: boolean): DrillListRow {
+  const drill = drillById(id)!;
+  const isOpen = isTimedOpen(id, rounds, isEverythingUnlocked);
+  return {
+    id,
+    title: drillTitle(id),
+    skill: T.skills[drill.skill],
+    kindLabel: T.list.kinds[drill.kind],
+    taughtIn: drill.taughtIn ? T.taughtIn({ exerciseId: drill.taughtIn }) : null,
+    timed: { isOpen, label: isOpen ? T.list.timed : T.list.timedLocked },
+  };
 }
 
 export function drillLink(id: DrillId, level: DrillLevel): DrillLink {
