@@ -14,3 +14,5 @@ export const language: Language = activeLanguage((globalThis as { __orTestLangua
 useNumberFormat(language);
 
 export const text: Messages = CATALOGS[language];
+
+export const BUILT_IN_PROFILE_NAMES: readonly string[] = [ru.content.builtInProfileName, en.content.builtInProfileName];

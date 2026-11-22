@@ -281,6 +281,10 @@ export function withBuiltInProfile(stored: StoredProfiles, seededProfileIds: rea
   };
 }
 
+export function withCurrentBuiltInName(profiles: readonly RifleProfile[], defaultNames: readonly string[], currentName: string): RifleProfile[] {
+  return profiles.map(profile => (profile.id === BUILT_IN_PROFILE_ID && defaultNames.includes(profile.name) ? { ...profile, name: currentName } : profile));
+}
+
 export function knownProfiles(stored: { profiles?: unknown; activeProfileId?: unknown } | undefined): StoredProfiles {
   const candidates = Array.isArray(stored?.profiles) ? stored.profiles : [];
   const profiles = candidates.filter(isStoredProfile);

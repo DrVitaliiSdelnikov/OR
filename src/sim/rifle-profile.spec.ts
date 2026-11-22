@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildDopeCard } from '../core/dope-card';
 import { BallisticsEngine } from '../core/engine';
 import { REFERENCE_LOADOUTS } from '../core/reference/reference-loadouts';
-import { BC_ASM_TO_ICAO, BUILT_IN_PROFILE_ID, builtInProfile, canAddProfile, isProfileValid, knownProfiles, loadoutOf, millerStability, PROFILE_PRESETS, profileFromPreset, ProfileIssue, RifleProfile, scopeOf, validateProfile, withBuiltInProfile } from './rifle-profile';
+import { BC_ASM_TO_ICAO, BUILT_IN_PROFILE_ID, builtInProfile, canAddProfile, isProfileValid, knownProfiles, loadoutOf, millerStability, PROFILE_PRESETS, withCurrentBuiltInName, profileFromPreset, ProfileIssue, RifleProfile, scopeOf, validateProfile, withBuiltInProfile } from './rifle-profile';
 
 const MRAD_PER_MOA = 0.29089;
 const GROUP_SPREAD_PER_SIGMA = 3.08;
@@ -240,5 +240,17 @@ describe('встроенная винтовка «своя-custom» (LWRC M6IC, 
 
   it('хранится и читается обратно вместе с пометками оценок', () => {
     expect(knownProfiles({ profiles: [custom], activeProfileId: custom.id })).toEqual({ profiles: [custom], activeProfileId: custom.id });
+  });
+});
+
+describe('имя встроенной винтовки на языке приложения (В62)', () => {
+  const defaultNames = ['своя-custom', 'custom'];
+
+  it('имя по умолчанию на прежнем языке становится текущим; переименованную не трогаем; чужие профили тоже', () => {
+    const builtIn = { ...builtInProfile(), name: 'своя-custom' };
+    const renamed = { ...builtInProfile(), name: 'Моя LWRC' };
+    const own = { ...builtInProfile(), id: 'profile-1', name: 'своя-custom' };
+    expect(withCurrentBuiltInName([builtIn, own], defaultNames, 'custom').map(profile => profile.name)).toEqual(['custom', 'своя-custom']);
+    expect(withCurrentBuiltInName([renamed], defaultNames, 'custom')[0].name).toBe('Моя LWRC');
   });
 });

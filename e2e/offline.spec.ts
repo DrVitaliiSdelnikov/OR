@@ -53,6 +53,9 @@ test.describe('офлайн-демо (T5.4)', () => {
     await expect(page.getByTestId('tile-drills')).toBeVisible();
     await page.reload();
     await waitForOfflineCache(page);
+    await page.reload();
+    await expect(page.getByTestId('tile-drills')).toBeVisible();
+    await waitForOfflineCache(page);
 
     await context.setOffline(true);
     await page.goto('/');

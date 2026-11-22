@@ -1,5 +1,6 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
+import { BUILT_IN_PROFILE_NAMES, text } from '../../i18n';
 import { ExerciseClass } from '../../core/exercise-scoring';
 import { CourseResults, ExerciseId, ExerciseResult } from '../../sim/course';
 import { DailyRecord, withDailyRecord } from '../../sim/daily';
@@ -9,7 +10,7 @@ import { DEFAULT_FREE_PLAY, FreePlaySettings, knownFreePlay } from '../../sim/fr
 import { withExamResult, withExerciseResult, withIntroCompleted } from '../home/home.model';
 import { JournalSeries, withSeries } from '../journal/journal.model';
 import { DopeNotes, withDopeNote } from '../review/review.model';
-import { isProfileValid, knownProfiles, RifleProfile, withBuiltInProfile } from '../../sim/rifle-profile';
+import { isProfileValid, knownProfiles, RifleProfile, withBuiltInProfile, withCurrentBuiltInName } from '../../sim/rifle-profile';
 import { DEFAULT_SETTINGS, knownSettings, Settings } from '../settings/settings.model';
 import { emptyLedger, knownLedger, replayedLedger, SkillLedger, withRatedRound, withRatedSeries } from './skill-ledger.model';
 
@@ -183,8 +184,12 @@ function knownProgress(stored: StoredProgress): ProgressState {
     drillRounds,
     skills: knownLedger(stored.skills) ?? replayedLedger(series, drillRounds),
     daily: knownDailyRecords(stored.daily),
-    ...withBuiltInProfile(knownProfiles(stored), knownSeededIds(stored.seededProfileIds)),
+    ...withLocalizedBuiltIn(withBuiltInProfile(knownProfiles(stored), knownSeededIds(stored.seededProfileIds))),
   };
+}
+
+function withLocalizedBuiltIn<T extends { profiles: RifleProfile[] }>(seeded: T): T {
+  return { ...seeded, profiles: withCurrentBuiltInName(seeded.profiles, BUILT_IN_PROFILE_NAMES, text.content.builtInProfileName) };
 }
 
 function knownSeededIds(stored: unknown): string[] {

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { isOfflineCacheEnabled } from './offline.model';
+import { isOfflineCacheEnabled, reloadIfNewVersion } from './offline.model';
 
 interface AssetGroup {
   name: string;
@@ -25,5 +25,20 @@ describe('офлайн-демо (T5.4)', () => {
 
   it('навигация по любым адресам приложения отдаёт index.html', () => {
     expect(ngswConfig.navigationUrls ?? ['/**']).toContain('/**');
+  });
+});
+
+describe('новая версия при запуске (В62)', () => {
+  it('нашлась новая версия — сразу перезагрузка в неё', async () => {
+    let reloads = 0;
+    await reloadIfNewVersion(() => Promise.resolve(true), () => reloads++);
+    expect(reloads).toBe(1);
+  });
+
+  it('версия та же или проверка не удалась (нет сети) — без перезагрузки', async () => {
+    let reloads = 0;
+    await reloadIfNewVersion(() => Promise.resolve(false), () => reloads++);
+    await reloadIfNewVersion(() => Promise.reject(new Error('offline')), () => reloads++);
+    expect(reloads).toBe(0);
   });
 });
