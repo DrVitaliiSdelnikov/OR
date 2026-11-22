@@ -148,6 +148,18 @@ describe('check sheet, the lead (В43)', () => {
     const sheet = checkSheet(snapshot(notebook, { trueWindClock: 9, dialedElevationClicks: 0, dialedWindageLeftClicks: 0 }), 'manual-easy');
     expect(sheet.rows.find(row => row.label === 'Упреждение')).toMatchObject({ player: '1,8', reference: '1,8' });
   });
+
+  it('a wrong lead between clicks names the exact value and the click value the table shows (QA 22.11)', () => {
+    let notebook = createNotebook({ card, scope, target: { sizeM: 0.5, distanceM: 400, movement: { speedMps: 1.3, clock: 9 } }, hasZones: false, canTakeWindFromStation: false, seed: 3 }, 'manual-easy');
+    for (const chip of ['target-crosswind', 'time-of-flight', 'distance'] as const) {
+      notebook = placeChip(notebook, 'lead', chip);
+    }
+    notebook = recordStep(typeTape(notebook, 'lead', 2, 4), 'lead');
+    const sheet = checkSheet(snapshot(notebook, { trueWindClock: 9, dialedElevationClicks: 0, dialedWindageLeftClicks: 0 }), 'manual-easy');
+    const reference = sheet.rows.find(row => row.label === 'Упреждение')!.reference;
+    expect(sheet.mainError!.phrase).toMatch(/^Упреждение \d,\d\d MIL, до клика \d,\d, у тебя 4$/);
+    expect(sheet.mainError!.phrase).toContain(`до клика ${reference},`);
+  });
 });
 
 describe('check sheet, AUTO', () => {

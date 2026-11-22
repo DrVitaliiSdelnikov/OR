@@ -269,15 +269,21 @@ function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType, s
       return T.unitsPhrase({ mil: reference, moa: decimal(referenceMil * MOA_PER_MIL, 2) });
     case 'rounding':
       return T.roundingPhrase({ raw: decimal(Math.abs(input.expectedRawMil), 2), reference, player });
-    case 'lead':
-      return T.leadPhrase({ raw: decimal(Math.abs(input.expectedRawMil), 2), player });
+    case 'lead': {
+      const raw = decimal(Math.abs(input.expectedRawMil), 2);
+      return isOnClick(input.expectedRawMil, referenceMil) ? T.leadPhrase({ raw, player }) : T.leadBetweenClicksPhrase({ raw, reference, player });
+    }
     default: {
       const raw = decimal(Math.abs(input.expectedRawMil), 2);
-      return Math.abs(Math.abs(input.expectedRawMil) - referenceMil) < CLICK_EPSILON
+      return isOnClick(input.expectedRawMil, referenceMil)
         ? T.arithmeticPhrase({ raw, player })
         : T.arithmeticBetweenClicksPhrase({ raw, reference, player });
     }
   }
+}
+
+function isOnClick(rawMil: number, referenceMil: number): boolean {
+  return Math.abs(Math.abs(rawMil) - referenceMil) < CLICK_EPSILON;
 }
 
 function clickDigits(clickMil: number): number {

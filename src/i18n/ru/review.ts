@@ -91,6 +91,7 @@ export const review = {
   unitsPhrase: (p: { mil: string; moa: string }) => `Ответ в MOA, а барабан в MIL: ${p.mil} MIL = ${p.moa} MOA`,
   roundingPhrase: (p: { raw: string; reference: string; player: string }) => `${p.raw} до ближайшего клика — ${p.reference}, у тебя ${p.player}`,
   leadPhrase: (p: { raw: string; player: string }) => `Упреждение ${p.raw} MIL, у тебя ${p.player}`,
+  leadBetweenClicksPhrase: (p: { raw: string; reference: string; player: string }) => `Упреждение ${p.raw} MIL, до клика ${p.reference}, у тебя ${p.player}`,
   arithmeticPhrase: (p: { raw: string; player: string }) => `Формула и подстановка верны, но выходит ${p.raw}, а у тебя ${p.player}`,
   arithmeticBetweenClicksPhrase: (p: { raw: string; reference: string; player: string }) => `Формула и подстановка верны, но выходит ${p.raw}, до клика ${p.reference}, а у тебя ${p.player}`,
   anySlot: 'слот',
