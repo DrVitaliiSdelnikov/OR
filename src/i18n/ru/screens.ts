@@ -141,6 +141,9 @@ export const screens = {
     data: 'Данные',
     units: 'Единицы',
     unitSystems: { metric: { label: 'метрика', note: 'м · м/с · °C' }, imperial: { label: 'имперские', note: 'ярды · mph · °F' } },
+    language: 'Язык',
+    languages: { ru: 'Русский', en: 'English' },
+    englishPartial: 'частично',
     toggles: {
       isHapticsOn: 'Вибрация',
       isDrumClicksOn: 'Щелчки барабанов',

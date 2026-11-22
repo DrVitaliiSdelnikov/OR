@@ -1,0 +1,81 @@
+import type { DrillId, DrillSkill } from '../../sim/drills';
+import { decimal, percent, plural, PluralForms } from '../format';
+
+const ERROR_FORMS: PluralForms = ['error', 'errors', 'errors'];
+const HIT_FORMS: PluralForms = ['hit', 'hits', 'hits'];
+
+export const drills = {
+  titles: {
+    milling: 'Milling',
+    dope: 'DOPE with interpolation',
+    wind: 'Wind',
+    conditions: 'Conditions',
+    angle: 'Shot angle',
+    lead: 'Lead',
+    'cold-bore': 'Cold bore',
+    'wind-bracket': 'Wind bracket',
+    'distance-ladder': 'Distance ladder',
+    patrol: 'Patrol',
+    'timed-stage': 'Timed stage',
+  } satisfies Record<DrillId, string>,
+  skills: {
+    distance: 'range',
+    dope: 'DOPE',
+    wind: 'wind',
+    conditions: 'conditions',
+    angle: 'angle',
+    lead: 'lead',
+    execution: 'execution',
+    speed: 'speed',
+  } satisfies Record<DrillSkill, string>,
+  taughtIn: (p: { exerciseId: string }) => `taught in exercise ${p.exerciseId}`,
+  list: {
+    title: 'Drills',
+    subtitle: 'Short drills for one skill: calculation cards and shooting on the line',
+    back: '← BACK',
+    countGroup: 'Calculation cards',
+    positionGroup: 'On the line',
+    timed: 'TIMED',
+    timedLocked: 'TIMED · 2 rounds ≥ 80%',
+    skillGroup: (p: { skill: string; rating: number }) => `${p.skill} · ${p.rating}`,
+    kinds: { count: 'cards', position: 'on the line' },
+    ownDrill: 'Custom drill',
+    ownDrillLine: 'choose the shot parameters',
+  },
+  card: {
+    heading: (p: { number: number; count: number }) => `Card ${p.number} of ${p.count}`,
+    next: 'NEXT',
+    finish: 'RESULT',
+    leave: '← EXIT',
+    loading: 'Preparing cards…',
+    timedOut: 'TIME’S UP',
+    reference: (p: { value: string }) => `Answer: ${p.value}`,
+    timeLeft: (p: { seconds: number }) => `${p.seconds} s`,
+  },
+  conditions: {
+    milling: (p: { size: string; reticleMil: number }) => `Target ${p.size} · ${decimal(p.reticleMil)} MIL on the reticle`,
+    wind: (p: { speed: string; clock: number; distance: string }) => `Wind ${p.speed} from ${p.clock} o’clock · ${p.distance}`,
+    conditions: (p: { temperature: string; pressure: string; distance: string }) => `${p.temperature} · ${p.pressure} · ${p.distance}`,
+    angle: (p: { lookAngleDeg: number; distance: string }) => `Angle ${p.lookAngleDeg > 0 ? '+' : '−'}${Math.abs(p.lookAngleDeg)}° · ${p.distance}`,
+    lead: (p: { speed: string; clock: number; distance: string }) => `Target moves ${p.speed} toward ${p.clock} o’clock · ${p.distance}`,
+  },
+  answer: {
+    answer: 'Answer',
+    record: 'RECORD',
+  },
+  summary: {
+    title: 'Round result',
+    counts: (p: { exact: number; close: number; error: number }) => `${p.exact} exact · ${p.close} close · ${p.error} ${plural(p.error, ERROR_FORMS)}`,
+    accuracy: (p: { share: number }) => `Accuracy ${percent(p.share)}`,
+    averageTime: (p: { seconds: number }) => `Average ${Math.round(p.seconds)} s per card`,
+    error: (p: { label: string; count: number }) => `${p.label} ×${p.count}`,
+    noErrors: 'No errors',
+    time: 'TIME',
+    hits: (p: { hits: number; shots: number }) => `${p.hits} ${plural(p.hits, HIT_FORMS)} of ${p.shots}`,
+    averageShotTime: (p: { seconds: number }) => `Average ${Math.round(p.seconds)} s per shot`,
+    again: 'ANOTHER ROUND',
+    same: 'SAME AGAIN',
+    leave: 'EXIT',
+    toDrills: 'TO DRILLS',
+  },
+};

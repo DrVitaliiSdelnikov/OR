@@ -1,0 +1,56 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import type { Messages } from '../messages';
+import { ru } from '../ru';
+import { en, PENDING_EN_MODULES } from '.';
+
+const EN_DIR = new URL('./', import.meta.url);
+const CYRILLIC = /[Ѐ-ӿ]+/g;
+const NATIVE_LANGUAGE_NAMES = ['Русский'];
+const DOT_FRACTION = /\.toFixed\(\s*[1-9]/;
+const UNIT_AFTER_PLACEHOLDER = /\$\{[^}]+\} ?(?:m|m\/s|°C|hPa|cm|yd|mph|°F)(?![a-z])/;
+
+function shapeDifferences(russian: unknown, english: unknown, path: string): string[] {
+  if (typeof russian === 'function' || typeof english === 'function') {
+    return typeof russian === typeof english ? [] : [path];
+  }
+  if (Array.isArray(russian)) {
+    return Array.isArray(english) && english.length === russian.length ? russian.flatMap((item, index) => shapeDifferences(item, english[index], `${path}[${index}]`)) : [path];
+  }
+  if (russian !== null && typeof russian === 'object') {
+    if (english === null || typeof english !== 'object') {
+      return [path];
+    }
+    const keys = new Set([...Object.keys(russian), ...Object.keys(english)]);
+    return [...keys].flatMap(key => shapeDifferences((russian as Record<string, unknown>)[key], (english as Record<string, unknown>)[key], `${path}.${key}`));
+  }
+  return typeof russian === typeof english ? [] : [path];
+}
+
+const sourceFiles = readdirSync(EN_DIR).filter(name => name.endsWith('.ts') && !name.endsWith('.spec.ts'));
+
+describe('английский каталог (T6.3)', () => {
+  it('та же форма, что у русского: ключи, функции, длины списков', () => {
+    expect(shapeDifferences(ru, en, 'text')).toEqual([]);
+  });
+
+  it('пока не переведено ровно то, что в списке второго этапа', () => {
+    const borrowed = (Object.keys(ru) as (keyof Messages)[]).filter(module => en[module] === ru[module]);
+    expect(borrowed.sort()).toEqual([...PENDING_EN_MODULES].sort());
+  });
+
+  it('в файлах английского каталога нет кириллицы, кроме самоназвания языка', () => {
+    const found = sourceFiles.flatMap(name =>
+      [...readFileSync(new URL(name, EN_DIR), 'utf-8').matchAll(CYRILLIC)].map(match => match[0]).filter(word => !NATIVE_LANGUAGE_NAMES.includes(word)).map(word => `${name}: ${word}`),
+    );
+    expect(found).toEqual([]);
+  });
+
+  it('дроби и единицы — только через форматтеры', () => {
+    const offending = sourceFiles.filter(name => {
+      const source = readFileSync(new URL(name, EN_DIR), 'utf-8').split('\n').filter(line => !line.trimStart().startsWith('import'));
+      return source.some(line => DOT_FRACTION.test(line) || UNIT_AFTER_PLACEHOLDER.test(line));
+    });
+    expect(offending).toEqual([]);
+  });
+});

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { andList, decimal, percent, plural, signed } from './format';
+import { afterEach, describe, expect, it } from 'vitest';
+import { andList, decimal, percent, plural, signed, typedDecimal, useNumberFormat } from './format';
 
 const SHOT_FORMS = ['выстрел', 'выстрела', 'выстрелов'] as const;
 
@@ -66,5 +66,29 @@ describe('andList', () => {
     expect(andList([200, 400])).toBe('200 и 400');
     expect(andList([200])).toBe('200');
     expect(andList([])).toBe('');
+  });
+});
+
+describe('форматы английского (T6.3)', () => {
+  afterEach(() => useNumberFormat('ru'));
+
+  it('точка в дробях, процент без пробела, английское множественное', () => {
+    useNumberFormat('en');
+    expect(decimal(-0.25, 2)).toBe('−0.25');
+    expect(signed(1.5, 1)).toBe('+1.5');
+    expect(typedDecimal('1,5')).toBe('1.5');
+    expect(percent(0.85)).toBe('85%');
+    const forms = ['shot', 'shots', 'shots'] as const;
+    expect([0, 1, 2, 11, 21].map(count => plural(count, forms))).toEqual(['shots', 'shot', 'shots', 'shots', 'shots']);
+    expect(andList([1, 2, 3])).toBe('1, 2 and 3');
+  });
+
+  it('возврат к русскому: запятая и русские формы', () => {
+    useNumberFormat('en');
+    useNumberFormat('ru');
+    expect(decimal(0.5, 1)).toBe('0,5');
+    expect(percent(0.85)).toBe('85 %');
+    expect(plural(21, SHOT_FORMS)).toBe('выстрел');
+    expect(andList([3, 9])).toBe('3 и 9');
   });
 });
