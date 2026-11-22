@@ -3,6 +3,7 @@ import { APP_NAME } from './app-name';
 
 export const daily = {
   title: 'Daily task',
+  shortDate: (p: { day: string; month: string }) => `${p.month}/${p.day}`,
   back: '← BACK',
   date: (p: { date: string }) => `for ${p.date} · same for everyone`,
   cardsTask: (p: { drill: string; count: number }) => `${p.drill} · ${p.count} cards`,

@@ -46,7 +46,7 @@ export const about = {
     },
   ],
   plansTitle: 'Planned',
-  plans: ['Muzzle velocity by barrel length, powder temperature, aerodynamic jump', 'Full English translation'],
+  plans: ['Muzzle velocity by barrel length, powder temperature, aerodynamic jump'],
   licensesTitle: 'Licenses',
   licenses: [
     { name: 'js-ballistics', license: 'ISC' },

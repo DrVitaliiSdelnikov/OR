@@ -64,7 +64,7 @@ export async function enterTotalOnTurrets(page: Page): Promise<void> {
 
 export async function clicksToTarget(page: Page): Promise<number> {
   const counter = await page.locator('[data-test="drum-elevation"] [data-test="drum-counter"]').textContent();
-  return Number(/ещё (\d+)/.exec(counter ?? '')![1]);
+  return Number(/(\d+)/.exec(counter ?? '')![1]);
 }
 
 export async function dialElevation(page: Page, clicks: number): Promise<void> {

@@ -101,7 +101,7 @@ export function dailyShareText(record: DailyRecord): string {
 
 export function shortDate(dateKey: string): string {
   const [, month, day] = dateKey.split('-');
-  return `${day}.${month}`;
+  return T.shortDate({ day, month });
 }
 
 function dayNumber(dateKey: string): number {

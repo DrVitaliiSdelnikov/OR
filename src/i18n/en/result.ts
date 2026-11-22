@@ -1,0 +1,60 @@
+import type { MainCause } from '../../sim/miss-breakdown';
+import { decimal, percent } from '../format';
+
+export const result = {
+  classStamp: (p: { exerciseClass: number }) => `CLASS ${p.exerciseClass}`,
+  notAdmittedStamp: 'NOT PASSED',
+  allFirstPaper: 'all on paper',
+  allFirst: 'all with the first shot',
+  skillGrowth: (p: { before: number; after: number }) => `${p.before} → ${p.after}`,
+  opened: (p: { exerciseId: string; title: string }) => `Unlocked: ${p.exerciseId} · ${p.title}`,
+  examPassed: (p: { share: number; minShare: number }) => `EXAM PASSED · ${percent(p.share)} ≥ ${percent(p.minShare)} · 01–11 passed`,
+  examFailed: (p: { share: number; minShare: number }) => `EXAM FAILED · ${percent(p.share)} < ${percent(p.minShare)}`,
+  classLabel: (p: { exerciseClass: number }) => `class ${p.exerciseClass}`,
+  thirdClassRow: (p: { minShare: number; share: number }) => `≥ ${percent(p.minShare)} of points — ${percent(p.share)}`,
+  secondClassRow: (p: { minShare: number; goal: string; fact: string }) => `≥ ${percent(p.minShare)} and ${p.goal} — ${p.fact}`,
+  firstClassRow: (p: { goal: string; fact: string }) => `${p.goal} — ${p.fact}`,
+  bothGoals: (p: { allFirst: string; goal: string }) => `${p.allFirst} and ${p.goal}`,
+  factMil: (p: { valueMil: number }) => `${decimal(p.valueMil, 1)} MIL`,
+  factTally: (p: { passed: number; total: number }) => `${p.passed} of ${p.total}`,
+  factYes: 'yes',
+  factNo: 'no',
+  sharePercent: (p: { share: number }) => percent(p.share),
+  paperHits: (p: { hits: number; shots: number }) => `hits ${p.hits} of ${p.shots} · `,
+  multiplied: (p: { multiplier: number; total: number }) => ` × ${decimal(p.multiplier)} = ${p.total}`,
+  referencePenalty: (p: { penalty: number; total: number }) => ` − ${p.penalty} reference = ${p.total}`,
+  score: (p: { prefix: string; targetSum: number; calcSum: number; sum: number; suffix: string }) =>
+    `${p.prefix}targets ${p.targetSum} + calculation ${p.calcSum} = ${p.sum}${p.suffix}`,
+  newRecord: 'new record',
+  record: (p: { total: number }) => `record ${p.total}`,
+  noErrors: 'No errors',
+  mainCauseLine: (p: { count: number; total: number; cause: string }) => `${p.count} of ${p.total} — ${p.cause}`,
+  unmetGoal: (p: { goal: string }) => `Not met: ${p.goal}`,
+  minShareGoal: (p: { minShare: number }) => `≥ ${percent(p.minShare)} of points`,
+  mainCauses: {
+    calc: 'calculation error',
+    'wind-under': 'wind underestimated',
+    'wind-over': 'wind overestimated',
+    hold: 'reticle hold',
+    lead: 'lead',
+    trigger: 'jerked trigger',
+    zero: 'scope zero',
+  } satisfies Record<MainCause, string>,
+};
+
+export const briefing = {
+  header: (p: { exerciseId: string; kind: 'intro' | 'attestation' | 'training' | 'exam' }) =>
+    `TASK ${p.exerciseId} · ${{ intro: 'INTRO', attestation: 'TEST', training: 'TRAINING', exam: 'EXAM' }[p.kind]}`,
+  examLine: (p: { minShare: number }) => `Pass mark: ${percent(p.minShare)} of points or more — exercises 01–11 are passed by the exam`,
+  introLine: 'No shooting and no score. Seven steps: rifle, scope, turret, magnification, reticles, cartridges, bolt',
+  thirdClass: (p: { minShare: number }) => `Class 3 — ${percent(p.minShare)} of points or more`,
+  secondClass: (p: { minShare: number; goal: string }) => `Class 2 — ${percent(p.minShare)} and ${p.goal}`,
+  firstClass: (p: { goal: string }) => `Class 1 — ${p.goal}`,
+  novelty: (p: { novelty: string }) => `New: ${p.novelty}`,
+  best: (p: { stamp: string; total: number }) => `best: ${p.stamp} · ${p.total} pts`,
+  bestNotAdmitted: 'not passed',
+  terms: (p: { terms: readonly string[] }) => `you’ll learn: ${p.terms.join(' · ')}`,
+  unknownDistance: (p: { range: string }) => `${p.range} · unknown`,
+  mode: (p: { label: string; multiplier: number }) => `${p.label} × ${decimal(p.multiplier, 1)}`,
+  noMode: '—',
+};

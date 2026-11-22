@@ -7,12 +7,12 @@ async function seed(page: Page): Promise<void> {
   await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: {} }, settings: QUIET_SETTINGS });
 }
 
-test.describe('язык (T6.3, этап 1)', () => {
+test.describe('язык (T6.3)', () => {
   test('настройки → English: после перезагрузки главный, вкладка и lang на английском, дроби с точкой; назад на русский', async ({ page }) => {
     await seed(page);
     await page.goto('/settings');
     await expect(page.getByTestId('language-ru')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('language-en')).toContainText('частично');
+    await expect(page.getByTestId('language-en')).toHaveText('English');
     await page.getByTestId('language-en').click();
     await expect(page.getByTestId('language-en')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('settings-group-language')).toContainText('Language');
@@ -33,13 +33,15 @@ test.describe('язык (T6.3, этап 1)', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
   });
 
-  test('английская система без выбора — русский, пока английский не полный', async ({ browser }) => {
-    const context = await browser.newContext({ locale: 'en-US' });
-    const page = await context.newPage();
-    await seed(page);
-    await page.goto('/');
-    await expect(page).toHaveTitle('Симулятор снайпинга');
-    await expect(page.getByTestId('tile-drills')).toContainText('Дрилы');
-    await context.close();
+  test('без выбора — по системе: английская → английский, русская → русский', async ({ browser }) => {
+    for (const [locale, title, drills] of [['en-US', 'Sniping Simulator', 'Drills'], ['ru-RU', 'Симулятор снайпинга', 'Дрилы']]) {
+      const context = await browser.newContext({ locale });
+      const page = await context.newPage();
+      await seed(page);
+      await page.goto('/');
+      await expect(page).toHaveTitle(title);
+      await expect(page.getByTestId('tile-drills')).toContainText(drills);
+      await context.close();
+    }
   });
 });

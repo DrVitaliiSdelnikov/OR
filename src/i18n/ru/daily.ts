@@ -5,6 +5,7 @@ const DAY_FORMS: PluralForms = ['день', 'дня', 'дней'];
 
 export const daily = {
   title: 'Задание дня',
+  shortDate: (p: { day: string; month: string }) => `${p.day}.${p.month}`,
   back: '← НАЗАД',
   date: (p: { date: string }) => `на ${p.date} · одно на всех`,
   cardsTask: (p: { drill: string; count: number }) => `${p.drill} · ${p.count} карточек`,

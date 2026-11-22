@@ -46,6 +46,26 @@ describe('английский каталог (T6.3)', () => {
     expect(found).toEqual([]);
   });
 
+  it('ссылки на термины ведут на английские карточки: related, термины упражнений, termLinks, песочницы, схемы; глава — из списка глав', () => {
+    const cards = Object.values(en.textbook.terms({ rifleName: 'R', zero: '100 m', flags: '200, 400 m', flagsAnd: '200 and 400 m' }));
+    const termNames = new Set(cards.map(card => card.term));
+    const referenced = [
+      ...cards.flatMap(card => card.related),
+      ...Object.values(en.content.exerciseTerms).flat(),
+      ...Object.values(en.textbook.termLinks).flatMap(links => Object.values(links)),
+      ...Object.values(en.textbook.sandboxes).flatMap(sandbox => sandbox.terms),
+      ...Object.values(en.textbook.schemeTerms).flat(),
+    ];
+    expect(cards).toHaveLength(Object.keys(ru.textbook.terms({ rifleName: 'R', zero: '', flags: '', flagsAnd: '' })).length);
+    expect(referenced.filter(term => !termNames.has(term))).toEqual([]);
+    expect(cards.filter(card => !en.textbook.chapters.includes(card.chapter)).map(card => card.term)).toEqual([]);
+  });
+
+  it('дата дня: ММ/ДД в английском, ДД.ММ в русском', () => {
+    expect(en.daily.shortDate({ day: '25', month: '11' })).toBe('11/25');
+    expect(ru.daily.shortDate({ day: '25', month: '11' })).toBe('25.11');
+  });
+
   it('дроби и единицы — только через форматтеры', () => {
     const offending = sourceFiles.filter(name => {
       const source = readFileSync(new URL(name, EN_DIR), 'utf-8').split('\n').filter(line => !line.trimStart().startsWith('import'));

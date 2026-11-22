@@ -5,7 +5,7 @@ import type { ReticleMarkKind } from '../../sim/reticle';
 import type { ReticleKind } from '../../sim/scope-model';
 import { decimal } from '../format';
 
-const CHAPTERS = [
+const CHAPTERS: readonly string[] = [
   'Винтовка',
   'Прицел',
   'Сетка',
@@ -19,9 +19,9 @@ const CHAPTERS = [
   'Движущиеся цели',
   'Разбор',
   'Угол и вращение Земли',
-] as const;
+];
 
-export type TextbookChapter = (typeof CHAPTERS)[number];
+export type TextbookChapter = string;
 
 export interface TermTexts {
   term: string;

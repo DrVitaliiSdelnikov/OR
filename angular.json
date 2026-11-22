@@ -74,6 +74,9 @@
           "options": {
             "include": [
               "src/app/**/*.spec.ts"
+            ],
+            "setupFiles": [
+              "src/test-setup/russian-system-language.ts"
             ]
           }
         }
