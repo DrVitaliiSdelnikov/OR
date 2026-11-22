@@ -91,6 +91,7 @@ export function freePlayTask(settings: FreePlaySettings, ownProfile: RifleProfil
   const fixedDistanceM = Math.min(bounds.toM, Math.max(bounds.fromM, settings.distanceM));
   return {
     kind: 'free',
+    isOpenFire: true,
     title: text.content.freePlayTitle,
     targets: {
       count: 1,

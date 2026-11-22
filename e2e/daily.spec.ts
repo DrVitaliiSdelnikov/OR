@@ -5,6 +5,9 @@ const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarg
 const MILLING_DAY = new Date('2026-11-25T12:00:00.000Z');
 const POSITION_DAY = new Date('2026-11-22T12:00:00.000Z');
 const ROUND_CARDS = 10;
+const POSITION_TARGETS = 3;
+const TRACK_VIEWBOX_WIDTH = 380;
+const BOLT_STROKES: readonly [number, number][] = [[0, -60], [-140, 0], [140, 0], [0, 60]];
 
 async function seedAt(page: Page, now: Date): Promise<void> {
   await page.clock.setFixedTime(now);
@@ -13,6 +16,28 @@ async function seedAt(page: Page, now: Date): Promise<void> {
     Object.defineProperty(navigator, 'clipboard', { value: { writeText: (copied: string) => Promise.resolve(void ((window as unknown as { copiedText: string }).copiedText = copied)) }, configurable: true });
   });
   await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: {} }, series: [], settings: QUIET_SETTINGS });
+}
+
+async function strokeHandle(page: Page, deltaXUnits: number, deltaYUnits: number): Promise<void> {
+  const handle = page.getByTestId('bolt-handle');
+  await handle.click({ trial: true });
+  const box = (await handle.boundingBox())!;
+  const track = (await page.locator('[data-test="bolt-track"] svg').boundingBox())!;
+  const pxPerUnit = track.width / TRACK_VIEWBOX_WIDTH;
+  const startX = box.x + box.width / 2;
+  const startY = box.y + box.height / 2;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + deltaXUnits * pxPerUnit * 0.5, startY + deltaYUnits * pxPerUnit * 0.5, { steps: 4 });
+  await page.mouse.move(startX + deltaXUnits * pxPerUnit * 1.05, startY + deltaYUnits * pxPerUnit * 1.05, { steps: 4 });
+  await page.mouse.up();
+}
+
+async function tapShot(page: Page): Promise<void> {
+  await page.getByTestId('fire').click();
+  await expect(page.getByTestId('review-sheet')).toBeVisible();
+  await page.getByTestId('review-next').click();
+  await expect(page.getByTestId('review-sheet')).toHaveCount(0);
 }
 
 async function millingDistance(page: Page): Promise<string> {
@@ -77,6 +102,43 @@ test.describe('задание дня (T5.1)', () => {
     expect(stored.daily).toEqual([{ dateKey: '2026-11-25', kind: 'cards', drillId: 'milling', hits: 10, total: 10, windErrorMil: null }]);
     await page.goto('/');
     await expect(page.getByTestId('tile-daily-note')).toHaveText('сделано · серия 1');
+  });
+
+  test('день на позиции: по выстрелу на цель — цели 1 → 2 → 3, после третьего итог, запись дня сохранена', async ({ page }) => {
+    test.slow();
+    await page.clock.setFixedTime(POSITION_DAY);
+    await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: {} }, series: [], settings: { ...QUIET_SETTINGS, isTapTrigger: true } });
+    await page.goto('/position/daily');
+    for (let target = 1; target <= POSITION_TARGETS; target++) {
+      await expect(page.getByTestId('position-subtitle')).toContainText(`цель ${target} / ${POSITION_TARGETS}`);
+      await tapShot(page);
+      if (target < POSITION_TARGETS) {
+        for (const [deltaX, deltaY] of BOLT_STROKES) {
+          await strokeHandle(page, deltaX, deltaY);
+        }
+      }
+    }
+    await expect(page.getByTestId('drill-end')).toBeVisible();
+    await expect(page.getByTestId('drill-exit')).toHaveText('К заданию дня');
+    const stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key) ?? '{}'), PROGRESS_KEY);
+    expect(stored.daily).toEqual([expect.objectContaining({ dateKey: '2026-11-22', kind: 'position', total: POSITION_TARGETS })]);
+    await page.getByTestId('drill-exit').click();
+    await page.waitForURL('**/daily');
+    await expect(page.getByTestId('daily-result-line')).toHaveText(/^[0-3] из 3$/);
+  });
+
+  test('день на позиции: «назад» посреди серии → «задание дня не засчитается» → экран задания дня', async ({ page }) => {
+    await page.clock.setFixedTime(POSITION_DAY);
+    await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: {} }, series: [], settings: { ...QUIET_SETTINGS, isTapTrigger: true } });
+    await page.goto('/daily');
+    await page.getByTestId('daily-start').click();
+    await page.waitForURL('**/position/daily');
+    await tapShot(page);
+    await page.getByTestId('position-back').click();
+    await expect(page.getByTestId('leave-confirm')).toContainText('Задание дня не засчитается');
+    await page.getByTestId('leave-confirm-yes').click();
+    await expect(page).toHaveURL(/\/daily$/);
+    await expect(page.getByTestId('daily-start')).toBeVisible();
   });
 
   test('день на позиции: 3 гонга в САМ, «Начать» ведёт на позицию дня', async ({ page }) => {

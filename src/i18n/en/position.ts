@@ -54,6 +54,7 @@ export const position = {
     notEntered: 'total not entered',
     changeMagazine: 'Change magazine',
     leaveQuestion: 'Leave the firing line? The exercise will not count',
+    leaveDailyQuestion: 'Leave the firing line? The daily task will not count',
     stay: 'Stay',
     leave: 'Leave',
   },

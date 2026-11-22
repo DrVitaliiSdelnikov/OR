@@ -219,7 +219,7 @@
 
     @if (isLeaveConfirmOpen()) {
       <div class="confirm" data-test="leave-confirm">
-        <div class="confirm-text">{{ texts.leaveQuestion }}</div>
+        <div class="confirm-text">{{ isDaily() ? texts.leaveDailyQuestion : texts.leaveQuestion }}</div>
         <div class="confirm-actions">
           <button class="confirm-stay" type="button" (click)="stay()" data-test="leave-stay">{{ texts.stay }}</button>
           <button class="confirm-leave" type="button" (click)="leave()" data-test="leave-confirm-yes">{{ texts.leave }}</button>

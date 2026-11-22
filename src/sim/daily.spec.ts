@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { ExerciseShotRecord } from './course';
+import { ExerciseShotRecord, setupTask } from './course';
 import { DailyRecord, dailyDateKey, dailyFromCards, dailyFromShots, dailyPositionTask, dailySeed, dailyShareText, dailyStreak, dailyTask, withDailyRecord } from './daily';
 import { COUNT_DRILL_IDS } from './drills';
+import { DEFAULT_FREE_PLAY, freePlayTask } from './free-play';
 
 function shot(fields: Partial<ExerciseShotRecord> = {}): ExerciseShotRecord {
   return { stageIndex: 0, targetIndex: 0, distanceM: 500, isHit: true, isColdBore: false, impact: { upMrad: 0, rightMrad: 0 }, diagnosis: 'clean', ...fields };
@@ -48,6 +49,15 @@ describe('позиция дня', () => {
     expect(task.conditions.windSpeedRangeMps).toEqual([4, 6]);
     expect(task.rifle).toBeUndefined();
     expect(task.scopeId).toBe('course-tree');
+  });
+
+  it('план огня — этапный: 3 цели по 1 выстрелу, а не бесконечная свободная стрельба', () => {
+    expect(setupTask(dailyPositionTask('metric'), 7).plan).toEqual({
+      kind: 'exercise',
+      hasColdBore: false,
+      stages: [{ cartridgeId: 'B', maxShotsPerTarget: 1, closesOnHit: true, targetCount: 3 }],
+    });
+    expect(setupTask(freePlayTask(DEFAULT_FREE_PLAY), 7).plan).toEqual({ kind: 'free', cartridgeId: DEFAULT_FREE_PLAY.cartridgeId });
   });
 });
 

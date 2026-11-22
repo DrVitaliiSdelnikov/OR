@@ -54,6 +54,7 @@ export const position = {
     notEntered: 'итог не внесён',
     changeMagazine: 'Сменить магазин',
     leaveQuestion: 'Покинуть позицию? Упражнение не засчитается',
+    leaveDailyQuestion: 'Покинуть позицию? Задание дня не засчитается',
     stay: 'Остаться',
     leave: 'Покинуть',
   },

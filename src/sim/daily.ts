@@ -55,6 +55,7 @@ export function dailyPositionTask(system: UnitSystem): FreePlayTask {
   const base = freePlayTask({ ...DEFAULT_FREE_PLAY, wind: 'moderate', notebookMode: 'manual-easy', rifle: 'course', scopeId: 'course-tree', cartridgeId: 'B' }, null, system);
   return {
     ...base,
+    isOpenFire: false,
     title: T.title,
     targets: {
       count: POSITION_TARGETS,

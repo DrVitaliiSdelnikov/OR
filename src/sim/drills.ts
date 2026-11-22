@@ -179,7 +179,7 @@ export function positionDrillTask(id: PositionDrillId, system: UnitSystem, ownPr
   const inMetres = (value: number) => fromInput('distance', value, system);
   const known = (span: { from: number; to: number }) => ({ kind: 'known' as const, fromM: inMetres(span.from), toM: inMetres(span.to) });
   const stage = base.stages[0];
-  const task: FreePlayTask = { ...base, title: drillTitle(id), drill: { id, level } };
+  const task: FreePlayTask = { ...base, isOpenFire: false, title: drillTitle(id), drill: { id, level } };
   switch (id) {
     case 'cold-bore':
       return { ...task, targets: { count: 1, distance: known(KNOWN_SPAN_IN_SYSTEM) }, stages: [{ ...stage, maxShotsPerTarget: 1, closesOnHit: true }], hasColdBore: true };

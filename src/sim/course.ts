@@ -46,6 +46,7 @@ export interface ExerciseStage {
 
 export interface PositionTask {
   kind: 'exercise' | 'free';
+  isOpenFire?: boolean;
   title: string;
   targets: ExerciseTargets | null;
   stages: readonly ExerciseStage[];
@@ -81,6 +82,7 @@ export interface ExerciseDef extends PositionTask {
 
 export interface FreePlayTask extends PositionTask {
   kind: 'free';
+  isOpenFire: boolean;
 }
 
 export interface ExerciseGoalTexts {
@@ -374,7 +376,7 @@ export function setupTask(def: PositionTask, seed: number, system: UnitSystem = 
   return {
     targets,
     plan:
-      def.kind === 'free' && !def.drill
+      def.isOpenFire
         ? { kind: 'free', cartridgeId: def.stages[0].cartridgeId }
         : { kind: 'exercise', hasColdBore: def.hasColdBore, stages: def.stages.map(stage => ({ ...stage, targetCount: targets.length })) },
     scenarioOptions: def.conditions,

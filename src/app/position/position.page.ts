@@ -586,7 +586,14 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
       void this.router.navigate(['/textbook']).then(() => this.termSheet.open(sandboxTerm));
       return;
     }
-    void this.router.navigate(this.positionDrill() ? ['/drills'] : this.isFreePlay() ? ['/free'] : ['/course', this.exerciseId()]);
+    void this.router.navigate(this.leaveRoute());
+  }
+
+  private leaveRoute(): string[] {
+    if (this.isDaily()) {
+      return ['/daily'];
+    }
+    return this.positionDrill() ? ['/drills'] : this.isFreePlay() ? ['/free'] : ['/course', this.exerciseId()];
   }
 
   protected toDrills(): void {
