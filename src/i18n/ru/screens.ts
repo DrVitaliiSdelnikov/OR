@@ -1,3 +1,4 @@
+import { APP_NAME } from './app-name';
 import type { NotebookMode } from '../../core/exercise-scoring';
 import type { CartridgeId } from '../../core/types';
 import type { Terrain, WindPreset } from '../../sim/free-play';
@@ -12,7 +13,7 @@ export const screens = {
   home: {
     admissions: (p: { admissions: number; admissionsTotal: number }) => `допуски ${p.admissions} / ${p.admissionsTotal}`,
     settings: 'Настройки',
-    title: 'Огневой рубеж',
+    title: APP_NAME,
     tiles: {
       course: 'Снайперская подготовка',
       drills: 'Дрилы',

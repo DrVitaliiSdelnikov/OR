@@ -26,7 +26,7 @@ describe('экран задания дня (T5.1)', () => {
 
   it('после зачёта: итог, ветер для позиции, серия, текст, «Ещё раз · без зачёта»', () => {
     const done = dailyView([record(CARDS_DAY), record(POSITION_DAY, { kind: 'position', drillId: null, hits: 2, total: 3, windErrorMil: 0.24 })], POSITION_DAY);
-    expect(done).toMatchObject({ startLabel: 'Ещё раз · без зачёта', result: { line: '2 из 3', wind: 'ветер 0,2 MIL' }, streak: 'серия 2 дня', shareText: 'Огневой рубеж · 02.01 · 2 из 3 · ветер 0,2 MIL' });
+    expect(done).toMatchObject({ startLabel: 'Ещё раз · без зачёта', result: { line: '2 из 3', wind: 'ветер 0,2 MIL' }, streak: 'серия 2 дня', shareText: 'Симулятор снайпинга · 02.01 · 2 из 3 · ветер 0,2 MIL' });
     expect(dailyView([record(CARDS_DAY)], CARDS_DAY).result).toEqual({ line: '8 из 10', wind: null });
   });
 

@@ -1,7 +1,7 @@
 import { decimal, plural, PluralForms } from '../format';
+import { APP_NAME } from './app-name';
 
 const DAY_FORMS: PluralForms = ['день', 'дня', 'дней'];
-const APP_NAME = 'Огневой рубеж';
 
 export const daily = {
   title: 'Задание дня',

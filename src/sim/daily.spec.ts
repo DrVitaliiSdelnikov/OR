@@ -93,7 +93,7 @@ describe('серия дней', () => {
 
 describe('текст «Поделиться»', () => {
   it('позиция — попадания и ветер; карточки — дрил и верные', () => {
-    expect(dailyShareText(record('2026-11-14', { kind: 'position', drillId: null, hits: 2, total: 3, windErrorMil: 0.214 }))).toBe('Огневой рубеж · 14.11 · 2 из 3 · ветер 0,2 MIL');
-    expect(dailyShareText(record('2026-11-15', { hits: 8, total: 10 }))).toBe('Огневой рубеж · 15.11 · Ветер · 8 из 10');
+    expect(dailyShareText(record('2026-11-14', { kind: 'position', drillId: null, hits: 2, total: 3, windErrorMil: 0.214 }))).toBe('Симулятор снайпинга · 14.11 · 2 из 3 · ветер 0,2 MIL');
+    expect(dailyShareText(record('2026-11-15', { hits: 8, total: 10 }))).toBe('Симулятор снайпинга · 15.11 · Ветер · 8 из 10');
   });
 });

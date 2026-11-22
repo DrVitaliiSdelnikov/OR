@@ -63,23 +63,25 @@ describe('каталог текстов', () => {
 });
 
 const TEXTS_DIR = new URL('./ru/', import.meta.url);
-const MILITARY_WORDS = /[а-яё]*(снайпер|курсант|инструктор|аттестац|звани)[а-яё]*/giu;
-const COURSE_NAME_UNTIL_P16A = 'Снайперская подготовка';
+const MILITARY_WORDS = /[а-яё]*(снайп|курсант|инструктор|аттестац|звани)[а-яё]*/giu;
+const ALLOWED_NAMES = ['Снайперская подготовка', 'Симулятор снайпинга'];
 
 function militaryWordsIn(sourceText: string): string[] {
-  return [...sourceText.replaceAll(COURSE_NAME_UNTIL_P16A, '').matchAll(MILITARY_WORDS)].map(match => match[0]);
+  const withoutNames = ALLOWED_NAMES.reduce((remaining, name) => remaining.replaceAll(name, ''), sourceText);
+  return [...withoutNames.matchAll(MILITARY_WORDS)].map(match => match[0]);
 }
 
 describe('спортивная лексика (T4.4, В44)', () => {
-  it('в текстах нет военных слов, кроме названия курса до П16а', () => {
+  it('в текстах нет военных слов, кроме названий приложения и курса (В61)', () => {
     const found = readdirSync(TEXTS_DIR)
       .filter(name => name.endsWith('.ts') && !name.endsWith('.spec.ts'))
       .flatMap(name => militaryWordsIn(readFileSync(new URL(name, TEXTS_DIR), 'utf-8')).map(word => `${name}: ${word}`));
     expect(found).toEqual([]);
   });
 
-  it('сторож ловит слово в любом регистре и пропускает только название курса', () => {
+  it('сторож ловит слово в любом регистре и пропускает только названия приложения и курса', () => {
     expect(militaryWordsIn('Учебник курсанта · СНАЙПЕР · с инструктором · аттестация · Звание')).toEqual(['курсанта', 'СНАЙПЕР', 'инструктором', 'аттестация', 'Звание']);
-    expect(militaryWordsIn('Снайперская подготовка · тренер · стрелок')).toEqual([]);
+    expect(militaryWordsIn('Снайперская подготовка · Симулятор снайпинга · тренер · стрелок')).toEqual([]);
+    expect(militaryWordsIn('основы снайпинга · снайперский прицел')).toEqual(['снайпинга', 'снайперский']);
   });
 });

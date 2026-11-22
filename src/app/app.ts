@@ -1,4 +1,5 @@
 import { afterNextRender, Component, effect, inject, viewChild } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { text } from '../i18n';
 import { BackStackService, backLayer } from './services/back-stack.service';
@@ -37,6 +38,7 @@ export class App {
   private readonly outlet = viewChild.required(IonRouterOutlet);
   private readonly startBackStack = afterNextRender(() => this.backStack.start(this.outlet()));
   private readonly progress = inject(ProgressStore);
+  private readonly setDocumentTitle = inject(Title).setTitle(text.screens.home.title);
   private readonly termSheetLayer = backLayer(() => this.termSheet.openTerm() !== null, () => this.termSheet.close());
   private readonly applyTextSize = effect(() => {
     if (this.progress.settings().isTextLarge) {

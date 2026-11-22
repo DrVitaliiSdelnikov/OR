@@ -117,10 +117,10 @@ test.describe('упр. 00 «Винтовка и прицел» (A7.5)', () => {
   });
 });
 
-test('прямой адрес /position/00 ведёт во вводное, а не на пустой экран; вкладка — «Огневой рубеж»', async ({ page }) => {
+test('прямой адрес /position/00 ведёт во вводное, а не на пустой экран; вкладка — «Симулятор снайпинга»', async ({ page }) => {
   await seedNewPlayer(page);
   await page.goto('/position/00');
   await expect(page).toHaveURL(/\/intro$/);
   await expect(page.getByTestId('intro-next')).toBeVisible();
-  await expect(page).toHaveTitle('Огневой рубеж');
+  await expect(page).toHaveTitle('Симулятор снайпинга');
 });

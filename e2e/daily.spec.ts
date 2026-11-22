@@ -72,7 +72,7 @@ test.describe('задание дня (T5.1)', () => {
     await expect(page.getByTestId('daily-start')).toHaveText('Ещё раз · без зачёта');
     await page.getByTestId('daily-share').click();
     await expect(page.getByTestId('daily-share')).toHaveText('Скопировано');
-    expect(await page.evaluate(() => (window as unknown as { copiedText: string }).copiedText)).toBe('Огневой рубеж · 25.11 · Миллинг · 10 из 10');
+    expect(await page.evaluate(() => (window as unknown as { copiedText: string }).copiedText)).toBe('Симулятор снайпинга · 25.11 · Миллинг · 10 из 10');
     const stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key) ?? '{}'), PROGRESS_KEY);
     expect(stored.daily).toEqual([{ dateKey: '2026-11-25', kind: 'cards', drillId: 'milling', hits: 10, total: 10, windErrorMil: null }]);
     await page.goto('/');
