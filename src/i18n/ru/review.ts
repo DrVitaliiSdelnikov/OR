@@ -92,6 +92,7 @@ export const review = {
   roundingPhrase: (p: { raw: string; reference: string; player: string }) => `${p.raw} до ближайшего клика — ${p.reference}, у тебя ${p.player}`,
   leadPhrase: (p: { raw: string; player: string }) => `Упреждение ${p.raw} MIL, у тебя ${p.player}`,
   arithmeticPhrase: (p: { raw: string; player: string }) => `Формула и подстановка верны, но выходит ${p.raw}, а у тебя ${p.player}`,
+  arithmeticBetweenClicksPhrase: (p: { raw: string; reference: string; player: string }) => `Формула и подстановка верны, но выходит ${p.raw}, до клика ${p.reference}, а у тебя ${p.player}`,
   anySlot: 'слот',
   substitutionPhrase: (p: { slot: string; player: string; expected: string }) => `В слот ${p.slot} поставлено ${p.player}, а нужно ${p.expected}`,
   readingSpeedPhrase: (p: { reference: string; player: string }) => `Станция показала ${p.reference}, ты ввёл ${p.player}`,

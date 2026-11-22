@@ -92,6 +92,7 @@ export const review = {
   roundingPhrase: (p: { raw: string; reference: string; player: string }) => `${p.raw} to the nearest click is ${p.reference}, you have ${p.player}`,
   leadPhrase: (p: { raw: string; player: string }) => `Lead ${p.raw} MIL, you have ${p.player}`,
   arithmeticPhrase: (p: { raw: string; player: string }) => `Formula and substitution are right, but it comes out to ${p.raw}, and you have ${p.player}`,
+  arithmeticBetweenClicksPhrase: (p: { raw: string; reference: string; player: string }) => `Formula and substitution are right, but it comes out to ${p.raw}, ${p.reference} to the click, and you have ${p.player}`,
   anySlot: 'slot',
   substitutionPhrase: (p: { slot: string; player: string; expected: string }) => `Slot ${p.slot} holds ${p.player}, but it should be ${p.expected}`,
   readingSpeedPhrase: (p: { reference: string; player: string }) => `The station showed ${p.reference}, you entered ${p.player}`,

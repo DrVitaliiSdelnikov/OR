@@ -168,6 +168,24 @@ describe('teaching — 04 wind and the station', () => {
   });
 });
 
+describe('teaching — 07 cold morning (QA 22.11)', () => {
+  it('notebook → «Условия» → «Замер» → the DOPE columns → the Atmosphere step; 5 hints', () => {
+    expect(next(snapshot('07'))!.anchor).toBe('tile-notebook');
+    const opened = snapshot('07', { hasOpenedNotebook: true, sheetTab: 'total' });
+    expect([next(opened)!.anchor, next(opened)!.number, next(opened)!.count]).toEqual(['tab-conditions', 2, 5]);
+    expect(next({ ...opened, sheetTab: 'conditions' })!.anchor).toBe('measure');
+    const measured = { ...opened, sheetTab: 'conditions' as const, isStationMeasured: true };
+    expect(next(measured)!.anchor).toBe('tab-dope');
+    expect(next({ ...measured, sheetTab: 'total' }, ['columns'])!.anchor).toBe('step-atmosphere');
+  });
+
+  it('the Atmosphere step recorded or a shot fired ends the script', () => {
+    const measured = snapshot('07', { hasOpenedNotebook: true, sheetTab: 'total', isStationMeasured: true });
+    expect(next({ ...measured, recordedSteps: ['atmosphere'] }, ['columns'])).toBeNull();
+    expect(next({ ...measured, shotsFired: 1 }, ['columns'])).toBeNull();
+  });
+});
+
 describe('teaching — 05 milling', () => {
   it('notebook → «Дистанция» → two touches on the gong → the formula with the numbers', () => {
     expect(next(snapshot('05'))!.anchor).toBe('tile-notebook');
@@ -316,9 +334,9 @@ describe('teaching — 02 and 03 moments', () => {
     expect(next({ ...fired, isBoltCycleDue: false, shotsFired: 2 }, ['breath'])).toBeNull();
   });
 
-  it('scripts: 01–06, 08–11, 13–14; none for 00, 07, 12', () => {
-    expect((['01', '02', '03', '04', '05', '06', '08', '09', '10', '11', '13', '14'] as ExerciseId[]).every(id => teachingScript(id) !== null)).toBe(true);
-    expect((['00', '07', '12'] as ExerciseId[]).map(teachingScript)).toEqual([null, null, null]);
+  it('scripts: 01–11, 13–14; none for 00 and 12 (07 got one after QA 22.11)', () => {
+    expect((['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '13', '14'] as ExerciseId[]).every(id => teachingScript(id) !== null)).toBe(true);
+    expect((['00', '12'] as ExerciseId[]).map(teachingScript)).toEqual([null, null]);
   });
 });
 

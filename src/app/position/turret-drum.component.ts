@@ -91,8 +91,8 @@ const INERTIA_FRICTION = 0.92;
     .value { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 0 var(--space-1); background: var(--device-sunken); font: 700 var(--type-label) / 16px var(--font-mono); color: var(--device-text); white-space: nowrap; pointer-events: none; }
     .value small { color: var(--device-accent); font-weight: 500; }
     .vertical .value { display: flex; flex-direction: column; align-items: center; padding: var(--space-1) 0; }
-    .counter { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); padding-bottom: 2px; font: 500 var(--type-label) / 16px var(--font-mono); color: var(--device-accent); white-space: nowrap; }
-    .vertical .counter { left: auto; right: 100%; bottom: auto; top: 0; transform: none; padding: 0 var(--space-1) 0 0; }
+    .counter { position: absolute; left: 50%; bottom: 100%; z-index: 1; transform: translateX(-50%); padding: 0 var(--space-1); border: var(--border-width) solid var(--device-accent); border-radius: var(--radius-device); background: var(--device-bg); font: 500 var(--type-label) / 16px var(--font-mono); color: var(--device-accent); white-space: nowrap; }
+    .vertical .counter { left: auto; right: 100%; bottom: auto; top: 0; transform: none; margin-right: var(--space-1); }
     .loupe { position: fixed; left: 16.6%; right: 16.6%; top: 30%; display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-6) var(--space-4); border: var(--border-width) solid var(--device-accent); border-radius: var(--radius-device); background: var(--device-surface); z-index: 10; }
     .loupe-value { font: 700 var(--type-hero) / 44px var(--font-mono); color: var(--device-text); }
     .loupe-clicks, .loupe-counter { font: 500 var(--type-value) / 22px var(--font-mono); color: var(--device-accent); }

@@ -271,8 +271,12 @@ function errorPhrase(check: ShotCheck, rowIndex: number, type: CheckErrorType, s
       return T.roundingPhrase({ raw: decimal(Math.abs(input.expectedRawMil), 2), reference, player });
     case 'lead':
       return T.leadPhrase({ raw: decimal(Math.abs(input.expectedRawMil), 2), player });
-    default:
-      return T.arithmeticPhrase({ raw: decimal(Math.abs(input.expectedRawMil), 2), player });
+    default: {
+      const raw = decimal(Math.abs(input.expectedRawMil), 2);
+      return Math.abs(Math.abs(input.expectedRawMil) - referenceMil) < CLICK_EPSILON
+        ? T.arithmeticPhrase({ raw, player })
+        : T.arithmeticBetweenClicksPhrase({ raw, reference, player });
+    }
   }
 }
 

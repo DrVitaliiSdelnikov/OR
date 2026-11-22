@@ -241,7 +241,7 @@ export class PositionPage implements ViewWillEnter, ViewWillLeave {
         counter: drumCounterText('windage', session.progress('windage')),
       },
       magnification: session.scope.magnification,
-      dope: playerDistanceM === null ? T.dopeEmpty : dopeTileText(notebook.context.card, notebook.distanceM!, this.unitSystem()),
+      dope: playerDistanceM === null ? T.dopeEmpty : dopeTileText(notebook.context.card, notebook.distanceM!, this.unitSystem(), notebook.context.scope),
       rounds: `${session.firingLine.magazineLeft} / ${session.firingLine.magazineLoaded}`,
       isMagazineChangeDue: session.isMagazineChangeDue,
       isBoltCycleDue: !session.isBoltAutomatic && session.isBoltCycleDue && this.end() === null,

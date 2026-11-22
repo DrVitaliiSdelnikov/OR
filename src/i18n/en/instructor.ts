@@ -86,6 +86,12 @@ export const instructor = {
     chips: 'Tap a formula slot and drop a chip in: V⊥, then D',
     tape: 'Key in V⊥ × D ÷ K by the formula and record the step',
   },
+  coldMorning: {
+    notebook: 'Cold and high pressure — the bullet lands below the card. Open the notebook',
+    conditionsTab: 'The weather is in the “Conditions” tab',
+    columns: 'The “colder” and “pressure” columns are in the DOPE row for your distance, “DOPE” tab',
+    step: 'Work out the “Atmosphere” step: ΔELEV from the two columns',
+  },
   cartridgeChange: {
     magazine: (p: { cartridgeLetter: string }) => `The magazine is empty. Next is cartridge ${p.cartridgeLetter}`,
     card: (p: { cartridgeLetter: string }) => `Cartridge ${p.cartridgeLetter} has its own card with its own DOPE: recalculate`,

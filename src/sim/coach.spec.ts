@@ -56,12 +56,13 @@ describe('порядок советов', () => {
     expect(drillOf).toEqual({ distance: 'milling', dope: 'dope', wind: 'wind', conditions: 'conditions', angle: 'angle', lead: 'lead', execution: 'cold-bore', speed: 'timed-stage' });
   });
 
-  it('уровень «на время», если открыт, иначе обучение', () => {
+  it('уровень «на время» — только заработанный: 2 раунда обучения ≥ 80 %; «Открыть всё» его не советует (QA 22.11)', () => {
     const accurate: DrillRoundRecord = { drillId: 'milling', level: 'learn', seed: 1, startedAtIso: daysAgo(0), cards: [{ verdict: 'exact', errorTypes: [], seconds: 5 }] };
     const levelOf = (fields: Partial<CoachInput>) => coachRanking(input(fields)).find(advice => advice.skill === 'distance')!.level;
     expect(levelOf({})).toBe('learn');
     expect(levelOf({ rounds: [accurate, accurate] })).toBe('timed');
-    expect(levelOf({ isEverythingUnlocked: true })).toBe('timed');
+    expect(levelOf({ isEverythingUnlocked: true })).toBe('learn');
+    expect(levelOf({ isEverythingUnlocked: true, rounds: [accurate, accurate] })).toBe('timed');
   });
 
   it('совет — верхний', () => {

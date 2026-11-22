@@ -65,7 +65,7 @@ export function coachRanking(input: CoachInput): CoachAdvice[] {
     return {
       skill,
       drillId,
-      level: isTimedOpen(drillId, input.rounds, input.isEverythingUnlocked) ? ('timed' as const) : ('learn' as const),
+      level: isTimedOpen(drillId, input.rounds, false) ? ('timed' as const) : ('learn' as const),
       priority: skillPriority(rating, daysSince),
       reason: coachReason(practices, daysSince, rating, nowMs),
     };

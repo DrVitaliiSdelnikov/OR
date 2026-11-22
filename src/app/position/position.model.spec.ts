@@ -36,6 +36,13 @@ describe('correction cells (Б4)', () => {
     expect(cells[1]).toEqual({ label: 'ГОР', value: '0,0', target: null, isOnTarget: true });
   });
 
+  it('MOA scope: the turret cells say MOA; the course MIL scope stays as is (QA 22.11)', () => {
+    const moa = scopeById('moa');
+    const labels = correctionCells(moa, { elevation: 0, windageLeft: 0 }, null, 300).map(cell => cell.label);
+    expect(labels).toEqual(['ВЕРТ · MOA', 'ГОР · MOA', 'ДИСТ']);
+    expect(correctionCells(scope, { elevation: 0, windageLeft: 0 }, null, 300).map(cell => cell.label)).toEqual(['ВЕРТ', 'ГОР', 'ДИСТ']);
+  });
+
   it('wind to the right reads → R', () => {
     expect(correctionCells(scope, { elevation: 0, windageLeft: -4 }, total(0, -4), 300)[1].value).toBe('→ 0,4 R');
   });
@@ -170,6 +177,11 @@ describe('DOPE tile rounds like the calculation check (T0.4a)', () => {
 
   it('a printed row reads as printed', () => {
     expect(dopeTileText(card, 400)).toBe('ДОПЕ · 400 м ↑ 2,8');
+  });
+
+  it('with an MOA scope the tile says the card is in MIL (QA 22.11)', () => {
+    expect(dopeTileText(card, 400, 'metric', scopeById('moa'))).toBe('ДОПЕ · 400 м ↑ 2,8 MIL');
+    expect(dopeTileText(card, 400, 'metric', scope)).toBe('ДОПЕ · 400 м ↑ 2,8');
   });
 });
 

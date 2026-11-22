@@ -9,6 +9,7 @@ export const position = {
   cells: {
     labels: { elevation: 'ELEV', windage: 'WIND', distance: 'DIST', holdover: 'HOLD' } satisfies Record<CorrectionCellKey, string>,
     distance: (p: { distance: string }) => p.distance,
+    labelInMoa: (p: { label: string }) => `${p.label} · MOA`,
   },
   drum: {
     overshoot: (p: { clicks: number }) => `${p.clicks} cl. too far`,
@@ -43,6 +44,7 @@ export const position = {
     calm: 'calm',
     dopeEmpty: 'DOPE · —',
     dope: (p: { distance: string; elevationMil: number }) => `DOPE · ${p.distance} ↑ ${decimal(p.elevationMil, 1)}`,
+    inMil: (p: { text: string }) => `${p.text} MIL`,
     stopBadges: { zero: 'ZERO STOP', top: 'TOP STOP', side: 'STOP' } satisfies Record<NonNullable<TurretStop>, string>,
     back: 'Back',
     notFilled: 'not filled in',

@@ -139,14 +139,11 @@ test.describe('подсказки инструктора', () => {
     await expect(page.getByTestId('review-sheet')).toBeVisible();
   });
 
-  test('брифинг: «с тренером» включён до допуска, выключен после; в 07 его нет; выключил — обучения нет', async ({ page }) => {
+  test('брифинг: «с тренером» включён до допуска, выключен после; выключил — обучения нет', async ({ page }) => {
     await seed(page, { '02': 3 });
     await page.goto('/course/02');
     await expect(page.getByTestId('briefing-instructor')).toBeVisible();
     await expect.poll(() => page.getByTestId('briefing-instructor').evaluate(element => (element as HTMLInputElement).checked)).toBe(false);
-    await page.goto('/course/07');
-    await expect(page.getByTestId('briefing-card')).toBeVisible();
-    await expect(page.getByTestId('briefing-instructor')).toHaveCount(0);
     await page.goto('/course/01');
     await expect.poll(() => page.getByTestId('briefing-instructor').evaluate(element => (element as HTMLInputElement).checked)).toBe(true);
     await page.getByTestId('briefing-instructor').click();

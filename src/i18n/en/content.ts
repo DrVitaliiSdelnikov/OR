@@ -88,7 +88,7 @@ export const content = {
     '04': 'wind, weather station, wind flag at the berm',
     '05': 'unknown distance, milling with the reticle',
     '06': 'MANUAL easy mode',
-    '07': null,
+    '07': 'cold and pressure correction — the “Atmosphere” step',
     '08': 'cartridge change within the exercise',
     '09': 'different wind along the range, mirage',
     '10': 'MANUAL hard, shot call by the player, pencil in the DOPE',

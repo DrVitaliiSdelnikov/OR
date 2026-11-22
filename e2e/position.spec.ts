@@ -20,6 +20,18 @@ async function fireAndSettle(page: Page): Promise<void> {
   await page.waitForTimeout(SHOT_SETTLE_MS);
 }
 
+test.describe('счётчик барабана (QA 22.11)', () => {
+  test('«ещё N кл.» — плашка с непрозрачным фоном поверх соседних ячеек', async ({ page }) => {
+    await toPosition(page);
+    await page.getByTestId('tile-notebook').click();
+    await page.getByTestId('enter-turrets').click();
+    const counter = page.locator('[data-test="drum-elevation"] [data-test="drum-counter"]');
+    await expect(counter).toContainText('16');
+    const background = await counter.evaluate(element => getComputedStyle(element).backgroundColor);
+    expect(background).not.toMatch(/rgba\(\d+, \d+, \d+, 0\)|transparent/);
+  });
+});
+
 test.describe('позиция: упражнения 01–02', () => {
   test('с листа упражнения на позицию: шапка, цель 1 / 3, цель барабана латунью', async ({ page }) => {
     await toPosition(page);

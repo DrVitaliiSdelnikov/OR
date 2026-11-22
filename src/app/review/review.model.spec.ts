@@ -86,6 +86,17 @@ describe('check sheet, SAM', () => {
     expect(sheet.pointsText).toBe('+0 за расчёт · ×2');
   });
 
+  it('an arithmetic error between clicks names the exact value and the click value the table shows (QA 22.11)', () => {
+    let notebook = placeChip(notebookAt(450, 'manual-hard'), 'dope', 'distance');
+    notebook = recordStep(setSign(typeTape(notebook, 'dope', 0, 9), 'dope', 1), 'dope');
+    const sheet = checkSheet(snapshot(notebook, { trueWindClock: 12, dialedElevationClicks: 0, dialedWindageLeftClicks: 0 }), 'manual-hard');
+    const reference = sheet.rows[0].reference.replace('↑ ', '');
+    const phrase = sheet.mainError!.phrase;
+    expect(phrase).toMatch(/^Формула и подстановка верны, но выходит \d,\d\d, до клика \d,\d, а у тебя 9$/);
+    expect(phrase).toContain(`до клика ${reference},`);
+    expect(phrase).not.toContain(`выходит ${reference}0,`);
+  });
+
   it('an exact step: ТОЧНО, all steps right, points with the multiplier', () => {
     const sheet = checkSheet(windSheet('crosswind', 0.7), 'manual-hard');
     expect(sheet.stamp).toBe('ТОЧНО');

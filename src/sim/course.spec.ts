@@ -421,7 +421,7 @@ describe('skillGoals — facts for the result sheet (A6.3)', () => {
     expect(exercise('01').goals.first).toBeNull();
     expect(exercise('04').goals).toEqual({ second: 'скорость перенесена без ошибки', first: 'вклад ветра учтён на всех' });
     expect(exercise('04').novelty).toBe('ветер, метеостанция, флажок у бруствера');
-    expect(exercise('07').novelty).toBeNull();
+    expect(exercise('07').novelty).toBe('поправка на холод и давление — шаг «Атмосфера»');
   });
 });
 
@@ -598,7 +598,7 @@ describe('goal texts and titles follow the course constants (В7, A10)', () => {
 
   it('names, novelties and static goals come from the catalog', () => {
     expect(exercise('01').title).toBe('Первые щелчки');
-    expect(exercise('07').novelty).toBeNull();
+    expect(exercise('07').novelty).toBe('поправка на холод и давление — шаг «Атмосфера»');
     expect(exercise('11').novelty).toBe('движущиеся цели, упреждение сеткой, шаг «Упреждение» в блокноте');
     expect(exercise('12').goals).toEqual({ second: 'без справочника', first: 'САМ сложный' });
   });

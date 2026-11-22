@@ -57,8 +57,8 @@ export function correctionCells(scope: ScopeModel, dial: DialClicks, total: Note
   const elevationMil = dial.elevation * scope.clickMrad;
   const rightMil = -dial.windageLeft * scope.clickMrad;
   const cells: CorrectionCell[] = [
-    axisCell('elevation', verticalText(scope, elevationMil), hasTotal ? total.elevation.targetClicks : null, dial.elevation, clicks => verticalText(scope, clicks * scope.clickMrad)),
-    axisCell('windage', horizontalText(scope, rightMil), hasTotal ? total.windageLeft.targetClicks : null, dial.windageLeft, clicks => horizontalText(scope, -clicks * scope.clickMrad)),
+    axisCell(scope, 'elevation', verticalText(scope, elevationMil), hasTotal ? total.elevation.targetClicks : null, dial.elevation, clicks => verticalText(scope, clicks * scope.clickMrad)),
+    axisCell(scope, 'windage', horizontalText(scope, rightMil), hasTotal ? total.windageLeft.targetClicks : null, dial.windageLeft, clicks => horizontalText(scope, -clicks * scope.clickMrad)),
     { label: T.cells.labels.distance, value: distanceM === null ? '—' : T.cells.distance({ distance: UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS) }), target: null, isOnTarget: true },
   ];
   const holdRightMil = hasTotal ? total.holdRightMil + leadDirection * total.leadMil : 0;
@@ -68,9 +68,10 @@ export function correctionCells(scope: ScopeModel, dial: DialClicks, total: Note
   return cells;
 }
 
-export function dopeTileText(card: DopeCard, distanceM: number, system: UnitSystem = 'metric'): string {
+export function dopeTileText(card: DopeCard, distanceM: number, system: UnitSystem = 'metric', scope: ScopeModel | null = null): string {
   const elevationMil = roundToClicks(dopeRowAt(card, distanceM).elevationMil, card.clickMil) * card.clickMil;
-  return T.page.dope({ distance: UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS), elevationMil });
+  const text = T.page.dope({ distance: UNITS.valueText('distance', distanceM, system, DISTANCE_DIGITS), elevationMil });
+  return scope?.units === 'MOA' ? T.page.inMil({ text }) : text;
 }
 
 export function subtitleText(distanceM: number | null, targetNumber: number, targetCount: number, system: UnitSystem): string {
@@ -97,8 +98,8 @@ export function drumCounterText(axis: TurretAxis, progress: TurretProgress | nul
   return progress === null ? '' : drumCounter(axis, progress);
 }
 
-function axisCell(axis: TurretAxis, value: string, targetClicks: number | null, dialClicks: number, format: (clicks: number) => string): CorrectionCell {
-  const label = T.cells.labels[axis];
+function axisCell(scope: ScopeModel, axis: TurretAxis, value: string, targetClicks: number | null, dialClicks: number, format: (clicks: number) => string): CorrectionCell {
+  const label = scope.units === 'MOA' ? T.cells.labelInMoa({ label: T.cells.labels[axis] }) : T.cells.labels[axis];
   if (targetClicks === null) {
     return { label, value, target: '—', isOnTarget: false };
   }

@@ -80,7 +80,12 @@ describe('briefingCard', () => {
     expect(card('03', { isIntroCompleted: true, bestClasses: { '03': 2 } }).instructor).toEqual({ isDefaultOn: false });
     expect(card('02', { isIntroCompleted: true, bestClasses: { '02': 0 } }).instructor).toEqual({ isDefaultOn: true });
     expect(card('06').instructor).toEqual({ isDefaultOn: true });
-    expect(card('07').instructor).toBeNull();
+    expect(card('07').instructor).toEqual({ isDefaultOn: true });
+    expect(card('12').instructor).toBeNull();
+  });
+
+  it('07 has «Новое» — the cold and pressure correction (QA 22.11)', () => {
+    expect(card('07').novelty).toBe('Новое: поправка на холод и давление — шаг «Атмосфера»');
   });
 
   it('13 and 14 are training after the attestation: «Новое», terms, the conditions in the facts, the coach on', () => {

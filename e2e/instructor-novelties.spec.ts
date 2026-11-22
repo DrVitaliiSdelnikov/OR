@@ -95,13 +95,13 @@ test.describe('подсказки для новинок (A6.5)', () => {
     await expectHint(page, 'Тапни слот формулы и положи чип: V⊥, потом D', 'подсказка 4 из 5');
   });
 
-  test('брифинг: «с тренером» есть у 06 и включён до допуска; у 07 его нет', async ({ page }) => {
+  test('брифинг: «с тренером» есть у 06 и у 07 (QA 22.11) и включён до допуска', async ({ page }) => {
     await seed(page, { '01': 3, '02': 3, '03': 3, '04': 3, '05': 3 });
     await page.goto('/course/06');
     await expect(page.getByTestId('briefing-instructor')).toHaveText('с тренером');
     await expect.poll(() => page.getByTestId('briefing-instructor').evaluate(element => (element as HTMLInputElement).checked)).toBe(true);
     await page.goto('/course/07');
     await expect(page.getByTestId('briefing-card')).toBeVisible();
-    await expect(page.getByTestId('briefing-instructor')).toHaveCount(0);
+    await expect.poll(() => page.getByTestId('briefing-instructor').evaluate(element => (element as HTMLInputElement).checked)).toBe(true);
   });
 });

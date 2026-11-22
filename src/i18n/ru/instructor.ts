@@ -87,6 +87,12 @@ export const instructor = {
     chips: 'Тапни слот формулы и положи чип: V⊥, потом D',
     tape: 'Набери по формуле V⊥ × D ÷ K и запиши шаг',
   },
+  coldMorning: {
+    notebook: 'Холодно, давление высокое — пуля ляжет ниже карточки. Открой блокнот',
+    conditionsTab: 'Погода — на вкладке «Условия»',
+    columns: 'Колонки «холоднее» и «давление» — в строке ДОПЕ твоей дистанции, вкладка «ДОПЕ»',
+    step: 'Посчитай шаг «Атмосфера»: ΔВЕРТ по двум колонкам',
+  },
   cartridgeChange: {
     magazine: (p: { cartridgeLetter: string }) => `Магазин пуст. Дальше — патрон ${p.cartridgeLetter}`,
     card: (p: { cartridgeLetter: string }) => `У патрона ${p.cartridgeLetter} своя карточка ДОПЕ — пересчитай`,

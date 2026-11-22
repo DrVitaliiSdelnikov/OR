@@ -97,7 +97,7 @@ describe('совет по прогрессу (T3.5)', () => {
     expect(progress({ ratings: weakWind, rounds: [round({ cards: [{ verdict: 'exact', errorTypes: [], seconds: 9 }] })] }).reason).toBe('не тренировали 8 дней');
   });
 
-  it('«Открыть всё» — совет на время', () => {
-    expect(progress({ isEverythingUnlocked: true }).link.query).toEqual({ level: 'timed' });
+  it('«Открыть всё» не делает совет «на время» — уровень по заработанному (QA 22.11)', () => {
+    expect(progress({ isEverythingUnlocked: true }).link.query).toEqual({});
   });
 });

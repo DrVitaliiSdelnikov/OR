@@ -448,6 +448,37 @@ const MANUAL_EASY: readonly TeachingStep[] = [
   { id: 'tape', kind: 'explain', anchor: fixed('calc-tape'), text: fixed(T.manualEasy.tape), isDue: always, isDone: state => isWindStepRecorded(state) || hasFired(state) },
 ];
 
+const isAtmosphereDone = (state: InstructorSnapshot): boolean => state.recordedSteps.includes('atmosphere') || hasFired(state);
+
+const COLD_MORNING: readonly TeachingStep[] = [
+  { ...notebookStep(T.coldMorning.notebook), isDone: state => state.hasOpenedNotebook || state.isStationMeasured || isAtmosphereDone(state) },
+  {
+    id: 'conditions-tab',
+    kind: 'action',
+    anchor: fixed('tab-conditions'),
+    text: fixed(T.coldMorning.conditionsTab),
+    isDue: isSheetOpen,
+    isDone: state => state.sheetTab === 'conditions' || state.isStationMeasured || isAtmosphereDone(state),
+  },
+  {
+    id: 'measure',
+    kind: 'action',
+    anchor: fixed('measure'),
+    text: fixed(T.windAndStation.measure({ seconds: FULL_MEASUREMENT_S })),
+    isDue: state => state.sheetTab === 'conditions',
+    isDone: state => state.isStationMeasured || isAtmosphereDone(state),
+  },
+  { id: 'columns', kind: 'explain', anchor: fixed('tab-dope'), text: fixed(T.coldMorning.columns), isDue: isSheetOpen, isDone: isAtmosphereDone },
+  {
+    id: 'atmosphere',
+    kind: 'action',
+    anchor: fixed('step-atmosphere'),
+    text: fixed(T.coldMorning.step),
+    isDue: state => state.sheetTab === 'total',
+    isDone: state => state.openCalcStep === 'atmosphere' || isAtmosphereDone(state),
+  },
+];
+
 const CARTRIDGE_CHANGE: readonly TeachingStep[] = [
   {
     id: 'magazine',
@@ -494,6 +525,7 @@ const SCRIPTS: Partial<Record<ExerciseId, readonly TeachingStep[]>> = {
   '04': WIND_AND_STATION,
   '05': MILLING,
   '06': MANUAL_EASY,
+  '07': COLD_MORNING,
   '08': CARTRIDGE_CHANGE,
   '09': ZONE_FLAGS,
   '10': MANUAL_HARD,
