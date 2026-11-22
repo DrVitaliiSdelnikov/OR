@@ -177,6 +177,22 @@ test.describe('шторка блокнота (A5.1)', () => {
     }
   });
 
+  test('скорость до выбора часа не теряется при закрытии блокнота и смене вкладки (QA 22.11)', async ({ page }) => {
+    await toPosition(page, '04');
+    await page.getByTestId('wind-tile').click();
+    await page.getByTestId('speed-plus').click();
+    await page.getByTestId('speed-plus').click();
+    await page.getByTestId('speed-plus').click();
+    await page.getByTestId('sheet-handle').click();
+    await expect(page.getByTestId('notebook-sheet')).toHaveCount(0);
+    await page.getByTestId('wind-tile').click();
+    await expect(page.getByTestId('speed-wheel')).toHaveAttribute('aria-valuenow', '0.3');
+    await page.getByTestId('tab-conditions').click();
+    await page.getByTestId('tab-wind').click();
+    await pointClockAt(page, 9);
+    await expect(page.getByTestId('wind-caption')).toHaveText('ветер 0,3 м/с с 9 ч');
+  });
+
   test('колесо скорости: «+» и «−» по 0,1; с клавиатуры стрелки по 0,1, PageUp и PageDown по 1; быстрые нажатия подряд не теряются', async ({ page }) => {
     await toPosition(page, '04');
     await page.getByTestId('wind-tile').click();

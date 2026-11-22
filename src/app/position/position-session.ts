@@ -124,6 +124,7 @@ export class PositionSession {
   readonly firingLine: FiringLine;
   readonly isRepeatAfterRecalc: boolean;
   private currentNotebook: Notebook;
+  private windSpeedDraftMps: number | null = null;
   private entered: NotebookTotal | null = null;
   private stationMeasurements = 0;
   private marks: PencilMark[] = [];
@@ -261,6 +262,14 @@ export class PositionSession {
 
   enterWind(speedMps: number, clock: number): void {
     this.currentNotebook = enterWind(this.currentNotebook, speedMps, clock);
+  }
+
+  get windSpeedBeforeClockMps(): number | null {
+    return this.windSpeedDraftMps;
+  }
+
+  chooseWindSpeedBeforeClock(speedMps: number): void {
+    this.windSpeedDraftMps = speedMps;
   }
 
   measureRange(reticleMil: number): void {
@@ -572,6 +581,7 @@ export class PositionSession {
   private shotCheck(timeS: number): ShotCheck | null {
     const truth: CheckTruth = {
       trueWindClock: clockFromDeg(windAt(this.scenario, timeS)[0].fromDeg),
+      stationWindSpeedMps: gaugeWindAt(this.scenario, timeS).speedMps,
       dialedElevationClicks: this.scope.elevation.clicks,
       dialedWindageLeftClicks: this.scope.windage.clicks,
     };

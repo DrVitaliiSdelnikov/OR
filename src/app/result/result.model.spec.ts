@@ -54,6 +54,14 @@ describe('resultSheet — stamp and class rows', () => {
     expect(sheet.classRows[0].text).toBe('≥ 70 % очков — 83 %');
   });
 
+  it('1st-class goal met but the 2nd class missed: the row says the 2nd class is still needed (QA 22.11)', () => {
+    const speedWrong: ShotCheckSummary = { verdict: 'error', rowVerdicts: { 'reading-speed': 'error', 'turret-windage': 'exact' }, errorTypes: [] };
+    const { sheet } = sheetFor('04', hits(3, { check: speedWrong }));
+    expect(sheet.stamp).toBe('3 КЛАСС');
+    expect(sheet.classRows[2]).toEqual({ label: '1 класс', text: 'все первым и вклад ветра учтён на всех — 3 из 3 · нужен 2 класс', isMet: false });
+    expect(sheetFor('04', [...hits(2, { check: speedRight }), shot({ targetIndex: 2, check: windageOff })]).sheet.classRows[2].text).toBe('все первым и вклад ветра учтён на всех — 2 из 3');
+  });
+
   it('01 has no 1st-class skill goal: the row is «все первым»; 02 on paper — «все в мишень» and the group in MIL', () => {
     expect(sheetFor('01', hits(3, { isDialExactFirstTry: true })).sheet.classRows[2].text).toBe('все первым — 3 из 3');
     const paper = [shot({ distanceM: 100, isColdBore: true }), shot({ distanceM: 100, impact: { upMrad: 0.1, rightMrad: 0 } }), shot({ distanceM: 100, impact: { upMrad: 0.9, rightMrad: 0 } }), shot({ distanceM: 100 }), shot({ distanceM: 100 })];

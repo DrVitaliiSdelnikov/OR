@@ -156,6 +156,7 @@ export interface NotebookTotal {
 
 export interface CheckTruth {
   trueWindClock: number;
+  stationWindSpeedMps?: number;
   dialedElevationClicks: number;
   dialedWindageLeftClicks: number;
 }
@@ -608,7 +609,7 @@ function preparationRows(notebook: Notebook, truth: CheckTruth): PreparationRowI
   const { clickMil } = notebook.context.card;
   const clicks = (mil: number | null): number => (mil === null ? 0 : roundToClicks(mil, clickMil));
   const wind = notebook.readings.wind ?? { speedMps: 0, clock: truth.trueWindClock };
-  const stationSpeedMps = notebook.readings.station?.windSpeedMps ?? wind.speedMps;
+  const stationSpeedMps = notebook.readings.station?.windSpeedMps ?? truth.stationWindSpeedMps ?? wind.speedMps;
   const playerWindClicks = clicks(autoWindMil(notebook, wind));
   const stationSpeedClicks = clicks(autoWindMil(notebook, { speedMps: stationSpeedMps, clock: wind.clock }));
   const trueClockClicks = clicks(autoWindMil(notebook, { speedMps: wind.speedMps, clock: truth.trueWindClock }));

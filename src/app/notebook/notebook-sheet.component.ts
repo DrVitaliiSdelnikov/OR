@@ -94,7 +94,7 @@ const WIND_PENCIL_PLACES: readonly AutoInput[] = ['wind-speed', 'wind-clock', 'f
             <or-conditions-tab [system]="unitSystem()" [reading]="state.station" [correctionText]="state.conditionsCorrection" [stepLinkText]="state.isManual ? texts.toAtmosphere : null" (measure)="measure.emit($event)" (toStep)="openStep('atmosphere')" />
           }
           @case ('wind') {
-            <or-wind-tab [system]="unitSystem()" [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? (state.hasZones ? texts.toZones : texts.toWind) : null" [showShares]="state.isEasy" [zones]="state.zones" [pencils]="state.windPencils" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
+            <or-wind-tab [system]="unitSystem()" [wind]="state.wind" [caption]="state.windCaption" [stationText]="state.stationWind" [correctionText]="state.windCorrection" [stepLinkText]="state.isManual ? (state.hasZones ? texts.toZones : texts.toWind) : null" [showShares]="state.isEasy" [zones]="state.zones" [pencils]="state.windPencils" [speedBeforeClock]="state.windSpeedBeforeClock" (speedBeforeClockChange)="chooseWindSpeedBeforeClock($event)" (windChange)="enterWind($event)" (toStep)="openStep(state.hasZones ? 'zones' : 'wind')" />
           }
           @case ('dope') {
             <or-dope-tab [heading]="state.dopeHeading" [rows]="state.dopeRows" [system]="unitSystem()" />
@@ -223,6 +223,7 @@ export class NotebookSheetComponent {
       station: stationView,
       conditionsCorrection: correctionLine('conditions', factors.conditions),
       wind: wind as WindInput | null,
+      windSpeedBeforeClock: session.windSpeedBeforeClockMps,
       windCaption: windCaptionText(wind, system),
       stationWind: station ? stationWindText(station.windSpeedMps, stationTime, system) : texts.stationWindEmpty,
       windCorrection: correctionLine('wind', factors.wind),
@@ -244,6 +245,11 @@ export class NotebookSheetComponent {
 
   protected toggleFactor(factor: NotebookFactor): void {
     this.session().toggleFactor(factor);
+    this.changed.emit();
+  }
+
+  protected chooseWindSpeedBeforeClock(speedMps: number): void {
+    this.session().chooseWindSpeedBeforeClock(speedMps);
     this.changed.emit();
   }
 

@@ -107,6 +107,7 @@ function classRows(def: ExerciseDef, result: ExerciseResult): ClassRowView[] {
   const share = result.hitShare;
   const isShareAtLeast = (limit: number): boolean => share >= limit - SHARE_EPSILON;
   const firstFact = def.goals.first ? goalFact(result.goals.top) : firstShotFact(def, result);
+  const isFirstClassGoalMet = isShareAtLeast(FIRST_CLASS_SHARE) && result.goals.top.isMet;
   return [
     { label: T.classLabel({ exerciseClass: 3 }), text: T.thirdClassRow({ minShare: THIRD_CLASS_SHARE, share }), isMet: isShareAtLeast(THIRD_CLASS_SHARE) },
     {
@@ -114,7 +115,11 @@ function classRows(def: ExerciseDef, result: ExerciseResult): ClassRowView[] {
       text: T.secondClassRow({ minShare: SECOND_CLASS_SHARE, goal: def.goals.second, fact: goalFact(result.goals.skill) }),
       isMet: isShareAtLeast(SECOND_CLASS_SHARE) && result.goals.skill.isMet,
     },
-    { label: T.classLabel({ exerciseClass: 1 }), text: T.firstClassRow({ goal: firstClassGoalText(def), fact: firstFact }), isMet: result.exerciseClass === 1 },
+    {
+      label: T.classLabel({ exerciseClass: 1 }),
+      text: (isFirstClassGoalMet && result.exerciseClass !== 1 ? T.firstClassRowNeedsSecond : T.firstClassRow)({ goal: firstClassGoalText(def), fact: firstFact }),
+      isMet: result.exerciseClass === 1,
+    },
   ];
 }
 

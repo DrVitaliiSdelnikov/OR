@@ -18,6 +18,15 @@ test.describe('iPhone 14 в Safari: между панелями браузера
     await unlockEverything(page);
   });
 
+  test('длинное название не выталкивает плитку ветра за край: 04, 05, 14', async ({ page }) => {
+    for (const exerciseId of ['04', '05', '14']) {
+      await page.goto(`/position/${exerciseId}`);
+      const tile = (await page.getByTestId('wind-tile').boundingBox())!;
+      expect(tile.x + tile.width, exerciseId).toBeLessThanOrEqual(page.viewportSize()!.width);
+      expect(tile.width, exerciseId).toBeGreaterThanOrEqual(44);
+    }
+  });
+
   test('позиция влезает целиком: шапка и «ОГОНЬ» видны, страница не прокручивается', async ({ page }) => {
     await page.goto('/position/04');
     await expect(page.getByTestId('glass')).toBeVisible();

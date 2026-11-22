@@ -14,6 +14,7 @@ export const result = {
   thirdClassRow: (p: { minShare: number; share: number }) => `≥ ${percent(p.minShare)} очков — ${percent(p.share)}`,
   secondClassRow: (p: { minShare: number; goal: string; fact: string }) => `≥ ${percent(p.minShare)} и ${p.goal} — ${p.fact}`,
   firstClassRow: (p: { goal: string; fact: string }) => `${p.goal} — ${p.fact}`,
+  firstClassRowNeedsSecond: (p: { goal: string; fact: string }) => `${p.goal} — ${p.fact} · нужен 2 класс`,
   bothGoals: (p: { allFirst: string; goal: string }) => `${p.allFirst} и ${p.goal}`,
   factMil: (p: { valueMil: number }) => `${decimal(p.valueMil, 1)} MIL`,
   factTally: (p: { passed: number; total: number }) => `${p.passed} из ${p.total}`,

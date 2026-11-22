@@ -1,4 +1,4 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { UnitSystem } from '../../core/units';
 import { text } from '../../i18n';
 import { windFlagText, ZoneTable } from './notebook.model';
@@ -74,11 +74,12 @@ export class WindTabComponent {
   readonly showShares = input(false);
   readonly zones = input<ZoneTable | null>(null);
   readonly pencils = input<readonly { testId: string; note: PencilNote }[]>([]);
+  readonly speedBeforeClock = input<number | null>(null);
   readonly windChange = output<WindInput>();
+  readonly speedBeforeClockChange = output<number>();
   readonly toStep = output<void>();
 
   protected readonly texts = text.notebook.windTab;
-  protected readonly speedBeforeClock = signal<number | null>(null);
 
   protected flagText(distanceM: number, readingText: string): string {
     return windFlagText(distanceM, readingText, this.system());
@@ -93,7 +94,7 @@ export class WindTabComponent {
     if (wind) {
       this.windChange.emit({ speedMps, clock: wind.clock });
     } else {
-      this.speedBeforeClock.set(speedMps);
+      this.speedBeforeClockChange.emit(speedMps);
     }
   }
 }

@@ -167,6 +167,13 @@ describe('check sheet, AUTO', () => {
     expect(sheet.mainError).toEqual({ label: 'БАРАБАН ВЕРТ', phrase: 'В блокноте ↑ 1,6, на барабане ↑ 0,0: 16 кл.', term: 'барабан' });
   });
 
+  it('wind not measured: the speed reference is the station at the shot, and the row is an error (QA 22.11)', () => {
+    const notebook = toggleFactor(notebookAt(300, 'auto'), 'conditions');
+    const sheet = checkSheet(snapshot(notebook, { trueWindClock: 9, stationWindSpeedMps: 6, dialedElevationClicks: 16, dialedWindageLeftClicks: 0 }), 'auto');
+    expect(sheet.rows.find(row => row.label === 'Ветер: скорость')).toMatchObject({ player: '—', reference: '6,0 м/с', status: 'error' });
+    expect(sheet.stamp).toBe('ОШИБКА');
+  });
+
   it('exact preparation: the short subtitle and the dialled line', () => {
     const notebook = toggleFactor(enterWind(notebookAt(300, 'auto'), 0, 12), 'conditions');
     const sheet = checkSheet(snapshot(notebook, { trueWindClock: 12, dialedElevationClicks: 16, dialedWindageLeftClicks: 0 }), 'auto');

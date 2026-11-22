@@ -224,7 +224,7 @@ function preparationRows(check: ShotCheck, system: UnitSystem): CheckRowView[] {
   const values: Record<PreparationRowInput['row'], { player: string; reference: string }> = {
     'reading-speed': {
       player: wind ? UNITS.valueText('windSpeed', wind.speedMps, system, SPEED_DIGITS) : T.none,
-      reference: station ? UNITS.valueText('windSpeed', station.windSpeedMps, system, SPEED_DIGITS) : T.none,
+      reference: referenceStationText(station?.windSpeedMps ?? truth.stationWindSpeedMps, system),
     },
     'reading-direction': { player: wind ? clockText(wind.clock) : '—', reference: clockText(truth.trueWindClock) },
     factors: { player: onNames.join(', ') || T.none, reference: neededNames.join(', ') || T.none },
@@ -351,6 +351,10 @@ function horizontalDirection(rightMil: number): ScreenDirection {
 
 function sideDirection(step: string, signedMil: number): ScreenDirection {
   return VERTICAL_STEPS.has(step) ? verticalDirection(signedMil) : horizontalDirection(signedMil);
+}
+
+function referenceStationText(stationWindSpeedMps: number | undefined, system: UnitSystem): string {
+  return stationWindSpeedMps === undefined ? T.none : UNITS.valueText('windSpeed', stationWindSpeedMps, system, SPEED_DIGITS);
 }
 
 function diffText(row: CheckedRow): string {

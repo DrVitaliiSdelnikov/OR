@@ -296,6 +296,17 @@ describe('check inputs', () => {
     expect(checkPreparation(rows).verdict).toBe('error');
   });
 
+  it('wind neither measured nor entered is a READING error against the station at the shot, not a clean zero (QA 22.11)', () => {
+    const notebook = createNotebook(context({ target: { sizeM: 0.5, distanceM: 600 } }), 'auto');
+    const planned = total(notebook);
+    const truth = { trueWindClock: 9, stationWindSpeedMps: 3.2, dialedElevationClicks: planned.elevation.targetClicks, dialedWindageLeftClicks: planned.windageLeft.targetClicks };
+    const rows = checkInputs(notebook, truth).preparation;
+    expect(rows.find(row => row.row === 'reading-speed')!.clicksOff).toBeGreaterThanOrEqual(5);
+    expect(checkPreparation(rows).verdict).toBe('error');
+    const measured = enterWind(recordStation(notebook, station(), 3, 10), 3.2, 9);
+    expect(checkInputs(measured, truth).preparation.find(row => row.row === 'reading-speed')!.clicksOff).toBe(0);
+  });
+
   it('a turret turned the other way is a SIDE error', () => {
     const notebook = enterWind(createNotebook(context(), 'auto'), 3.2, 9);
     const rows = checkInputs(notebook, { trueWindClock: 9, dialedElevationClicks: 16, dialedWindageLeftClicks: -6 }).preparation;
