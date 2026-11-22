@@ -12,6 +12,7 @@ const LINE_COMMENT = /(^|[^:'"`])\/\/.*$/gm;
 const MANUAL_DECIMAL_COMMA = /replace\(\s*'\.'\s*,\s*','\s*\)/;
 const DOT_FRACTION = /\.toFixed\(\s*[1-9]/;
 const CATALOG_FILE = /^src\/i18n\/ru\/(?!.*\.spec\.ts$).*\.ts$/;
+const STATIC_SHELL_FILES = ['src/index.html'];
 const UNIT_AFTER_PLACEHOLDER = /\$\{[^}]+\} ?(?:м|м\/с|°C|гПа|см)(?![а-яёa-z])/;
 
 function sourceFiles(directory: string): string[] {
@@ -28,7 +29,7 @@ function withoutComments(source: string): string {
   return source.replace(BLOCK_COMMENT, '').replace(LINE_COMMENT, '$1');
 }
 
-const files = sourceFiles(SOURCE_ROOT).filter(path => !path.startsWith(CATALOG_ROOT));
+const files = sourceFiles(SOURCE_ROOT).filter(path => !path.startsWith(CATALOG_ROOT) && !STATIC_SHELL_FILES.includes(path));
 
 describe('каталог текстов', () => {
   it('русский текст есть только в каталоге', () => {
