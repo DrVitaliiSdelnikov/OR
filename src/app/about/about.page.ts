@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import packageJson from '../../../package.json';
 import { text } from '../../i18n';
@@ -6,7 +7,7 @@ import { BackLinkDirective } from '../services/back-link.directive';
 
 @Component({
   selector: 'or-about',
-  imports: [BackLinkDirective, IonContent],
+  imports: [BackLinkDirective, IonContent, RouterLink],
   template: `
     <ion-content>
       <div class="about" data-test="about">
@@ -24,6 +25,7 @@ import { BackLinkDirective } from '../services/back-link.directive';
             </li>
           }
         </ol>
+        <a class="model-link mono" routerLink="/model" data-test="about-model">{{ modelLink }}</a>
 
         <section class="group" data-test="about-plans">
           <h2 class="label mono">{{ texts.plansTitle }}</h2>
@@ -59,10 +61,12 @@ import { BackLinkDirective } from '../services/back-link.directive';
     .group { display: flex; flex-direction: column; gap: var(--space-1); }
     .label { margin: 0 0 var(--space-1); font: 500 var(--type-label) / 1.25 var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--device-text-muted); }
     .plans { display: flex; flex-direction: column; gap: var(--space-1); margin: 0; padding-left: var(--space-4); font: 400 var(--type-body) / 1.45 var(--font-text); color: var(--device-text); }
+    .model-link { display: flex; align-items: center; min-height: var(--touch-min); font: 500 var(--type-label) / 16px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--device-accent); text-decoration: none; }
     .license, .version { font: 500 var(--type-label) / 1.4 var(--font-mono); color: var(--device-text-muted); }
   `,
 })
 export class AboutPage {
   protected readonly texts = text.about;
+  protected readonly modelLink = text.model.link;
   protected readonly version = packageJson.version;
 }

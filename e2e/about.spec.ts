@@ -5,7 +5,7 @@ import { seedProgress } from './helpers';
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 
 test.describe('«О приложении»', () => {
-  test('указатель внизу главного экрана, не в меню → 9 пунктов, «В планах», версия → назад на главную', async ({ page }) => {
+  test('указатель внизу главного экрана, не в меню → 10 пунктов, «В планах», версия → назад на главную', async ({ page }) => {
     await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: {} }, settings: QUIET_SETTINGS });
     await page.goto('/');
     const link = page.getByTestId('open-about');
@@ -16,7 +16,7 @@ test.describe('«О приложении»', () => {
 
     await link.click();
     await page.waitForURL('**/about');
-    await expect(page.getByTestId('about-point')).toHaveCount(9);
+    await expect(page.getByTestId('about-point')).toHaveCount(10);
     await expect(page.getByTestId('about-point').first()).toContainText('Настоящая баллистика');
     await expect(page.getByTestId('about-plan').first()).toBeVisible();
     await expect(page.getByTestId('about-licenses')).toContainText('bclibc');

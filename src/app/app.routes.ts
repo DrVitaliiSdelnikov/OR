@@ -29,6 +29,7 @@ export const routes: Routes = [
     canDeactivate: [(page: RifleEditPage) => page.canLeave()],
   },
   { path: 'textbook', loadComponent: () => import('./textbook/textbook.page').then(module => module.TextbookPage) },
+  { path: 'model', loadComponent: () => import('./model/model.page').then(module => module.ModelPage) },
   { path: 'about', loadComponent: () => import('./about/about.page').then(module => module.AboutPage) },
   { path: '**', redirectTo: '' },
 ];

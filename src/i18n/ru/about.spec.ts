@@ -5,8 +5,8 @@ import { COURSE } from '../../sim/course';
 const T = text.about;
 
 describe('«О приложении»: тексты визитки', () => {
-  it('девять пунктов, у каждого заголовок и текст; планы не пустые', () => {
-    expect(T.points).toHaveLength(9);
+  it('десять пунктов, у каждого заголовок и текст; планы не пустые', () => {
+    expect(T.points).toHaveLength(10);
     for (const point of T.points) {
       expect(point.title.trim(), point.title).not.toBe('');
       expect(point.text.trim(), point.title).not.toBe('');
@@ -18,6 +18,12 @@ describe('«О приложении»: тексты визитки', () => {
   it('число упражнений в тексте совпадает с курсом', () => {
     const courseText = T.points.find(point => point.title === 'Учебник и курс')!.text;
     expect(courseText).toContain(`${COURSE.filter(def => def.targets !== null).length} упражнений`);
+  });
+
+  it('сделанное ушло из планов: дрилы, тренер, задание дня, экран «Модель» (T5.3)', () => {
+    expect(T.plans.filter(plan => /дрил|тренер|задание дня|модель/i.test(plan))).toEqual([]);
+    expect(T.points.map(point => point.title)).toContain('Дрилы и задание дня');
+    expect(T.points[0].text).toContain('на экране «Модель»');
   });
 
   it('в лицензиях есть движок bclibc под LGPL-3.0', () => {

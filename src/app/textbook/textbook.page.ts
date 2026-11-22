@@ -1,4 +1,5 @@
 import { Component, computed, ElementRef, inject, viewChildren } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { text } from '../../i18n';
 import { TermSheetService } from './term-sheet.service';
@@ -7,7 +8,7 @@ import { BackLinkDirective } from '../services/back-link.directive';
 
 @Component({
   selector: 'or-textbook',
-  imports: [BackLinkDirective, IonContent],
+  imports: [BackLinkDirective, IonContent, RouterLink],
   template: `
     <ion-content>
       <div class="textbook" data-test="textbook">
@@ -42,6 +43,7 @@ import { BackLinkDirective } from '../services/back-link.directive';
             </div>
           </section>
         }
+        <a class="model-link mono" routerLink="/model" data-test="textbook-model">{{ modelLink }}</a>
       </div>
     </ion-content>
 
@@ -59,6 +61,7 @@ import { BackLinkDirective } from '../services/back-link.directive';
     .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
     .tile { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 56px; padding: var(--space-2) var(--space-3); border: 0; border-radius: 6px; background: var(--paper-bg); color: var(--paper-ink); box-shadow: var(--paper-shadow); text-align: left; font: 700 var(--type-label) / 18px var(--font-title); letter-spacing: var(--tracking-title); text-transform: uppercase; overflow-wrap: anywhere; }
     .tile.locked { border: 1.5px dashed var(--device-line-strong); background: transparent; color: var(--device-text-muted); box-shadow: none; }
+    .model-link { display: flex; align-items: center; min-height: var(--touch-min); margin-top: var(--space-2); font: 500 var(--type-label) / 16px var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--device-accent); text-decoration: none; }
     .lock { font: 500 11px / 14px var(--font-mono); letter-spacing: 0; text-transform: none; }
   `,
 })
@@ -67,6 +70,7 @@ export class TextbookPage {
   private readonly chapterSections = viewChildren<ElementRef<HTMLElement>>('chapter');
 
   protected readonly texts = text.textbook.page;
+  protected readonly modelLink = text.model.link;
   protected readonly view = computed(() => textbookView());
 
   protected open(tile: TermTile): void {

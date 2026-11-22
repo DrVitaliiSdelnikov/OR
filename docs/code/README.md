@@ -131,3 +131,4 @@
 | sim + app · экзамен вместо курса (T3.6, В35) | [specs/sim-course-exam.md](specs/sim-course-exam.md) | реализовано 21.11 |
 | app · спортивная лексика (T4.4, В44) | [specs/app-sport-lexicon.md](specs/app-sport-lexicon.md) | реализовано 21.11 |
 | sim + app · задание дня (T5.1, В35) | [specs/sim-daily.md](specs/sim-daily.md) | реализовано 21.11 |
+| app · экран «Модель» (T5.3, В37) | [specs/app-model.md](specs/app-model.md) | реализовано 22.11 |

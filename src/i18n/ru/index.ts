@@ -5,6 +5,7 @@ import { drills } from './drills';
 import { skills } from './skills';
 import { instructor } from './instructor';
 import { intro } from './intro';
+import { model } from './model';
 import { notebook } from './notebook';
 import { position } from './position';
 import { radio } from './radio';
@@ -16,4 +17,4 @@ import { shell } from './shell';
 import { textbook } from './textbook';
 import { units } from './units';
 
-export const ru = { about, content, daily, drills, skills, instructor, result, briefing, review, notebook, position, radio, shell, screens, textbook, intro, units, rifle };
+export const ru = { about, content, daily, drills, skills, instructor, result, briefing, review, notebook, position, radio, shell, screens, textbook, intro, units, rifle, model };
