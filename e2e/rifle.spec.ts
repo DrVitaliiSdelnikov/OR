@@ -75,6 +75,12 @@ test.describe('экран «Винтовка» (T1.7)', () => {
     await expect(rows).toHaveCount(20);
     await expect(rows.first()).toContainText('50');
     await expect(rows.last()).toContainText('1000');
+    await page.getByTestId('rifle-dope-back').click();
+    await expect(page.getByTestId('rifle-add')).toBeVisible();
+    await expect(page.getByTestId('rifle-presets')).toHaveCount(0);
+    await page.getByTestId('rifle-dope').click();
+    const shownHeader = await page.getByTestId('rifle-dope-card').locator('thead').evaluate(head => (head as HTMLElement).innerText);
+    expect(shownHeader).toContain('ВЕТЕР 1 м/с');
     await expectNoHorizontalScroll(page);
     await page.evaluate(key => {
       const stored = JSON.parse(localStorage.getItem(key)!);

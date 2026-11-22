@@ -136,6 +136,14 @@ export const INTRO_STEPS: readonly IntroStep[] = [
   { id: 'bolt', title: STEPS.bolt.title, instruction: STEPS.bolt.instruction },
 ];
 
+export function zoomedProgress(progress: IntroProgress, fromMagnification: number, toMagnification: number): IntroProgress {
+  return {
+    ...progress,
+    wasZoomedIn: progress.wasZoomedIn || toMagnification > fromMagnification,
+    wasZoomedOut: progress.wasZoomedOut || toMagnification < fromMagnification,
+  };
+}
+
 export function isStepDone(stepId: IntroStepId, progress: IntroProgress): boolean {
   switch (stepId) {
     case 'rifle':

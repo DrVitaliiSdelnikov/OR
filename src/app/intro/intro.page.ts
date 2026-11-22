@@ -17,7 +17,7 @@ import { ProgressStore } from '../services/progress.store';
 import { CartridgesSchemeComponent } from '../textbook/schemes/cartridges-scheme.component';
 import { ReticleSchemeComponent } from '../textbook/schemes/reticle-scheme.component';
 import { TextbookCards } from '../textbook/textbook-cards.service';
-import { gongRadiusPt, impactShiftPt, INTRO_SCENE, introSteps, IntroProgress, isStepDone, measureHint, measureQuestion, measureTask, partKey, START_PROGRESS } from './intro.model';
+import { gongRadiusPt, impactShiftPt, INTRO_SCENE, introSteps, IntroProgress, isStepDone, measureHint, measureQuestion, measureTask, partKey, START_PROGRESS, zoomedProgress } from './intro.model';
 import { PartSchemeComponent } from './part-scheme.component';
 import { BackLinkDirective } from '../services/back-link.directive';
 
@@ -214,11 +214,7 @@ export class IntroPage {
       return;
     }
     this.feedback.emit('detent');
-    this.progress.update(progress => ({
-      ...progress,
-      wasZoomedIn: progress.wasZoomedIn || next > INTRO_SCENE.startMagnification,
-      wasZoomedOut: progress.wasZoomedOut || next < INTRO_SCENE.startMagnification,
-    }));
+    this.progress.update(progress => zoomedProgress(progress, this.magnification(), next));
     this.magnification.set(next);
   }
 

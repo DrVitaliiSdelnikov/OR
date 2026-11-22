@@ -43,7 +43,7 @@ import { dopeColumnHeaders, DopeTableRow } from './notebook.model';
     .heading { margin-bottom: var(--space-2); font: 500 var(--type-label) / 16px var(--font-mono); color: var(--paper-ink); }
     .scroller { overflow-x: auto; }
     .table { border-collapse: separate; border-spacing: 0; font: 500 var(--type-label) / 16px var(--font-mono); color: var(--paper-ink); white-space: nowrap; }
-    th { padding: 4px 8px; text-align: right; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid var(--paper-ink); }
+    th { padding: 4px 8px; text-align: right; font-weight: 700; border-bottom: 1px solid var(--paper-ink); }
     td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--paper-grid); }
     .pinned { position: sticky; left: 0; z-index: 1; text-align: left; background: var(--paper-bg); }
     .notes { color: var(--paper-graphite); }

@@ -239,16 +239,16 @@ export const notebook = {
     size: (p: { sizeMil: number }) => `размер на сетке: ${decimal(p.sizeMil, 2)} MIL`,
   },
   dopeTab: {
-    distance: 'Дист',
-    elevation: 'Верт',
-    clicks: 'Кл.',
+    distance: 'ДИСТ',
+    elevation: 'ВЕРТ',
+    clicks: 'КЛ.',
     windConstantTitle: 'константа ветра',
     columns: {
       metric: { colder: '−10 °C', colderTitle: 'холоднее на 10 °C', pressure: '+10 гПа', pressureTitle: 'давление +10 гПа' },
       imperial: { colder: '−10 °F', colderTitle: 'холоднее на 10 °F', pressure: '+0,3″', pressureTitle: 'давление +0,3 дюйма рт. ст.' },
     },
     notesTitle: 'мои заметки',
-    notes: 'Заметки',
+    notes: 'ЗАМЕТКИ',
   },
   formulasSheet: {
     label: 'Справочник формул',

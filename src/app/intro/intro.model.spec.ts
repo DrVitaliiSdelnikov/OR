@@ -7,6 +7,7 @@ import { ptPerMil, scopeById } from '../../sim/scope-model';
 import { withIntroCompleted } from '../home/home.model';
 import { openedTerms } from '../textbook/textbook.model';
 import {
+  zoomedProgress,
   gongRadiusPt,
   impactShiftPt,
   INTRO_SCENE,
@@ -49,6 +50,16 @@ describe('шаг готов (U2)', () => {
     expect(isStepDone('zoom', { ...START_PROGRESS, wasZoomedIn: true, wasZoomedOut: true })).toBe(true);
   });
 
+  it('кратность «вверх и вниз» — от текущей, а не от начальной: 8 → 12 → 9 засчитано (QA 22.11)', () => {
+    let progress = START_PROGRESS;
+    for (const [from, to] of [[8, 9], [9, 12], [12, 9]]) {
+      progress = zoomedProgress(progress, from, to);
+    }
+    expect(isStepDone('zoom', progress)).toBe(true);
+    expect(isStepDone('zoom', zoomedProgress(zoomedProgress(START_PROGRESS, 8, 9), 9, 10))).toBe(false);
+    expect(zoomedProgress(START_PROGRESS, 8, 7)).toEqual({ ...START_PROGRESS, wasZoomedOut: true });
+  });
+
   it('сетки — только верный ответ; патроны — сразу; затвор — после цикла', () => {
     expect(isStepDone('reticles', { ...START_PROGRESS, answerMil: 2 })).toBe(false);
     expect(isStepDone('reticles', { ...START_PROGRESS, answerMil: MEASURE.answerMil })).toBe(true);
@@ -66,7 +77,7 @@ describe('замер гонга на шаге 5 (U3)', () => {
   });
 
   it('неверный ответ — подсказка с формулой; верный и пустой — без подсказки', () => {
-    expect(measureHint(2)).toContain('Д = размер × 1000 / mil');
+    expect(measureHint(2)).toContain('Д = размер × 1000 / MIL');
     expect(measureHint(MEASURE.answerMil)).toBeNull();
     expect(measureHint(null)).toBeNull();
   });
@@ -111,7 +122,7 @@ describe('замер гонга в имперских (T1.8c)', () => {
     expect(measureQuestion('imperial')).toBe('Гонг 20 дюймов на 550 ярдов — сколько MIL?');
     expect(measureQuestion('metric')).toBe('Гонг 0,5 м на 500 м — сколько MIL?');
     expect(measureHint(2, 'imperial')).toContain('Д = размер × 27,78 / MIL');
-    expect(measureHint(2, 'metric')).toContain('Д = размер × 1000 / mil');
+    expect(measureHint(2, 'metric')).toContain('Д = размер × 1000 / MIL');
     expect(introSteps('metric')).toEqual(INTRO_STEPS);
   });
 });

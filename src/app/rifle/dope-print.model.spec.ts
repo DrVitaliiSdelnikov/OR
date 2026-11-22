@@ -20,7 +20,7 @@ describe('таблица карточки для экрана, печати и �
     const view = dopeTableView(card());
     expect(view.title).toBe('ДОПЕ · Моя .308');
     expect(view.headerLines).toEqual(['ноль 100 м · +15 °C · 1013 гПа', 'прицел MIL · клик 0,1 · Z 2,30']);
-    expect(view.columns).toEqual(['м', 'ВЕРТ', 'кл.', 'ветер 1 м/с', 'ДЕР', 'с']);
+    expect(view.columns).toEqual(['м', 'ВЕРТ', 'кл.', 'ВЕТЕР 1 м/с', 'ДЕР', 'с']);
     expect(view.rows.slice(1)).toEqual([
       ['100', '0,0', '0', '0,1', '0,0', '0,13'],
       ['600', '↓ 5,7', '−57', '0,5', '→ 0,2', '1,01'],
@@ -34,7 +34,7 @@ describe('таблица карточки для экрана, печати и �
       rows: [{ distance: 600, elevation: 18.25, clicks: 73, windPerUnit: 0.75, spinDriftRight: 0.5, timeOfFlightS: 0.9 }],
     });
     expect(view.headerLines).toEqual(['ноль 109 ярдов · +59 °F · 29,91 дюйма рт. ст.', 'прицел MOA · клик 0,25 · Z 7,90']);
-    expect(view.columns).toEqual(['ярд', 'ВЕРТ', 'кл.', 'ветер 1 миль/ч', 'ДЕР', 'с']);
+    expect(view.columns).toEqual(['ярд', 'ВЕРТ', 'кл.', 'ВЕТЕР 1 миль/ч', 'ДЕР', 'с']);
     expect(view.rows).toEqual([['600', '↑ 18,25', '73', '0,75', '→ 0,50', '0,90']]);
   });
 

@@ -25,7 +25,7 @@ export const intro = {
         windage: { name: 'WIND turret', caption: 'Moves the point of impact left and right: the wind correction' },
         zoom: {
           name: 'Ring',
-          caption: (p: { magnificationMin: number; magnificationMax: number }) => `Magnification ring: zoom from ${p.magnificationMin}× to ${p.magnificationMax}×`,
+          caption: (p: { magnificationMin: number; magnificationMax: number }) => `Changes magnification: ${p.magnificationMin}× to ${p.magnificationMax}×`,
         },
       },
     },
@@ -42,7 +42,7 @@ export const intro = {
     bolt: { title: 'Bolt', instruction: 'Cycle the bolt: pull the handle up, back, forward, down' },
   },
   measureHint: {
-    metric: 'Not quite. D = size × 1000 / mil, so mil = size × 1000 / D',
+    metric: 'Not quite. D = size × 1000 / MIL, so MIL = size × 1000 / D',
     imperial: 'Not quite. D = size × 27.78 / MIL, so MIL = size × 27.78 / D',
   },
   page: {

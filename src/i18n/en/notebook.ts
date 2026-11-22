@@ -239,16 +239,16 @@ export const notebook = {
     size: (p: { sizeMil: number }) => `size on the reticle: ${decimal(p.sizeMil, 2)} MIL`,
   },
   dopeTab: {
-    distance: 'Dist',
-    elevation: 'Elev',
-    clicks: 'Cl.',
+    distance: 'DIST',
+    elevation: 'ELEV',
+    clicks: 'CL.',
     windConstantTitle: 'wind constant',
     columns: {
       metric: { colder: '−10 °C', colderTitle: 'colder by 10 °C', pressure: '+10 hPa', pressureTitle: 'pressure +10 hPa' },
       imperial: { colder: '−10 °F', colderTitle: 'colder by 10 °F', pressure: '+0.3″', pressureTitle: 'pressure +0.3 inHg' },
     },
     notesTitle: 'my notes',
-    notes: 'Notes',
+    notes: 'NOTES',
   },
   formulasSheet: {
     label: 'Formula reference',

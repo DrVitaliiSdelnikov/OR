@@ -134,6 +134,9 @@ test.describe('шторка блокнота (A5.1)', () => {
     await page.getByTestId('tile-dope').click();
     await expect(page.getByTestId('dope-heading')).toHaveText('Карточка патрона Б · ноль 100 м · эталон +15 °C / 1013 гПа');
     await expect(page.getByTestId('dope-current').locator('td').first()).toHaveText('300');
+    const shownHeader = await page.getByTestId('notebook-sheet').locator('thead').evaluate(head => (head as HTMLElement).innerText);
+    expect(shownHeader).toContain('+10 гПа');
+    expect(shownHeader).not.toContain('ГПА');
     const pinned = page.getByTestId('dope-current').locator('td').first();
     const before = (await pinned.boundingBox())!;
     const lastColumn = page.getByTestId('dope-current').locator('td').last();

@@ -64,7 +64,7 @@ export const rifle = {
     title: (p: { name: string }) => `ДОПЕ · ${p.name}`,
     conditions: (p: { zero: string; temperature: string; pressure: string }) => `ноль ${p.zero} · ${p.temperature} · ${p.pressure}`,
     scope: (p: { units: string; clickValue: number; zeroAngle: number }) => `прицел ${p.units} · клик ${decimal(p.clickValue)} · Z ${decimal(p.zeroAngle, 2)}`,
-    columns: { elevation: 'ВЕРТ', clicks: 'кл.', wind: (p: { unit: string }) => `ветер 1 ${p.unit}`, spinDrift: 'ДЕР', time: 'с' },
+    columns: { elevation: 'ВЕРТ', clicks: 'кл.', wind: (p: { unit: string }) => `ВЕТЕР 1 ${p.unit}`, spinDrift: 'ДЕР', time: 'с' },
     print: 'Печать',
     image: 'Картинкой',
     imageFileFallback: 'dope',

@@ -23,7 +23,7 @@ export const intro = {
         windage: { name: 'Барабан ГОР', caption: 'Сдвигает точку попадания влево и вправо — поправка на ветер' },
         zoom: {
           name: 'Кольцо',
-          caption: (p: { magnificationMin: number; magnificationMax: number }) => `Кольцо кратности: приближение от ${p.magnificationMin}× до ${p.magnificationMax}×`,
+          caption: (p: { magnificationMin: number; magnificationMax: number }) => `Меняет кратность: от ${p.magnificationMin}× до ${p.magnificationMax}×`,
         },
       },
     },
@@ -40,7 +40,7 @@ export const intro = {
     bolt: { title: 'Затвор', instruction: 'Передёрни затвор: тяни рукоять вверх, назад, вперёд, вниз' },
   },
   measureHint: {
-    metric: 'Не так. Д = размер × 1000 / mil — отсюда mil = размер × 1000 / Д',
+    metric: 'Не так. Д = размер × 1000 / MIL — отсюда MIL = размер × 1000 / Д',
     imperial: 'Не так. Д = размер × 27,78 / MIL — отсюда MIL = размер × 27,78 / Д',
   },
   page: {

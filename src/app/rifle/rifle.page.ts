@@ -102,6 +102,7 @@ export class RiflePage {
   }
 
   protected startFromPreset(presetCode: string): void {
+    this.isChoosingPreset.set(false);
     void this.router.navigate(['/rifle', 'new', presetCode]);
   }
 

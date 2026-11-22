@@ -64,7 +64,7 @@ export const rifle = {
     title: (p: { name: string }) => `DOPE · ${p.name}`,
     conditions: (p: { zero: string; temperature: string; pressure: string }) => `zero ${p.zero} · ${p.temperature} · ${p.pressure}`,
     scope: (p: { units: string; clickValue: number; zeroAngle: number }) => `scope ${p.units} · click ${decimal(p.clickValue)} · Z ${decimal(p.zeroAngle, 2)}`,
-    columns: { elevation: 'ELEV', clicks: 'cl.', wind: (p: { unit: string }) => `wind 1 ${p.unit}`, spinDrift: 'SPIN', time: 's' },
+    columns: { elevation: 'ELEV', clicks: 'cl.', wind: (p: { unit: string }) => `WIND 1 ${p.unit}`, spinDrift: 'SPIN', time: 's' },
     print: 'Print',
     image: 'As image',
     imageFileFallback: 'dope',

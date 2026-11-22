@@ -97,7 +97,7 @@ test.describe('упр. 00 «Винтовка и прицел» (A7.5)', () => {
   test('шаг 5: неверный ответ — подсказка с формулой, «Дальше» закрыта; верный — открыта', async ({ page }) => {
     await toMeasureStep(page);
     await page.getByTestId('measure-2').click();
-    await expect(page.getByTestId('measure-hint')).toContainText('Д = размер × 1000 / mil');
+    await expect(page.getByTestId('measure-hint')).toContainText('Д = размер × 1000 / MIL');
     await expect(page.getByTestId('intro-next')).toBeDisabled();
     await page.getByTestId('measure-1').click();
     await expect(page.getByTestId('measure-hint')).toHaveCount(0);
