@@ -1,13 +1,13 @@
 import { expect, Page, test } from '@playwright/test';
-import { centreReticle, clicksToTarget, dialElevation, enterTotalOnTurrets, positionFromBriefing, seedProgress } from './helpers';
+import { centreReticle, clicksToTarget, dialElevation, enterTotalOnTurrets, positionFromBriefing, seedProgress, useTestLanguage } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 const SHOT_SETTLE_MS = 1200;
 const CYRILLIC = /[Ѐ-ӿ]/;
 
 async function seedEnglish(page: Page): Promise<void> {
-  await page.addInitScript(() => localStorage.setItem('or.language', 'en'));
   await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: {} }, shots: [], settings: QUIET_SETTINGS });
+  await useTestLanguage(page, 'en');
 }
 
 async function expectNoRussian(page: Page, testId: string): Promise<void> {

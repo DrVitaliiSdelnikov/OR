@@ -77,7 +77,7 @@
               "src/app/**/*.spec.ts"
             ],
             "setupFiles": [
-              "src/test-setup/russian-system-language.ts"
+              "src/test-setup/russian-test-language.ts"
             ]
           }
         }

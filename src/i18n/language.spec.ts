@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { initialLanguage } from './language';
+import { activeLanguage, initialLanguage } from './language';
 
 describe('язык при запуске (T6.3, В61)', () => {
   it('выбранный в настройках язык главнее системы', () => {
@@ -22,5 +22,17 @@ describe('язык при запуске (T6.3, В61)', () => {
   it('пока английский не полный, система английский не включает — только явный выбор', () => {
     expect(initialLanguage(null, ['en-US'], false)).toBe('ru');
     expect(initialLanguage('en', ['ru-RU'], false)).toBe('en');
+  });
+});
+
+describe('только английский (В62)', () => {
+  it('приложение всегда на английском: выбор и язык системы не участвуют', () => {
+    expect(activeLanguage(undefined)).toBe('en');
+    expect(activeLanguage(null)).toBe('en');
+  });
+
+  it('тесты могут переключить язык крючком; мусор в крючке — английский', () => {
+    expect(activeLanguage('ru')).toBe('ru');
+    expect(activeLanguage('fr')).toBe('en');
   });
 });

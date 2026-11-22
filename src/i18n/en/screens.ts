@@ -140,9 +140,6 @@ export const screens = {
     data: 'Data',
     units: 'Units',
     unitSystems: { metric: { label: 'metric', note: 'm · m/s · °C' }, imperial: { label: 'imperial', note: 'yd · mph · °F' } },
-    language: 'Language',
-    languages: { ru: 'Русский', en: 'English' },
-    englishPartial: 'partial',
     toggles: {
       isHapticsOn: 'Vibration',
       isDrumClicksOn: 'Turret clicks',

@@ -1,47 +1,37 @@
 import { expect, Page, test } from '@playwright/test';
-import { seedProgress } from './helpers';
+import { seedProgress, useTestLanguage } from './helpers';
 
 const QUIET_SETTINGS = { isSoundOn: false, isHapticsOn: false, isTriggerZoneLarger: true, isMarkerDriftOff: true, isEverythingUnlocked: false };
 
-async function seed(page: Page): Promise<void> {
+async function seedAsPlayer(page: Page): Promise<void> {
   await seedProgress(page, { course: { isIntroCompleted: true, bestClasses: {} }, settings: QUIET_SETTINGS });
+  await useTestLanguage(page, null);
 }
 
-test.describe('язык (T6.3)', () => {
-  test('настройки → English: после перезагрузки главный, вкладка и lang на английском, дроби с точкой; назад на русский', async ({ page }) => {
-    await seed(page);
-    await page.goto('/settings');
-    await expect(page.getByTestId('language-ru')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('language-en')).toHaveText('English');
-    await page.getByTestId('language-en').click();
-    await expect(page.getByTestId('language-en')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('settings-group-language')).toContainText('Language');
-    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-
+test.describe('только английский (В62)', () => {
+  test('игрок видит английский: главный, вкладка, lang, дроби с точкой; в настройках выбора языка нет', async ({ page }) => {
+    await seedAsPlayer(page);
     await page.goto('/');
     await expect(page.getByTestId('tile-drills')).toContainText('Drills');
     await expect(page).toHaveTitle('Sniping Simulator');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
     await page.goto('/model');
     await expect(page.getByTestId('model-comparison')).toContainText('elevation ≤ 0.1 MIL');
 
     await page.goto('/settings');
-    await page.getByTestId('language-ru').click();
-    await expect(page.getByTestId('settings-group-language')).toContainText('Язык');
-    await page.goto('/');
-    await expect(page).toHaveTitle('Симулятор снайпинга');
-    await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+    await expect(page.getByTestId('settings-group-units')).toBeVisible();
+    await expect(page.getByTestId('settings-group-language')).toHaveCount(0);
   });
 
-  test('без выбора — по системе: английская → английский, русская → русский', async ({ browser }) => {
-    for (const [locale, title, drills] of [['en-US', 'Sniping Simulator', 'Drills'], ['ru-RU', 'Симулятор снайпинга', 'Дрилы']]) {
-      const context = await browser.newContext({ locale });
-      const page = await context.newPage();
-      await seed(page);
-      await page.goto('/');
-      await expect(page).toHaveTitle(title);
-      await expect(page.getByTestId('tile-drills')).toContainText(drills);
-      await context.close();
-    }
+  test('ни русская система, ни сохранённый раньше «Русский» язык не меняют', async ({ browser }) => {
+    const context = await browser.newContext({ locale: 'ru-RU' });
+    const page = await context.newPage();
+    await seedAsPlayer(page);
+    await page.addInitScript(() => localStorage.setItem('or.language', 'ru'));
+    await page.goto('/');
+    await expect(page).toHaveTitle('Sniping Simulator');
+    await expect(page.getByTestId('tile-drills')).toContainText('Drills');
+    await context.close();
   });
 });

@@ -8,7 +8,19 @@ const CLICK_MIL = 0.1;
 export const PROGRESS_KEY = 'CapacitorStorage.or.progress.v2';
 export const PROGRESS_V1_KEY = 'CapacitorStorage.or.progress.v1';
 
+export async function useTestLanguage(page: Page, language: 'ru' | 'en' | null): Promise<void> {
+  await page.addInitScript(chosen => {
+    const hook = globalThis as { __orTestLanguage?: string };
+    if (chosen === null) {
+      delete hook.__orTestLanguage;
+    } else {
+      hook.__orTestLanguage = chosen;
+    }
+  }, language);
+}
+
 export async function seedProgress(page: Page, progress: object, storageKey: string = PROGRESS_KEY): Promise<void> {
+  await useTestLanguage(page, 'ru');
   await page.addInitScript(
     ([key, value]) => {
       if (!sessionStorage.getItem('or-seeded')) {

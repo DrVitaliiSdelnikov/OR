@@ -15,6 +15,7 @@
 
 | Что | Почему уходит | Чем заменяется | Удалить в | Помечено в коде |
 | --- | --- | --- | --- | --- |
+| `initialLanguage`, `storedLanguage`, `saveLanguage`, `systemLanguages`, ключ `or.language`, `LANGUAGES` | выбора языка нет — только английский (В62) | `APP_LANGUAGE`, `activeLanguage` | когда решим судьбу русского каталога | `i18n/language.ts` |
 | `drillListGroups`, `DrillListGroup`, тексты `drills.list.countGroup` / `positionGroup` | список дрилов по навыкам (T3.5) | `drillSkillGroups`, `DrillSkillGroup` | T4.3 | `app/drill/drill-cards.model.ts` |
 | подпись замка учебника: `lockText` в `textbook.model.ts`, `lockIntro`, `lockExercise` каталога, `TermTile.lockText`, разметка `textbook-term-locked`, `term-related-locked` | учебник открыт целиком (В53) | — | T2.3 | `app/textbook/textbook.model.ts` |
 | `FLAG_DISTANCES_M`, `WIND_ZONE_LIMITS_M` в `core/content.ts` | флажки и зоны зависят от системы (T1.8c) | `rangeLayout(system)` | T2.1 | `core/content.ts` |

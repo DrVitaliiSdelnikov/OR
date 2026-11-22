@@ -1,6 +1,6 @@
-import { en, PENDING_EN_MODULES } from './en';
+import { en } from './en';
 import { useNumberFormat } from './format';
-import { initialLanguage, Language, storedLanguage, systemLanguages } from './language';
+import { activeLanguage, Language } from './language';
 import { Messages } from './messages';
 import { ru } from './ru';
 
@@ -9,8 +9,8 @@ export type { ScreenDirection } from './ru/review';
 
 const CATALOGS: Record<Language, Messages> = { ru, en };
 
-export const isEnglishComplete = PENDING_EN_MODULES.length === 0;
-export const language: Language = initialLanguage(storedLanguage(), systemLanguages(), isEnglishComplete);
+// Tests read Russian copy through this global; the app itself never sets it.
+export const language: Language = activeLanguage((globalThis as { __orTestLanguage?: unknown }).__orTestLanguage);
 useNumberFormat(language);
 
 export const text: Messages = CATALOGS[language];

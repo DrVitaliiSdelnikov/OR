@@ -6,7 +6,6 @@ import { en, PENDING_EN_MODULES } from '.';
 
 const EN_DIR = new URL('./', import.meta.url);
 const CYRILLIC = /[Ѐ-ӿ]+/g;
-const NATIVE_LANGUAGE_NAMES = ['Русский'];
 const DOT_FRACTION = /\.toFixed\(\s*[1-9]/;
 const UNIT_AFTER_PLACEHOLDER = /\$\{[^}]+\} ?(?:m|m\/s|°C|hPa|cm|yd|mph|°F)(?![a-z])/;
 
@@ -39,9 +38,9 @@ describe('английский каталог (T6.3)', () => {
     expect(borrowed.sort()).toEqual([...PENDING_EN_MODULES].sort());
   });
 
-  it('в файлах английского каталога нет кириллицы, кроме самоназвания языка', () => {
+  it('в файлах английского каталога нет кириллицы', () => {
     const found = sourceFiles.flatMap(name =>
-      [...readFileSync(new URL(name, EN_DIR), 'utf-8').matchAll(CYRILLIC)].map(match => match[0]).filter(word => !NATIVE_LANGUAGE_NAMES.includes(word)).map(word => `${name}: ${word}`),
+      [...readFileSync(new URL(name, EN_DIR), 'utf-8').matchAll(CYRILLIC)].map(match => `${name}: ${match[0]}`),
     );
     expect(found).toEqual([]);
   });

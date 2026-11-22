@@ -59,3 +59,19 @@
 | `sim/daily.spec`, `daily.model.spec` | тесты без русского языка системы |
 | e2e `english-course` | итог 01 по-русски; учебник по-русски; разбор по-русски |
 | e2e `language` | английская система → русский |
+
+## Только английский (В62, 22.11)
+
+Решение автора: игроку — только английский, выбора нет.
+
+- `i18n/language.ts`: `APP_LANGUAGE = 'en'`, `activeLanguage(testLanguage)` — английский, если тесты не подставили язык; `initialLanguage`, `storedLanguage`, `saveLanguage`, `systemLanguages` — `@deprecated` (REMOVAL-CANDIDATES).
+- `i18n/index.ts`: язык — `activeLanguage(globalThis.__orTestLanguage)`. Крючок ставят только тесты: юнит — `src/test-setup/russian-test-language.ts` (в `vitest.config.ts`, `vitest.core.config.ts`, `angular.json`), e2e — `seedProgress` через `useTestLanguage(page, 'ru')`; `english-course` ставит `'en'`, `language` — снимает крючок.
+- Настройки: раздел «Язык» убран; тексты `settings.language`, `languages`, `englishPartial` убраны из обоих каталогов. `index.html` — `lang="en"`.
+- Русский каталог остаётся: на нём весь набор тестов и сторож лексики.
+
+| Тест | Мутация → красный |
+| --- | --- |
+| `language.spec` | язык по умолчанию — русский; крючок игнорируется |
+| e2e `language` | `activeLanguage` снова читает сохранённый выбор; язык по умолчанию — русский |
+
+Проверено: юнит `language.spec`, `i18n` и связанные — зелёные; e2e на сборке `language`, `english-course`, `settings`, `intro`, `main-course`, `daily`, `about`, `model` — 70 из 70 на обоих движках.

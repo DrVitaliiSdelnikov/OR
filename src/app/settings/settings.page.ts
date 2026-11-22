@@ -2,8 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { IonContent, IonToggle } from '@ionic/angular/standalone';
 import packageJson from '../../../package.json';
-import { isEnglishComplete, language, text } from '../../i18n';
-import { Language, LANGUAGES, saveLanguage } from '../../i18n/language';
+import { text } from '../../i18n';
 import { backLayer } from '../services/back-stack.service';
 import { FeedbackService } from '../services/feedback.service';
 import { ProgressStore } from '../services/progress.store';
@@ -106,29 +105,6 @@ type HandButton = keyof typeof T.hands;
           </div>
         </section>
 
-        <section class="group" data-test="settings-group-language">
-          <h2 class="label mono">{{ texts.language }}</h2>
-          <div class="setting">
-            <div class="choices">
-              @for (option of languages; track option) {
-                <button
-                  class="choice"
-                  type="button"
-                  [class.chosen]="option === activeLanguage"
-                  [attr.aria-pressed]="option === activeLanguage"
-                  (click)="chooseLanguage(option)"
-                  [attr.data-test]="'language-' + option"
-                >
-                  {{ texts.languages[option] }}
-                  @if (option === 'en' && !isEnglishComplete) {
-                    <span class="choice-note mono">{{ texts.englishPartial }}</span>
-                  }
-                </button>
-              }
-            </div>
-          </div>
-        </section>
-
         <section class="group" data-test="settings-group-access">
           <h2 class="label mono">{{ texts.accessibility }}</h2>
           @for (toggle of accessibilityToggles; track toggle.key) {
@@ -205,21 +181,10 @@ export class SettingsPage {
   protected readonly dataToggles = DATA_TOGGLES;
   protected readonly sensitivities = DRUM_SENSITIVITIES;
   protected readonly unitSystems = UNIT_SYSTEMS;
-  protected readonly languages = LANGUAGES;
-  protected readonly activeLanguage = language;
-  protected readonly isEnglishComplete = isEnglishComplete;
   protected readonly volumeSteps = VOLUME_STEPS;
   protected readonly version = packageJson.version;
   protected readonly isResetAsked = signal(false);
   private readonly resetConfirmLayer = backLayer(() => this.isResetAsked(), () => this.isResetAsked.set(false));
-  protected chooseLanguage(chosen: Language): void {
-    if (chosen === this.activeLanguage) {
-      return;
-    }
-    saveLanguage(chosen);
-    window.location.reload();
-  }
-
   protected readonly volumeStep = computed(() => Math.round(this.progress.settings().volume * VOLUME_STEPS));
   protected readonly handOrder = computed<HandButton[]>(() => (this.progress.settings().isLeftHanded ? ['fire', 'hold'] : ['hold', 'fire']));
 
