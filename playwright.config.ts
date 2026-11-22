@@ -15,6 +15,7 @@ export default defineConfig({
     isMobile: true,
     hasTouch: true,
     locale: 'ru-RU',
+    serviceWorkers: 'block',
     testIdAttribute: 'data-test',
     trace: 'retain-on-failure',
   },

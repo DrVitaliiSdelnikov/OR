@@ -14,6 +14,7 @@ const CONTENT_TYPES = {
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
   '.mp3': 'audio/mpeg',
+  '.webp': 'image/webp',
   '.wav': 'audio/wav',
 };
 

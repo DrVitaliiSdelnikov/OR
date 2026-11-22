@@ -134,3 +134,4 @@
 | app · экран «Модель» (T5.3, В37) | [specs/app-model.md](specs/app-model.md) | реализовано 22.11 |
 | app · ребрендинг «Симулятор снайпинга» (В61) | [specs/app-rebrand.md](specs/app-rebrand.md) | реализовано 22.11 |
 | app · английский язык (T6.3, В61) | [specs/app-english.md](specs/app-english.md) | реализовано 22.11 |
+| app · офлайн-демо (T5.4, В41) | [specs/app-offline-demo.md](specs/app-offline-demo.md) | реализовано 22.11 |
